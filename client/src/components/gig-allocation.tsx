@@ -121,7 +121,7 @@ export default function GigAllocation({ gig, isOpen, onClose }: GigAllocationPro
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Allocate Funds from {gig.clientName}</DialogTitle>
+          <DialogTitle>Allocate Funds from {gig.eventName || "Event"}</DialogTitle>
         </DialogHeader>
 
         <div className="space-y-4">
@@ -129,7 +129,10 @@ export default function GigAllocation({ gig, isOpen, onClose }: GigAllocationPro
           <Card>
             <CardContent className="p-4">
               <div className="flex items-center justify-between mb-3">
-                <h3 className="font-semibold">{gig.clientName}</h3>
+                <div>
+                  <h3 className="font-semibold">{gig.eventName || "Event"}</h3>
+                  <p className="text-sm text-gray-600">{gig.clientName}</p>
+                </div>
                 <Badge variant="secondary">{formatCurrency(gigPay)} total</Badge>
               </div>
               <div className="space-y-2">
