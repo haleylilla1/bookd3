@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -250,8 +250,7 @@ export default function GoalTracker() {
 
   const deleteAllocationMutation = useMutation({
     mutationFn: async (allocationId: number) => {
-      const response = await apiRequest("DELETE", `/api/allocations/${allocationId}`);
-      return response.json();
+      await apiRequest("DELETE", `/api/allocations/${allocationId}`);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/allocations"] });
@@ -262,10 +261,11 @@ export default function GoalTracker() {
         description: "Allocation removed successfully!",
       });
     },
-    onError: () => {
+    onError: (error: any) => {
+      console.error("Delete allocation error:", error);
       toast({
         title: "Error",
-        description: "Failed to remove allocation. Please try again.",
+        description: error?.message || "Failed to remove allocation. Please try again.",
         variant: "destructive",
       });
     },
