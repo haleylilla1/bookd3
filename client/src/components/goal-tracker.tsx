@@ -4,12 +4,15 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { PiggyBank, Home, ShirtIcon, Plus, GripVertical, Check, Lightbulb, Edit2, Trash2 } from "lucide-react";
-import { formatCurrency } from "@/lib/utils";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { PiggyBank, Home, ShirtIcon, Plus, GripVertical, Check, Lightbulb, Edit2, Trash2, Target, DollarSign, Calendar } from "lucide-react";
+import { formatCurrency, formatDate } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
+import GigAllocation from "./gig-allocation";
 import type { Gig, Goal, Allocation } from "@shared/schema";
 
 export default function GoalTracker() {
@@ -19,6 +22,7 @@ export default function GoalTracker() {
   const [editingGoal, setEditingGoal] = useState<Goal | null>(null);
   const [editGoalName, setEditGoalName] = useState("");
   const [editGoalAmount, setEditGoalAmount] = useState("");
+  const [allocatingGig, setAllocatingGig] = useState<Gig | null>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -38,9 +42,20 @@ export default function GoalTracker() {
     queryKey: ["/api/piggy-bank-total"],
   });
 
-  // Get unallocated earnings (completed gigs without full allocations)
-  const completedGigs = gigs.filter(gig => gig.status === "completed" && gig.actualPay);
-  const totalEarnings = completedGigs.reduce((sum, gig) => sum + parseFloat(gig.actualPay || "0"), 0);
+  // Get recent completed gigs available for allocation
+  const completedGigs = gigs.filter(gig => gig.status === "completed" && (gig.actualPay || gig.expectedPay));
+  const recentGigs = completedGigs.slice(0, 3); // Show 3 most recent
+  
+  // Calculate gig allocation status
+  const getGigAllocationStatus = (gig: Gig) => {
+    const gigAllocations = allocations.filter(a => a.gigId === gig.id);
+    const totalAllocated = gigAllocations.reduce((sum, a) => sum + parseFloat(a.amount), 0);
+    const gigPay = parseFloat(gig.actualPay || gig.expectedPay || "0");
+    const remainingAmount = gigPay - totalAllocated;
+    return { totalAllocated, remainingAmount, gigPay };
+  };
+
+  const totalEarnings = completedGigs.reduce((sum, gig) => sum + parseFloat(gig.actualPay || gig.expectedPay || "0"), 0);
   const totalAllocated = allocations.reduce((sum: number, allocation: any) => sum + parseFloat(allocation.amount || "0"), 0);
   const unallocatedAmount = totalEarnings - totalAllocated;
 
@@ -240,6 +255,71 @@ export default function GoalTracker() {
           )}
         </CardContent>
       </Card>
+
+      {/* Recent Earnings to Allocate */}
+      {recentGigs.length > 0 && (
+        <Card>
+          <CardContent className="p-4">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Recent Earnings to Allocate</h3>
+            <div className="space-y-3">
+              {recentGigs.map((gig) => {
+                const { totalAllocated, remainingAmount, gigPay } = getGigAllocationStatus(gig);
+                const allocationProgress = gigPay > 0 ? (totalAllocated / gigPay) * 100 : 0;
+                
+                return (
+                  <div key={gig.id} className="border border-gray-200 rounded-lg p-3">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-3 mb-2">
+                          <h4 className="font-medium text-gray-900">{gig.clientName}</h4>
+                          <Badge variant="secondary">{formatCurrency(gigPay)}</Badge>
+                          {remainingAmount <= 0 && (
+                            <Badge className="bg-green-100 text-green-800">Fully Allocated</Badge>
+                          )}
+                        </div>
+                        
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm text-gray-600 mb-2">
+                          <div className="flex items-center gap-1">
+                            <Calendar className="w-4 h-4" />
+                            {formatDate(gig.date)}
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <DollarSign className="w-4 h-4" />
+                            {remainingAmount > 0 ? formatCurrency(remainingAmount) : "Fully allocated"}
+                          </div>
+                        </div>
+
+                        {/* Allocation Progress */}
+                        <div className="mb-2">
+                          <div className="flex justify-between text-xs mb-1">
+                            <span className="text-gray-500">Allocated</span>
+                            <span className="font-medium">
+                              {formatCurrency(totalAllocated)} / {formatCurrency(gigPay)}
+                            </span>
+                          </div>
+                          <Progress value={allocationProgress} className="h-1.5" />
+                        </div>
+                      </div>
+
+                      <div className="ml-4">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setAllocatingGig(gig)}
+                          disabled={remainingAmount <= 0}
+                        >
+                          <Target className="w-4 h-4 mr-2" />
+                          Allocate
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Goals */}
       <div className="space-y-4">
@@ -468,6 +548,15 @@ export default function GoalTracker() {
               </Button>
             </CardContent>
           </Card>
+        )}
+
+        {/* Gig Allocation Dialog */}
+        {allocatingGig && (
+          <GigAllocation
+            gig={allocatingGig}
+            isOpen={!!allocatingGig}
+            onClose={() => setAllocatingGig(null)}
+          />
         )}
       </div>
     </div>
