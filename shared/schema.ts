@@ -10,6 +10,7 @@ export const users = pgTable("users", {
   title: text("title").default("Gig Worker"),
   defaultTaxPercentage: integer("default_tax_percentage").default(23),
   customGigTypes: text("custom_gig_types").array().default([]),
+  weeklyGoal: decimal("weekly_goal", { precision: 10, scale: 2 }).default("750"),
   monthlyGoal: decimal("monthly_goal", { precision: 10, scale: 2 }).default("3000"),
   yearlyGoal: decimal("yearly_goal", { precision: 10, scale: 2 }).default("36000"),
   homeAddress: text("home_address"),
