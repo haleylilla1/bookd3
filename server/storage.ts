@@ -1,4 +1,6 @@
 import { users, gigs, goals, allocations, type User, type InsertUser, type Gig, type InsertGig, type Goal, type InsertGoal, type Allocation, type InsertAllocation } from "@shared/schema";
+import { db } from "./db";
+import { eq } from "drizzle-orm";
 
 export interface IStorage {
   // Users
@@ -31,155 +33,132 @@ export interface IStorage {
   deleteAllocation(id: number): Promise<boolean>;
 }
 
-export class MemStorage implements IStorage {
-  private users: Map<number, User>;
-  private gigs: Map<number, Gig>;
-  private goals: Map<number, Goal>;
-  private allocations: Map<number, Allocation>;
-  private currentUserId: number;
-  private currentGigId: number;
-  private currentGoalId: number;
-  private currentAllocationId: number;
-
-  constructor() {
-    this.users = new Map();
-    this.gigs = new Map();
-    this.goals = new Map();
-    this.allocations = new Map();
-    this.currentUserId = 1;
-    this.currentGigId = 1;
-    this.currentGoalId = 1;
-    this.currentAllocationId = 1;
-
-    // Initialize with a default user
-    this.createUser({
-      name: "Sarah Johnson",
-      email: "sarah@example.com",
-      phone: "(555) 123-4567",
-      title: "Experienced Event & Brand Ambassador"
-    });
-  }
-
-  // Users
+export class DatabaseStorage implements IStorage {
   async getUser(id: number): Promise<User | undefined> {
-    return this.users.get(id);
+    const [user] = await db.select().from(users).where(eq(users.id, id));
+    return user || undefined;
   }
 
   async getUserByEmail(email: string): Promise<User | undefined> {
-    return Array.from(this.users.values()).find(user => user.email === email);
+    const [user] = await db.select().from(users).where(eq(users.email, email));
+    return user || undefined;
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
-    const id = this.currentUserId++;
-    const user: User = { ...insertUser, id };
-    this.users.set(id, user);
+    const [user] = await db
+      .insert(users)
+      .values(insertUser)
+      .returning();
     return user;
   }
 
   async updateUser(id: number, updateData: Partial<InsertUser>): Promise<User | undefined> {
-    const user = this.users.get(id);
-    if (!user) return undefined;
-    
-    const updatedUser = { ...user, ...updateData };
-    this.users.set(id, updatedUser);
-    return updatedUser;
+    const [user] = await db
+      .update(users)
+      .set(updateData)
+      .where(eq(users.id, id))
+      .returning();
+    return user || undefined;
   }
 
-  // Gigs
   async getGig(id: number): Promise<Gig | undefined> {
-    return this.gigs.get(id);
+    const [gig] = await db.select().from(gigs).where(eq(gigs.id, id));
+    return gig || undefined;
   }
 
   async getGigsByUser(userId: number): Promise<Gig[]> {
-    return Array.from(this.gigs.values()).filter(gig => gig.userId === userId);
+    return await db.select().from(gigs).where(eq(gigs.userId, userId));
   }
 
   async getGigsByDateRange(userId: number, startDate: string, endDate: string): Promise<Gig[]> {
-    return Array.from(this.gigs.values()).filter(gig => 
-      gig.userId === userId && 
-      gig.date >= startDate && 
-      gig.date <= endDate
-    );
+    return await db
+      .select()
+      .from(gigs)
+      .where(eq(gigs.userId, userId));
   }
 
   async createGig(insertGig: InsertGig): Promise<Gig> {
-    const id = this.currentGigId++;
-    const createdAt = new Date();
-    const gig: Gig = { ...insertGig, id, createdAt };
-    this.gigs.set(id, gig);
+    const [gig] = await db
+      .insert(gigs)
+      .values(insertGig)
+      .returning();
     return gig;
   }
 
   async updateGig(id: number, updateData: Partial<InsertGig>): Promise<Gig | undefined> {
-    const gig = this.gigs.get(id);
-    if (!gig) return undefined;
-    
-    const updatedGig = { ...gig, ...updateData };
-    this.gigs.set(id, updatedGig);
-    return updatedGig;
+    const [gig] = await db
+      .update(gigs)
+      .set(updateData)
+      .where(eq(gigs.id, id))
+      .returning();
+    return gig || undefined;
   }
 
   async deleteGig(id: number): Promise<boolean> {
-    return this.gigs.delete(id);
+    const result = await db.delete(gigs).where(eq(gigs.id, id));
+    return result.rowCount > 0;
   }
 
-  // Goals
   async getGoal(id: number): Promise<Goal | undefined> {
-    return this.goals.get(id);
+    const [goal] = await db.select().from(goals).where(eq(goals.id, id));
+    return goal || undefined;
   }
 
   async getGoalsByUser(userId: number): Promise<Goal[]> {
-    return Array.from(this.goals.values()).filter(goal => goal.userId === userId);
+    return await db.select().from(goals).where(eq(goals.userId, userId));
   }
 
   async createGoal(insertGoal: InsertGoal): Promise<Goal> {
-    const id = this.currentGoalId++;
-    const goal: Goal = { ...insertGoal, id };
-    this.goals.set(id, goal);
+    const [goal] = await db
+      .insert(goals)
+      .values(insertGoal)
+      .returning();
     return goal;
   }
 
   async updateGoal(id: number, updateData: Partial<InsertGoal>): Promise<Goal | undefined> {
-    const goal = this.goals.get(id);
-    if (!goal) return undefined;
-    
-    const updatedGoal = { ...goal, ...updateData };
-    this.goals.set(id, updatedGoal);
-    return updatedGoal;
+    const [goal] = await db
+      .update(goals)
+      .set(updateData)
+      .where(eq(goals.id, id))
+      .returning();
+    return goal || undefined;
   }
 
   async deleteGoal(id: number): Promise<boolean> {
-    return this.goals.delete(id);
+    const result = await db.delete(goals).where(eq(goals.id, id));
+    return result.rowCount > 0;
   }
 
-  // Allocations
   async getAllocation(id: number): Promise<Allocation | undefined> {
-    return this.allocations.get(id);
+    const [allocation] = await db.select().from(allocations).where(eq(allocations.id, id));
+    return allocation || undefined;
   }
 
   async getAllocationsByUser(userId: number): Promise<Allocation[]> {
-    return Array.from(this.allocations.values()).filter(allocation => allocation.userId === userId);
+    return await db.select().from(allocations).where(eq(allocations.userId, userId));
   }
 
   async getAllocationsByGig(gigId: number): Promise<Allocation[]> {
-    return Array.from(this.allocations.values()).filter(allocation => allocation.gigId === gigId);
+    return await db.select().from(allocations).where(eq(allocations.gigId, gigId));
   }
 
   async getAllocationsByGoal(goalId: number): Promise<Allocation[]> {
-    return Array.from(this.allocations.values()).filter(allocation => allocation.goalId === goalId);
+    return await db.select().from(allocations).where(eq(allocations.goalId, goalId));
   }
 
   async createAllocation(insertAllocation: InsertAllocation): Promise<Allocation> {
-    const id = this.currentAllocationId++;
-    const createdAt = new Date();
-    const allocation: Allocation = { ...insertAllocation, id, createdAt };
-    this.allocations.set(id, allocation);
+    const [allocation] = await db
+      .insert(allocations)
+      .values(insertAllocation)
+      .returning();
     return allocation;
   }
 
   async deleteAllocation(id: number): Promise<boolean> {
-    return this.allocations.delete(id);
+    const result = await db.delete(allocations).where(eq(allocations.id, id));
+    return result.rowCount > 0;
   }
 }
 
-export const storage = new MemStorage();
+export const storage = new DatabaseStorage();
