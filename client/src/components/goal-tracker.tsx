@@ -10,7 +10,7 @@ import { PiggyBank, Home, ShirtIcon, Plus, GripVertical, Check, Lightbulb, Edit2
 import { formatCurrency } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
-import type { Gig, Goal } from "@shared/schema";
+import type { Gig, Goal, Allocation } from "@shared/schema";
 
 export default function GoalTracker() {
   const [newGoalName, setNewGoalName] = useState("");
@@ -30,8 +30,12 @@ export default function GoalTracker() {
     queryKey: ["/api/goals"],
   });
 
-  const { data: allocations = [] } = useQuery({
+  const { data: allocations = [] } = useQuery<Allocation[]>({
     queryKey: ["/api/allocations"],
+  });
+
+  const { data: piggyBankTotal = 0 } = useQuery<number>({
+    queryKey: ["/api/piggy-bank-total"],
   });
 
   // Get unallocated earnings (completed gigs without full allocations)
@@ -240,8 +244,11 @@ export default function GoalTracker() {
       {/* Goals */}
       <div className="space-y-4">
         {goals.map((goal) => {
-          const progress = goal.targetAmount ? 
-            (parseFloat(goal.currentAmount || "0") / parseFloat(goal.targetAmount)) * 100 : 0;
+          // Calculate progress from allocations instead of currentAmount
+          const goalAllocations = allocations.filter(a => a.goalId === goal.id);
+          const totalAllocatedToGoal = goalAllocations.reduce((sum, a) => sum + parseFloat(a.amount), 0);
+          const targetAmount = parseFloat(goal.targetAmount);
+          const progress = targetAmount > 0 ? (totalAllocatedToGoal / targetAmount) * 100 : 0;
           const isCompleted = progress >= 100;
           const isEditing = editingGoal?.id === goal.id;
           
@@ -333,10 +340,20 @@ export default function GoalTracker() {
                   <div className="flex justify-between text-sm mb-1">
                     <span className="text-gray-600">Progress</span>
                     <span className="font-medium">
-                      {formatCurrency(parseFloat(goal.currentAmount || "0"))} / {formatCurrency(parseFloat(goal.targetAmount || "0"))}
+                      {formatCurrency(totalAllocatedToGoal)} / {formatCurrency(targetAmount)}
                     </span>
                   </div>
-                  <Progress value={Math.min(progress, 100)} className="mb-2" />
+                  <Progress value={Math.min(progress, 100)} className={`mb-2 ${isCompleted ? 'bg-green-100' : ''}`} />
+                  <div className="flex justify-between items-center">
+                    <span className="text-xs text-gray-500">
+                      {progress.toFixed(1)}% complete
+                    </span>
+                    {goalAllocations.length > 0 && (
+                      <span className="text-xs text-blue-600">
+                        {goalAllocations.length} allocation{goalAllocations.length !== 1 ? 's' : ''}
+                      </span>
+                    )}
+                  </div>
                 </div>
                 {isCompleted ? (
                   <div className="flex items-center justify-center p-2 bg-success/5 rounded-lg">
