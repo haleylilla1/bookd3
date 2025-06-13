@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { PiggyBank, Home, ShirtIcon, Plus, GripVertical, Check, Lightbulb, Edit2, Trash2, Target, DollarSign, Calendar, ChevronLeft, ChevronRight } from "lucide-react";
@@ -43,6 +43,7 @@ export default function GoalTracker() {
   const [quickAllocateAmount, setQuickAllocateAmount] = useState("");
   const [editingAllocation, setEditingAllocation] = useState<Allocation | null>(null);
   const [editAllocationAmount, setEditAllocationAmount] = useState("");
+  const [isNewGoalOpen, setIsNewGoalOpen] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -367,25 +368,64 @@ export default function GoalTracker() {
 
   return (
     <div className="p-4">
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h2 className="text-xl font-semibold text-gray-900">Goal Tracker</h2>
-          <p className="text-sm text-gray-600">
-            {selectedPeriod === "monthly" ? "Monthly" : "Yearly"} goals for {getCurrentPeriodLabel()}
-          </p>
+      {/* Enhanced Header Section */}
+      <div className="bg-gradient-to-r from-blue-50 via-indigo-50 to-purple-50 rounded-2xl p-6 mb-6 border border-blue-100/50">
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center space-x-4">
+            <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
+              <Target className="w-6 h-6 text-white" />
+            </div>
+            <div>
+              <h2 className="text-2xl font-bold text-gray-900">Goal Tracker</h2>
+              <p className="text-sm text-gray-600">
+                Track and allocate money towards your financial goals
+              </p>
+            </div>
+          </div>
+          
+          <Button 
+            onClick={() => setIsNewGoalOpen(true)} 
+            className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white shadow-lg px-6"
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            New Goal
+          </Button>
         </div>
-        
-        {/* Period Selector */}
-        <div className="flex items-center gap-3">
-          <Select value={selectedPeriod} onValueChange={(value: TimePeriod) => setSelectedPeriod(value)}>
-            <SelectTrigger className="w-32">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="monthly">Monthly</SelectItem>
-              <SelectItem value="yearly">Yearly</SelectItem>
-            </SelectContent>
-          </Select>
+
+        {/* Quick Stats Dashboard */}
+        <div className="grid grid-cols-3 gap-4 mb-6">
+          <div className="bg-white/80 backdrop-blur-sm rounded-xl p-4 text-center border border-white/20">
+            <div className="text-2xl font-bold text-blue-600 mb-1">{goals.length}</div>
+            <div className="text-xs text-gray-600 font-medium">Active Goals</div>
+          </div>
+          <div className="bg-white/80 backdrop-blur-sm rounded-xl p-4 text-center border border-white/20">
+            <div className="text-2xl font-bold text-green-600 mb-1">
+              {formatCurrency(goals.reduce((sum, goal) => sum + parseFloat(goal.currentAmount || "0"), 0))}
+            </div>
+            <div className="text-xs text-gray-600 font-medium">Total Saved</div>
+          </div>
+          <div className="bg-white/80 backdrop-blur-sm rounded-xl p-4 text-center border border-white/20">
+            <div className="text-2xl font-bold text-purple-600 mb-1">
+              {formatCurrency(goals.reduce((sum, goal) => sum + parseFloat(goal.targetAmount), 0))}
+            </div>
+            <div className="text-xs text-gray-600 font-medium">Target Amount</div>
+          </div>
+        </div>
+
+        {/* Period Controls */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-3">
+            <span className="text-sm font-medium text-gray-700">Viewing:</span>
+            <Select value={selectedPeriod} onValueChange={(value: TimePeriod) => setSelectedPeriod(value)}>
+              <SelectTrigger className="w-32 bg-white/80 border-white/20">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="monthly">Monthly</SelectItem>
+                <SelectItem value="yearly">Yearly</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
           
           {/* Period Navigation */}
           <div className="flex items-center gap-2">
@@ -393,18 +433,18 @@ export default function GoalTracker() {
               variant="outline"
               size="sm"
               onClick={() => navigatePeriod("prev")}
-              className="p-2"
+              className="p-2 bg-white/80 border-white/20 hover:bg-white"
             >
               <ChevronLeft className="w-4 h-4" />
             </Button>
-            <span className="text-sm font-medium text-gray-700 min-w-[120px] text-center">
+            <span className="text-sm font-semibold text-gray-800 min-w-[140px] text-center px-4 py-2 bg-white/80 rounded-lg border border-white/20">
               {getCurrentPeriodLabel()}
             </span>
             <Button
               variant="outline"
               size="sm"
               onClick={() => navigatePeriod("next")}
-              className="p-2"
+              className="p-2 bg-white/80 border-white/20 hover:bg-white"
             >
               <ChevronRight className="w-4 h-4" />
             </Button>
@@ -1025,6 +1065,109 @@ export default function GoalTracker() {
                     className="flex-1"
                   >
                     {updateAllocationMutation.isPending ? "Updating..." : "Update"}
+                  </Button>
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
+        )}
+
+        {/* New Goal Dialog */}
+        {isNewGoalOpen && (
+          <Dialog open={isNewGoalOpen} onOpenChange={setIsNewGoalOpen}>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Create New Goal</DialogTitle>
+                <DialogDescription>
+                  Set up a new financial goal to track your progress.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4">
+                <div>
+                  <Label htmlFor="new-goal-name">Goal Name</Label>
+                  <Input
+                    id="new-goal-name"
+                    value={newGoalName}
+                    onChange={(e) => setNewGoalName(e.target.value)}
+                    placeholder="Emergency Fund, New Car, etc."
+                  />
+                </div>
+                
+                <div>
+                  <Label htmlFor="new-goal-amount">Target Amount</Label>
+                  <Input
+                    id="new-goal-amount"
+                    type="number"
+                    value={newGoalAmount}
+                    onChange={(e) => setNewGoalAmount(e.target.value)}
+                    placeholder="1000"
+                  />
+                </div>
+                
+                <div>
+                  <Label htmlFor="new-goal-category">Category</Label>
+                  <Select value={newGoalCategory} onValueChange={setNewGoalCategory}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="savings">Savings</SelectItem>
+                      <SelectItem value="rent">Rent</SelectItem>
+                      <SelectItem value="gear">Gear</SelectItem>
+                      <SelectItem value="other">Other</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div>
+                  <Label htmlFor="new-goal-duration">Duration</Label>
+                  <Select value={newGoalDuration} onValueChange={setNewGoalDuration}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="monthly">Monthly Goal</SelectItem>
+                      <SelectItem value="yearly">Yearly Goal</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setIsNewGoalOpen(false);
+                      setNewGoalName("");
+                      setNewGoalAmount("");
+                      setNewGoalCategory("savings");
+                      setNewGoalDuration("monthly");
+                    }}
+                    className="flex-1"
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    onClick={() => {
+                      if (!newGoalName || !newGoalAmount || isNaN(parseFloat(newGoalAmount)) || parseFloat(newGoalAmount) <= 0) {
+                        toast({
+                          title: "Invalid Input",
+                          description: "Please enter a valid goal name and amount",
+                          variant: "destructive",
+                        });
+                        return;
+                      }
+                      
+                      createGoalMutation.mutate({
+                        name: newGoalName,
+                        targetAmount: newGoalAmount,
+                        category: newGoalCategory,
+                        duration: newGoalDuration,
+                      });
+                    }}
+                    disabled={createGoalMutation.isPending}
+                    className="flex-1"
+                  >
+                    {createGoalMutation.isPending ? "Creating..." : "Create Goal"}
                   </Button>
                 </div>
               </div>
