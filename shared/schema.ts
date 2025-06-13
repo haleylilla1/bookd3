@@ -50,6 +50,7 @@ export const gigs = pgTable("gigs", {
   date: date("date").notNull(),
   expectedPay: decimal("expected_pay", { precision: 10, scale: 2 }),
   actualPay: decimal("actual_pay", { precision: 10, scale: 2 }),
+  tips: decimal("tips", { precision: 10, scale: 2 }),
   paymentMethod: text("payment_method"),
   status: text("status").notNull().default("upcoming"), // upcoming, completed, pending_payment
   duties: text("duties"),

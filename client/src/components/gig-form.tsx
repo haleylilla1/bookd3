@@ -26,6 +26,7 @@ const gigFormSchema = z.object({
   gigAddress: z.string().optional(),
   expectedPay: z.string().optional(),
   actualPay: z.string().optional(),
+  tips: z.string().optional(),
   paymentMethod: z.string().optional(),
   duties: z.string().optional(),
   taxPercentage: z.number().min(15).max(35).default(23),
@@ -166,6 +167,7 @@ export default function GigForm({ onClose }: GigFormProps) {
       travelTimeMinutes,
       expectedPay: data.expectedPay || null,
       actualPay: data.actualPay || null,
+      tips: data.tips || null,
       paymentMethod: data.paymentMethod || null,
       status: data.status,
       duties: data.duties || null,
@@ -336,6 +338,21 @@ export default function GigForm({ onClose }: GigFormProps) {
                   )}
                 />
               </div>
+
+              {/* Tips */}
+              <FormField
+                control={form.control}
+                name="tips"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Tips Earned</FormLabel>
+                    <FormControl>
+                      <Input type="number" placeholder="25" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
               {/* Payment Method */}
               <FormField
