@@ -316,133 +316,118 @@ export default function GoalTracker() {
         </div>
       </div>
 
-      {/* Recent Earnings */}
-      <Card className="mb-6">
-        <CardContent className="p-4">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Recent Earnings to Allocate</h3>
-          {completedGigs.slice(-3).length > 0 ? (
-            <div className="space-y-3">
-              {completedGigs.slice(-3).reverse().map((gig) => (
-                <div 
-                  key={gig.id}
-                  className="flex items-center justify-between p-3 bg-gray-50 rounded-lg cursor-move"
-                >
-                  <div className="flex items-center space-x-3">
-                    <GripVertical className="w-4 h-4 text-gray-400" />
-                    <div>
-                      <p className="text-sm font-medium text-gray-900">
-                        {gig.eventName || "Event"} - {gig.clientName}
-                      </p>
-                      <p className="text-xs text-gray-500">{new Date(gig.date).toLocaleDateString()} • Available for allocation</p>
-                    </div>
-                  </div>
-                  <span className="text-lg font-bold text-success">
-                    {formatCurrency(parseFloat(gig.actualPay || "0"))}
-                  </span>
+      {/* Period Goal Overview */}
+      <Card className="mb-6 bg-gradient-to-r from-purple-50 to-blue-50 border-purple-200">
+        <CardContent className="p-6">
+          <div className="text-center">
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">
+              {selectedPeriod === "monthly" ? "Monthly" : "Yearly"} Goal Target
+            </h3>
+            {periodGoal ? (
+              <div className="mb-4">
+                <div className="text-3xl font-bold text-purple-600 mb-1">
+                  {formatCurrency(parseFloat(periodGoal.goalAmount || "0"))}
                 </div>
-              ))}
-              <div className="p-4 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg">
-                <div className="text-center mb-3">
-                  <h4 className="text-sm font-medium text-gray-700 mb-1">Money Ready to Allocate</h4>
-                  <div className="text-2xl font-bold text-blue-600">
-                    {formatCurrency(unallocatedAmount)}
-                  </div>
-                  <div className="text-xs text-gray-500">Total unallocated earnings</div>
-                </div>
-                
-                <div className="border-t border-blue-200 pt-3">
-                  <div className="flex items-center justify-between text-sm mb-1">
-                    <span className="text-gray-600">Set aside for taxes ({taxPercentage}%)</span>
-                    <span className="font-medium text-orange-600">-{formatCurrency(suggestedTaxes)}</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="font-medium text-gray-800">Available to allocate to goals</span>
-                    <div className={`text-lg font-bold ${unallocatedAfterTaxes < 0 ? 'text-red-600' : 'text-green-600'}`}>
-                      {formatCurrency(Math.max(0, unallocatedAfterTaxes))}
-                    </div>
-                  </div>
-                  {unallocatedAfterTaxes < 0 && (
-                    <div className="mt-2 text-xs text-red-600 text-center">
-                      ⚠️ You've allocated more than your after-tax earnings
-                    </div>
-                  )}
+                <div className="text-sm text-gray-600">
+                  Target for {getCurrentPeriodLabel()}
                 </div>
               </div>
-            </div>
-          ) : (
-            <div className="text-center py-8 text-gray-500">
-              <PiggyBank className="w-12 h-12 mx-auto mb-4 text-gray-300" />
-              <p>No recent earnings to allocate</p>
-              <p className="text-sm">Complete some gigs to start allocating funds</p>
-            </div>
-          )}
+            ) : (
+              <div className="mb-4">
+                <div className="text-xl text-gray-500 mb-2">No goal set</div>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    const amount = prompt(`Enter your ${selectedPeriod} goal amount:`);
+                    if (amount && !isNaN(parseFloat(amount))) {
+                      fetch(`/api/goals/period/${selectedPeriod}/${currentDate.toISOString()}`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ goalAmount: amount })
+                      }).then(() => refetchPeriodGoal());
+                    }
+                  }}
+                >
+                  Set {selectedPeriod === "monthly" ? "Monthly" : "Yearly"} Goal
+                </Button>
+              </div>
+            )}
+          </div>
         </CardContent>
       </Card>
 
-      {/* Recent Earnings to Allocate */}
-      {recentGigs.length > 0 && (
-        <Card>
+      {/* Money Ready to Allocate */}
+      {completedGigs.length > 0 && (
+        <Card className="mb-6">
           <CardContent className="p-4">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Recent Earnings to Allocate</h3>
-            <div className="space-y-3">
-              {recentGigs.map((gig) => {
-                const { totalAllocated, remainingAmount, gigPay } = getGigAllocationStatus(gig);
-                const allocationProgress = gigPay > 0 ? (totalAllocated / gigPay) * 100 : 0;
+            <div className="p-4 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg">
+              <div className="text-center mb-3">
+                <h4 className="text-sm font-medium text-gray-700 mb-1">Money Ready to Allocate</h4>
+                <div className="text-2xl font-bold text-blue-600">
+                  {formatCurrency(unallocatedAmount)}
+                </div>
+                <div className="text-xs text-gray-500">Total unallocated earnings</div>
+              </div>
+              
+              <div className="border-t border-blue-200 pt-3">
+                <div className="flex items-center justify-between text-sm mb-1">
+                  <span className="text-gray-600">Set aside for taxes ({taxPercentage}%)</span>
+                  <span className="font-medium text-orange-600">-{formatCurrency(suggestedTaxes)}</span>
+                </div>
+                <div className="flex items-center justify-between mb-3">
+                  <span className="font-medium text-gray-800">Available to allocate to goals</span>
+                  <div className={`text-lg font-bold ${unallocatedAfterTaxes < 0 ? 'text-red-600' : 'text-green-600'}`}>
+                    {formatCurrency(Math.max(0, unallocatedAfterTaxes))}
+                  </div>
+                </div>
+                {unallocatedAfterTaxes < 0 && (
+                  <div className="mt-2 text-xs text-red-600 text-center">
+                    ⚠️ You've allocated more than your after-tax earnings
+                  </div>
+                )}
                 
-                return (
-                  <div key={gig.id} className="border border-gray-200 rounded-lg p-3">
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-2">
-                          <h4 className="font-medium text-gray-900">{gig.clientName}</h4>
-                          <Badge variant="secondary">{formatCurrency(gigPay)}</Badge>
-                          {remainingAmount <= 0 && (
-                            <Badge className="bg-green-100 text-green-800">Fully Allocated</Badge>
-                          )}
-                        </div>
-                        
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm text-gray-600 mb-2">
-                          <div className="flex items-center gap-1">
-                            <Calendar className="w-4 h-4" />
-                            {formatDate(gig.date)}
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <DollarSign className="w-4 h-4" />
-                            {remainingAmount > 0 ? formatCurrency(remainingAmount) : "Fully allocated"}
-                          </div>
-                        </div>
-
-                        {/* Allocation Progress */}
-                        <div className="mb-2">
-                          <div className="flex justify-between text-xs mb-1">
-                            <span className="text-gray-500">Allocated</span>
-                            <span className="font-medium">
-                              {formatCurrency(totalAllocated)} / {formatCurrency(gigPay)}
-                            </span>
-                          </div>
-                          <Progress value={allocationProgress} className="h-1.5" />
-                        </div>
-                      </div>
-
-                      <div className="ml-4">
+                {/* Quick Allocation Buttons */}
+                {unallocatedAfterTaxes > 0 && goals.length > 0 && (
+                  <div className="border-t border-blue-200 pt-3 mt-3">
+                    <div className="text-xs text-gray-600 mb-2 text-center">Quick allocate to your goals:</div>
+                    <div className="grid grid-cols-2 gap-2">
+                      {goals.slice(0, 4).map((goal) => (
                         <Button
+                          key={goal.id}
                           variant="outline"
                           size="sm"
-                          onClick={() => setAllocatingGig(gig)}
-                          disabled={remainingAmount <= 0}
+                          onClick={() => {
+                            const amount = prompt(`How much would you like to allocate to "${goal.name}"?`);
+                            if (amount && !isNaN(parseFloat(amount)) && parseFloat(amount) > 0) {
+                              // Find a completed gig with remaining funds to allocate from
+                              const availableGig = completedGigs.find(gig => {
+                                const gigAllocations = allocations.filter(a => a.gigId === gig.id);
+                                const totalAllocated = gigAllocations.reduce((sum, a) => sum + parseFloat(a.amount), 0);
+                                const gigPay = parseFloat(gig.actualPay || "0") + parseFloat(gig.tips || "0");
+                                return gigPay > totalAllocated;
+                              });
+                              
+                              if (availableGig) {
+                                setAllocatingGig(availableGig);
+                                // Auto-select this goal in the allocation modal
+                              }
+                            }
+                          }}
+                          className="text-xs"
                         >
-                          <Target className="w-4 h-4 mr-2" />
-                          Allocate
+                          {goal.name}
                         </Button>
-                      </div>
+                      ))}
                     </div>
                   </div>
-                );
-              })}
+                )}
+              </div>
             </div>
           </CardContent>
         </Card>
       )}
+
+      {/* Goals List */}
 
       {/* Goals */}
       <div className="space-y-4">
