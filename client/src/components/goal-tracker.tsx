@@ -413,7 +413,7 @@ export default function GoalTracker() {
         </div>
 
         {/* Period Controls */}
-        <div className="flex items-center justify-center gap-8">
+        <div className="flex flex-col items-center space-y-4">
           <div className="flex items-center space-x-3">
             <span className="text-sm font-medium text-gray-700">Viewing:</span>
             <Select value={selectedPeriod} onValueChange={(value: TimePeriod) => setSelectedPeriod(value)}>
@@ -428,7 +428,7 @@ export default function GoalTracker() {
           </div>
           
           {/* Period Navigation */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3">
             <Button
               variant="outline"
               size="sm"
