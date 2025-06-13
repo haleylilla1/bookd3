@@ -1,19 +1,32 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { Receipt, Car, Download, TrendingUp } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Receipt, Car, Download, TrendingUp, Edit2, Target } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
+import { useToast } from "@/hooks/use-toast";
+import { apiRequest } from "@/lib/queryClient";
+import type { User } from "@shared/schema";
 
-type TimePeriod = "weekly" | "monthly" | "annual";
+type TimePeriod = "monthly" | "annual";
 
 export default function Dashboard() {
   const [selectedPeriod, setSelectedPeriod] = useState<TimePeriod>("monthly");
+  const [editingGoal, setEditingGoal] = useState<"monthly" | "annual" | null>(null);
+  const [goalAmount, setGoalAmount] = useState("");
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
   
   const { data: stats, isLoading } = useQuery({
     queryKey: ["/api/dashboard/stats"],
+  });
+
+  const { data: user } = useQuery<User>({
+    queryKey: ["/api/user"],
   });
 
   if (isLoading) {
@@ -28,6 +41,28 @@ export default function Dashboard() {
     );
   }
 
+  const updateGoalMutation = useMutation({
+    mutationFn: async (goalData: { monthlyGoal?: string; yearlyGoal?: string }) => {
+      const response = await apiRequest("PUT", "/api/user", goalData);
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/user"] });
+      toast({
+        title: "Success",
+        description: "Goal updated successfully!",
+      });
+      setEditingGoal(null);
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to update goal. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
   // Calculate earnings based on selected period
   const getEarningsForPeriod = () => {
     if (!stats) return { earnings: 0, gigs: 0, avgPerGig: 0, period: "" };
@@ -37,16 +72,6 @@ export default function Dashboard() {
     const avgPerGig = (stats as any).avgPerGig || 0;
     
     switch (selectedPeriod) {
-      case "weekly":
-        // Estimate weekly from monthly data
-        const weeklyEarnings = monthlyEarnings / 4;
-        const weeklyGigs = Math.ceil(completedGigs / 4);
-        return {
-          earnings: weeklyEarnings,
-          gigs: weeklyGigs,
-          avgPerGig: weeklyGigs > 0 ? weeklyEarnings / weeklyGigs : 0,
-          period: "This Week"
-        };
       case "annual":
         // Estimate annual from monthly data
         const annualEarnings = monthlyEarnings * 12;
@@ -68,8 +93,36 @@ export default function Dashboard() {
   };
 
   const currentData = getEarningsForPeriod();
-  const goalTarget = selectedPeriod === "annual" ? 36000 : selectedPeriod === "weekly" ? 750 : 3000;
+  const goalTarget = selectedPeriod === "annual" 
+    ? parseFloat(user?.yearlyGoal || "36000")
+    : parseFloat(user?.monthlyGoal || "3000");
   const goalProgress = currentData.earnings ? (currentData.earnings / goalTarget) * 100 : 0;
+
+  const handleEditGoal = (period: "monthly" | "annual") => {
+    setEditingGoal(period);
+    const currentGoal = period === "monthly" ? user?.monthlyGoal : user?.yearlyGoal;
+    setGoalAmount(currentGoal || (period === "monthly" ? "3000" : "36000"));
+  };
+
+  const handleSaveGoal = () => {
+    if (!editingGoal) return;
+    
+    const amount = parseFloat(goalAmount);
+    if (isNaN(amount) || amount <= 0) {
+      toast({
+        title: "Invalid Amount",
+        description: "Please enter a valid goal amount.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const updateData = editingGoal === "monthly" 
+      ? { monthlyGoal: goalAmount }
+      : { yearlyGoal: goalAmount };
+    
+    updateGoalMutation.mutate(updateData);
+  };
 
   return (
     <div className="p-4">
@@ -82,14 +135,6 @@ export default function Dashboard() {
           onClick={() => setSelectedPeriod("monthly")}
         >
           Monthly
-        </Button>
-        <Button 
-          variant={selectedPeriod === "weekly" ? "default" : "ghost"} 
-          size="sm" 
-          className="flex-1"
-          onClick={() => setSelectedPeriod("weekly")}
-        >
-          Weekly
         </Button>
         <Button 
           variant={selectedPeriod === "annual" ? "default" : "ghost"} 
@@ -123,7 +168,7 @@ export default function Dashboard() {
               <Receipt className="w-5 h-5 text-warning" />
             </div>
             <p className="text-xl font-bold text-gray-900">
-              {formatCurrency(((stats as any)?.taxEstimate || 0) * (selectedPeriod === "annual" ? 12 : selectedPeriod === "weekly" ? 0.25 : 1))}
+              {formatCurrency(((stats as any)?.taxEstimate || 0) * (selectedPeriod === "annual" ? 12 : 1))}
             </p>
             <p className="text-xs text-gray-500">23% of earnings</p>
           </CardContent>
