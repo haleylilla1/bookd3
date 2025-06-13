@@ -462,15 +462,15 @@ export default function GoalTracker() {
                             const remainingForGoal = Math.max(0, targetAmount - totalAllocatedToGoal);
                             const maxAmount = Math.min(unallocatedAfterTaxes, remainingForGoal);
                             
-                            if (maxAmount <= 0) {
+                            if (unallocatedAfterTaxes <= 0) {
                               toast({
-                                title: "Goal Complete",
-                                description: `${goal.name} is already fully funded or no funds available`,
+                                title: "No Funds Available",
+                                description: "No funds available for allocation after taxes",
                               });
                               return;
                             }
                             
-                            const amount = prompt(`Allocate to "${goal.name}":\n\nAvailable after taxes: ${formatCurrency(unallocatedAfterTaxes)}\nRemaining for this goal: ${formatCurrency(remainingForGoal)}\nMax you can allocate: ${formatCurrency(maxAmount)}\n\nEnter amount:`);
+                            const amount = prompt(`Allocate to "${goal.name}":\n\nAvailable after taxes: ${formatCurrency(unallocatedAfterTaxes)}\n${remainingForGoal > 0 ? `Remaining for goal: ${formatCurrency(remainingForGoal)}` : 'Goal already complete - you can still add more!'}\n\nEnter amount:`);
                             
                             if (amount && !isNaN(parseFloat(amount)) && parseFloat(amount) > 0) {
                               const allocAmount = parseFloat(amount);
@@ -479,15 +479,6 @@ export default function GoalTracker() {
                                 toast({
                                   title: "Error",
                                   description: "Amount exceeds available funds after taxes",
-                                  variant: "destructive",
-                                });
-                                return;
-                              }
-                              
-                              if (allocAmount > maxAmount) {
-                                toast({
-                                  title: "Error", 
-                                  description: "Amount exceeds what's needed for this goal",
                                   variant: "destructive",
                                 });
                                 return;
@@ -661,19 +652,34 @@ export default function GoalTracker() {
                     )}
                   </div>
                 </div>
-                {isCompleted ? (
-                  <div className="flex items-center justify-center p-2 bg-success/5 rounded-lg">
-                    <Check className="w-4 h-4 text-success mr-2" />
-                    <span className="text-sm font-medium text-success">Goal Completed ✓</span>
+                <div className="flex items-center justify-between p-2 bg-success/5 rounded-lg">
+                  <div className="flex items-center">
+                    {isCompleted && <Check className="w-4 h-4 text-success mr-2" />}
+                    <span className="text-sm font-medium text-success">
+                      {isCompleted ? "Goal Completed ✓" : "In Progress"}
+                    </span>
                   </div>
-                ) : (
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between p-2 bg-success/5 rounded-lg">
-                      <span className="text-sm text-gray-700">Recent allocation</span>
-                      <span className="text-sm font-medium text-success">+$0</span>
-                    </div>
-                  </div>
-                )}
+                  {unallocatedAfterTaxes > 0 && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        const availableGig = completedGigs.find(gig => {
+                          const gigAllocations = allocations.filter(a => a.gigId === gig.id);
+                          const totalAllocated = gigAllocations.reduce((sum, a) => sum + parseFloat(a.amount), 0);
+                          const gigPay = parseFloat(gig.actualPay || "0") + parseFloat(gig.tips || "0");
+                          return gigPay > totalAllocated;
+                        });
+                        if (availableGig) {
+                          setAllocatingGig(availableGig);
+                        }
+                      }}
+                    >
+                      <Target className="w-3 h-3 mr-1" />
+                      Add More
+                    </Button>
+                  )}
+                </div>
               </CardContent>
             </Card>
           );
@@ -702,17 +708,7 @@ export default function GoalTracker() {
                   id="goal-name"
                   value={newGoalName}
                   onChange={(e) => setNewGoalName(e.target.value)}
-                  placeholder="e.g. Emergency Fund, New Equipment"
-                />
-              </div>
-              <div>
-                <Label htmlFor="goal-amount">Target Amount</Label>
-                <Input
-                  id="goal-amount"
-                  type="number"
-                  value={newGoalAmount}
-                  onChange={(e) => setNewGoalAmount(e.target.value)}
-                  placeholder="1000"
+                  placeholder="e.g., Emergency Fund, Monthly Rent..."
                 />
               </div>
               <div>
@@ -741,15 +737,6 @@ export default function GoalTracker() {
                   <option value="monthly">Monthly Goal</option>
                   <option value="yearly">Yearly Goal (with monthly breakdown)</option>
                 </select>
-              </div>
-              <div>
-                <Label htmlFor="goal-name">Goal Name</Label>
-                <Input
-                  id="goal-name"
-                  value={newGoalName}
-                  onChange={(e) => setNewGoalName(e.target.value)}
-                  placeholder="e.g., Emergency Fund, Monthly Rent..."
-                />
               </div>
               <div>
                 <Label htmlFor="goal-amount">
