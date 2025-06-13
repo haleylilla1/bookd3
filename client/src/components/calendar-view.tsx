@@ -6,16 +6,14 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ChevronLeft, ChevronRight, DollarSign, Calendar, Edit2, Trash2, Filter, Clock, Target } from "lucide-react";
+import { ChevronLeft, ChevronRight, DollarSign, Calendar, Edit2, Trash2, Filter, Clock } from "lucide-react";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
-import GigAllocation from "./gig-allocation";
 import type { Gig } from "@shared/schema";
 
 export default function CalendarView() {
   const [editingGig, setEditingGig] = useState<Gig | null>(null);
-  const [allocatingGig, setAllocatingGig] = useState<Gig | null>(null);
   const [filterStatus, setFilterStatus] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
   const { toast } = useToast();
@@ -387,15 +385,6 @@ export default function CalendarView() {
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => setAllocatingGig(gig)}
-                        disabled={!gig.actualPay && !gig.expectedPay}
-                        title="Allocate funds to goals"
-                      >
-                        <Target className="w-4 h-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
                         onClick={() => handleEditGig(gig)}
                       >
                         <Edit2 className="w-4 h-4" />
@@ -434,14 +423,6 @@ export default function CalendarView() {
         </DialogContent>
       </Dialog>
 
-      {/* Gig Allocation Dialog */}
-      {allocatingGig && (
-        <GigAllocation
-          gig={allocatingGig}
-          isOpen={!!allocatingGig}
-          onClose={() => setAllocatingGig(null)}
-        />
-      )}
     </div>
   );
 }
