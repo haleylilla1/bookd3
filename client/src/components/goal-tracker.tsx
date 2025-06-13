@@ -6,7 +6,7 @@ import { Progress } from "@/components/ui/progress";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { PiggyBank, Home, ShirtIcon, Plus, GripVertical, Check, Lightbulb } from "lucide-react";
+import { PiggyBank, Home, ShirtIcon, Plus, GripVertical, Check, Lightbulb, Edit2, Trash2 } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
@@ -16,6 +16,9 @@ export default function GoalTracker() {
   const [newGoalName, setNewGoalName] = useState("");
   const [newGoalAmount, setNewGoalAmount] = useState("");
   const [newGoalCategory, setNewGoalCategory] = useState("savings");
+  const [editingGoal, setEditingGoal] = useState<Goal | null>(null);
+  const [editGoalName, setEditGoalName] = useState("");
+  const [editGoalAmount, setEditGoalAmount] = useState("");
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -61,6 +64,53 @@ export default function GoalTracker() {
       toast({
         title: "Error",
         description: "Failed to create goal. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const updateGoalMutation = useMutation({
+    mutationFn: async (goalData: { id: number; name: string; targetAmount: string }) => {
+      const response = await apiRequest("PUT", `/api/goals/${goalData.id}`, {
+        name: goalData.name,
+        targetAmount: goalData.targetAmount,
+      });
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/goals"] });
+      toast({
+        title: "Success",
+        description: "Goal updated successfully!",
+      });
+      setEditingGoal(null);
+      setEditGoalName("");
+      setEditGoalAmount("");
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to update goal. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const deleteGoalMutation = useMutation({
+    mutationFn: async (goalId: number) => {
+      await apiRequest("DELETE", `/api/goals/${goalId}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/goals"] });
+      toast({
+        title: "Success",
+        description: "Goal deleted successfully!",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to delete goal. Please try again.",
         variant: "destructive",
       });
     },
@@ -117,6 +167,28 @@ export default function GoalTracker() {
     }
   };
 
+  const startEditingGoal = (goal: Goal) => {
+    setEditingGoal(goal);
+    setEditGoalName(goal.name);
+    setEditGoalAmount(goal.targetAmount || "");
+  };
+
+  const saveGoalEdit = () => {
+    if (editingGoal && editGoalName && editGoalAmount) {
+      updateGoalMutation.mutate({
+        id: editingGoal.id,
+        name: editGoalName,
+        targetAmount: editGoalAmount,
+      });
+    }
+  };
+
+  const cancelGoalEdit = () => {
+    setEditingGoal(null);
+    setEditGoalName("");
+    setEditGoalAmount("");
+  };
+
   return (
     <div className="p-4">
       <h2 className="text-xl font-semibold text-gray-900 mb-6">Gig-to-Goal Tracker</h2>
@@ -171,6 +243,7 @@ export default function GoalTracker() {
           const progress = goal.targetAmount ? 
             (parseFloat(goal.currentAmount || "0") / parseFloat(goal.targetAmount)) * 100 : 0;
           const isCompleted = progress >= 100;
+          const isEditing = editingGoal?.id === goal.id;
           
           return (
             <Card key={goal.id}>
@@ -180,22 +253,81 @@ export default function GoalTracker() {
                     <div className={`w-10 h-10 bg-${getGoalColor(goal.category)}/10 rounded-lg flex items-center justify-center`}>
                       {getGoalIcon(goal.category)}
                     </div>
-                    <div>
-                      <h3 className="text-lg font-semibold text-gray-900">{goal.name}</h3>
-                      <p className="text-sm text-gray-500">
-                        Goal: {formatCurrency(parseFloat(goal.targetAmount || "0"))}
-                      </p>
+                    <div className="flex-1">
+                      {isEditing ? (
+                        <div className="space-y-2">
+                          <Input
+                            value={editGoalName}
+                            onChange={(e) => setEditGoalName(e.target.value)}
+                            placeholder="Goal name"
+                            className="text-lg font-semibold"
+                          />
+                          <Input
+                            type="number"
+                            value={editGoalAmount}
+                            onChange={(e) => setEditGoalAmount(e.target.value)}
+                            placeholder="Target amount"
+                            className="text-sm"
+                          />
+                        </div>
+                      ) : (
+                        <div>
+                          <h3 className="text-lg font-semibold text-gray-900">{goal.name}</h3>
+                          <p className="text-sm text-gray-500">
+                            Goal: {formatCurrency(parseFloat(goal.targetAmount || "0"))}
+                          </p>
+                        </div>
+                      )}
                     </div>
                   </div>
-                  {!isCompleted && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => allocateToGoal(goal.id, 50)} // Quick $50 allocation
-                    >
-                      <Plus className="w-4 h-4" />
-                    </Button>
-                  )}
+                  <div className="flex items-center space-x-2">
+                    {isEditing ? (
+                      <>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={saveGoalEdit}
+                          disabled={updateGoalMutation.isPending}
+                        >
+                          <Check className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={cancelGoalEdit}
+                        >
+                          ✕
+                        </Button>
+                      </>
+                    ) : (
+                      <>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => startEditingGoal(goal)}
+                        >
+                          <Edit2 className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => deleteGoalMutation.mutate(goal.id)}
+                          disabled={deleteGoalMutation.isPending}
+                        >
+                          <Trash2 className="w-4 h-4 text-red-500" />
+                        </Button>
+                        {!isCompleted && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => allocateToGoal(goal.id, 50)}
+                          >
+                            <Plus className="w-4 h-4" />
+                          </Button>
+                        )}
+                      </>
+                    )}
+                  </div>
                 </div>
                 <div className="mb-3">
                   <div className="flex justify-between text-sm mb-1">
