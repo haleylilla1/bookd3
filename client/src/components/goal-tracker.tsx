@@ -974,6 +974,9 @@ export default function GoalTracker() {
             <DialogContent>
               <DialogHeader>
                 <DialogTitle>Edit Allocation</DialogTitle>
+                <DialogDescription>
+                  Modify the allocation amount for this goal.
+                </DialogDescription>
               </DialogHeader>
               <div className="space-y-4">
                 <div className="text-sm text-gray-600">
