@@ -412,49 +412,51 @@ export default function GoalTracker() {
           </div>
         </div>
 
-        {/* Period Controls */}
-        <div className="flex flex-col items-center space-y-4">
-          <div className="flex items-center space-x-3">
-            <span className="text-sm font-medium text-gray-700">Viewing:</span>
-            <Select value={selectedPeriod} onValueChange={(value: TimePeriod) => setSelectedPeriod(value)}>
-              <SelectTrigger className="w-32 bg-white/80 border-white/20">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="monthly">Monthly</SelectItem>
-                <SelectItem value="yearly">Yearly</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          
-          {/* Period Navigation */}
-          <div className="flex items-center gap-3">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => navigatePeriod("prev")}
-              className="p-2 bg-white/80 border-white/20 hover:bg-white"
-            >
-              <ChevronLeft className="w-4 h-4" />
-            </Button>
-            <span className="text-sm font-semibold text-gray-800 min-w-[140px] text-center px-4 py-2 bg-white/80 rounded-lg border border-white/20">
-              {getCurrentPeriodLabel()}
-            </span>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => navigatePeriod("next")}
-              className="p-2 bg-white/80 border-white/20 hover:bg-white"
-            >
-              <ChevronRight className="w-4 h-4" />
-            </Button>
-          </div>
-        </div>
+
       </div>
 
       {/* Period Goal Overview */}
       <Card className="mb-6 bg-gradient-to-r from-purple-50 to-blue-50 border-purple-200">
         <CardContent className="p-6">
+          {/* Period Controls */}
+          <div className="flex flex-col items-center space-y-4 mb-6">
+            <div className="flex items-center space-x-3">
+              <span className="text-sm font-medium text-gray-700">Viewing:</span>
+              <Select value={selectedPeriod} onValueChange={(value: TimePeriod) => setSelectedPeriod(value)}>
+                <SelectTrigger className="w-32 bg-white/80 border-white/20">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="monthly">Monthly</SelectItem>
+                  <SelectItem value="yearly">Yearly</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            
+            {/* Period Navigation */}
+            <div className="flex items-center gap-3">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => navigatePeriod("prev")}
+                className="p-2 bg-white/80 border-white/20 hover:bg-white"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </Button>
+              <span className="text-sm font-semibold text-gray-800 min-w-[140px] text-center px-4 py-2 bg-white/80 rounded-lg border border-white/20">
+                {getCurrentPeriodLabel()}
+              </span>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => navigatePeriod("next")}
+                className="p-2 bg-white/80 border-white/20 hover:bg-white"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </Button>
+            </div>
+          </div>
+
           <div className="text-center">
             <h3 className="text-lg font-semibold text-gray-900 mb-2">
               {selectedPeriod === "monthly" ? "Monthly" : "Yearly"} Goal Target
