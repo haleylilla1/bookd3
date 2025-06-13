@@ -22,7 +22,7 @@ import {
   type InsertYearlyGoal
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, and } from "drizzle-orm";
+import { eq, and, gte, lte } from "drizzle-orm";
 
 export interface IStorage {
   // Users
@@ -105,7 +105,12 @@ export class DatabaseStorage implements IStorage {
     return await db
       .select()
       .from(gigs)
-      .where(eq(gigs.userId, userId));
+      .where(and(
+        eq(gigs.userId, userId),
+        gte(gigs.date, startDate),
+        lte(gigs.date, endDate)
+      ))
+      .orderBy(gigs.date);
   }
 
   async createGig(insertGig: InsertGig): Promise<Gig> {
