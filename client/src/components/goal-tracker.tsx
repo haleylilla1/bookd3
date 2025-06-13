@@ -123,6 +123,46 @@ export default function GoalTracker() {
     },
   });
 
+  const quickAllocateMutation = useMutation({
+    mutationFn: async ({ goalId, amount }: { goalId: number; amount: string }) => {
+      // Find a completed gig with remaining funds to allocate from
+      const availableGig = completedGigs.find(gig => {
+        const gigAllocations = allocations.filter(a => a.gigId === gig.id);
+        const totalAllocated = gigAllocations.reduce((sum, a) => sum + parseFloat(a.amount), 0);
+        const gigPay = parseFloat(gig.actualPay || "0") + parseFloat(gig.tips || "0");
+        return gigPay > totalAllocated;
+      });
+
+      if (!availableGig) {
+        throw new Error("No available gigs to allocate from");
+      }
+
+      const response = await apiRequest("POST", "/api/allocations", {
+        gigId: availableGig.id,
+        goalId: goalId,
+        amount: amount,
+        allocationType: "goal"
+      });
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/allocations"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/goals"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/piggy-bank-total"] });
+      toast({
+        title: "Success",
+        description: "Allocation completed successfully!",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to allocate funds. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
   const updateGoalMutation = useMutation({
     mutationFn: async (goalData: { id: number; name: string; targetAmount: string }) => {
       const response = await apiRequest("PUT", `/api/goals/${goalData.id}`, {
@@ -397,25 +437,30 @@ export default function GoalTracker() {
                           variant="outline"
                           size="sm"
                           onClick={() => {
-                            const amount = prompt(`How much would you like to allocate to "${goal.name}"?`);
+                            const maxAmount = Math.min(unallocatedAfterTaxes, parseFloat(goal.targetAmount) - (allocations.filter(a => a.goalId === goal.id).reduce((sum, a) => sum + parseFloat(a.amount), 0)));
+                            const amount = prompt(`How much would you like to allocate to "${goal.name}"?\n\nAvailable: ${formatCurrency(Math.max(0, unallocatedAfterTaxes))}\nRemaining for goal: ${formatCurrency(Math.max(0, maxAmount))}`);
+                            
                             if (amount && !isNaN(parseFloat(amount)) && parseFloat(amount) > 0) {
-                              // Find a completed gig with remaining funds to allocate from
-                              const availableGig = completedGigs.find(gig => {
-                                const gigAllocations = allocations.filter(a => a.gigId === gig.id);
-                                const totalAllocated = gigAllocations.reduce((sum, a) => sum + parseFloat(a.amount), 0);
-                                const gigPay = parseFloat(gig.actualPay || "0") + parseFloat(gig.tips || "0");
-                                return gigPay > totalAllocated;
-                              });
-                              
-                              if (availableGig) {
-                                setAllocatingGig(availableGig);
-                                // Auto-select this goal in the allocation modal
+                              const allocAmount = parseFloat(amount);
+                              if (allocAmount > unallocatedAfterTaxes) {
+                                toast({
+                                  title: "Error",
+                                  description: "Amount exceeds available funds after taxes",
+                                  variant: "destructive",
+                                });
+                                return;
                               }
+                              
+                              quickAllocateMutation.mutate({
+                                goalId: goal.id,
+                                amount: amount
+                              });
                             }
                           }}
+                          disabled={quickAllocateMutation.isPending}
                           className="text-xs"
                         >
-                          {goal.name}
+                          {quickAllocateMutation.isPending ? "..." : goal.name}
                         </Button>
                       ))}
                     </div>
