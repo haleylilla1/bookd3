@@ -149,12 +149,22 @@ export default function GigForm({ onClose }: GigFormProps) {
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="brand-ambassador">Brand Ambassador</SelectItem>
-                        <SelectItem value="bartender">Bartender</SelectItem>
-                        <SelectItem value="server">Server/Catering</SelectItem>
-                        <SelectItem value="promo">Promo Rep</SelectItem>
-                        <SelectItem value="event-staff">Event Staff</SelectItem>
-                        <SelectItem value="other">Other</SelectItem>
+                        {user?.customGigTypes && user.customGigTypes.length > 0 ? (
+                          user.customGigTypes.map((gigType) => (
+                            <SelectItem key={gigType} value={gigType}>
+                              {gigType}
+                            </SelectItem>
+                          ))
+                        ) : (
+                          <>
+                            <SelectItem value="brand-ambassador">Brand Ambassador</SelectItem>
+                            <SelectItem value="bartender">Bartender</SelectItem>
+                            <SelectItem value="server">Server/Catering</SelectItem>
+                            <SelectItem value="promo">Promo Rep</SelectItem>
+                            <SelectItem value="event-staff">Event Staff</SelectItem>
+                            <SelectItem value="other">Other</SelectItem>
+                          </>
+                        )}
                       </SelectContent>
                     </Select>
                     <FormMessage />
