@@ -180,7 +180,7 @@ export default function Dashboard() {
               <Car className="w-5 h-5 text-gray-400" />
             </div>
             <p className="text-xl font-bold text-gray-900">
-              {formatCurrency(((stats as any)?.totalExpenses || 0) * (selectedPeriod === "annual" ? 12 : selectedPeriod === "weekly" ? 0.25 : 1))}
+              {formatCurrency(((stats as any)?.totalExpenses || 0) * (selectedPeriod === "annual" ? 12 : 1))}
             </p>
             <p className="text-xs text-gray-500">Mileage + costs</p>
           </CardContent>
@@ -191,10 +191,20 @@ export default function Dashboard() {
       <Card className="mb-6">
         <CardContent className="p-4">
           <div className="flex items-center justify-between mb-3">
-            <h3 className="text-lg font-semibold text-gray-900">{selectedPeriod === "annual" ? "Annual" : selectedPeriod === "weekly" ? "Weekly" : "Monthly"} Goal</h3>
-            <span className="text-sm text-gray-500">
-              {formatCurrency(currentData.earnings)} / {formatCurrency(goalTarget)}
-            </span>
+            <h3 className="text-lg font-semibold text-gray-900">{selectedPeriod === "annual" ? "Annual" : "Monthly"} Goal</h3>
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-gray-500">
+                {formatCurrency(currentData.earnings)} / {formatCurrency(goalTarget)}
+              </span>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => handleEditGoal(selectedPeriod)}
+                className="p-1 h-8 w-8"
+              >
+                <Edit2 className="w-4 h-4" />
+              </Button>
+            </div>
           </div>
           <Progress value={goalProgress} className="mb-2" />
           <p className="text-sm text-gray-600">
@@ -269,6 +279,48 @@ export default function Dashboard() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Goal Edit Dialog */}
+      <Dialog open={!!editingGoal} onOpenChange={() => setEditingGoal(null)}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Edit {editingGoal === "monthly" ? "Monthly" : "Annual"} Goal</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <label htmlFor="goalAmount" className="text-sm font-medium">
+                Goal Amount
+              </label>
+              <Input
+                id="goalAmount"
+                type="number"
+                value={goalAmount}
+                onChange={(e) => setGoalAmount(e.target.value)}
+                placeholder={editingGoal === "monthly" ? "3000" : "36000"}
+                min="0"
+                step="100"
+              />
+            </div>
+            <div className="flex gap-2">
+              <Button 
+                onClick={handleSaveGoal} 
+                disabled={updateGoalMutation.isPending}
+                className="flex-1"
+              >
+                <Target className="w-4 h-4 mr-2" />
+                Save Goal
+              </Button>
+              <Button 
+                variant="outline" 
+                onClick={() => setEditingGoal(null)}
+                className="flex-1"
+              >
+                Cancel
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
