@@ -41,6 +41,12 @@ export default function Dashboard() {
     queryKey: ["/api/user"],
   });
 
+  // Fetch period-specific goal
+  const { data: currentGoal, refetch: refetchGoal } = useQuery({
+    queryKey: ["/api/goals/period", selectedPeriod, currentDate.toISOString()],
+    queryFn: () => fetch(`/api/goals/period/${selectedPeriod}/${currentDate.toISOString()}`).then(res => res.json()),
+  });
+
   if (isLoading) {
     return (
       <div className="p-4">
@@ -54,12 +60,12 @@ export default function Dashboard() {
   }
 
   const updateGoalMutation = useMutation({
-    mutationFn: async (goalData: { weeklyGoal?: string; monthlyGoal?: string; yearlyGoal?: string }) => {
-      const response = await apiRequest("PUT", "/api/user", goalData);
+    mutationFn: async (goalData: { goalAmount: string }) => {
+      const response = await apiRequest("POST", `/api/goals/period/${selectedPeriod}/${currentDate.toISOString()}`, goalData);
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/user"] });
+      refetchGoal();
       toast({
         title: "Success",
         description: "Goal updated successfully!",
@@ -186,18 +192,12 @@ export default function Dashboard() {
   };
 
   const currentData = getEarningsForPeriod();
-  const goalTarget = selectedPeriod === "weekly" 
-    ? parseFloat(user?.weeklyGoal || "750")
-    : selectedPeriod === "annual" 
-    ? parseFloat(user?.yearlyGoal || "36000")
-    : parseFloat(user?.monthlyGoal || "3000");
-  const goalProgress = currentData.earnings ? (currentData.earnings / goalTarget) * 100 : 0;
+  const goalTarget = parseFloat(currentGoal?.goalAmount || "0");
+  const goalProgress = currentData.earnings && goalTarget ? (currentData.earnings / goalTarget) * 100 : 0;
 
   const handleEditGoal = (period: "weekly" | "monthly" | "annual") => {
     setEditingGoal(period);
-    const currentGoal = period === "weekly" ? user?.weeklyGoal : 
-                       period === "monthly" ? user?.monthlyGoal : user?.yearlyGoal;
-    setGoalAmount(currentGoal || (period === "weekly" ? "750" : period === "monthly" ? "3000" : "36000"));
+    setGoalAmount(currentGoal?.goalAmount || "");
   };
 
   const handleSaveGoal = () => {
@@ -213,13 +213,7 @@ export default function Dashboard() {
       return;
     }
 
-    const updateData = editingGoal === "weekly" 
-      ? { weeklyGoal: goalAmount }
-      : editingGoal === "monthly" 
-      ? { monthlyGoal: goalAmount }
-      : { yearlyGoal: goalAmount };
-    
-    updateGoalMutation.mutate(updateData);
+    updateGoalMutation.mutate({ goalAmount });
   };
 
   return (
@@ -388,9 +382,15 @@ export default function Dashboard() {
               {selectedPeriod === "weekly" ? "Weekly" : selectedPeriod === "annual" ? "Annual" : "Monthly"} Goal
             </h3>
             <div className="flex items-center gap-2">
-              <span className="text-sm text-gray-500">
-                {formatCurrency(currentData.earnings)} / {formatCurrency(goalTarget)}
-              </span>
+              {currentGoal ? (
+                <span className="text-sm text-gray-500">
+                  {formatCurrency(currentData.earnings)} / {formatCurrency(goalTarget)}
+                </span>
+              ) : (
+                <span className="text-sm text-gray-500">
+                  Set your {selectedPeriod} goal
+                </span>
+              )}
               <Button
                 variant="ghost"
                 size="sm"
@@ -401,13 +401,21 @@ export default function Dashboard() {
               </Button>
             </div>
           </div>
-          <Progress value={goalProgress} className="mb-2" />
-          <p className="text-sm text-gray-600">
-            <span className="font-medium text-primary">
-              {formatCurrency(goalTarget - currentData.earnings)} to go
-            </span>
-            {goalProgress >= 95 ? " - You're almost there! 🎉" : ""}
-          </p>
+          {currentGoal ? (
+            <>
+              <Progress value={goalProgress} className="mb-2" />
+              <p className="text-sm text-gray-600">
+                <span className="font-medium text-primary">
+                  {formatCurrency(Math.max(0, goalTarget - currentData.earnings))} to go
+                </span>
+                {goalProgress >= 95 ? " - You're almost there!" : ""}
+              </p>
+            </>
+          ) : (
+            <div className="text-sm text-gray-500 py-4 text-center">
+              Click the edit button to set your {selectedPeriod} goal for {getCurrentPeriodLabel()}
+            </div>
+          )}
         </CardContent>
       </Card>
 

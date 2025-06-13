@@ -259,6 +259,64 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Period-specific goals
+  app.get("/api/goals/period/:period/:date", async (req, res) => {
+    try {
+      const { period, date } = req.params;
+      const targetDate = new Date(date);
+      
+      let goal;
+      if (period === "weekly") {
+        const startOfWeek = new Date(targetDate);
+        const day = startOfWeek.getDay();
+        const diff = startOfWeek.getDate() - day + (day === 0 ? -6 : 1); // Monday
+        startOfWeek.setDate(diff);
+        const weekStartDate = startOfWeek.toISOString().split('T')[0];
+        goal = await storage.getWeeklyGoal(currentUserId, weekStartDate);
+      } else if (period === "monthly") {
+        const month = targetDate.getMonth() + 1;
+        const year = targetDate.getFullYear();
+        goal = await storage.getMonthlyGoal(currentUserId, month, year);
+      } else if (period === "annual") {
+        const year = targetDate.getFullYear();
+        goal = await storage.getYearlyGoal(currentUserId, year);
+      }
+      
+      res.json(goal || null);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch goal" });
+    }
+  });
+
+  app.post("/api/goals/period/:period/:date", async (req, res) => {
+    try {
+      const { period, date } = req.params;
+      const { goalAmount } = req.body;
+      const targetDate = new Date(date);
+      
+      let goal;
+      if (period === "weekly") {
+        const startOfWeek = new Date(targetDate);
+        const day = startOfWeek.getDay();
+        const diff = startOfWeek.getDate() - day + (day === 0 ? -6 : 1); // Monday
+        startOfWeek.setDate(diff);
+        const weekStartDate = startOfWeek.toISOString().split('T')[0];
+        goal = await storage.setWeeklyGoal(currentUserId, weekStartDate, goalAmount);
+      } else if (period === "monthly") {
+        const month = targetDate.getMonth() + 1;
+        const year = targetDate.getFullYear();
+        goal = await storage.setMonthlyGoal(currentUserId, month, year, goalAmount);
+      } else if (period === "annual") {
+        const year = targetDate.getFullYear();
+        goal = await storage.setYearlyGoal(currentUserId, year, goalAmount);
+      }
+      
+      res.json(goal);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to set goal" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
