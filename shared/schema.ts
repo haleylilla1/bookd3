@@ -76,6 +76,7 @@ export const goals = pgTable("goals", {
   currentAmount: decimal("current_amount", { precision: 10, scale: 2 }).default("0"),
   dueDate: date("due_date"),
   isCompleted: boolean("is_completed").default(false),
+  goalDuration: text("goal_duration").notNull().default("monthly"), // "monthly" or "yearly"
 });
 
 export const allocations = pgTable("allocations", {
