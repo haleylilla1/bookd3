@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -6,7 +7,11 @@ import { Progress } from "@/components/ui/progress";
 import { Receipt, Car, Download, TrendingUp } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
 
+type TimePeriod = "weekly" | "monthly" | "annual";
+
 export default function Dashboard() {
+  const [selectedPeriod, setSelectedPeriod] = useState<TimePeriod>("monthly");
+  
   const { data: stats, isLoading } = useQuery({
     queryKey: ["/api/dashboard/stats"],
   });
@@ -23,28 +28,89 @@ export default function Dashboard() {
     );
   }
 
-  const goalTarget = 3000; // This would come from user settings
-  const goalProgress = stats?.monthlyEarnings ? (stats.monthlyEarnings / goalTarget) * 100 : 0;
+  // Calculate earnings based on selected period
+  const getEarningsForPeriod = () => {
+    if (!stats) return { earnings: 0, gigs: 0, avgPerGig: 0, period: "" };
+    
+    const monthlyEarnings = (stats as any).monthlyEarnings || 0;
+    const completedGigs = (stats as any).completedGigs || 0;
+    const avgPerGig = (stats as any).avgPerGig || 0;
+    
+    switch (selectedPeriod) {
+      case "weekly":
+        // Estimate weekly from monthly data
+        const weeklyEarnings = monthlyEarnings / 4;
+        const weeklyGigs = Math.ceil(completedGigs / 4);
+        return {
+          earnings: weeklyEarnings,
+          gigs: weeklyGigs,
+          avgPerGig: weeklyGigs > 0 ? weeklyEarnings / weeklyGigs : 0,
+          period: "This Week"
+        };
+      case "annual":
+        // Estimate annual from monthly data
+        const annualEarnings = monthlyEarnings * 12;
+        const annualGigs = completedGigs * 12;
+        return {
+          earnings: annualEarnings,
+          gigs: annualGigs,
+          avgPerGig: avgPerGig,
+          period: "This Year"
+        };
+      default:
+        return {
+          earnings: monthlyEarnings,
+          gigs: completedGigs,
+          avgPerGig: avgPerGig,
+          period: "This Month"
+        };
+    }
+  };
+
+  const currentData = getEarningsForPeriod();
+  const goalTarget = selectedPeriod === "annual" ? 36000 : selectedPeriod === "weekly" ? 750 : 3000;
+  const goalProgress = currentData.earnings ? (currentData.earnings / goalTarget) * 100 : 0;
 
   return (
     <div className="p-4">
       {/* Time Period Selector */}
       <div className="flex bg-gray-100 p-1 rounded-lg mb-6">
-        <Button variant="default" size="sm" className="flex-1">Monthly</Button>
-        <Button variant="ghost" size="sm" className="flex-1">Weekly</Button>
-        <Button variant="ghost" size="sm" className="flex-1">Annual</Button>
+        <Button 
+          variant={selectedPeriod === "monthly" ? "default" : "ghost"} 
+          size="sm" 
+          className="flex-1"
+          onClick={() => setSelectedPeriod("monthly")}
+        >
+          Monthly
+        </Button>
+        <Button 
+          variant={selectedPeriod === "weekly" ? "default" : "ghost"} 
+          size="sm" 
+          className="flex-1"
+          onClick={() => setSelectedPeriod("weekly")}
+        >
+          Weekly
+        </Button>
+        <Button 
+          variant={selectedPeriod === "annual" ? "default" : "ghost"} 
+          size="sm" 
+          className="flex-1"
+          onClick={() => setSelectedPeriod("annual")}
+        >
+          Annual
+        </Button>
       </div>
 
       {/* Earnings Overview */}
       <div className="gradient-primary rounded-xl p-6 mb-6 text-white">
-        <h3 className="text-sm font-medium opacity-90 mb-1">January Earnings</h3>
+        <h3 className="text-sm font-medium opacity-90 mb-1">{currentData.period} Earnings</h3>
         <p className="text-3xl font-bold mb-2">
-          {formatCurrency(stats?.monthlyEarnings || 0)}
+          {formatCurrency(currentData.earnings)}
         </p>
         <div className="flex items-center space-x-4 text-sm opacity-90">
-          <span>{stats?.completedGigs || 0} gigs completed</span>
+          <span>{currentData.gigs} gigs completed</span>
           <span>•</span>
-          <span>{formatCurrency(stats?.avgPerGig || 0)} avg/gig</span>
+          <span>{formatCurrency(currentData.avgPerGig)} avg/gig</span>
         </div>
       </div>
 
@@ -57,7 +123,7 @@ export default function Dashboard() {
               <Receipt className="w-5 h-5 text-warning" />
             </div>
             <p className="text-xl font-bold text-gray-900">
-              {formatCurrency(stats?.taxEstimate || 0)}
+              {formatCurrency(((stats as any)?.taxEstimate || 0) * (selectedPeriod === "annual" ? 12 : selectedPeriod === "weekly" ? 0.25 : 1))}
             </p>
             <p className="text-xs text-gray-500">23% of earnings</p>
           </CardContent>
@@ -69,7 +135,7 @@ export default function Dashboard() {
               <Car className="w-5 h-5 text-gray-400" />
             </div>
             <p className="text-xl font-bold text-gray-900">
-              {formatCurrency(stats?.totalExpenses || 0)}
+              {formatCurrency(((stats as any)?.totalExpenses || 0) * (selectedPeriod === "annual" ? 12 : selectedPeriod === "weekly" ? 0.25 : 1))}
             </p>
             <p className="text-xs text-gray-500">Mileage + costs</p>
           </CardContent>
@@ -80,15 +146,15 @@ export default function Dashboard() {
       <Card className="mb-6">
         <CardContent className="p-4">
           <div className="flex items-center justify-between mb-3">
-            <h3 className="text-lg font-semibold text-gray-900">Monthly Goal</h3>
+            <h3 className="text-lg font-semibold text-gray-900">{selectedPeriod === "annual" ? "Annual" : selectedPeriod === "weekly" ? "Weekly" : "Monthly"} Goal</h3>
             <span className="text-sm text-gray-500">
-              {formatCurrency(stats?.monthlyEarnings || 0)} / {formatCurrency(goalTarget)}
+              {formatCurrency(currentData.earnings)} / {formatCurrency(goalTarget)}
             </span>
           </div>
           <Progress value={goalProgress} className="mb-2" />
           <p className="text-sm text-gray-600">
             <span className="font-medium text-primary">
-              {formatCurrency(goalTarget - (stats?.monthlyEarnings || 0))} to go
+              {formatCurrency(goalTarget - currentData.earnings)} to go
             </span>
             {goalProgress >= 95 ? " - You're almost there! 🎉" : ""}
           </p>
@@ -105,8 +171,8 @@ export default function Dashboard() {
             </Button>
           </div>
           <div className="space-y-3">
-            {stats?.topClients?.length > 0 ? (
-              stats.topClients.slice(0, 3).map((client: any, index: number) => (
+            {(stats as any)?.topClients?.length > 0 ? (
+              (stats as any).topClients.slice(0, 3).map((client: any, index: number) => (
                 <div key={index} className="flex items-center justify-between">
                   <div className="flex items-center space-x-3">
                     <Badge 
