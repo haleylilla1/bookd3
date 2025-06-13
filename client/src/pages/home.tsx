@@ -5,11 +5,12 @@ import GigForm from "@/components/gig-form";
 import Dashboard from "@/components/dashboard";
 import ResumeBuilder from "@/components/resume-builder";
 import GoalTracker from "@/components/goal-tracker";
+import Profile from "@/components/profile";
 import BottomNavigation from "@/components/bottom-navigation";
 import { Button } from "@/components/ui/button";
 import { Plus, Bell, Briefcase } from "lucide-react";
 
-export type Screen = "calendar" | "dashboard" | "resume" | "goals" | "gig-form";
+export type Screen = "calendar" | "dashboard" | "resume" | "goals" | "profile" | "gig-form";
 
 export default function Home() {
   const [currentScreen, setCurrentScreen] = useState<Screen>("calendar");

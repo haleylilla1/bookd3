@@ -8,6 +8,8 @@ export const users = pgTable("users", {
   email: text("email").notNull().unique(),
   phone: text("phone"),
   title: text("title").default("Gig Worker"),
+  defaultTaxPercentage: integer("default_tax_percentage").default(23),
+  customGigTypes: text("custom_gig_types").array().default([]),
 });
 
 export const gigs = pgTable("gigs", {
