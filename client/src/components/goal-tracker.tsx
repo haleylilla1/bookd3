@@ -435,17 +435,46 @@ export default function GoalTracker() {
                   <div className="border-t border-blue-200 pt-3 mt-3">
                     <div className="text-xs text-gray-600 mb-2 text-center">Quick allocate to your goals:</div>
                     <div className="grid grid-cols-2 gap-2">
-                      {goals.slice(0, 4).map((goal) => (
+                      {goals
+                        .filter(goal => {
+                          // Show goals that match current period or show all goals regardless of period for quick allocation
+                          return true;
+                        })
+                        .slice(0, 4)
+                        .map((goal) => (
                         <Button
                           key={goal.id}
                           variant="outline"
                           size="sm"
                           onClick={() => {
-                            const maxAmount = Math.min(unallocatedAfterTaxes, parseFloat(goal.targetAmount) - (allocations.filter(a => a.goalId === goal.id).reduce((sum, a) => sum + parseFloat(a.amount), 0)));
-                            const amount = prompt(`How much would you like to allocate to "${goal.name}"?\n\nAvailable: ${formatCurrency(Math.max(0, unallocatedAfterTaxes))}\nRemaining for goal: ${formatCurrency(Math.max(0, maxAmount))}`);
+                            console.log("Quick allocate clicked for goal:", goal.name);
+                            
+                            // Calculate max available amount for this goal
+                            const goalAllocations = allocations.filter(a => a.goalId === goal.id);
+                            const totalAllocatedToGoal = goalAllocations.reduce((sum, a) => sum + parseFloat(a.amount), 0);
+                            
+                            // Calculate target amount based on goal duration and current view
+                            let targetAmount = parseFloat(goal.targetAmount);
+                            if (goal.goalDuration === "yearly" && selectedPeriod === "monthly") {
+                              targetAmount = targetAmount / 12;
+                            }
+                            
+                            const remainingForGoal = Math.max(0, targetAmount - totalAllocatedToGoal);
+                            const maxAmount = Math.min(unallocatedAfterTaxes, remainingForGoal);
+                            
+                            if (maxAmount <= 0) {
+                              toast({
+                                title: "Goal Complete",
+                                description: `${goal.name} is already fully funded or no funds available`,
+                              });
+                              return;
+                            }
+                            
+                            const amount = prompt(`Allocate to "${goal.name}":\n\nAvailable after taxes: ${formatCurrency(unallocatedAfterTaxes)}\nRemaining for this goal: ${formatCurrency(remainingForGoal)}\nMax you can allocate: ${formatCurrency(maxAmount)}\n\nEnter amount:`);
                             
                             if (amount && !isNaN(parseFloat(amount)) && parseFloat(amount) > 0) {
                               const allocAmount = parseFloat(amount);
+                              
                               if (allocAmount > unallocatedAfterTaxes) {
                                 toast({
                                   title: "Error",
@@ -455,6 +484,16 @@ export default function GoalTracker() {
                                 return;
                               }
                               
+                              if (allocAmount > maxAmount) {
+                                toast({
+                                  title: "Error", 
+                                  description: "Amount exceeds what's needed for this goal",
+                                  variant: "destructive",
+                                });
+                                return;
+                              }
+                              
+                              console.log("Calling quickAllocateMutation with:", { goalId: goal.id, amount });
                               quickAllocateMutation.mutate({
                                 goalId: goal.id,
                                 amount: amount
