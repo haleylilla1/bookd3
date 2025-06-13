@@ -52,6 +52,7 @@ export interface IStorage {
   getAllocationsByGig(gigId: number): Promise<Allocation[]>;
   getAllocationsByGoal(goalId: number): Promise<Allocation[]>;
   createAllocation(allocation: InsertAllocation): Promise<Allocation>;
+  updateAllocation(id: number, allocation: Partial<InsertAllocation>): Promise<Allocation | undefined>;
   deleteAllocation(id: number): Promise<boolean>;
 
   // Period Goals
@@ -183,6 +184,15 @@ export class DatabaseStorage implements IStorage {
       .values(insertAllocation)
       .returning();
     return allocation;
+  }
+
+  async updateAllocation(id: number, updateData: Partial<InsertAllocation>): Promise<Allocation | undefined> {
+    const [allocation] = await db
+      .update(allocations)
+      .set(updateData)
+      .where(eq(allocations.id, id))
+      .returning();
+    return allocation || undefined;
   }
 
   async deleteAllocation(id: number): Promise<boolean> {
