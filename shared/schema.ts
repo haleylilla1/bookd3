@@ -14,6 +14,7 @@ export const gigs = pgTable("gigs", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").notNull(),
   gigType: text("gig_type").notNull(),
+  eventName: text("event_name").notNull().default("Event"),
   clientName: text("client_name").notNull(),
   date: date("date").notNull(),
   expectedPay: decimal("expected_pay", { precision: 10, scale: 2 }),
