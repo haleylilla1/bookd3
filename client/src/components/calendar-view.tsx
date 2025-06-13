@@ -433,6 +433,15 @@ export default function CalendarView() {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Gig Allocation Dialog */}
+      {allocatingGig && (
+        <GigAllocation
+          gig={allocatingGig}
+          isOpen={!!allocatingGig}
+          onClose={() => setAllocatingGig(null)}
+        />
+      )}
     </div>
   );
 }
