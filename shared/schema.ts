@@ -62,6 +62,44 @@ export const allocations = pgTable("allocations", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+export const weeklyStats = pgTable("weekly_stats", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull().references(() => users.id),
+  weekStartDate: date("week_start_date").notNull(), // Monday of the week
+  weekEndDate: date("week_end_date").notNull(), // Sunday of the week
+  actualEarnings: decimal("actual_earnings", { precision: 10, scale: 2 }).default("0"),
+  projectedEarnings: decimal("projected_earnings", { precision: 10, scale: 2 }).default("0"),
+  completedGigs: integer("completed_gigs").default(0),
+  upcomingGigs: integer("upcoming_gigs").default(0),
+  weeklyGoal: decimal("weekly_goal", { precision: 10, scale: 2 }).notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const monthlyStats = pgTable("monthly_stats", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull().references(() => users.id),
+  month: integer("month").notNull(), // 1-12
+  year: integer("year").notNull(),
+  actualEarnings: decimal("actual_earnings", { precision: 10, scale: 2 }).default("0"),
+  projectedEarnings: decimal("projected_earnings", { precision: 10, scale: 2 }).default("0"),
+  completedGigs: integer("completed_gigs").default(0),
+  upcomingGigs: integer("upcoming_gigs").default(0),
+  monthlyGoal: decimal("monthly_goal", { precision: 10, scale: 2 }).notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const yearlyStats = pgTable("yearly_stats", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull().references(() => users.id),
+  year: integer("year").notNull(),
+  actualEarnings: decimal("actual_earnings", { precision: 10, scale: 2 }).default("0"),
+  projectedEarnings: decimal("projected_earnings", { precision: 10, scale: 2 }).default("0"),
+  completedGigs: integer("completed_gigs").default(0),
+  upcomingGigs: integer("upcoming_gigs").default(0),
+  yearlyGoal: decimal("yearly_goal", { precision: 10, scale: 2 }).notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 export const insertUserSchema = createInsertSchema(users).omit({
   id: true,
 });
@@ -88,3 +126,25 @@ export type InsertGoal = z.infer<typeof insertGoalSchema>;
 export type Goal = typeof goals.$inferSelect;
 export type InsertAllocation = z.infer<typeof insertAllocationSchema>;
 export type Allocation = typeof allocations.$inferSelect;
+
+export const insertWeeklyStatsSchema = createInsertSchema(weeklyStats).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertMonthlyStatsSchema = createInsertSchema(monthlyStats).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertYearlyStatsSchema = createInsertSchema(yearlyStats).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type InsertWeeklyStats = z.infer<typeof insertWeeklyStatsSchema>;
+export type WeeklyStats = typeof weeklyStats.$inferSelect;
+export type InsertMonthlyStats = z.infer<typeof insertMonthlyStatsSchema>;
+export type MonthlyStats = typeof monthlyStats.$inferSelect;
+export type InsertYearlyStats = z.infer<typeof insertYearlyStatsSchema>;
+export type YearlyStats = typeof yearlyStats.$inferSelect;

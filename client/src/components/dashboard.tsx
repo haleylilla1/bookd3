@@ -6,11 +6,22 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Receipt, Car, Download, TrendingUp, Edit2, Target } from "lucide-react";
+import { Receipt, Car, Download, TrendingUp, Edit2, Target, ChevronLeft, ChevronRight } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import type { User } from "@shared/schema";
+import { 
+  getWeekDates, 
+  getMonthDates, 
+  getYearDates,
+  formatWeekRange,
+  formatMonth,
+  formatYear,
+  addWeeks,
+  addMonths,
+  addYears
+} from "@/lib/dateUtils";
 
 type TimePeriod = "weekly" | "monthly" | "annual";
 
@@ -18,6 +29,7 @@ export default function Dashboard() {
   const [selectedPeriod, setSelectedPeriod] = useState<TimePeriod>("monthly");
   const [editingGoal, setEditingGoal] = useState<"weekly" | "monthly" | "annual" | null>(null);
   const [goalAmount, setGoalAmount] = useState("");
+  const [currentDate, setCurrentDate] = useState(new Date());
   const { toast } = useToast();
   const queryClient = useQueryClient();
   
@@ -124,6 +136,52 @@ export default function Dashboard() {
           projectedEarnings: monthlyProjected,
           period: "This Month"
         };
+    }
+  };
+
+  // Navigation functions
+  const navigatePeriod = (direction: "prev" | "next") => {
+    setCurrentDate(prev => {
+      switch (selectedPeriod) {
+        case "weekly":
+          return direction === "prev" ? addWeeks(prev, -1) : addWeeks(prev, 1);
+        case "monthly":
+          return direction === "prev" ? addMonths(prev, -1) : addMonths(prev, 1);
+        case "annual":
+          return direction === "prev" ? addYears(prev, -1) : addYears(prev, 1);
+        default:
+          return prev;
+      }
+    });
+  };
+
+  const getCurrentPeriodLabel = () => {
+    switch (selectedPeriod) {
+      case "weekly":
+        const { startOfWeek, endOfWeek } = getWeekDates(currentDate);
+        return formatWeekRange(startOfWeek, endOfWeek);
+      case "monthly":
+        return formatMonth(currentDate);
+      case "annual":
+        return formatYear(currentDate);
+      default:
+        return "";
+    }
+  };
+
+  const isCurrentPeriod = () => {
+    const now = new Date();
+    switch (selectedPeriod) {
+      case "weekly":
+        const { startOfWeek: currentWeekStart, endOfWeek: currentWeekEnd } = getWeekDates(now);
+        const { startOfWeek: selectedWeekStart, endOfWeek: selectedWeekEnd } = getWeekDates(currentDate);
+        return currentWeekStart.getTime() === selectedWeekStart.getTime();
+      case "monthly":
+        return now.getMonth() === currentDate.getMonth() && now.getFullYear() === currentDate.getFullYear();
+      case "annual":
+        return now.getFullYear() === currentDate.getFullYear();
+      default:
+        return true;
     }
   };
 
