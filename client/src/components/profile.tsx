@@ -205,6 +205,16 @@ export default function Profile() {
                 </div>
                 
                 <div>
+                  <Label className="text-sm text-gray-600">Home Address</Label>
+                  <p className="text-gray-900">{user.homeAddress || "Not set"}</p>
+                  {user.homeAddress && (
+                    <p className="text-xs text-gray-500 mt-1">
+                      Used for distance calculations to gig locations
+                    </p>
+                  )}
+                </div>
+                
+                <div>
                   <Label className="text-sm text-gray-600">Default Tax Percentage</Label>
                   <div className="flex items-center gap-2">
                     <p className="text-gray-900">{user.defaultTaxPercentage || 23}%</p>
