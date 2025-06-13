@@ -119,7 +119,9 @@ export default function CalendarView() {
   const filteredGigs = gigs
     .filter(gig => {
       if (filterStatus !== "all" && gig.status !== filterStatus) return false;
-      if (searchQuery && !gig.clientName.toLowerCase().includes(searchQuery.toLowerCase()) && 
+      if (searchQuery && 
+          !gig.eventName?.toLowerCase().includes(searchQuery.toLowerCase()) &&
+          !gig.clientName.toLowerCase().includes(searchQuery.toLowerCase()) && 
           !gig.gigType.toLowerCase().includes(searchQuery.toLowerCase())) return false;
       return true;
     })
@@ -310,7 +312,7 @@ export default function CalendarView() {
           <div className="flex flex-col sm:flex-row gap-3 mb-4">
             <div className="flex-1">
               <Input
-                placeholder="Search by client or gig type..."
+                placeholder="Search by event, client, or gig type..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full"
@@ -348,7 +350,10 @@ export default function CalendarView() {
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
                       <div className="flex items-center gap-3 mb-2">
-                        <h4 className="font-semibold text-gray-900">{gig.clientName}</h4>
+                        <div className="flex-1">
+                          <h4 className="font-semibold text-gray-900">{gig.eventName || "Event"}</h4>
+                          <p className="text-sm text-gray-600">{gig.clientName}</p>
+                        </div>
                         <Badge className={getStatusColor(gig.status)}>
                           {getStatusLabel(gig.status)}
                         </Badge>
@@ -436,6 +441,7 @@ interface GigEditFormProps {
 
 function GigEditForm({ gig, onSave, onCancel, isLoading }: GigEditFormProps) {
   const [formData, setFormData] = useState({
+    eventName: gig.eventName || "",
     clientName: gig.clientName,
     gigType: gig.gigType,
     date: gig.date,
@@ -453,6 +459,16 @@ function GigEditForm({ gig, onSave, onCancel, isLoading }: GigEditFormProps) {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
+      <div>
+        <label className="block text-sm font-medium mb-1">Event Name</label>
+        <Input
+          value={formData.eventName}
+          onChange={(e) => setFormData({ ...formData, eventName: e.target.value })}
+          placeholder="e.g. Summer Festival, Product Launch..."
+          required
+        />
+      </div>
+
       <div>
         <label className="block text-sm font-medium mb-1">Client Name</label>
         <Input
