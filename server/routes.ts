@@ -210,8 +210,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const avgPerGig = completedGigs.length > 0 ? totalEarnings / completedGigs.length : 0;
       const taxEstimate = totalEarnings * 0.23; // Default 23%
 
+      // Calculate projected earnings from expected pay
+      const projectedEarnings = upcomingGigs.reduce((total, gig) => {
+        return total + parseFloat(gig.expectedPay || "0");
+      }, 0);
+
       res.json({
         monthlyEarnings: totalEarnings,
+        projectedEarnings,
         completedGigs: completedGigs.length,
         upcomingGigs: upcomingGigs.length,
         avgPerGig,
