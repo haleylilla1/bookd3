@@ -227,9 +227,9 @@ export default function GoalTracker() {
                     <GripVertical className="w-4 h-4 text-gray-400" />
                     <div>
                       <p className="text-sm font-medium text-gray-900">
-                        {gig.clientName} - {new Date(gig.date).toLocaleDateString()}
+                        {gig.eventName || "Event"} - {gig.clientName}
                       </p>
-                      <p className="text-xs text-gray-500">Available for allocation</p>
+                      <p className="text-xs text-gray-500">{new Date(gig.date).toLocaleDateString()} • Available for allocation</p>
                     </div>
                   </div>
                   <span className="text-lg font-bold text-success">
