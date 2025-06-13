@@ -12,6 +12,7 @@ export const users = pgTable("users", {
   customGigTypes: text("custom_gig_types").array().default([]),
   monthlyGoal: decimal("monthly_goal", { precision: 10, scale: 2 }).default("3000"),
   yearlyGoal: decimal("yearly_goal", { precision: 10, scale: 2 }).default("36000"),
+  homeAddress: text("home_address"),
 });
 
 export const gigs = pgTable("gigs", {
@@ -32,6 +33,9 @@ export const gigs = pgTable("gigs", {
   transportationExpense: decimal("transportation_expense", { precision: 10, scale: 2 }),
   parkingExpense: decimal("parking_expense", { precision: 10, scale: 2 }),
   otherExpenses: decimal("other_expenses", { precision: 10, scale: 2 }),
+  gigAddress: text("gig_address"),
+  distanceMiles: decimal("distance_miles", { precision: 8, scale: 2 }),
+  travelTimeMinutes: integer("travel_time_minutes"),
   includeInResume: boolean("include_in_resume").default(true),
   createdAt: timestamp("created_at").defaultNow(),
 });
