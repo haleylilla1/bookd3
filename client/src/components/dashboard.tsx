@@ -102,6 +102,31 @@ export default function Dashboard() {
     }
   };
 
+  // Calculate projected earnings based on selected period
+  const getProjectedEarningsForPeriod = () => {
+    if (!stats) return { projectedEarnings: 0, period: "" };
+    
+    const monthlyProjected = (stats as any).projectedEarnings || 0;
+    
+    switch (selectedPeriod) {
+      case "weekly":
+        return {
+          projectedEarnings: monthlyProjected / 4.33,
+          period: "This Week"
+        };
+      case "annual":
+        return {
+          projectedEarnings: monthlyProjected * 12,
+          period: "This Year"
+        };
+      default:
+        return {
+          projectedEarnings: monthlyProjected,
+          period: "This Month"
+        };
+    }
+  };
+
   const currentData = getEarningsForPeriod();
   const goalTarget = selectedPeriod === "weekly" 
     ? parseFloat(user?.weeklyGoal || "750")
@@ -170,7 +195,7 @@ export default function Dashboard() {
       </div>
 
       {/* Earnings Overview */}
-      <div className="gradient-primary rounded-xl p-6 mb-6 text-white">
+      <div className="gradient-primary rounded-xl p-6 mb-4 text-white">
         <h3 className="text-sm font-medium opacity-90 mb-1">{currentData.period} Earnings</h3>
         <p className="text-3xl font-bold mb-2">
           {formatCurrency(currentData.earnings)}
@@ -179,6 +204,19 @@ export default function Dashboard() {
           <span>{currentData.gigs} gigs completed</span>
           <span>•</span>
           <span>{formatCurrency(currentData.avgPerGig)} avg/gig</span>
+        </div>
+      </div>
+
+      {/* Projected Earnings */}
+      <div className="bg-gradient-to-r from-green-500 to-emerald-600 rounded-xl p-6 mb-6 text-white">
+        <h3 className="text-sm font-medium opacity-90 mb-1">{getProjectedEarningsForPeriod().period} Projected Earnings</h3>
+        <p className="text-3xl font-bold mb-2">
+          {formatCurrency(getProjectedEarningsForPeriod().projectedEarnings)}
+        </p>
+        <div className="flex items-center space-x-4 text-sm opacity-90">
+          <span>{(stats as any)?.upcomingGigs || 0} upcoming gigs</span>
+          <span>•</span>
+          <span>From expected pay</span>
         </div>
       </div>
 
