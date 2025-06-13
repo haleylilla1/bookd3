@@ -225,12 +225,15 @@ export default function Dashboard() {
   return (
     <div className="p-4">
       {/* Time Period Selector */}
-      <div className="flex bg-gray-100 p-1 rounded-lg mb-6">
+      <div className="flex bg-gray-100 p-1 rounded-lg mb-4">
         <Button 
           variant={selectedPeriod === "weekly" ? "default" : "ghost"} 
           size="sm" 
           className="flex-1"
-          onClick={() => setSelectedPeriod("weekly")}
+          onClick={() => {
+            setSelectedPeriod("weekly");
+            setCurrentDate(new Date());
+          }}
         >
           Weekly
         </Button>
@@ -238,7 +241,10 @@ export default function Dashboard() {
           variant={selectedPeriod === "monthly" ? "default" : "ghost"} 
           size="sm" 
           className="flex-1"
-          onClick={() => setSelectedPeriod("monthly")}
+          onClick={() => {
+            setSelectedPeriod("monthly");
+            setCurrentDate(new Date());
+          }}
         >
           Monthly
         </Button>
@@ -246,20 +252,74 @@ export default function Dashboard() {
           variant={selectedPeriod === "annual" ? "default" : "ghost"} 
           size="sm" 
           className="flex-1"
-          onClick={() => setSelectedPeriod("annual")}
+          onClick={() => {
+            setSelectedPeriod("annual");
+            setCurrentDate(new Date());
+          }}
         >
           Annual
         </Button>
       </div>
 
+      {/* Date Navigation */}
+      <div className="flex items-center justify-between mb-6 bg-gray-50 p-3 rounded-lg">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => navigatePeriod("prev")}
+          className="h-8 w-8 p-0"
+        >
+          <ChevronLeft className="h-4 w-4" />
+        </Button>
+        
+        <div className="text-center">
+          <div className="text-sm font-medium text-gray-900">
+            {getCurrentPeriodLabel()}
+          </div>
+          {!isCurrentPeriod() && (
+            <Button
+              variant="link"
+              size="sm"
+              onClick={() => setCurrentDate(new Date())}
+              className="text-xs text-blue-600 p-0 h-auto"
+            >
+              Back to current
+            </Button>
+          )}
+        </div>
+        
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => navigatePeriod("next")}
+          className="h-8 w-8 p-0"
+        >
+          <ChevronRight className="h-4 w-4" />
+        </Button>
+      </div>
+
       {/* Earnings Overview */}
       <div className="gradient-primary rounded-xl p-6 mb-4 text-white">
-        <h3 className="text-sm font-medium opacity-90 mb-1">{currentData.period} Earnings</h3>
-        <p className="text-3xl font-bold mb-2">
-          {formatCurrency(currentData.earnings)}
-        </p>
+        <div className="flex justify-between items-start mb-2">
+          <div>
+            <h3 className="text-sm font-medium opacity-90 mb-1">Actual Earnings</h3>
+            <p className="text-3xl font-bold">
+              {formatCurrency(currentData.earnings)}
+            </p>
+          </div>
+          <div className="text-right">
+            <div className="text-xs opacity-75 mb-1">
+              {getCurrentPeriodLabel()}
+            </div>
+            {!isCurrentPeriod() && (
+              <Badge variant="secondary" className="text-xs">
+                Historical
+              </Badge>
+            )}
+          </div>
+        </div>
         <div className="flex items-center space-x-4 text-sm opacity-90">
-          <span>{currentData.gigs} gigs completed</span>
+          <span>{Math.round(currentData.gigs)} gigs completed</span>
           <span>•</span>
           <span>{formatCurrency(currentData.avgPerGig)} avg/gig</span>
         </div>
@@ -267,10 +327,24 @@ export default function Dashboard() {
 
       {/* Projected Earnings */}
       <div className="bg-gradient-to-r from-green-500 to-emerald-600 rounded-xl p-6 mb-6 text-white">
-        <h3 className="text-sm font-medium opacity-90 mb-1">{getProjectedEarningsForPeriod().period} Projected Earnings</h3>
-        <p className="text-3xl font-bold mb-2">
-          {formatCurrency(getProjectedEarningsForPeriod().projectedEarnings)}
-        </p>
+        <div className="flex justify-between items-start mb-2">
+          <div>
+            <h3 className="text-sm font-medium opacity-90 mb-1">Projected Earnings</h3>
+            <p className="text-3xl font-bold">
+              {formatCurrency(getProjectedEarningsForPeriod().projectedEarnings)}
+            </p>
+          </div>
+          <div className="text-right">
+            <div className="text-xs opacity-75 mb-1">
+              {getCurrentPeriodLabel()}
+            </div>
+            {isCurrentPeriod() && (
+              <Badge variant="secondary" className="text-xs bg-white/20">
+                Current
+              </Badge>
+            )}
+          </div>
+        </div>
         <div className="flex items-center space-x-4 text-sm opacity-90">
           <span>{(stats as any)?.upcomingGigs || 0} upcoming gigs</span>
           <span>•</span>
