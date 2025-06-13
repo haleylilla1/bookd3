@@ -32,6 +32,7 @@ export default function GoalTracker() {
   const [newGoalName, setNewGoalName] = useState("");
   const [newGoalAmount, setNewGoalAmount] = useState("");
   const [newGoalCategory, setNewGoalCategory] = useState("savings");
+  const [newGoalDuration, setNewGoalDuration] = useState("monthly");
   const [editingGoal, setEditingGoal] = useState<Goal | null>(null);
   const [editGoalName, setEditGoalName] = useState("");
   const [editGoalAmount, setEditGoalAmount] = useState("");
@@ -95,13 +96,14 @@ export default function GoalTracker() {
   const unallocatedAfterTaxes = unallocatedAmount - suggestedTaxes;
 
   const createGoalMutation = useMutation({
-    mutationFn: async (goalData: { category: string; name: string; targetAmount: string }) => {
+    mutationFn: async (goalData: { category: string; name: string; targetAmount: string; goalDuration: string }) => {
       const response = await apiRequest("POST", "/api/goals", {
         category: goalData.category,
         name: goalData.name,
         targetAmount: goalData.targetAmount,
         currentAmount: "0",
         isCompleted: false,
+        goalDuration: goalData.goalDuration,
       });
       return response.json();
     },
@@ -113,6 +115,8 @@ export default function GoalTracker() {
       });
       setNewGoalName("");
       setNewGoalAmount("");
+      setNewGoalCategory("savings");
+      setNewGoalDuration("monthly");
     },
     onError: () => {
       toast({
@@ -476,12 +480,30 @@ export default function GoalTracker() {
 
       {/* Goals */}
       <div className="space-y-4">
-        {goals.map((goal) => {
+        {goals
+          .filter(goal => {
+            // Show yearly goals only in yearly view, monthly goals in both views
+            if (selectedPeriod === "yearly") {
+              return goal.goalDuration === "yearly";
+            } else {
+              return goal.goalDuration === "monthly" || goal.goalDuration === "yearly";
+            }
+          })
+          .map((goal) => {
           // Calculate progress from allocations instead of currentAmount
           const goalAllocations = allocations.filter(a => a.goalId === goal.id);
           const totalAllocatedToGoal = goalAllocations.reduce((sum, a) => sum + parseFloat(a.amount), 0);
-          const targetAmount = parseFloat(goal.targetAmount);
-          const progress = targetAmount > 0 ? (totalAllocatedToGoal / targetAmount) * 100 : 0;
+          
+          // Calculate target amount based on goal duration and current view
+          let targetAmount = parseFloat(goal.targetAmount);
+          let displayTargetAmount = targetAmount;
+          
+          if (goal.goalDuration === "yearly" && selectedPeriod === "monthly") {
+            // Show monthly breakdown for yearly goals in monthly view
+            displayTargetAmount = targetAmount / 12;
+          }
+          
+          const progress = displayTargetAmount > 0 ? (totalAllocatedToGoal / displayTargetAmount) * 100 : 0;
           const isCompleted = progress >= 100;
           const isEditing = editingGoal?.id === goal.id;
           
@@ -512,9 +534,21 @@ export default function GoalTracker() {
                         </div>
                       ) : (
                         <div>
-                          <h3 className="text-lg font-semibold text-gray-900">{goal.name}</h3>
+                          <div className="flex items-center gap-2">
+                            <h3 className="text-lg font-semibold text-gray-900">{goal.name}</h3>
+                            <Badge variant="outline" className="text-xs">
+                              {goal.goalDuration === "yearly" ? "Yearly" : "Monthly"}
+                            </Badge>
+                          </div>
                           <p className="text-sm text-gray-500">
-                            Goal: {formatCurrency(parseFloat(goal.targetAmount || "0"))}
+                            {goal.goalDuration === "yearly" && selectedPeriod === "monthly" ? (
+                              <>
+                                Monthly: {formatCurrency(displayTargetAmount)} 
+                                <span className="text-gray-400 ml-1">(of {formatCurrency(targetAmount)}/year)</span>
+                              </>
+                            ) : (
+                              <>Target: {formatCurrency(displayTargetAmount)}</>
+                            )}
                           </p>
                         </div>
                       )}
