@@ -32,6 +32,7 @@ export default function Dashboard() {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [showTaxBreakdown, setShowTaxBreakdown] = useState(false);
   const [showExpenseBreakdown, setShowExpenseBreakdown] = useState(false);
+  const [showTipsBreakdown, setShowTipsBreakdown] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
   
@@ -130,6 +131,27 @@ export default function Dashboard() {
         };
       })
       .filter(item => item.totalExpenses > 0)
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  };
+
+  // Calculate tips breakdown per gig
+  const getTipsBreakdownData = () => {
+    if (!gigs) return [];
+    
+    return (gigs as any[])
+      .filter(gig => gig.status === "completed" && gig.tips)
+      .map(gig => {
+        const tips = parseFloat(gig.tips || "0");
+        
+        return {
+          gigName: gig.eventName || "Unnamed Gig",
+          gigType: gig.gigType,
+          clientName: gig.clientName,
+          date: gig.date,
+          tips
+        };
+      })
+      .filter(item => item.tips > 0)
       .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
   };
 
@@ -441,7 +463,14 @@ export default function Dashboard() {
           <CardContent className="p-4">
             <div className="flex items-center justify-between mb-2">
               <span className="text-sm font-medium text-gray-600">Tips Earned</span>
-              <Banknote className="w-5 h-5 text-green-500" />
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowTipsBreakdown(true)}
+                className="p-1 h-8 w-8 hover:bg-green-100"
+              >
+                <Banknote className="w-5 h-5 text-green-500" />
+              </Button>
             </div>
             <p className="text-xl font-bold text-gray-900">
               {formatCurrency(((stats as any)?.totalTips || 0) * (selectedPeriod === "weekly" ? 1/4.33 : selectedPeriod === "annual" ? 12 : 1))}
@@ -620,6 +649,55 @@ export default function Dashboard() {
                 <Car className="w-12 h-12 mx-auto mb-3 text-gray-300" />
                 <p>No completed gigs with expenses to show</p>
                 <p className="text-sm">Add expenses to your gigs to see the breakdown</p>
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Tips Breakdown Modal */}
+      <Dialog open={showTipsBreakdown} onOpenChange={setShowTipsBreakdown}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Tips Breakdown by Gig</DialogTitle>
+          </DialogHeader>
+          <div className="max-h-96 overflow-y-auto">
+            {getTipsBreakdownData().length > 0 ? (
+              <div className="space-y-3">
+                {getTipsBreakdownData().map((item, index) => (
+                  <div key={index} className="p-3 bg-gray-50 rounded-lg">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex-1">
+                        <div className="font-medium text-gray-900">
+                          {item.gigName}
+                        </div>
+                        <div className="text-sm text-gray-500">
+                          {item.clientName} • {item.gigType} • {new Date(item.date).toLocaleDateString()}
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <div className="font-bold text-lg text-green-600">
+                          {formatCurrency(item.tips)}
+                        </div>
+                        <div className="text-xs text-gray-500">Tips</div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+                <div className="border-t pt-3 mt-3">
+                  <div className="flex justify-between items-center font-bold text-lg">
+                    <span>Total Tips:</span>
+                    <span className="text-green-600">
+                      {formatCurrency(getTipsBreakdownData().reduce((sum, item) => sum + item.tips, 0))}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="text-center py-8 text-gray-500">
+                <Banknote className="w-12 h-12 mx-auto mb-3 text-gray-300" />
+                <p>No completed gigs with tips to show</p>
+                <p className="text-sm">Add tips to your gigs to see the breakdown</p>
               </div>
             )}
           </div>
