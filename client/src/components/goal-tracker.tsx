@@ -367,7 +367,7 @@ export default function GoalTracker() {
   };
 
   return (
-    <div className="p-4">
+    <div className="p-4 max-w-4xl mx-auto">
       {/* Enhanced Header Section */}
       <div className="bg-gradient-to-r from-blue-50 via-indigo-50 to-purple-50 rounded-2xl p-6 mb-6 border border-blue-100/50">
         <div className="flex items-center justify-between mb-6">
