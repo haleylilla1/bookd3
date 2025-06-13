@@ -39,6 +39,8 @@ export default function GoalTracker() {
   const [allocatingGig, setAllocatingGig] = useState<Gig | null>(null);
   const [selectedPeriod, setSelectedPeriod] = useState<TimePeriod>("monthly");
   const [currentDate, setCurrentDate] = useState(new Date());
+  const [quickAllocateGoal, setQuickAllocateGoal] = useState<Goal | null>(null);
+  const [quickAllocateAmount, setQuickAllocateAmount] = useState("");
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -447,21 +449,6 @@ export default function GoalTracker() {
                           variant="outline"
                           size="sm"
                           onClick={() => {
-                            console.log("Quick allocate clicked for goal:", goal.name);
-                            
-                            // Calculate max available amount for this goal
-                            const goalAllocations = allocations.filter(a => a.goalId === goal.id);
-                            const totalAllocatedToGoal = goalAllocations.reduce((sum, a) => sum + parseFloat(a.amount), 0);
-                            
-                            // Calculate target amount based on goal duration and current view
-                            let targetAmount = parseFloat(goal.targetAmount);
-                            if (goal.goalDuration === "yearly" && selectedPeriod === "monthly") {
-                              targetAmount = targetAmount / 12;
-                            }
-                            
-                            const remainingForGoal = Math.max(0, targetAmount - totalAllocatedToGoal);
-                            const maxAmount = Math.min(unallocatedAfterTaxes, remainingForGoal);
-                            
                             if (unallocatedAfterTaxes <= 0) {
                               toast({
                                 title: "No Funds Available",
@@ -469,27 +456,8 @@ export default function GoalTracker() {
                               });
                               return;
                             }
-                            
-                            const amount = prompt(`Allocate to "${goal.name}":\n\nAvailable after taxes: ${formatCurrency(unallocatedAfterTaxes)}\n${remainingForGoal > 0 ? `Remaining for goal: ${formatCurrency(remainingForGoal)}` : 'Goal already complete - you can still add more!'}\n\nEnter amount:`);
-                            
-                            if (amount && !isNaN(parseFloat(amount)) && parseFloat(amount) > 0) {
-                              const allocAmount = parseFloat(amount);
-                              
-                              if (allocAmount > unallocatedAfterTaxes) {
-                                toast({
-                                  title: "Error",
-                                  description: "Amount exceeds available funds after taxes",
-                                  variant: "destructive",
-                                });
-                                return;
-                              }
-                              
-                              console.log("Calling quickAllocateMutation with:", { goalId: goal.id, amount });
-                              quickAllocateMutation.mutate({
-                                goalId: goal.id,
-                                amount: amount
-                              });
-                            }
+                            setQuickAllocateGoal(goal);
+                            setQuickAllocateAmount("");
                           }}
                           disabled={quickAllocateMutation.isPending}
                           className="text-xs"
@@ -810,6 +778,98 @@ export default function GoalTracker() {
             isOpen={!!allocatingGig}
             onClose={() => setAllocatingGig(null)}
           />
+        )}
+
+        {/* Quick Allocate Dialog */}
+        {quickAllocateGoal && (
+          <Dialog open={!!quickAllocateGoal} onOpenChange={() => setQuickAllocateGoal(null)}>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Allocate to {quickAllocateGoal.name}</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <div className="text-sm text-gray-600">
+                    Available after taxes: <span className="font-medium text-green-600">{formatCurrency(unallocatedAfterTaxes)}</span>
+                  </div>
+                  {(() => {
+                    const goalAllocations = allocations.filter(a => a.goalId === quickAllocateGoal.id);
+                    const totalAllocatedToGoal = goalAllocations.reduce((sum, a) => sum + parseFloat(a.amount), 0);
+                    let targetAmount = parseFloat(quickAllocateGoal.targetAmount);
+                    if (quickAllocateGoal.goalDuration === "yearly" && selectedPeriod === "monthly") {
+                      targetAmount = targetAmount / 12;
+                    }
+                    const remainingForGoal = Math.max(0, targetAmount - totalAllocatedToGoal);
+                    
+                    return (
+                      <div className="text-sm text-gray-600">
+                        {remainingForGoal > 0 ? (
+                          <>Remaining for goal: <span className="font-medium text-blue-600">{formatCurrency(remainingForGoal)}</span></>
+                        ) : (
+                          <span className="text-orange-600">Goal complete - you can still add more!</span>
+                        )}
+                      </div>
+                    );
+                  })()}
+                </div>
+                
+                <div>
+                  <Label htmlFor="allocation-amount">Amount to Allocate</Label>
+                  <Input
+                    id="allocation-amount"
+                    type="number"
+                    value={quickAllocateAmount}
+                    onChange={(e) => setQuickAllocateAmount(e.target.value)}
+                    placeholder="Enter amount..."
+                    autoFocus
+                  />
+                </div>
+                
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    onClick={() => setQuickAllocateGoal(null)}
+                    className="flex-1"
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    onClick={() => {
+                      if (!quickAllocateAmount || isNaN(parseFloat(quickAllocateAmount)) || parseFloat(quickAllocateAmount) <= 0) {
+                        toast({
+                          title: "Invalid Amount",
+                          description: "Please enter a valid amount",
+                          variant: "destructive",
+                        });
+                        return;
+                      }
+                      
+                      const allocAmount = parseFloat(quickAllocateAmount);
+                      if (allocAmount > unallocatedAfterTaxes) {
+                        toast({
+                          title: "Error",
+                          description: "Amount exceeds available funds after taxes",
+                          variant: "destructive",
+                        });
+                        return;
+                      }
+                      
+                      quickAllocateMutation.mutate({
+                        goalId: quickAllocateGoal.id,
+                        amount: quickAllocateAmount
+                      });
+                      setQuickAllocateGoal(null);
+                      setQuickAllocateAmount("");
+                    }}
+                    disabled={quickAllocateMutation.isPending}
+                    className="flex-1"
+                  >
+                    {quickAllocateMutation.isPending ? "Allocating..." : "Allocate"}
+                  </Button>
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
         )}
       </div>
     </div>
