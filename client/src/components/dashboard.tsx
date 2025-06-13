@@ -30,6 +30,7 @@ export default function Dashboard() {
   const [editingGoal, setEditingGoal] = useState<"weekly" | "monthly" | "annual" | null>(null);
   const [goalAmount, setGoalAmount] = useState("");
   const [currentDate, setCurrentDate] = useState(new Date());
+  const [showTaxBreakdown, setShowTaxBreakdown] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
   
@@ -45,6 +46,12 @@ export default function Dashboard() {
   const { data: currentGoal, refetch: refetchGoal } = useQuery({
     queryKey: ["/api/goals/period", selectedPeriod, currentDate.toISOString()],
     queryFn: () => fetch(`/api/goals/period/${selectedPeriod}/${currentDate.toISOString()}`).then(res => res.json()),
+  });
+
+  // Fetch gigs for tax breakdown
+  const { data: gigs } = useQuery({
+    queryKey: ["/api/gigs"],
+    queryFn: () => fetch("/api/gigs").then(res => res.json()),
   });
 
   if (isLoading) {
@@ -80,6 +87,31 @@ export default function Dashboard() {
       });
     },
   });
+
+  // Calculate tax breakdown per gig
+  const getTaxBreakdownData = () => {
+    if (!gigs) return [];
+    
+    return (gigs as any[])
+      .filter(gig => gig.status === "completed" && gig.actualPay)
+      .map(gig => {
+        const pay = parseFloat(gig.actualPay || "0");
+        const taxPercentage = gig.taxPercentage || user?.defaultTaxPercentage || 23;
+        const taxAmount = pay * (taxPercentage / 100);
+        
+        return {
+          gigName: gig.eventName || "Unnamed Gig",
+          gigType: gig.gigType,
+          clientName: gig.clientName,
+          actualPay: pay,
+          taxPercentage,
+          taxAmount,
+          date: gig.date
+        };
+      })
+      .filter(item => item.taxAmount > 0)
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  };
 
   // Calculate earnings based on selected period
   const getEarningsForPeriod = () => {
@@ -354,12 +386,19 @@ export default function Dashboard() {
           <CardContent className="p-4">
             <div className="flex items-center justify-between mb-2">
               <span className="text-sm font-medium text-gray-600">Tax Estimate</span>
-              <Receipt className="w-5 h-5 text-warning" />
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowTaxBreakdown(true)}
+                className="p-1 h-8 w-8 hover:bg-orange-100"
+              >
+                <Receipt className="w-5 h-5 text-warning" />
+              </Button>
             </div>
             <p className="text-xl font-bold text-gray-900">
               {formatCurrency(((stats as any)?.taxEstimate || 0) * (selectedPeriod === "weekly" ? 1/4.33 : selectedPeriod === "annual" ? 12 : 1))}
             </p>
-            <p className="text-xs text-gray-500">23% of earnings</p>
+            <p className="text-xs text-gray-500">{user?.defaultTaxPercentage || 23}% of earnings</p>
           </CardContent>
         </Card>
         <Card>
@@ -420,6 +459,55 @@ export default function Dashboard() {
           )}
         </CardContent>
       </Card>
+
+      {/* Tax Breakdown Modal */}
+      <Dialog open={showTaxBreakdown} onOpenChange={setShowTaxBreakdown}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Tax Breakdown by Gig</DialogTitle>
+          </DialogHeader>
+          <div className="max-h-96 overflow-y-auto">
+            {getTaxBreakdownData().length > 0 ? (
+              <div className="space-y-3">
+                {getTaxBreakdownData().map((item, index) => (
+                  <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                    <div className="flex-1">
+                      <div className="font-medium text-gray-900">
+                        {item.gigName}
+                      </div>
+                      <div className="text-sm text-gray-500">
+                        {item.clientName} • {item.gigType} • {new Date(item.date).toLocaleDateString()}
+                      </div>
+                      <div className="text-xs text-gray-400">
+                        {formatCurrency(item.actualPay)} × {item.taxPercentage}% tax
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <div className="font-bold text-lg text-orange-600">
+                        {formatCurrency(item.taxAmount)}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+                <div className="border-t pt-3 mt-3">
+                  <div className="flex justify-between items-center font-bold text-lg">
+                    <span>Total Tax Estimate:</span>
+                    <span className="text-orange-600">
+                      {formatCurrency(getTaxBreakdownData().reduce((sum, item) => sum + item.taxAmount, 0))}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="text-center py-8 text-gray-500">
+                <Receipt className="w-12 h-12 mx-auto mb-3 text-gray-300" />
+                <p>No completed gigs with tax amounts to show</p>
+                <p className="text-sm">Complete some gigs to see your tax breakdown</p>
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Top Clients Leaderboard */}
       <Card className="mb-6">
