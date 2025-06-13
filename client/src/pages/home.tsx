@@ -9,13 +9,14 @@ import Profile from "@/components/profile";
 import BottomNavigation from "@/components/bottom-navigation";
 import { Button } from "@/components/ui/button";
 import { Plus, Bell, Briefcase } from "lucide-react";
+import type { User } from "@shared/schema";
 
 export type Screen = "calendar" | "dashboard" | "resume" | "goals" | "profile" | "gig-form";
 
 export default function Home() {
   const [currentScreen, setCurrentScreen] = useState<Screen>("calendar");
 
-  const { data: user } = useQuery({
+  const { data: user } = useQuery<User>({
     queryKey: ["/api/user"],
   });
 
