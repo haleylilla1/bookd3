@@ -15,6 +15,7 @@ export default function Profile() {
   const [isEditing, setIsEditing] = useState(false);
   const [editedName, setEditedName] = useState("");
   const [editedTaxPercentage, setEditedTaxPercentage] = useState("");
+  const [editedHomeAddress, setEditedHomeAddress] = useState("");
   const [newGigType, setNewGigType] = useState("");
   const [isAddingGigType, setIsAddingGigType] = useState(false);
   const { toast } = useToast();
@@ -50,6 +51,7 @@ export default function Profile() {
     setIsEditing(true);
     setEditedName(user?.name || "");
     setEditedTaxPercentage(user?.defaultTaxPercentage?.toString() || "23");
+    setEditedHomeAddress(user?.homeAddress || "");
   };
 
   const handleSave = () => {
@@ -66,6 +68,7 @@ export default function Profile() {
     updateUserMutation.mutate({
       name: editedName,
       defaultTaxPercentage: taxPercentage,
+      homeAddress: editedHomeAddress,
     });
   };
 
@@ -143,6 +146,19 @@ export default function Profile() {
                   onChange={(e) => setEditedName(e.target.value)}
                   placeholder="Enter your name"
                 />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="homeAddress">Home Address</Label>
+                <Input
+                  id="homeAddress"
+                  value={editedHomeAddress}
+                  onChange={(e) => setEditedHomeAddress(e.target.value)}
+                  placeholder="Enter your home address"
+                />
+                <p className="text-sm text-gray-600">
+                  Used to calculate distances and mileage to gig locations.
+                </p>
               </div>
               
               <div className="space-y-2">
