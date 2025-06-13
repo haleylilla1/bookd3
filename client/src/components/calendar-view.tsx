@@ -86,6 +86,7 @@ export default function CalendarView() {
   ];
 
   const dayNames = ["S", "M", "T", "W", "T", "F", "S"];
+  const dayNamesWithKeys = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
   // Create calendar grid
   const calendarDays = [];
@@ -166,7 +167,7 @@ export default function CalendarView() {
     }
   };
 
-  const getGigIndicators = (gigs: Gig[]) => {
+  const getGigIndicators = (gigs: Gig[], dayKey: string) => {
     const indicators = [];
     const statusCounts = { completed: 0, pending_payment: 0, upcoming: 0 };
     
@@ -177,13 +178,13 @@ export default function CalendarView() {
     });
 
     for (let i = 0; i < statusCounts.completed; i++) {
-      indicators.push(<div key={`completed-${i}`} className="day-indicator completed" />);
+      indicators.push(<div key={`${dayKey}-completed-${i}`} className="day-indicator completed" />);
     }
     for (let i = 0; i < statusCounts.pending_payment; i++) {
-      indicators.push(<div key={`pending-${i}`} className="day-indicator pending" />);
+      indicators.push(<div key={`${dayKey}-pending-${i}`} className="day-indicator pending" />);
     }
     for (let i = 0; i < statusCounts.upcoming; i++) {
-      indicators.push(<div key={`upcoming-${i}`} className="day-indicator upcoming" />);
+      indicators.push(<div key={`${dayKey}-upcoming-${i}`} className="day-indicator upcoming" />);
     }
 
     return indicators;
@@ -241,8 +242,8 @@ export default function CalendarView() {
         <CardContent className="p-4">
           {/* Days of week header */}
           <div className="grid grid-cols-7 gap-1 mb-2">
-            {dayNames.map(day => (
-              <div key={day} className="text-center text-xs font-medium text-gray-500 py-2">
+            {dayNames.map((day, index) => (
+              <div key={dayNamesWithKeys[index]} className="text-center text-xs font-medium text-gray-500 py-2">
                 {day}
               </div>
             ))}
