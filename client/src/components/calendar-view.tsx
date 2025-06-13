@@ -268,7 +268,7 @@ export default function CalendarView() {
                   </span>
                   {calendarDay.gigs.length > 0 && (
                     <div className="day-indicators">
-                      {getGigIndicators(calendarDay.gigs)}
+                      {getGigIndicators(calendarDay.gigs, `day-${index}`)}
                     </div>
                   )}
                 </div>
