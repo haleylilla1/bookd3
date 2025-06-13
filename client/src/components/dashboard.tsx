@@ -144,6 +144,14 @@ export default function Dashboard() {
       {/* Time Period Selector */}
       <div className="flex bg-gray-100 p-1 rounded-lg mb-6">
         <Button 
+          variant={selectedPeriod === "weekly" ? "default" : "ghost"} 
+          size="sm" 
+          className="flex-1"
+          onClick={() => setSelectedPeriod("weekly")}
+        >
+          Weekly
+        </Button>
+        <Button 
           variant={selectedPeriod === "monthly" ? "default" : "ghost"} 
           size="sm" 
           className="flex-1"
@@ -183,7 +191,7 @@ export default function Dashboard() {
               <Receipt className="w-5 h-5 text-warning" />
             </div>
             <p className="text-xl font-bold text-gray-900">
-              {formatCurrency(((stats as any)?.taxEstimate || 0) * (selectedPeriod === "annual" ? 12 : 1))}
+              {formatCurrency(((stats as any)?.taxEstimate || 0) * (selectedPeriod === "weekly" ? 1/4.33 : selectedPeriod === "annual" ? 12 : 1))}
             </p>
             <p className="text-xs text-gray-500">23% of earnings</p>
           </CardContent>
@@ -195,7 +203,7 @@ export default function Dashboard() {
               <Car className="w-5 h-5 text-gray-400" />
             </div>
             <p className="text-xl font-bold text-gray-900">
-              {formatCurrency(((stats as any)?.totalExpenses || 0) * (selectedPeriod === "annual" ? 12 : 1))}
+              {formatCurrency(((stats as any)?.totalExpenses || 0) * (selectedPeriod === "weekly" ? 1/4.33 : selectedPeriod === "annual" ? 12 : 1))}
             </p>
             <p className="text-xs text-gray-500">Mileage + costs</p>
           </CardContent>
@@ -206,7 +214,9 @@ export default function Dashboard() {
       <Card className="mb-6">
         <CardContent className="p-4">
           <div className="flex items-center justify-between mb-3">
-            <h3 className="text-lg font-semibold text-gray-900">{selectedPeriod === "annual" ? "Annual" : "Monthly"} Goal</h3>
+            <h3 className="text-lg font-semibold text-gray-900">
+              {selectedPeriod === "weekly" ? "Weekly" : selectedPeriod === "annual" ? "Annual" : "Monthly"} Goal
+            </h3>
             <div className="flex items-center gap-2">
               <span className="text-sm text-gray-500">
                 {formatCurrency(currentData.earnings)} / {formatCurrency(goalTarget)}
