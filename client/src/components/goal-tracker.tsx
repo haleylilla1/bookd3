@@ -8,12 +8,25 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { PiggyBank, Home, ShirtIcon, Plus, GripVertical, Check, Lightbulb, Edit2, Trash2, Target, DollarSign, Calendar } from "lucide-react";
+import { PiggyBank, Home, ShirtIcon, Plus, GripVertical, Check, Lightbulb, Edit2, Trash2, Target, DollarSign, Calendar, ChevronLeft, ChevronRight } from "lucide-react";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import GigAllocation from "./gig-allocation";
 import type { Gig, Goal, Allocation } from "@shared/schema";
+import { 
+  getWeekDates, 
+  getMonthDates, 
+  getYearDates,
+  formatWeekRange,
+  formatMonth,
+  formatYear,
+  addWeeks,
+  addMonths,
+  addYears
+} from "@/lib/dateUtils";
+
+type TimePeriod = "monthly" | "yearly";
 
 export default function GoalTracker() {
   const [newGoalName, setNewGoalName] = useState("");
@@ -23,6 +36,8 @@ export default function GoalTracker() {
   const [editGoalName, setEditGoalName] = useState("");
   const [editGoalAmount, setEditGoalAmount] = useState("");
   const [allocatingGig, setAllocatingGig] = useState<Gig | null>(null);
+  const [selectedPeriod, setSelectedPeriod] = useState<TimePeriod>("monthly");
+  const [currentDate, setCurrentDate] = useState(new Date());
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -32,6 +47,12 @@ export default function GoalTracker() {
 
   const { data: goals = [] } = useQuery<Goal[]>({
     queryKey: ["/api/goals"],
+  });
+
+  // Fetch period-specific goals for current selected period and date
+  const { data: periodGoal, refetch: refetchPeriodGoal } = useQuery({
+    queryKey: ["/api/goals/period", selectedPeriod, currentDate.toISOString()],
+    queryFn: () => fetch(`/api/goals/period/${selectedPeriod}/${currentDate.toISOString()}`).then(res => res.json()),
   });
 
   const { data: allocations = [] } = useQuery<Allocation[]>({
@@ -222,9 +243,78 @@ export default function GoalTracker() {
     setEditGoalAmount("");
   };
 
+  // Navigation functions
+  const navigatePeriod = (direction: "prev" | "next") => {
+    setCurrentDate(prev => {
+      switch (selectedPeriod) {
+        case "monthly":
+          return direction === "prev" ? addMonths(prev, -1) : addMonths(prev, 1);
+        case "yearly":
+          return direction === "prev" ? addYears(prev, -1) : addYears(prev, 1);
+        default:
+          return prev;
+      }
+    });
+  };
+
+  // Get period label
+  const getCurrentPeriodLabel = () => {
+    switch (selectedPeriod) {
+      case "monthly":
+        return formatMonth(currentDate);
+      case "yearly":
+        return formatYear(currentDate);
+      default:
+        return "";
+    }
+  };
+
   return (
     <div className="p-4">
-      <h2 className="text-xl font-semibold text-gray-900 mb-6">Gig-to-Goal Tracker</h2>
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h2 className="text-xl font-semibold text-gray-900">Goal Tracker</h2>
+          <p className="text-sm text-gray-600">
+            {selectedPeriod === "monthly" ? "Monthly" : "Yearly"} goals for {getCurrentPeriodLabel()}
+          </p>
+        </div>
+        
+        {/* Period Selector */}
+        <div className="flex items-center gap-3">
+          <Select value={selectedPeriod} onValueChange={(value: TimePeriod) => setSelectedPeriod(value)}>
+            <SelectTrigger className="w-32">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="monthly">Monthly</SelectItem>
+              <SelectItem value="yearly">Yearly</SelectItem>
+            </SelectContent>
+          </Select>
+          
+          {/* Period Navigation */}
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => navigatePeriod("prev")}
+              className="p-2"
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </Button>
+            <span className="text-sm font-medium text-gray-700 min-w-[120px] text-center">
+              {getCurrentPeriodLabel()}
+            </span>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => navigatePeriod("next")}
+              className="p-2"
+            >
+              <ChevronRight className="w-4 h-4" />
+            </Button>
+          </div>
+        </div>
+      </div>
 
       {/* Recent Earnings */}
       <Card className="mb-6">
