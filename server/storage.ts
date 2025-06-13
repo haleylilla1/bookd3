@@ -1,6 +1,28 @@
-import { users, gigs, goals, allocations, type User, type InsertUser, type Gig, type InsertGig, type Goal, type InsertGoal, type Allocation, type InsertAllocation } from "@shared/schema";
+import { 
+  users, 
+  gigs, 
+  goals, 
+  allocations, 
+  monthlyGoals,
+  weeklyGoals,
+  yearlyGoals,
+  type User, 
+  type InsertUser, 
+  type Gig, 
+  type InsertGig, 
+  type Goal, 
+  type InsertGoal, 
+  type Allocation, 
+  type InsertAllocation,
+  type MonthlyGoal,
+  type InsertMonthlyGoal,
+  type WeeklyGoal,
+  type InsertWeeklyGoal,
+  type YearlyGoal,
+  type InsertYearlyGoal
+} from "@shared/schema";
 import { db } from "./db";
-import { eq } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 
 export interface IStorage {
   // Users
@@ -31,6 +53,14 @@ export interface IStorage {
   getAllocationsByGoal(goalId: number): Promise<Allocation[]>;
   createAllocation(allocation: InsertAllocation): Promise<Allocation>;
   deleteAllocation(id: number): Promise<boolean>;
+
+  // Period Goals
+  getMonthlyGoal(userId: number, month: number, year: number): Promise<MonthlyGoal | undefined>;
+  setMonthlyGoal(userId: number, month: number, year: number, goalAmount: string): Promise<MonthlyGoal>;
+  getWeeklyGoal(userId: number, weekStartDate: string): Promise<WeeklyGoal | undefined>;
+  setWeeklyGoal(userId: number, weekStartDate: string, goalAmount: string): Promise<WeeklyGoal>;
+  getYearlyGoal(userId: number, year: number): Promise<YearlyGoal | undefined>;
+  setYearlyGoal(userId: number, year: number, goalAmount: string): Promise<YearlyGoal>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -157,7 +187,77 @@ export class DatabaseStorage implements IStorage {
 
   async deleteAllocation(id: number): Promise<boolean> {
     const result = await db.delete(allocations).where(eq(allocations.id, id));
-    return result.rowCount > 0;
+    return (result.rowCount || 0) > 0;
+  }
+
+  // Period Goals
+  async getMonthlyGoal(userId: number, month: number, year: number): Promise<MonthlyGoal | undefined> {
+    const [goal] = await db.select().from(monthlyGoals)
+      .where(and(eq(monthlyGoals.userId, userId), eq(monthlyGoals.month, month), eq(monthlyGoals.year, year)));
+    return goal || undefined;
+  }
+
+  async setMonthlyGoal(userId: number, month: number, year: number, goalAmount: string): Promise<MonthlyGoal> {
+    const existing = await this.getMonthlyGoal(userId, month, year);
+    
+    if (existing) {
+      const [updated] = await db.update(monthlyGoals)
+        .set({ goalAmount, updatedAt: new Date() })
+        .where(eq(monthlyGoals.id, existing.id))
+        .returning();
+      return updated;
+    } else {
+      const [created] = await db.insert(monthlyGoals)
+        .values({ userId, month, year, goalAmount })
+        .returning();
+      return created;
+    }
+  }
+
+  async getWeeklyGoal(userId: number, weekStartDate: string): Promise<WeeklyGoal | undefined> {
+    const [goal] = await db.select().from(weeklyGoals)
+      .where(and(eq(weeklyGoals.userId, userId), eq(weeklyGoals.weekStartDate, weekStartDate)));
+    return goal || undefined;
+  }
+
+  async setWeeklyGoal(userId: number, weekStartDate: string, goalAmount: string): Promise<WeeklyGoal> {
+    const existing = await this.getWeeklyGoal(userId, weekStartDate);
+    
+    if (existing) {
+      const [updated] = await db.update(weeklyGoals)
+        .set({ goalAmount, updatedAt: new Date() })
+        .where(eq(weeklyGoals.id, existing.id))
+        .returning();
+      return updated;
+    } else {
+      const [created] = await db.insert(weeklyGoals)
+        .values({ userId, weekStartDate, goalAmount })
+        .returning();
+      return created;
+    }
+  }
+
+  async getYearlyGoal(userId: number, year: number): Promise<YearlyGoal | undefined> {
+    const [goal] = await db.select().from(yearlyGoals)
+      .where(and(eq(yearlyGoals.userId, userId), eq(yearlyGoals.year, year)));
+    return goal || undefined;
+  }
+
+  async setYearlyGoal(userId: number, year: number, goalAmount: string): Promise<YearlyGoal> {
+    const existing = await this.getYearlyGoal(userId, year);
+    
+    if (existing) {
+      const [updated] = await db.update(yearlyGoals)
+        .set({ goalAmount, updatedAt: new Date() })
+        .where(eq(yearlyGoals.id, existing.id))
+        .returning();
+      return updated;
+    } else {
+      const [created] = await db.insert(yearlyGoals)
+        .values({ userId, year, goalAmount })
+        .returning();
+      return created;
+    }
   }
 }
 

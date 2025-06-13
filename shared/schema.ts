@@ -10,10 +10,35 @@ export const users = pgTable("users", {
   title: text("title").default("Gig Worker"),
   defaultTaxPercentage: integer("default_tax_percentage").default(23),
   customGigTypes: text("custom_gig_types").array().default([]),
-  weeklyGoal: decimal("weekly_goal", { precision: 10, scale: 2 }).default("750"),
-  monthlyGoal: decimal("monthly_goal", { precision: 10, scale: 2 }).default("3000"),
-  yearlyGoal: decimal("yearly_goal", { precision: 10, scale: 2 }).default("36000"),
   homeAddress: text("home_address"),
+});
+
+export const monthlyGoals = pgTable("monthly_goals", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull().references(() => users.id),
+  month: integer("month").notNull(), // 1-12
+  year: integer("year").notNull(),
+  goalAmount: decimal("goal_amount", { precision: 10, scale: 2 }).notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const weeklyGoals = pgTable("weekly_goals", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull().references(() => users.id),
+  weekStartDate: date("week_start_date").notNull(),
+  goalAmount: decimal("goal_amount", { precision: 10, scale: 2 }).notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const yearlyGoals = pgTable("yearly_goals", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull().references(() => users.id),
+  year: integer("year").notNull(),
+  goalAmount: decimal("goal_amount", { precision: 10, scale: 2 }).notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
 });
 
 export const gigs = pgTable("gigs", {
@@ -148,3 +173,28 @@ export type InsertMonthlyStats = z.infer<typeof insertMonthlyStatsSchema>;
 export type MonthlyStats = typeof monthlyStats.$inferSelect;
 export type InsertYearlyStats = z.infer<typeof insertYearlyStatsSchema>;
 export type YearlyStats = typeof yearlyStats.$inferSelect;
+
+export const insertMonthlyGoalSchema = createInsertSchema(monthlyGoals).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertWeeklyGoalSchema = createInsertSchema(weeklyGoals).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertYearlyGoalSchema = createInsertSchema(yearlyGoals).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type InsertMonthlyGoal = z.infer<typeof insertMonthlyGoalSchema>;
+export type MonthlyGoal = typeof monthlyGoals.$inferSelect;
+export type InsertWeeklyGoal = z.infer<typeof insertWeeklyGoalSchema>;
+export type WeeklyGoal = typeof weeklyGoals.$inferSelect;
+export type InsertYearlyGoal = z.infer<typeof insertYearlyGoalSchema>;
+export type YearlyGoal = typeof yearlyGoals.$inferSelect;
