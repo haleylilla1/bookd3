@@ -273,6 +273,7 @@ function GigEditForm({ gig, onSave, onCancel, isLoading }: GigEditFormProps) {
     date: gig.date,
     expectedPay: gig.expectedPay || "",
     actualPay: gig.actualPay || "",
+    tips: gig.tips || "",
     status: gig.status,
     duties: gig.duties || "",
     paymentMethod: gig.paymentMethod || "",
@@ -323,6 +324,16 @@ function GigEditForm({ gig, onSave, onCancel, isLoading }: GigEditFormProps) {
             placeholder="285"
           />
         </div>
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium mb-1">Tips Earned</label>
+        <Input
+          type="number"
+          value={formData.tips}
+          onChange={(e) => setFormData({ ...formData, tips: e.target.value })}
+          placeholder="25"
+        />
       </div>
 
       <div>
