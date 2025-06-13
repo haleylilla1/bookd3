@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { Calendar, PieChart, FileText, Target } from "lucide-react";
+import { Calendar, PieChart, FileText, Target, User } from "lucide-react";
 import type { Screen } from "@/pages/home";
 
 interface BottomNavigationProps {
@@ -11,8 +11,8 @@ export default function BottomNavigation({ currentScreen, onScreenChange }: Bott
   const navItems = [
     { id: "calendar" as const, label: "Calendar", icon: Calendar },
     { id: "dashboard" as const, label: "Dashboard", icon: PieChart },
-    { id: "resume" as const, label: "Resume", icon: FileText },
     { id: "goals" as const, label: "Goals", icon: Target },
+    { id: "profile" as const, label: "Profile", icon: User },
   ];
 
   return (

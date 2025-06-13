@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -15,7 +15,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
-import type { InsertGig } from "@shared/schema";
+import type { InsertGig, User } from "@shared/schema";
 
 const gigFormSchema = z.object({
   gigType: z.string().min(1, "Gig type is required"),
@@ -46,6 +46,10 @@ export default function GigForm({ onClose }: GigFormProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
+  const { data: user } = useQuery<User>({
+    queryKey: ["/api/user"],
+  });
+
   const form = useForm<GigFormData>({
     resolver: zodResolver(gigFormSchema),
     defaultValues: {
@@ -57,7 +61,7 @@ export default function GigForm({ onClose }: GigFormProps) {
       actualPay: "",
       paymentMethod: "",
       duties: "",
-      taxPercentage: 23,
+      taxPercentage: user?.defaultTaxPercentage || 23,
       mileage: "",
       notes: "",
       status: "upcoming",
