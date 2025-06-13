@@ -186,6 +186,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const totalEarnings = completedGigs.reduce((sum, gig) => 
         sum + (parseFloat(gig.actualPay || "0")), 0);
+      const totalTips = completedGigs.reduce((sum, gig) => 
+        sum + (parseFloat(gig.tips || "0")), 0);
       const totalExpenses = completedGigs.reduce((sum, gig) => 
         sum + (parseFloat(gig.transportationExpense || "0")) + 
              (parseFloat(gig.parkingExpense || "0")) + 
@@ -198,7 +200,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const current = clientStats.get(client) || { gigs: 0, total: 0 };
         clientStats.set(client, {
           gigs: current.gigs + 1,
-          total: current.total + parseFloat(gig.actualPay || "0")
+          total: current.total + parseFloat(gig.actualPay || "0") + parseFloat(gig.tips || "0")
         });
       });
       
@@ -207,8 +209,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         .sort((a, b) => b.total - a.total)
         .slice(0, 5);
 
-      const avgPerGig = completedGigs.length > 0 ? totalEarnings / completedGigs.length : 0;
-      const taxEstimate = totalEarnings * 0.23; // Default 23%
+      const totalEarningsWithTips = totalEarnings + totalTips;
+      const avgPerGig = completedGigs.length > 0 ? totalEarningsWithTips / completedGigs.length : 0;
+      const taxEstimate = totalEarnings * 0.23; // Default 23% - only on actual pay, not tips
 
       // Calculate projected earnings from expected pay
       const projectedEarnings = upcomingGigs.reduce((total, gig) => {
@@ -216,7 +219,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }, 0);
 
       res.json({
-        monthlyEarnings: totalEarnings,
+        monthlyEarnings: totalEarningsWithTips,
+        totalTips,
         projectedEarnings,
         completedGigs: completedGigs.length,
         upcomingGigs: upcomingGigs.length,

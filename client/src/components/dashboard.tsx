@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Receipt, Car, Download, TrendingUp, Edit2, Target, ChevronLeft, ChevronRight } from "lucide-react";
+import { Receipt, Car, Download, TrendingUp, Edit2, Target, ChevronLeft, ChevronRight, Banknote } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
@@ -172,13 +172,17 @@ export default function Dashboard() {
     }
   };
 
-  // Calculate projected earnings based on selected period (actual + expected)
+  // Calculate projected earnings based on selected period (actual + expected, but NOT tips)
   const getProjectedEarningsForPeriod = () => {
     if (!stats) return { projectedEarnings: 0, period: "" };
     
     const monthlyActual = (stats as any).monthlyEarnings || 0;
+    const monthlyTips = (stats as any).totalTips || 0;
     const monthlyExpected = (stats as any).projectedEarnings || 0;
-    const monthlyTotal = monthlyActual + monthlyExpected;
+    
+    // Projected earnings = actual pay (without tips) + expected pay
+    const monthlyActualWithoutTips = monthlyActual - monthlyTips;
+    const monthlyTotal = monthlyActualWithoutTips + monthlyExpected;
     
     switch (selectedPeriod) {
       case "weekly":
@@ -406,14 +410,14 @@ export default function Dashboard() {
           </div>
         </div>
         <div className="flex items-center space-x-4 text-sm opacity-90">
-          <span>Actual + Expected Pay</span>
+          <span>Expected Pay Only (tips not projected)</span>
           <span>•</span>
           <span>{(stats as any)?.upcomingGigs || 0} upcoming gigs</span>
         </div>
       </div>
 
       {/* Key Metrics Grid */}
-      <div className="grid grid-cols-2 gap-4 mb-6">
+      <div className="grid grid-cols-3 gap-4 mb-6">
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center justify-between mb-2">
@@ -431,6 +435,18 @@ export default function Dashboard() {
               {formatCurrency(((stats as any)?.taxEstimate || 0) * (selectedPeriod === "weekly" ? 1/4.33 : selectedPeriod === "annual" ? 12 : 1))}
             </p>
             <p className="text-xs text-gray-500">{user?.defaultTaxPercentage || 23}% of earnings</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm font-medium text-gray-600">Tips Earned</span>
+              <Banknote className="w-5 h-5 text-green-500" />
+            </div>
+            <p className="text-xl font-bold text-gray-900">
+              {formatCurrency(((stats as any)?.totalTips || 0) * (selectedPeriod === "weekly" ? 1/4.33 : selectedPeriod === "annual" ? 12 : 1))}
+            </p>
+            <p className="text-xs text-gray-500">Cash tips received</p>
           </CardContent>
         </Card>
         <Card>
