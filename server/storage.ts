@@ -126,7 +126,7 @@ export class DatabaseStorage implements IStorage {
 
   async deleteGig(id: number): Promise<boolean> {
     const result = await db.delete(gigs).where(eq(gigs.id, id));
-    return result.rowCount > 0;
+    return (result.rowCount || 0) > 0;
   }
 
   async getGoal(id: number): Promise<Goal | undefined> {
@@ -157,7 +157,7 @@ export class DatabaseStorage implements IStorage {
 
   async deleteGoal(id: number): Promise<boolean> {
     const result = await db.delete(goals).where(eq(goals.id, id));
-    return result.rowCount > 0;
+    return (result.rowCount || 0) > 0;
   }
 
   async getAllocation(id: number): Promise<Allocation | undefined> {
