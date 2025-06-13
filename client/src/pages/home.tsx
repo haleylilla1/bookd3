@@ -29,6 +29,8 @@ export default function Home() {
         return <ResumeBuilder />;
       case "goals":
         return <GoalTracker />;
+      case "profile":
+        return <Profile />;
       case "gig-form":
         return <GigForm onClose={() => setCurrentScreen("calendar")} />;
       default:
@@ -52,11 +54,14 @@ export default function Home() {
               <Bell className="w-5 h-5 text-gray-400" />
               <span className="absolute top-1 right-1 w-2 h-2 bg-warning rounded-full"></span>
             </Button>
-            <div className="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center">
+            <button 
+              onClick={() => setCurrentScreen("profile")}
+              className="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center hover:bg-gray-400 transition-colors"
+            >
               <span className="text-xs font-semibold text-gray-600">
                 {user?.name?.charAt(0) || 'U'}
               </span>
-            </div>
+            </button>
           </div>
         </div>
       </header>
