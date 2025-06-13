@@ -123,10 +123,11 @@ export default function GoalTracker() {
       setNewGoalCategory("savings");
       setNewGoalDuration("monthly");
     },
-    onError: () => {
+    onError: (error: any) => {
+      console.error("Create goal error:", error);
       toast({
         title: "Error",
-        description: "Failed to create goal. Please try again.",
+        description: error?.message || "Failed to create goal. Please try again.",
         variant: "destructive",
       });
     },
@@ -190,10 +191,11 @@ export default function GoalTracker() {
       setEditGoalName("");
       setEditGoalAmount("");
     },
-    onError: () => {
+    onError: (error: any) => {
+      console.error("Update goal error:", error);
       toast({
         title: "Error",
-        description: "Failed to update goal. Please try again.",
+        description: error?.message || "Failed to update goal. Please try again.",
         variant: "destructive",
       });
     },
@@ -210,10 +212,11 @@ export default function GoalTracker() {
         description: "Goal deleted successfully!",
       });
     },
-    onError: () => {
+    onError: (error: any) => {
+      console.error("Delete goal error:", error);
       toast({
         title: "Error",
-        description: "Failed to delete goal. Please try again.",
+        description: error?.message || "Failed to delete goal. Please try again.",
         variant: "destructive",
       });
     },
@@ -235,10 +238,11 @@ export default function GoalTracker() {
         description: "Allocation updated successfully!",
       });
     },
-    onError: () => {
+    onError: (error: any) => {
+      console.error("Update allocation error:", error);
       toast({
         title: "Error",
-        description: "Failed to update allocation. Please try again.",
+        description: error?.message || "Failed to update allocation. Please try again.",
         variant: "destructive",
       });
     },

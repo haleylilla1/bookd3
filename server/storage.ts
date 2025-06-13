@@ -22,7 +22,7 @@ import {
   type InsertYearlyGoal
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, and, gte, lte } from "drizzle-orm";
+import { eq, and, gte, lte, desc } from "drizzle-orm";
 
 export interface IStorage {
   // Users
@@ -98,7 +98,9 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getGigsByUser(userId: number): Promise<Gig[]> {
-    return await db.select().from(gigs).where(eq(gigs.userId, userId));
+    return await db.select().from(gigs)
+      .where(eq(gigs.userId, userId))
+      .orderBy(desc(gigs.date));
   }
 
   async getGigsByDateRange(userId: number, startDate: string, endDate: string): Promise<Gig[]> {
@@ -141,7 +143,9 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getGoalsByUser(userId: number): Promise<Goal[]> {
-    return await db.select().from(goals).where(eq(goals.userId, userId));
+    return await db.select().from(goals)
+      .where(eq(goals.userId, userId))
+      .orderBy(goals.category, goals.name);
   }
 
   async createGoal(insertGoal: InsertGoal): Promise<Goal> {
@@ -172,15 +176,21 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getAllocationsByUser(userId: number): Promise<Allocation[]> {
-    return await db.select().from(allocations).where(eq(allocations.userId, userId));
+    return await db.select().from(allocations)
+      .where(eq(allocations.userId, userId))
+      .orderBy(desc(allocations.createdAt));
   }
 
   async getAllocationsByGig(gigId: number): Promise<Allocation[]> {
-    return await db.select().from(allocations).where(eq(allocations.gigId, gigId));
+    return await db.select().from(allocations)
+      .where(eq(allocations.gigId, gigId))
+      .orderBy(desc(allocations.createdAt));
   }
 
   async getAllocationsByGoal(goalId: number): Promise<Allocation[]> {
-    return await db.select().from(allocations).where(eq(allocations.goalId, goalId));
+    return await db.select().from(allocations)
+      .where(eq(allocations.goalId, goalId))
+      .orderBy(desc(allocations.createdAt));
   }
 
   async createAllocation(insertAllocation: InsertAllocation): Promise<Allocation> {
