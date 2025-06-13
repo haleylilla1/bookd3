@@ -31,6 +31,7 @@ export default function Dashboard() {
   const [goalAmount, setGoalAmount] = useState("");
   const [currentDate, setCurrentDate] = useState(new Date());
   const [showTaxBreakdown, setShowTaxBreakdown] = useState(false);
+  const [showExpenseBreakdown, setShowExpenseBreakdown] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
   
@@ -98,6 +99,37 @@ export default function Dashboard() {
         };
       })
       .filter(item => item.taxAmount > 0)
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  };
+
+  // Calculate expense breakdown per gig
+  const getExpenseBreakdownData = () => {
+    if (!gigs) return [];
+    
+    return (gigs as any[])
+      .filter(gig => gig.status === "completed")
+      .map(gig => {
+        const mileage = parseInt(gig.mileage || "0");
+        const transportation = parseFloat(gig.transportationExpense || "0");
+        const parking = parseFloat(gig.parkingExpense || "0");
+        const other = parseFloat(gig.otherExpenses || "0");
+        const mileageExpense = mileage * 0.655; // 2024 IRS standard mileage rate
+        const totalExpenses = mileageExpense + transportation + parking + other;
+        
+        return {
+          gigName: gig.eventName || "Unnamed Gig",
+          gigType: gig.gigType,
+          clientName: gig.clientName,
+          date: gig.date,
+          mileage,
+          mileageExpense,
+          transportation,
+          parking,
+          other,
+          totalExpenses
+        };
+      })
+      .filter(item => item.totalExpenses > 0)
       .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
   };
 
@@ -405,7 +437,14 @@ export default function Dashboard() {
           <CardContent className="p-4">
             <div className="flex items-center justify-between mb-2">
               <span className="text-sm font-medium text-gray-600">Expenses</span>
-              <Car className="w-5 h-5 text-gray-400" />
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowExpenseBreakdown(true)}
+                className="p-1 h-8 w-8 hover:bg-blue-100"
+              >
+                <Car className="w-5 h-5 text-gray-400" />
+              </Button>
             </div>
             <p className="text-xl font-bold text-gray-900">
               {formatCurrency(((stats as any)?.totalExpenses || 0) * (selectedPeriod === "weekly" ? 1/4.33 : selectedPeriod === "annual" ? 12 : 1))}
@@ -503,6 +542,68 @@ export default function Dashboard() {
                 <Receipt className="w-12 h-12 mx-auto mb-3 text-gray-300" />
                 <p>No completed gigs with tax amounts to show</p>
                 <p className="text-sm">Complete some gigs to see your tax breakdown</p>
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Expense Breakdown Modal */}
+      <Dialog open={showExpenseBreakdown} onOpenChange={setShowExpenseBreakdown}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Expense Breakdown by Gig</DialogTitle>
+          </DialogHeader>
+          <div className="max-h-96 overflow-y-auto">
+            {getExpenseBreakdownData().length > 0 ? (
+              <div className="space-y-3">
+                {getExpenseBreakdownData().map((item, index) => (
+                  <div key={index} className="p-3 bg-gray-50 rounded-lg">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex-1">
+                        <div className="font-medium text-gray-900">
+                          {item.gigName}
+                        </div>
+                        <div className="text-sm text-gray-500">
+                          {item.clientName} • {item.gigType} • {new Date(item.date).toLocaleDateString()}
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <div className="font-bold text-lg text-blue-600">
+                          {formatCurrency(item.totalExpenses)}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2 text-xs text-gray-600">
+                      {item.mileage > 0 && (
+                        <div>Mileage: {item.mileage} mi × $0.655 = {formatCurrency(item.mileageExpense)}</div>
+                      )}
+                      {item.transportation > 0 && (
+                        <div>Transportation: {formatCurrency(item.transportation)}</div>
+                      )}
+                      {item.parking > 0 && (
+                        <div>Parking: {formatCurrency(item.parking)}</div>
+                      )}
+                      {item.other > 0 && (
+                        <div>Other: {formatCurrency(item.other)}</div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+                <div className="border-t pt-3 mt-3">
+                  <div className="flex justify-between items-center font-bold text-lg">
+                    <span>Total Expenses:</span>
+                    <span className="text-blue-600">
+                      {formatCurrency(getExpenseBreakdownData().reduce((sum, item) => sum + item.totalExpenses, 0))}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="text-center py-8 text-gray-500">
+                <Car className="w-12 h-12 mx-auto mb-3 text-gray-300" />
+                <p>No completed gigs with expenses to show</p>
+                <p className="text-sm">Add expenses to your gigs to see the breakdown</p>
               </div>
             )}
           </div>
