@@ -54,18 +54,6 @@ export default function Dashboard() {
     queryFn: () => fetch("/api/gigs").then(res => res.json()),
   });
 
-  if (isLoading) {
-    return (
-      <div className="p-4">
-        <div className="space-y-6">
-          {[...Array(4)].map((_, i) => (
-            <div key={i} className="bg-gray-200 animate-pulse h-32 rounded-xl" />
-          ))}
-        </div>
-      </div>
-    );
-  }
-
   const updateGoalMutation = useMutation({
     mutationFn: async (goalData: { goalAmount: string }) => {
       const response = await apiRequest("POST", `/api/goals/period/${selectedPeriod}/${currentDate.toISOString()}`, goalData);
@@ -249,6 +237,18 @@ export default function Dashboard() {
 
     updateGoalMutation.mutate({ goalAmount });
   };
+
+  if (isLoading) {
+    return (
+      <div className="p-4">
+        <div className="space-y-6">
+          {[...Array(4)].map((_, i) => (
+            <div key={i} className="bg-gray-200 animate-pulse h-32 rounded-xl" />
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-4">
