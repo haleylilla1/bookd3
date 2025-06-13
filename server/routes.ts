@@ -47,6 +47,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.put("/api/gigs/:id", async (req, res) => {
     try {
       const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid gig ID" });
+      }
+
       const updateData = req.body;
       const gig = await storage.updateGig(id, updateData);
       
@@ -56,6 +60,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       res.json(gig);
     } catch (error) {
+      console.error("Update gig error:", error);
       res.status(500).json({ message: "Failed to update gig" });
     }
   });
@@ -63,6 +68,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.delete("/api/gigs/:id", async (req, res) => {
     try {
       const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid gig ID" });
+      }
+
       const deleted = await storage.deleteGig(id);
       
       if (!deleted) {
@@ -71,6 +80,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       res.status(204).send();
     } catch (error) {
+      console.error("Delete gig error:", error);
       res.status(500).json({ message: "Failed to delete gig" });
     }
   });
@@ -101,6 +111,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.put("/api/goals/:id", async (req, res) => {
     try {
       const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid goal ID" });
+      }
+
       const updateData = req.body;
       const goal = await storage.updateGoal(id, updateData);
       
@@ -110,6 +124,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       res.json(goal);
     } catch (error) {
+      console.error("Update goal error:", error);
       res.status(500).json({ message: "Failed to update goal" });
     }
   });
@@ -117,6 +132,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.delete("/api/goals/:id", async (req, res) => {
     try {
       const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid goal ID" });
+      }
+
       const deleted = await storage.deleteGoal(id);
       
       if (!deleted) {
@@ -125,6 +144,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       res.status(204).send();
     } catch (error) {
+      console.error("Delete goal error:", error);
       res.status(500).json({ message: "Failed to delete goal" });
     }
   });
@@ -177,10 +197,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.put("/api/allocations/:id", async (req, res) => {
     try {
       const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid allocation ID" });
+      }
+
       const { amount } = req.body;
       
-      if (!amount || isNaN(parseFloat(amount))) {
-        return res.status(400).json({ message: "Valid amount is required" });
+      if (!amount || isNaN(parseFloat(amount)) || parseFloat(amount) <= 0) {
+        return res.status(400).json({ message: "Valid positive amount is required" });
       }
 
       const allocation = await storage.updateAllocation(id, { amount });
@@ -191,6 +215,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       res.json(allocation);
     } catch (error) {
+      console.error("Update allocation error:", error);
       res.status(500).json({ message: "Failed to update allocation" });
     }
   });
@@ -198,6 +223,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.delete("/api/allocations/:id", async (req, res) => {
     try {
       const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid allocation ID" });
+      }
+
       const deleted = await storage.deleteAllocation(id);
       
       if (!deleted) {
@@ -206,6 +235,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       res.status(204).send();
     } catch (error) {
+      console.error("Delete allocation error:", error);
       res.status(500).json({ message: "Failed to delete allocation" });
     }
   });
@@ -221,13 +251,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const upcomingGigs = gigs.filter(gig => gig.status === "upcoming");
       
       const totalEarnings = completedGigs.reduce((sum, gig) => 
-        sum + (parseFloat(gig.actualPay || "0")), 0);
+        sum + parseFloat(gig.actualPay || "0"), 0);
       const totalTips = completedGigs.reduce((sum, gig) => 
-        sum + (parseFloat(gig.tips || "0")), 0);
+        sum + parseFloat(gig.tips || "0"), 0);
       const totalExpenses = completedGigs.reduce((sum, gig) => 
-        sum + (parseFloat(gig.transportationExpense || "0")) + 
-             (parseFloat(gig.parkingExpense || "0")) + 
-             (parseFloat(gig.otherExpenses || "0")), 0);
+        sum + parseFloat(gig.transportationExpense || "0") + 
+             parseFloat(gig.parkingExpense || "0") + 
+             parseFloat(gig.otherExpenses || "0"), 0);
       
       // Client leaderboard
       const clientStats = new Map<string, { gigs: number, total: number }>();
@@ -247,7 +277,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const totalEarningsWithTips = totalEarnings + totalTips;
       const avgPerGig = completedGigs.length > 0 ? totalEarningsWithTips / completedGigs.length : 0;
-      const taxEstimate = totalEarnings * 0.23; // Default 23% - only on actual pay, not tips
+      
+      // Use user's default tax percentage or fallback to 23%
+      const user = await storage.getUser(currentUserId);
+      const taxPercentage = (user?.defaultTaxPercentage || 23) / 100;
+      const taxEstimate = totalEarnings * taxPercentage; // Only on actual pay, not tips
 
       // Calculate projected earnings from expected pay
       const projectedEarnings = upcomingGigs.reduce((total, gig) => {
@@ -255,18 +289,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }, 0);
 
       res.json({
-        monthlyEarnings: totalEarningsWithTips,
-        totalTips,
-        projectedEarnings,
+        monthlyEarnings: Math.round(totalEarningsWithTips * 100) / 100,
+        totalTips: Math.round(totalTips * 100) / 100,
+        projectedEarnings: Math.round(projectedEarnings * 100) / 100,
         completedGigs: completedGigs.length,
         upcomingGigs: upcomingGigs.length,
-        avgPerGig,
-        taxEstimate,
-        totalExpenses,
+        avgPerGig: Math.round(avgPerGig * 100) / 100,
+        taxEstimate: Math.round(taxEstimate * 100) / 100,
+        totalExpenses: Math.round(totalExpenses * 100) / 100,
         topClients,
         recentGigs: completedGigs.slice(-5).reverse()
       });
     } catch (error) {
+      console.error("Dashboard stats error:", error);
       res.status(500).json({ message: "Failed to fetch dashboard stats" });
     }
   });
