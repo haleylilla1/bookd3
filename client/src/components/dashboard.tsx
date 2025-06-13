@@ -120,26 +120,28 @@ export default function Dashboard() {
     }
   };
 
-  // Calculate projected earnings based on selected period
+  // Calculate projected earnings based on selected period (actual + expected)
   const getProjectedEarningsForPeriod = () => {
     if (!stats) return { projectedEarnings: 0, period: "" };
     
-    const monthlyProjected = (stats as any).projectedEarnings || 0;
+    const monthlyActual = (stats as any).monthlyEarnings || 0;
+    const monthlyExpected = (stats as any).projectedEarnings || 0;
+    const monthlyTotal = monthlyActual + monthlyExpected;
     
     switch (selectedPeriod) {
       case "weekly":
         return {
-          projectedEarnings: monthlyProjected / 4.33,
+          projectedEarnings: monthlyTotal / 4.33,
           period: "This Week"
         };
       case "annual":
         return {
-          projectedEarnings: monthlyProjected * 12,
+          projectedEarnings: monthlyTotal * 12,
           period: "This Year"
         };
       default:
         return {
-          projectedEarnings: monthlyProjected,
+          projectedEarnings: monthlyTotal,
           period: "This Month"
         };
     }
@@ -323,7 +325,7 @@ export default function Dashboard() {
       <div className="bg-gradient-to-r from-green-500 to-emerald-600 rounded-xl p-6 mb-6 text-white">
         <div className="flex justify-between items-start mb-2">
           <div>
-            <h3 className="text-sm font-medium opacity-90 mb-1">Projected Earnings</h3>
+            <h3 className="text-sm font-medium opacity-90 mb-1">Total Projected</h3>
             <p className="text-3xl font-bold">
               {formatCurrency(getProjectedEarningsForPeriod().projectedEarnings)}
             </p>
@@ -340,9 +342,9 @@ export default function Dashboard() {
           </div>
         </div>
         <div className="flex items-center space-x-4 text-sm opacity-90">
-          <span>{(stats as any)?.upcomingGigs || 0} upcoming gigs</span>
+          <span>Actual + Expected Pay</span>
           <span>•</span>
-          <span>From expected pay</span>
+          <span>{(stats as any)?.upcomingGigs || 0} upcoming gigs</span>
         </div>
       </div>
 
