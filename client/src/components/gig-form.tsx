@@ -94,6 +94,7 @@ export default function GigForm({ onClose }: GigFormProps) {
     const gigData: InsertGig = {
       userId: 1, // For MVP, using single user
       gigType: data.gigType,
+      eventName: data.eventName,
       clientName: data.clientName,
       date: data.date,
       expectedPay: data.expectedPay || null,
@@ -152,6 +153,21 @@ export default function GigForm({ onClose }: GigFormProps) {
                         <SelectItem value="other">Other</SelectItem>
                       </SelectContent>
                     </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              {/* Event Name */}
+              <FormField
+                control={form.control}
+                name="eventName"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Event Name</FormLabel>
+                    <FormControl>
+                      <Input placeholder="e.g. Summer Festival, Product Launch, Holiday Party..." {...field} />
+                    </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
