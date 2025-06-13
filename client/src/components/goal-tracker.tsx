@@ -418,8 +418,43 @@ export default function GoalTracker() {
       {/* Period Goal Overview */}
       <Card className="mb-6 bg-gradient-to-r from-purple-50 to-blue-50 border-purple-200">
         <CardContent className="p-6">
+          <div className="text-center">
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">
+              {selectedPeriod === "monthly" ? "Monthly" : "Yearly"} Goal Target
+            </h3>
+            {periodGoal ? (
+              <div className="mb-4">
+                <div className="text-3xl font-bold text-purple-600 mb-1">
+                  {formatCurrency(parseFloat(periodGoal.goalAmount || "0"))}
+                </div>
+                <div className="text-sm text-gray-600">
+                  Target for {getCurrentPeriodLabel()}
+                </div>
+              </div>
+            ) : (
+              <div className="mb-4">
+                <div className="text-xl text-gray-500 mb-2">No goal set</div>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    const amount = prompt(`Enter your ${selectedPeriod} goal amount:`);
+                    if (amount && !isNaN(parseFloat(amount))) {
+                      fetch(`/api/goals/period/${selectedPeriod}/${currentDate.toISOString()}`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ goalAmount: amount })
+                      }).then(() => refetchPeriodGoal());
+                    }
+                  }}
+                >
+                  Set {selectedPeriod === "monthly" ? "Monthly" : "Yearly"} Goal
+                </Button>
+              </div>
+            )}
+          </div>
+          
           {/* Period Controls */}
-          <div className="flex flex-col items-center space-y-4 mb-6">
+          <div className="flex flex-col items-center space-y-4 mt-6 pt-6 border-t border-purple-200">
             <div className="flex items-center space-x-3">
               <span className="text-sm font-medium text-gray-700">Viewing:</span>
               <Select value={selectedPeriod} onValueChange={(value: TimePeriod) => setSelectedPeriod(value)}>
@@ -455,41 +490,6 @@ export default function GoalTracker() {
                 <ChevronRight className="w-4 h-4" />
               </Button>
             </div>
-          </div>
-
-          <div className="text-center">
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">
-              {selectedPeriod === "monthly" ? "Monthly" : "Yearly"} Goal Target
-            </h3>
-            {periodGoal ? (
-              <div className="mb-4">
-                <div className="text-3xl font-bold text-purple-600 mb-1">
-                  {formatCurrency(parseFloat(periodGoal.goalAmount || "0"))}
-                </div>
-                <div className="text-sm text-gray-600">
-                  Target for {getCurrentPeriodLabel()}
-                </div>
-              </div>
-            ) : (
-              <div className="mb-4">
-                <div className="text-xl text-gray-500 mb-2">No goal set</div>
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    const amount = prompt(`Enter your ${selectedPeriod} goal amount:`);
-                    if (amount && !isNaN(parseFloat(amount))) {
-                      fetch(`/api/goals/period/${selectedPeriod}/${currentDate.toISOString()}`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ goalAmount: amount })
-                      }).then(() => refetchPeriodGoal());
-                    }
-                  }}
-                >
-                  Set {selectedPeriod === "monthly" ? "Monthly" : "Yearly"} Goal
-                </Button>
-              </div>
-            )}
           </div>
         </CardContent>
       </Card>
