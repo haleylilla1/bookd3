@@ -42,6 +42,10 @@ export default function GoalTracker() {
     queryKey: ["/api/piggy-bank-total"],
   });
 
+  const { data: user } = useQuery({
+    queryKey: ["/api/user"],
+  });
+
   // Get recent completed gigs available for allocation
   const completedGigs = gigs.filter(gig => gig.status === "completed" && (gig.actualPay || gig.expectedPay));
   const recentGigs = completedGigs.slice(0, 3); // Show 3 most recent
@@ -55,9 +59,19 @@ export default function GoalTracker() {
     return { totalAllocated, remainingAmount, gigPay };
   };
 
-  const totalEarnings = completedGigs.reduce((sum, gig) => sum + parseFloat(gig.actualPay || gig.expectedPay || "0"), 0);
+  const totalEarnings = completedGigs.reduce((sum, gig) => {
+    const actualPay = parseFloat(gig.actualPay || "0");
+    const tips = parseFloat(gig.tips || "0");
+    return sum + actualPay + tips;
+  }, 0);
+  
   const totalAllocated = allocations.reduce((sum: number, allocation: any) => sum + parseFloat(allocation.amount || "0"), 0);
   const unallocatedAmount = totalEarnings - totalAllocated;
+  
+  // Calculate suggested tax estimate for unallocated amount
+  const taxPercentage = (user as any)?.defaultTaxPercentage || 23;
+  const suggestedTaxes = totalEarnings * (taxPercentage / 100);
+  const unallocatedAfterTaxes = unallocatedAmount - suggestedTaxes;
 
   const createGoalMutation = useMutation({
     mutationFn: async (goalData: { category: string; name: string; targetAmount: string }) => {
@@ -238,10 +252,16 @@ export default function GoalTracker() {
                 </div>
               ))}
               <div className="p-3 bg-primary/10 rounded-lg">
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between mb-2">
                   <span className="text-sm font-medium text-primary">Total Unallocated</span>
                   <span className="text-xl font-bold text-primary">
                     {formatCurrency(unallocatedAmount)}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between text-xs text-gray-600">
+                  <span>Minus {taxPercentage}% taxes ({formatCurrency(suggestedTaxes)})</span>
+                  <span className={`font-semibold ${unallocatedAfterTaxes < 0 ? 'text-red-600' : 'text-green-600'}`}>
+                    {formatCurrency(unallocatedAfterTaxes)} available
                   </span>
                 </div>
               </div>
