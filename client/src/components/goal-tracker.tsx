@@ -691,11 +691,50 @@ export default function GoalTracker() {
                   <option value="other">Other</option>
                 </select>
               </div>
+              <div>
+                <Label htmlFor="goal-duration">Goal Duration</Label>
+                <select
+                  id="goal-duration"
+                  value={newGoalDuration}
+                  onChange={(e) => setNewGoalDuration(e.target.value)}
+                  className="w-full p-2 border rounded-md"
+                >
+                  <option value="monthly">Monthly Goal</option>
+                  <option value="yearly">Yearly Goal (with monthly breakdown)</option>
+                </select>
+              </div>
+              <div>
+                <Label htmlFor="goal-name">Goal Name</Label>
+                <Input
+                  id="goal-name"
+                  value={newGoalName}
+                  onChange={(e) => setNewGoalName(e.target.value)}
+                  placeholder="e.g., Emergency Fund, Monthly Rent..."
+                />
+              </div>
+              <div>
+                <Label htmlFor="goal-amount">
+                  {newGoalDuration === "yearly" ? "Yearly Target Amount" : "Monthly Target Amount"}
+                </Label>
+                <Input
+                  id="goal-amount"
+                  type="number"
+                  value={newGoalAmount}
+                  onChange={(e) => setNewGoalAmount(e.target.value)}
+                  placeholder={newGoalDuration === "yearly" ? "12000" : "1000"}
+                />
+                {newGoalDuration === "yearly" && newGoalAmount && (
+                  <p className="text-sm text-gray-500 mt-1">
+                    Monthly target: {formatCurrency(parseFloat(newGoalAmount) / 12)}
+                  </p>
+                )}
+              </div>
               <Button
                 onClick={() => createGoalMutation.mutate({
                   category: newGoalCategory,
                   name: newGoalName,
                   targetAmount: newGoalAmount,
+                  goalDuration: newGoalDuration,
                 })}
                 disabled={!newGoalName || !newGoalAmount || createGoalMutation.isPending}
                 className="w-full"
@@ -728,6 +767,7 @@ export default function GoalTracker() {
                   category: "tax",
                   name: "Tax Fund",
                   targetAmount: (unallocatedAmount * 0.23).toString(),
+                  goalDuration: "monthly",
                 })}
                 className="w-full bg-warning hover:bg-warning/90"
               >
