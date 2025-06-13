@@ -12,11 +12,11 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import type { User } from "@shared/schema";
 
-type TimePeriod = "monthly" | "annual";
+type TimePeriod = "weekly" | "monthly" | "annual";
 
 export default function Dashboard() {
   const [selectedPeriod, setSelectedPeriod] = useState<TimePeriod>("monthly");
-  const [editingGoal, setEditingGoal] = useState<"monthly" | "annual" | null>(null);
+  const [editingGoal, setEditingGoal] = useState<"weekly" | "monthly" | "annual" | null>(null);
   const [goalAmount, setGoalAmount] = useState("");
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -42,7 +42,7 @@ export default function Dashboard() {
   }
 
   const updateGoalMutation = useMutation({
-    mutationFn: async (goalData: { monthlyGoal?: string; yearlyGoal?: string }) => {
+    mutationFn: async (goalData: { weeklyGoal?: string; monthlyGoal?: string; yearlyGoal?: string }) => {
       const response = await apiRequest("PUT", "/api/user", goalData);
       return response.json();
     },
@@ -72,6 +72,16 @@ export default function Dashboard() {
     const avgPerGig = (stats as any).avgPerGig || 0;
     
     switch (selectedPeriod) {
+      case "weekly":
+        // Estimate weekly from monthly data
+        const weeklyEarnings = monthlyEarnings / 4.33; // Average weeks per month
+        const weeklyGigs = completedGigs / 4.33;
+        return {
+          earnings: weeklyEarnings,
+          gigs: weeklyGigs,
+          avgPerGig: avgPerGig,
+          period: "This Week"
+        };
       case "annual":
         // Estimate annual from monthly data
         const annualEarnings = monthlyEarnings * 12;
@@ -93,15 +103,18 @@ export default function Dashboard() {
   };
 
   const currentData = getEarningsForPeriod();
-  const goalTarget = selectedPeriod === "annual" 
+  const goalTarget = selectedPeriod === "weekly" 
+    ? parseFloat(user?.weeklyGoal || "750")
+    : selectedPeriod === "annual" 
     ? parseFloat(user?.yearlyGoal || "36000")
     : parseFloat(user?.monthlyGoal || "3000");
   const goalProgress = currentData.earnings ? (currentData.earnings / goalTarget) * 100 : 0;
 
-  const handleEditGoal = (period: "monthly" | "annual") => {
+  const handleEditGoal = (period: "weekly" | "monthly" | "annual") => {
     setEditingGoal(period);
-    const currentGoal = period === "monthly" ? user?.monthlyGoal : user?.yearlyGoal;
-    setGoalAmount(currentGoal || (period === "monthly" ? "3000" : "36000"));
+    const currentGoal = period === "weekly" ? user?.weeklyGoal : 
+                       period === "monthly" ? user?.monthlyGoal : user?.yearlyGoal;
+    setGoalAmount(currentGoal || (period === "weekly" ? "750" : period === "monthly" ? "3000" : "36000"));
   };
 
   const handleSaveGoal = () => {
@@ -117,7 +130,9 @@ export default function Dashboard() {
       return;
     }
 
-    const updateData = editingGoal === "monthly" 
+    const updateData = editingGoal === "weekly" 
+      ? { weeklyGoal: goalAmount }
+      : editingGoal === "monthly" 
       ? { monthlyGoal: goalAmount }
       : { yearlyGoal: goalAmount };
     
