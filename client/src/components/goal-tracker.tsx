@@ -251,18 +251,31 @@ export default function GoalTracker() {
                   </span>
                 </div>
               ))}
-              <div className="p-3 bg-primary/10 rounded-lg">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm font-medium text-primary">Total Unallocated</span>
-                  <span className="text-xl font-bold text-primary">
+              <div className="p-4 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg">
+                <div className="text-center mb-3">
+                  <h4 className="text-sm font-medium text-gray-700 mb-1">Money Ready to Allocate</h4>
+                  <div className="text-2xl font-bold text-blue-600">
                     {formatCurrency(unallocatedAmount)}
-                  </span>
+                  </div>
+                  <div className="text-xs text-gray-500">Total unallocated earnings</div>
                 </div>
-                <div className="flex items-center justify-between text-xs text-gray-600">
-                  <span>Minus {taxPercentage}% taxes ({formatCurrency(suggestedTaxes)})</span>
-                  <span className={`font-semibold ${unallocatedAfterTaxes < 0 ? 'text-red-600' : 'text-green-600'}`}>
-                    {formatCurrency(unallocatedAfterTaxes)} available
-                  </span>
+                
+                <div className="border-t border-blue-200 pt-3">
+                  <div className="flex items-center justify-between text-sm mb-1">
+                    <span className="text-gray-600">Set aside for taxes ({taxPercentage}%)</span>
+                    <span className="font-medium text-orange-600">-{formatCurrency(suggestedTaxes)}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="font-medium text-gray-800">Available to allocate to goals</span>
+                    <div className={`text-lg font-bold ${unallocatedAfterTaxes < 0 ? 'text-red-600' : 'text-green-600'}`}>
+                      {formatCurrency(Math.max(0, unallocatedAfterTaxes))}
+                    </div>
+                  </div>
+                  {unallocatedAfterTaxes < 0 && (
+                    <div className="mt-2 text-xs text-red-600 text-center">
+                      ⚠️ You've allocated more than your after-tax earnings
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
