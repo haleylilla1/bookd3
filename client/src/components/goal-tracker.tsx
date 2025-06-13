@@ -41,6 +41,8 @@ export default function GoalTracker() {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [quickAllocateGoal, setQuickAllocateGoal] = useState<Goal | null>(null);
   const [quickAllocateAmount, setQuickAllocateAmount] = useState("");
+  const [editingAllocation, setEditingAllocation] = useState<Allocation | null>(null);
+  const [editAllocationAmount, setEditAllocationAmount] = useState("");
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -211,6 +213,54 @@ export default function GoalTracker() {
       toast({
         title: "Error",
         description: "Failed to delete goal. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const updateAllocationMutation = useMutation({
+    mutationFn: async ({ allocationId, amount }: { allocationId: number; amount: string }) => {
+      const response = await apiRequest("PUT", `/api/allocations/${allocationId}`, {
+        amount: amount
+      });
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/allocations"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/goals"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/piggy-bank-total"] });
+      toast({
+        title: "Success",
+        description: "Allocation updated successfully!",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to update allocation. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const deleteAllocationMutation = useMutation({
+    mutationFn: async (allocationId: number) => {
+      const response = await apiRequest("DELETE", `/api/allocations/${allocationId}`);
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/allocations"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/goals"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/piggy-bank-total"] });
+      toast({
+        title: "Success",
+        description: "Allocation removed successfully!",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to remove allocation. Please try again.",
         variant: "destructive",
       });
     },
@@ -614,12 +664,57 @@ export default function GoalTracker() {
                       {progress.toFixed(1)}% complete
                     </span>
                     {goalAllocations.length > 0 && (
-                      <span className="text-xs text-blue-600">
+                      <span className="text-xs text-blue-600 cursor-pointer hover:underline">
                         {goalAllocations.length} allocation{goalAllocations.length !== 1 ? 's' : ''}
                       </span>
                     )}
                   </div>
                 </div>
+
+                {/* Allocation Details */}
+                {goalAllocations.length > 0 && (
+                  <div className="space-y-2 pt-3 border-t border-gray-100">
+                    <div className="text-xs font-medium text-gray-700 mb-2">Recent Allocations:</div>
+                    {goalAllocations.slice(-3).map((allocation) => {
+                      const allocatedGig = gigs.find(g => g.id === allocation.gigId);
+                      return (
+                        <div key={allocation.id} className="flex items-center justify-between text-xs bg-gray-50 p-2 rounded">
+                          <div>
+                            <span className="font-medium">{formatCurrency(parseFloat(allocation.amount))}</span>
+                            {allocatedGig && (
+                              <span className="text-gray-500 ml-1">from {allocatedGig.clientName}</span>
+                            )}
+                          </div>
+                          <div className="flex items-center space-x-1">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => {
+                                setEditingAllocation(allocation);
+                                setEditAllocationAmount(allocation.amount);
+                              }}
+                              className="h-6 w-6 p-0"
+                            >
+                              <Edit2 className="w-3 h-3" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => {
+                                if (confirm(`Remove $${allocation.amount} allocation?`)) {
+                                  deleteAllocationMutation.mutate(allocation.id);
+                                }
+                              }}
+                              className="h-6 w-6 p-0 text-red-500 hover:text-red-700"
+                            >
+                              <Trash2 className="w-3 h-3" />
+                            </Button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
                 <div className="flex items-center justify-between p-2 bg-success/5 rounded-lg">
                   <div className="flex items-center">
                     {isCompleted && <Check className="w-4 h-4 text-success mr-2" />}
