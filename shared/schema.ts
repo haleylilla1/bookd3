@@ -46,8 +46,9 @@ export const allocations = pgTable("allocations", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").notNull(),
   gigId: integer("gig_id").notNull(),
-  goalId: integer("goal_id").notNull(),
+  goalId: integer("goal_id"), // nullable for piggy bank allocations
   amount: decimal("amount", { precision: 10, scale: 2 }).notNull(),
+  allocationType: text("allocation_type").notNull().default("goal"), // "goal" or "piggy_bank"
   createdAt: timestamp("created_at").defaultNow(),
 });
 
