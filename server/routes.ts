@@ -139,10 +139,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get("/api/piggy-bank-total", async (req, res) => {
+    try {
+      const allocations = await storage.getAllocationsByUser(currentUserId);
+      const piggyBankTotal = allocations
+        .filter(a => a.allocationType === "piggy_bank")
+        .reduce((sum, a) => sum + parseFloat(a.amount), 0);
+      res.json(piggyBankTotal);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch piggy bank total" });
+    }
+  });
+
   app.post("/api/allocations", async (req, res) => {
     try {
       const allocationData = insertAllocationSchema.parse({ ...req.body, userId: currentUserId });
       const allocation = await storage.createAllocation(allocationData);
+      
+      // Update goal current amount if allocating to a goal
+      if (allocation.goalId && allocation.allocationType === "goal") {
+        const goal = await storage.getGoal(allocation.goalId);
+        if (goal) {
+          const newCurrentAmount = (parseFloat(goal.currentAmount || "0") + parseFloat(allocation.amount)).toString();
+          await storage.updateGoal(allocation.goalId, { currentAmount: newCurrentAmount });
+        }
+      }
+      
       res.status(201).json(allocation);
     } catch (error) {
       if (error instanceof z.ZodError) {
