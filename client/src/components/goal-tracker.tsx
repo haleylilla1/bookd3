@@ -715,6 +715,7 @@ export default function GoalTracker() {
                     })}
                   </div>
                 )}
+                
                 <div className="flex items-center justify-between p-2 bg-success/5 rounded-lg">
                   <div className="flex items-center">
                     {isCompleted && <Check className="w-4 h-4 text-success mr-2" />}
@@ -960,6 +961,67 @@ export default function GoalTracker() {
                     className="flex-1"
                   >
                     {quickAllocateMutation.isPending ? "Allocating..." : "Allocate"}
+                  </Button>
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
+        )}
+
+        {/* Edit Allocation Dialog */}
+        {editingAllocation && (
+          <Dialog open={!!editingAllocation} onOpenChange={() => setEditingAllocation(null)}>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Edit Allocation</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4">
+                <div className="text-sm text-gray-600">
+                  Current amount: <span className="font-medium">{formatCurrency(parseFloat(editingAllocation.amount))}</span>
+                </div>
+                
+                <div>
+                  <Label htmlFor="edit-allocation-amount">New Amount</Label>
+                  <Input
+                    id="edit-allocation-amount"
+                    type="number"
+                    value={editAllocationAmount}
+                    onChange={(e) => setEditAllocationAmount(e.target.value)}
+                    placeholder="Enter new amount..."
+                    autoFocus
+                  />
+                </div>
+                
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    onClick={() => setEditingAllocation(null)}
+                    className="flex-1"
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    onClick={() => {
+                      if (!editAllocationAmount || isNaN(parseFloat(editAllocationAmount)) || parseFloat(editAllocationAmount) <= 0) {
+                        toast({
+                          title: "Invalid Amount",
+                          description: "Please enter a valid amount",
+                          variant: "destructive",
+                        });
+                        return;
+                      }
+                      
+                      updateAllocationMutation.mutate({
+                        allocationId: editingAllocation.id,
+                        amount: editAllocationAmount
+                      });
+                      setEditingAllocation(null);
+                      setEditAllocationAmount("");
+                    }}
+                    disabled={updateAllocationMutation.isPending}
+                    className="flex-1"
+                  >
+                    {updateAllocationMutation.isPending ? "Updating..." : "Update"}
                   </Button>
                 </div>
               </div>
