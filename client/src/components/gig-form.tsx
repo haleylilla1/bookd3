@@ -19,6 +19,7 @@ import type { InsertGig } from "@shared/schema";
 
 const gigFormSchema = z.object({
   gigType: z.string().min(1, "Gig type is required"),
+  eventName: z.string().min(1, "Event name is required"),
   clientName: z.string().min(1, "Client name is required"),
   date: z.string().min(1, "Date is required"),
   expectedPay: z.string().optional(),
@@ -49,6 +50,7 @@ export default function GigForm({ onClose }: GigFormProps) {
     resolver: zodResolver(gigFormSchema),
     defaultValues: {
       gigType: "",
+      eventName: "",
       clientName: "",
       date: new Date().toISOString().split('T')[0],
       expectedPay: "",
