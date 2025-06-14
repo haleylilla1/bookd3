@@ -155,8 +155,72 @@ export default function Dashboard() {
       .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
   };
 
-  // Calculate client statistics - show all clients ever worked with
+  // Calculate client statistics for dashboard (period-specific for monthly/weekly, all-time for annual)
   const getClientData = () => {
+    if (!gigs) return [];
+    
+    // Determine which gigs to include based on period
+    let gigsToProcess = gigs as any[];
+    
+    if (selectedPeriod === "weekly") {
+      const { startOfWeek, endOfWeek } = getWeekDates(currentDate);
+      gigsToProcess = gigsToProcess.filter(gig => {
+        const gigDate = new Date(gig.date);
+        return gigDate >= startOfWeek && gigDate <= endOfWeek;
+      });
+    } else if (selectedPeriod === "monthly") {
+      gigsToProcess = gigsToProcess.filter(gig => {
+        const gigDate = new Date(gig.date);
+        return gigDate.getMonth() === currentDate.getMonth() && 
+               gigDate.getFullYear() === currentDate.getFullYear();
+      });
+    } else if (selectedPeriod === "annual") {
+      gigsToProcess = gigsToProcess.filter(gig => {
+        const gigDate = new Date(gig.date);
+        return gigDate.getFullYear() === currentDate.getFullYear();
+      });
+    }
+    
+    // Group by client and calculate totals
+    const clientStats = new Map<string, { gigs: any[], total: number, gigCount: number, completedGigs: number }>();
+    
+    gigsToProcess
+      .filter(gig => gig.clientName && gig.clientName.trim() !== "")
+      .forEach(gig => {
+        const clientName = gig.clientName;
+        const earnings = gig.status === "completed" ? parseFloat(gig.actualPay || "0") : 0;
+        
+        if (!clientStats.has(clientName)) {
+          clientStats.set(clientName, { gigs: [], total: 0, gigCount: 0, completedGigs: 0 });
+        }
+        
+        const client = clientStats.get(clientName)!;
+        client.gigs.push(gig);
+        client.total += earnings;
+        client.gigCount++;
+        if (gig.status === "completed") {
+          client.completedGigs++;
+        }
+      });
+    
+    // Convert to array and sort by total earnings, then by gig count
+    return Array.from(clientStats.entries())
+      .map(([name, data]) => ({
+        name,
+        gigs: data.gigs,
+        total: data.total,
+        gigCount: data.gigCount,
+        completedGigs: data.completedGigs
+      }))
+      .sort((a, b) => {
+        // Sort by total earnings first, then by total gig count
+        if (b.total !== a.total) return b.total - a.total;
+        return b.gigCount - a.gigCount;
+      });
+  };
+
+  // Get all clients ever worked with (for modal view)
+  const getAllClientsData = () => {
     if (!gigs) return [];
     
     // Group by client and calculate totals from ALL gigs
@@ -942,7 +1006,7 @@ export default function Dashboard() {
         <DialogContent className="max-w-4xl">
           <DialogHeader>
             <DialogTitle>
-              {selectedClient ? `${selectedClient} - Gig History` : `All Clients (${getClientData().length} total)`}
+              {selectedClient ? `${selectedClient} - Gig History` : `All Clients (${getAllClientsData().length} total)`}
             </DialogTitle>
           </DialogHeader>
           <div className="max-h-96 overflow-y-auto">
@@ -997,8 +1061,8 @@ export default function Dashboard() {
             ) : (
               // All clients list
               <div className="space-y-3">
-                {getClientData().length > 0 ? (
-                  getClientData().map((client, index) => (
+                {getAllClientsData().length > 0 ? (
+                  getAllClientsData().map((client, index) => (
                     <button
                       key={index}
                       onClick={() => setSelectedClient(client.name)}
