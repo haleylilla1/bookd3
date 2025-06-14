@@ -492,6 +492,108 @@ export default function Dashboard() {
     updateGoalMutation.mutate({ goalAmount });
   };
 
+  const exportTaxData = () => {
+    if (!gigs) return;
+
+    const taxData = getTaxBreakdownData();
+    
+    if (taxData.length === 0) {
+      toast({
+        title: "No Tax Data",
+        description: "No completed gigs found for the current period.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Create CSV content
+    const headers = ['Date', 'Event Name', 'Client', 'Earnings', 'Tax Rate (%)', 'Tax Amount'];
+    const csvContent = [
+      headers.join(','),
+      ...taxData.map(item => [
+        item.date,
+        `"${item.gigName}"`,
+        `"${item.clientName}"`,
+        item.actualPay.toFixed(2),
+        item.taxPercentage,
+        item.taxAmount.toFixed(2)
+      ].join(','))
+    ].join('\n');
+
+    // Download file
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `tax-data-${getCurrentPeriodLabel().replace(/\s+/g, '-').toLowerCase()}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(url);
+
+    toast({
+      title: "Tax Data Exported",
+      description: `Downloaded ${taxData.length} tax records for ${getCurrentPeriodLabel()}`,
+    });
+  };
+
+  const exportMonthlyReport = () => {
+    if (!gigs) return;
+
+    const currentData = getEarningsForPeriod();
+    const projectedData = getProjectedEarningsForPeriod();
+    const taxData = getTaxBreakdownData();
+    const tipsData = getTipsBreakdownData();
+    const expenseData = getExpenseBreakdownData();
+    const clientData = getClientData();
+
+    // Create comprehensive report content
+    const reportContent = [
+      `${getCurrentPeriodLabel()} Report`,
+      `Generated: ${new Date().toLocaleDateString()}`,
+      '',
+      'EARNINGS SUMMARY',
+      `Actual Earnings: $${currentData.earnings.toFixed(2)}`,
+      `Projected Earnings: $${projectedData.projectedEarnings.toFixed(2)}`,
+      `Completed Gigs: ${currentData.gigs}`,
+      `Average per Gig: $${currentData.avgPerGig.toFixed(2)}`,
+      '',
+      'TAX INFORMATION',
+      `Total Tax Estimate: $${taxData.reduce((sum, item) => sum + item.taxAmount, 0).toFixed(2)}`,
+      `Default Tax Rate: ${user?.defaultTaxPercentage || 23}%`,
+      '',
+      'TIPS & EXPENSES',
+      `Total Tips: $${tipsData.reduce((sum, item) => sum + item.tips, 0).toFixed(2)}`,
+      `Total Expenses: $${expenseData.reduce((sum, item) => sum + item.totalExpenses, 0).toFixed(2)}`,
+      '',
+      'TOP CLIENTS',
+      ...clientData.slice(0, 5).map((client, index) => 
+        `${index + 1}. ${client.name}: $${client.total.toFixed(2)} (${client.gigCount} gigs)`
+      ),
+      '',
+      'GOAL PROGRESS',
+      currentGoal ? 
+        `Goal: $${parseFloat(currentGoal.goalAmount).toFixed(2)} | Progress: ${((projectedData.projectedEarnings / parseFloat(currentGoal.goalAmount)) * 100).toFixed(1)}%` :
+        'No goal set for this period',
+    ].join('\n');
+
+    // Download file
+    const blob = new Blob([reportContent], { type: 'text/plain' });
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `monthly-report-${getCurrentPeriodLabel().replace(/\s+/g, '-').toLowerCase()}.txt`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(url);
+
+    toast({
+      title: "Monthly Report Exported",
+      description: `Downloaded comprehensive report for ${getCurrentPeriodLabel()}`,
+    });
+  };
+
   if (isLoading) {
     return (
       <div className="p-4">
@@ -970,6 +1072,7 @@ export default function Dashboard() {
           <div className="grid grid-cols-2 gap-3">
             <Button 
               variant="outline" 
+              onClick={exportTaxData}
               className="flex items-center justify-center space-x-2 p-3 bg-primary/10 text-primary border-primary/20 hover:bg-primary/20"
             >
               <Download className="w-4 h-4" />
@@ -977,6 +1080,7 @@ export default function Dashboard() {
             </Button>
             <Button 
               variant="outline"
+              onClick={exportMonthlyReport}
               className="flex items-center justify-center space-x-2 p-3 bg-success/10 text-success border-success/20 hover:bg-success/20"
             >
               <TrendingUp className="w-4 h-4" />
