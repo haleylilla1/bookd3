@@ -57,8 +57,6 @@ export const gigs = pgTable("gigs", {
   taxPercentage: integer("tax_percentage").default(23),
   mileage: integer("mileage"),
   notes: text("notes"),
-  transportationExpense: decimal("transportation_expense", { precision: 10, scale: 2 }),
-  transportationReceipts: text("transportation_receipts").array(),
   parkingExpense: decimal("parking_expense", { precision: 10, scale: 2 }),
   parkingReceipts: text("parking_receipts").array(),
   otherExpenses: decimal("other_expenses", { precision: 10, scale: 2 }),

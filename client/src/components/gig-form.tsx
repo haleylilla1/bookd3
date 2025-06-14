@@ -35,8 +35,6 @@ const gigFormSchema = z.object({
   mileage: z.string().optional(),
   notes: z.string().optional(),
   status: z.enum(["upcoming", "completed", "pending_payment"]).default("upcoming"),
-  transportationExpense: z.string().optional(),
-  transportationReceipts: z.array(z.string()).default([]),
   parkingExpense: z.string().optional(),
   parkingReceipts: z.array(z.string()).default([]),
   otherExpenses: z.string().optional(),
@@ -76,9 +74,10 @@ export default function GigForm({ onClose }: GigFormProps) {
       mileage: "",
       notes: "",
       status: "upcoming",
-      transportationExpense: "",
       parkingExpense: "",
+      parkingReceipts: [],
       otherExpenses: "",
+      otherExpenseReceipts: [],
     },
   });
 
@@ -192,8 +191,6 @@ export default function GigForm({ onClose }: GigFormProps) {
         taxPercentage: data.taxPercentage,
         mileage: data.mileage ? parseInt(data.mileage) : null,
         notes: data.notes || null,
-        transportationExpense: trackExpenses && data.transportationExpense ? data.transportationExpense : null,
-        transportationReceipts: trackExpenses ? data.transportationReceipts : [],
         parkingExpense: trackExpenses && data.parkingExpense ? data.parkingExpense : null,
         parkingReceipts: trackExpenses ? data.parkingReceipts : [],
         otherExpenses: trackExpenses && data.otherExpenses ? data.otherExpenses : null,
@@ -474,27 +471,6 @@ export default function GigForm({ onClose }: GigFormProps) {
                 </div>
                 {trackExpenses && (
                   <div className="space-y-4">
-                    {/* Transportation Expense */}
-                    <div className="space-y-2">
-                      <FormField
-                        control={form.control}
-                        name="transportationExpense"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Transportation Expense</FormLabel>
-                            <FormControl>
-                              <Input type="number" placeholder="0.00" {...field} />
-                            </FormControl>
-                          </FormItem>
-                        )}
-                      />
-                      <ReceiptUpload
-                        label="Transportation Receipts"
-                        receipts={form.watch("transportationReceipts")}
-                        onReceiptsChange={(receipts) => form.setValue("transportationReceipts", receipts)}
-                      />
-                    </div>
-
                     {/* Parking Expense */}
                     <div className="space-y-2">
                       <FormField
