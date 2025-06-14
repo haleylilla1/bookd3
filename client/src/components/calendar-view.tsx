@@ -264,11 +264,9 @@ export default function CalendarView() {
                         aspect-square p-2 text-sm rounded-lg relative transition-colors min-h-[60px]
                         ${isCurrentMonth 
                           ? hasGigs 
-                            ? isToday
-                              ? 'bg-primary text-white hover:bg-primary/80 cursor-pointer ring-2 ring-white ring-offset-2 ring-offset-primary' 
-                              : 'bg-primary text-white hover:bg-primary/80 cursor-pointer'
+                            ? 'bg-primary text-white hover:bg-primary/80 cursor-pointer' 
                             : isToday
-                              ? 'text-gray-900 hover:bg-gray-100 ring-2 ring-primary ring-offset-1'
+                              ? 'text-gray-900 hover:bg-gray-100 bg-blue-50 border-2 border-primary'
                               : 'text-gray-900 hover:bg-gray-100'
                           : 'text-gray-300 hover:bg-gray-50'
                         }
@@ -277,7 +275,7 @@ export default function CalendarView() {
                       disabled={!hasGigs}
                     >
                       <div className="flex flex-col items-center justify-center h-full">
-                        <span className={`${isToday ? 'font-bold' : ''} mb-1`}>
+                        <span className={`${isToday ? 'font-bold text-primary' : ''} mb-1 ${isToday && hasGigs ? 'text-white font-bold' : ''}`}>
                           {date.getDate()}
                         </span>
                         {hasGigs && (
@@ -296,6 +294,9 @@ export default function CalendarView() {
                               <div className="text-xs text-white/80">+{dayGigs.length - 3}</div>
                             )}
                           </div>
+                        )}
+                        {isToday && hasGigs && (
+                          <div className="absolute top-1 right-1 w-2 h-2 bg-yellow-400 rounded-full"></div>
                         )}
                       </div>
                     </button>
