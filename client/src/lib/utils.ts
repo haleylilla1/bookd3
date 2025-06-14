@@ -15,7 +15,16 @@ export function formatCurrency(amount: number): string {
 }
 
 export function formatDate(date: string | Date): string {
-  const d = new Date(date);
+  let d: Date;
+  
+  if (typeof date === 'string') {
+    // Handle date strings (YYYY-MM-DD) to avoid timezone issues
+    const [year, month, day] = date.split('-').map(Number);
+    d = new Date(year, month - 1, day); // month is 0-indexed
+  } else {
+    d = new Date(date);
+  }
+  
   return d.toLocaleDateString("en-US", {
     year: "numeric",
     month: "short",
