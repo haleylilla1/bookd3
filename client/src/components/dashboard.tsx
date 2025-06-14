@@ -1111,7 +1111,7 @@ export default function Dashboard() {
                 className="flex items-center justify-center space-x-2 p-3 bg-primary/10 text-primary border-primary/20 hover:bg-primary/20"
               >
                 <Download className="w-4 h-4" />
-                <span className="text-sm font-medium">Export Tax Data</span>
+                <span className="text-xs font-medium">Tax Data</span>
               </Button>
               <Button 
                 variant="outline"
@@ -1119,7 +1119,7 @@ export default function Dashboard() {
                 className="flex items-center justify-center space-x-2 p-3 bg-green-50 text-green-700 border-green-200 hover:bg-green-100"
               >
                 <Download className="w-4 h-4" />
-                <span className="text-sm font-medium">Monthly Report (Excel)</span>
+                <span className="text-xs font-medium">Excel Report</span>
               </Button>
               <Button 
                 variant="outline"
@@ -1127,7 +1127,7 @@ export default function Dashboard() {
                 className="flex items-center justify-center space-x-2 p-3 bg-red-50 text-red-700 border-red-200 hover:bg-red-100"
               >
                 <Download className="w-4 h-4" />
-                <span className="text-sm font-medium">Monthly Report (PDF)</span>
+                <span className="text-xs font-medium">PDF Report</span>
               </Button>
             </div>
           ) : (
