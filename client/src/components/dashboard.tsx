@@ -157,37 +157,51 @@ export default function Dashboard() {
 
   // Calculate earnings based on selected period
   const getEarningsForPeriod = () => {
-    if (!stats) return { earnings: 0, gigs: 0, avgPerGig: 0, period: "" };
+    if (!gigs) return { earnings: 0, gigs: 0, avgPerGig: 0, period: "" };
     
-    const monthlyEarnings = (stats as any).monthlyEarnings || 0;
-    const completedGigs = (stats as any).completedGigs || 0;
-    const avgPerGig = (stats as any).avgPerGig || 0;
+    // Filter gigs to current period
+    const currentPeriodGigs = (gigs as any[]).filter(gig => {
+      const gigDate = new Date(gig.date);
+      
+      switch (selectedPeriod) {
+        case "weekly":
+          const { startOfWeek, endOfWeek } = getWeekDates(currentDate);
+          return gigDate >= startOfWeek && gigDate <= endOfWeek;
+        case "monthly":
+          return gigDate.getMonth() === currentDate.getMonth() && 
+                 gigDate.getFullYear() === currentDate.getFullYear();
+        case "annual":
+          return gigDate.getFullYear() === currentDate.getFullYear();
+        default:
+          return gigDate.getMonth() === currentDate.getMonth() && 
+                 gigDate.getFullYear() === currentDate.getFullYear();
+      }
+    });
+    
+    // Calculate actual earnings from completed gigs only
+    const completedGigs = currentPeriodGigs.filter(gig => gig.status === "completed");
+    const totalEarnings = completedGigs.reduce((sum, gig) => sum + parseFloat(gig.actualPay || "0"), 0);
+    const avgPerGig = completedGigs.length > 0 ? totalEarnings / completedGigs.length : 0;
     
     switch (selectedPeriod) {
       case "weekly":
-        // Estimate weekly from monthly data
-        const weeklyEarnings = monthlyEarnings / 4.33; // Average weeks per month
-        const weeklyGigs = completedGigs / 4.33;
         return {
-          earnings: weeklyEarnings,
-          gigs: weeklyGigs,
+          earnings: totalEarnings,
+          gigs: completedGigs.length,
           avgPerGig: avgPerGig,
           period: "This Week"
         };
       case "annual":
-        // Estimate annual from monthly data
-        const annualEarnings = monthlyEarnings * 12;
-        const annualGigs = completedGigs * 12;
         return {
-          earnings: annualEarnings,
-          gigs: annualGigs,
+          earnings: totalEarnings,
+          gigs: completedGigs.length,
           avgPerGig: avgPerGig,
           period: "This Year"
         };
       default:
         return {
-          earnings: monthlyEarnings,
-          gigs: completedGigs,
+          earnings: totalEarnings,
+          gigs: completedGigs.length,
           avgPerGig: avgPerGig,
           period: "This Month"
         };
