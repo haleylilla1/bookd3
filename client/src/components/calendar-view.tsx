@@ -264,17 +264,20 @@ export default function CalendarView() {
                         aspect-square p-2 text-sm rounded-lg relative transition-colors min-h-[60px]
                         ${isCurrentMonth 
                           ? hasGigs 
-                            ? 'bg-primary text-white hover:bg-primary/80 cursor-pointer' 
-                            : 'text-gray-900 hover:bg-gray-100'
+                            ? isToday
+                              ? 'bg-primary text-white hover:bg-primary/80 cursor-pointer ring-2 ring-white ring-offset-2 ring-offset-primary' 
+                              : 'bg-primary text-white hover:bg-primary/80 cursor-pointer'
+                            : isToday
+                              ? 'text-gray-900 hover:bg-gray-100 ring-2 ring-primary ring-offset-1'
+                              : 'text-gray-900 hover:bg-gray-100'
                           : 'text-gray-300 hover:bg-gray-50'
                         }
-                        ${isToday && !hasGigs ? 'ring-2 ring-primary ring-offset-1' : ''}
                         ${!hasGigs ? 'cursor-default' : ''}
                       `}
                       disabled={!hasGigs}
                     >
                       <div className="flex flex-col items-center justify-center h-full">
-                        <span className={`${isToday && hasGigs ? 'font-bold' : ''} mb-1`}>
+                        <span className={`${isToday ? 'font-bold' : ''} mb-1`}>
                           {date.getDate()}
                         </span>
                         {hasGigs && (
