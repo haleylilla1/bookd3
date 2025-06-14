@@ -420,6 +420,183 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Monthly report export routes
+  app.get("/api/reports/monthly/excel", async (req, res) => {
+    try {
+      const { month, year } = req.query;
+      const targetMonth = month ? parseInt(month as string) : new Date().getMonth() + 1;
+      const targetYear = year ? parseInt(year as string) : new Date().getFullYear();
+      
+      // Get monthly data
+      const startDate = new Date(targetYear, targetMonth - 1, 1).toISOString().split('T')[0];
+      const endDate = new Date(targetYear, targetMonth, 0).toISOString().split('T')[0];
+      const gigs = await storage.getGigsByDateRange(currentUserId, startDate, endDate);
+      const user = await storage.getUser(currentUserId);
+      
+      // Calculate totals
+      const totalEarnings = gigs.reduce((sum, gig) => sum + parseFloat(gig.actualPay || '0'), 0);
+      const totalTips = gigs.reduce((sum, gig) => sum + parseFloat(gig.tips || '0'), 0);
+      const totalMileage = gigs.reduce((sum, gig) => sum + (gig.mileage || 0), 0);
+      const totalExpenses = gigs.reduce((sum, gig) => sum + parseFloat(gig.parkingExpense || '0') + parseFloat(gig.otherExpenses || '0'), 0);
+      
+      // Create Excel workbook
+      const XLSX = await import('xlsx');
+      const workbook = XLSX.utils.book_new();
+      
+      // Summary sheet
+      const summaryData = [
+        ['Monthly Report Summary'],
+        ['Month/Year', `${targetMonth}/${targetYear}`],
+        [''],
+        ['Total Earnings', `$${totalEarnings.toFixed(2)}`],
+        ['Total Tips', `$${totalTips.toFixed(2)}`],
+        ['Total Mileage', `${totalMileage} miles`],
+        ['Total Expenses', `$${totalExpenses.toFixed(2)}`],
+        ['Net Income', `$${(totalEarnings - totalExpenses).toFixed(2)}`],
+      ];
+      
+      const summarySheet = XLSX.utils.aoa_to_sheet(summaryData);
+      XLSX.utils.book_append_sheet(workbook, summarySheet, 'Summary');
+      
+      // Detailed gigs sheet
+      const gigsData = [
+        ['Date', 'Client', 'Gig Type', 'Location', 'Earnings', 'Tips', 'Mileage', 'Expenses']
+      ];
+      
+      gigs.forEach(gig => {
+        const earnings = parseFloat(gig.actualPay || '0');
+        const expenses = parseFloat(gig.parkingExpense || '0') + parseFloat(gig.otherExpenses || '0');
+        
+        gigsData.push([
+          gig.date,
+          gig.clientName,
+          gig.gigType,
+          gig.gigAddress || '',
+          `$${earnings.toFixed(2)}`,
+          `$${parseFloat(gig.tips || '0').toFixed(2)}`,
+          (gig.mileage || 0).toString(),
+          `$${expenses.toFixed(2)}`
+        ]);
+      });
+      
+      const gigsSheet = XLSX.utils.aoa_to_sheet(gigsData);
+      XLSX.utils.book_append_sheet(workbook, gigsSheet, 'Gigs Detail');
+      
+      // Generate Excel buffer
+      const excelBuffer = XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' });
+      
+      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+      res.setHeader('Content-Disposition', `attachment; filename="monthly-report-${targetMonth}-${targetYear}.xlsx"`);
+      res.send(excelBuffer);
+      
+    } catch (error) {
+      console.error("Failed to generate Excel report:", error);
+      res.status(500).json({ message: "Failed to generate Excel report" });
+    }
+  });
+
+  app.get("/api/reports/monthly/pdf", async (req, res) => {
+    try {
+      const { month, year } = req.query;
+      const targetMonth = month ? parseInt(month as string) : new Date().getMonth() + 1;
+      const targetYear = year ? parseInt(year as string) : new Date().getFullYear();
+      
+      // Get monthly data
+      const startDate = new Date(targetYear, targetMonth - 1, 1).toISOString().split('T')[0];
+      const endDate = new Date(targetYear, targetMonth, 0).toISOString().split('T')[0];
+      const gigs = await storage.getGigsByDateRange(currentUserId, startDate, endDate);
+      const user = await storage.getUser(currentUserId);
+      
+      // Calculate totals
+      const totalEarnings = gigs.reduce((sum, gig) => sum + parseFloat(gig.actualPay || '0'), 0);
+      const totalTips = gigs.reduce((sum, gig) => sum + parseFloat(gig.tips || '0'), 0);
+      const totalMileage = gigs.reduce((sum, gig) => sum + (gig.mileage || 0), 0);
+      const totalExpenses = gigs.reduce((sum, gig) => sum + parseFloat(gig.parkingExpense || '0') + parseFloat(gig.otherExpenses || '0'), 0);
+      
+      // Create PDF
+      const { jsPDF } = await import('jspdf');
+      const autoTable = (await import('jspdf-autotable')).default;
+      
+      const doc = new jsPDF();
+      
+      // Title
+      doc.setFontSize(20);
+      doc.text('Monthly Gig Report', 20, 20);
+      
+      // Report details
+      doc.setFontSize(12);
+      doc.text(`Month: ${new Date(targetYear, targetMonth - 1).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}`, 20, 35);
+      doc.text(`Worker: ${user?.name || 'N/A'}`, 20, 45);
+      
+      // Summary section
+      doc.setFontSize(14);
+      doc.text('Summary', 20, 65);
+      
+      const summaryData = [
+        ['Total Earnings', `$${totalEarnings.toFixed(2)}`],
+        ['Total Tips', `$${totalTips.toFixed(2)}`],
+        ['Total Mileage', `${totalMileage} miles`],
+        ['Total Expenses', `$${totalExpenses.toFixed(2)}`],
+        ['Net Income', `$${(totalEarnings - totalExpenses).toFixed(2)}`],
+      ];
+      
+      autoTable(doc, {
+        startY: 75,
+        head: [['Category', 'Amount']],
+        body: summaryData,
+        theme: 'grid',
+        headStyles: { fillColor: [66, 139, 202] }
+      });
+      
+      // Gigs detail section
+      if (gigs.length > 0) {
+        doc.addPage();
+        doc.setFontSize(14);
+        doc.text('Gig Details', 20, 20);
+        
+        const gigsTableData = gigs.map(gig => [
+          gig.date,
+          gig.clientName,
+          gig.gigType,
+          gig.location || '',
+          `$${parseFloat(gig.totalEarnings).toFixed(2)}`,
+          `$${parseFloat(gig.tips || '0').toFixed(2)}`,
+          gig.mileage || '0',
+          `$${parseFloat(gig.expenses || '0').toFixed(2)}`
+        ]);
+        
+        autoTable(doc, {
+          startY: 30,
+          head: [['Date', 'Client', 'Type', 'Location', 'Earnings', 'Tips', 'Miles', 'Expenses']],
+          body: gigsTableData,
+          theme: 'grid',
+          headStyles: { fillColor: [66, 139, 202] },
+          styles: { fontSize: 8 },
+          columnStyles: {
+            0: { cellWidth: 20 },
+            1: { cellWidth: 25 },
+            2: { cellWidth: 20 },
+            3: { cellWidth: 25 },
+            4: { cellWidth: 20 },
+            5: { cellWidth: 15 },
+            6: { cellWidth: 15 },
+            7: { cellWidth: 20 }
+          }
+        });
+      }
+      
+      const pdfBuffer = Buffer.from(doc.output('arraybuffer'));
+      
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename="monthly-report-${targetMonth}-${targetYear}.pdf"`);
+      res.send(pdfBuffer);
+      
+    } catch (error) {
+      console.error("Failed to generate PDF report:", error);
+      res.status(500).json({ message: "Failed to generate PDF report" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

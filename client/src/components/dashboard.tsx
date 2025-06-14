@@ -594,6 +594,40 @@ export default function Dashboard() {
     });
   };
 
+  const exportMonthlyExcel = () => {
+    const month = currentDate.getMonth() + 1;
+    const year = currentDate.getFullYear();
+    
+    const link = document.createElement('a');
+    link.href = `/api/reports/monthly/excel?month=${month}&year=${year}`;
+    link.download = `monthly-report-${month}-${year}.xlsx`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    toast({
+      title: "Excel Report Downloaded",
+      description: `Downloaded Excel report for ${getCurrentPeriodLabel()}`,
+    });
+  };
+
+  const exportMonthlyPDF = () => {
+    const month = currentDate.getMonth() + 1;
+    const year = currentDate.getFullYear();
+    
+    const link = document.createElement('a');
+    link.href = `/api/reports/monthly/pdf?month=${month}&year=${year}`;
+    link.download = `monthly-report-${month}-${year}.pdf`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    toast({
+      title: "PDF Report Downloaded",
+      description: `Downloaded PDF report for ${getCurrentPeriodLabel()}`,
+    });
+  };
+
   if (isLoading) {
     return (
       <div className="p-4">
