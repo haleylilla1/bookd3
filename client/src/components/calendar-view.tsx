@@ -12,6 +12,7 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import type { Gig } from "@shared/schema";
 import { formatMonth, addMonths } from "@/lib/dateUtils";
+import ReceiptUpload from "@/components/receipt-upload";
 
 export default function CalendarView() {
   const [editingGig, setEditingGig] = useState<(Gig & { isMultiDay?: boolean; startDate?: string; endDate?: string; gigIds?: number[] }) | null>(null);
@@ -648,6 +649,12 @@ function GigEditForm({ gig, onSave, onCancel, isLoading }: GigEditFormProps) {
     tips: gig.tips || "",
     status: gig.status,
     duties: gig.duties || "",
+    transportationExpense: gig.transportationExpense || "",
+    transportationReceipts: (gig as any).transportationReceipts || [],
+    parkingExpense: gig.parkingExpense || "",
+    parkingReceipts: (gig as any).parkingReceipts || [],
+    otherExpenses: gig.otherExpenses || "",
+    otherExpenseReceipts: (gig as any).otherExpenseReceipts || [],
   });
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -756,6 +763,66 @@ function GigEditForm({ gig, onSave, onCancel, isLoading }: GigEditFormProps) {
           onChange={(e) => setFormData({ ...formData, duties: e.target.value })}
           placeholder="Key duties and responsibilities..."
         />
+      </div>
+
+      {/* Expense Section */}
+      <div className="border-t pt-3 space-y-3">
+        <h4 className="font-medium text-sm">Expenses & Receipts</h4>
+        
+        {/* Transportation */}
+        <div className="space-y-2">
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <label className="block text-xs font-medium mb-1">Transportation</label>
+              <Input
+                type="number"
+                placeholder="0.00"
+                value={formData.transportationExpense}
+                onChange={(e) => setFormData({ ...formData, transportationExpense: e.target.value })}
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium mb-1">Parking</label>
+              <Input
+                type="number"
+                placeholder="0.00"
+                value={formData.parkingExpense}
+                onChange={(e) => setFormData({ ...formData, parkingExpense: e.target.value })}
+              />
+            </div>
+          </div>
+          <div>
+            <label className="block text-xs font-medium mb-1">Other Expenses</label>
+            <Input
+              type="number"
+              placeholder="0.00"
+              value={formData.otherExpenses}
+              onChange={(e) => setFormData({ ...formData, otherExpenses: e.target.value })}
+            />
+          </div>
+        </div>
+
+        {/* Receipt Uploads */}
+        <div className="space-y-2">
+          <ReceiptUpload
+            label="Transportation Receipts"
+            receipts={formData.transportationReceipts}
+            onReceiptsChange={(receipts) => setFormData({ ...formData, transportationReceipts: receipts })}
+            maxFiles={3}
+          />
+          <ReceiptUpload
+            label="Parking Receipts"
+            receipts={formData.parkingReceipts}
+            onReceiptsChange={(receipts) => setFormData({ ...formData, parkingReceipts: receipts })}
+            maxFiles={3}
+          />
+          <ReceiptUpload
+            label="Other Expense Receipts"
+            receipts={formData.otherExpenseReceipts}
+            onReceiptsChange={(receipts) => setFormData({ ...formData, otherExpenseReceipts: receipts })}
+            maxFiles={3}
+          />
+        </div>
       </div>
 
       <div className="flex justify-end gap-2 pt-2">

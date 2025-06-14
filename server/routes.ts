@@ -56,6 +56,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Convert empty strings to null for numeric/decimal fields
       const numericFields = ['expectedPay', 'actualPay', 'tips', 'transportationExpense', 'parkingExpense', 'otherExpenses', 'distanceMiles'];
       const integerFields = ['taxPercentage', 'mileage', 'travelTimeMinutes'];
+      const arrayFields = ['transportationReceipts', 'parkingReceipts', 'otherExpenseReceipts'];
       
       numericFields.forEach(field => {
         if (updateData[field] === "") {
@@ -66,6 +67,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       integerFields.forEach(field => {
         if (updateData[field] === "") {
           updateData[field] = null;
+        }
+      });
+      
+      // Ensure array fields are properly formatted
+      arrayFields.forEach(field => {
+        if (!updateData[field]) {
+          updateData[field] = [];
         }
       });
 
