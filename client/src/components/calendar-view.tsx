@@ -14,60 +14,21 @@ import type { Gig } from "@shared/schema";
 import { formatMonth, addMonths } from "@/lib/dateUtils";
 import ReceiptUpload from "@/components/receipt-upload";
 
-// Color mapping for different gig types
-const getGigTypeColor = (gigType: string, status: string) => {
-  if (status === "completed") {
-    switch (gigType.toLowerCase()) {
-      case "brand ambassador":
-        return "bg-blue-500";
-      case "event staff":
-        return "bg-green-500";
-      case "bartender":
-        return "bg-purple-500";
-      case "server":
-        return "bg-orange-500";
-      case "photographer":
-        return "bg-pink-500";
-      case "musician":
-        return "bg-yellow-500";
-      default:
-        return "bg-gray-500";
-    }
-  } else if (status === "confirmed") {
-    switch (gigType.toLowerCase()) {
-      case "brand ambassador":
-        return "bg-blue-400";
-      case "event staff":
-        return "bg-green-400";
-      case "bartender":
-        return "bg-purple-400";
-      case "server":
-        return "bg-orange-400";
-      case "photographer":
-        return "bg-pink-400";
-      case "musician":
-        return "bg-yellow-400";
-      default:
-        return "bg-gray-400";
-    }
-  } else {
-    // pending/applied
-    switch (gigType.toLowerCase()) {
-      case "brand ambassador":
-        return "bg-blue-300";
-      case "event staff":
-        return "bg-green-300";
-      case "bartender":
-        return "bg-purple-300";
-      case "server":
-        return "bg-orange-300";
-      case "photographer":
-        return "bg-pink-300";
-      case "musician":
-        return "bg-yellow-300";
-      default:
-        return "bg-gray-300";
-    }
+// Color mapping for gig status
+const getGigStatusColor = (status: string) => {
+  switch (status) {
+    case "completed":
+      return "bg-green-500";
+    case "pending_payment":
+      return "bg-orange-500";
+    case "upcoming":
+    case "confirmed":
+      return "bg-blue-500";
+    case "pending":
+    case "applied":
+      return "bg-gray-400";
+    default:
+      return "bg-gray-300";
   }
 };
 
@@ -389,15 +350,15 @@ export default function CalendarView() {
                       <div className="absolute inset-0 flex items-center justify-center">
                         {dayGigs.length === 1 ? (
                           <div 
-                            className={`w-8 h-8 rounded-full ${getGigTypeColor(dayGigs[0].gigType, dayGigs[0].status)} opacity-30`}
+                            className={`w-8 h-8 rounded-full ${getGigStatusColor(dayGigs[0].status)} opacity-30`}
                           />
                         ) : dayGigs.length === 2 ? (
                           <div className="flex gap-1">
                             <div 
-                              className={`w-6 h-6 rounded-full ${getGigTypeColor(dayGigs[0].gigType, dayGigs[0].status)} opacity-30`}
+                              className={`w-6 h-6 rounded-full ${getGigStatusColor(dayGigs[0].status)} opacity-30`}
                             />
                             <div 
-                              className={`w-6 h-6 rounded-full ${getGigTypeColor(dayGigs[1].gigType, dayGigs[1].status)} opacity-30`}
+                              className={`w-6 h-6 rounded-full ${getGigStatusColor(dayGigs[1].status)} opacity-30`}
                             />
                           </div>
                         ) : (
@@ -405,7 +366,7 @@ export default function CalendarView() {
                             {dayGigs.slice(0, 3).map((gig, gigIndex) => (
                               <div 
                                 key={gigIndex}
-                                className={`w-4 h-4 rounded-full ${getGigTypeColor(gig.gigType, gig.status)} opacity-30`}
+                                className={`w-4 h-4 rounded-full ${getGigStatusColor(gig.status)} opacity-30`}
                               />
                             ))}
                             {dayGigs.length > 3 && (
@@ -432,39 +393,30 @@ export default function CalendarView() {
         </CardContent>
       </Card>
 
-      {/* Gig Type & Status Legend */}
+      {/* Gig Status Legend */}
       <Card className="mb-6">
         <CardContent className="p-4">
-          <h3 className="font-semibold text-sm mb-3 text-gray-700">Gig Type Colors</h3>
-          <div className="grid grid-cols-2 gap-3 text-xs mb-4">
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded-full bg-blue-500"></div>
-              <span className="text-gray-600">Brand Ambassador</span>
-            </div>
+          <h3 className="font-semibold text-sm mb-3 text-gray-700">Gig Status Colors</h3>
+          <div className="flex flex-wrap gap-4 text-xs mb-3">
             <div className="flex items-center gap-2">
               <div className="w-3 h-3 rounded-full bg-green-500"></div>
-              <span className="text-gray-600">Event Staff</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded-full bg-purple-500"></div>
-              <span className="text-gray-600">Bartender</span>
+              <span className="text-gray-600">Completed</span>
             </div>
             <div className="flex items-center gap-2">
               <div className="w-3 h-3 rounded-full bg-orange-500"></div>
-              <span className="text-gray-600">Server</span>
+              <span className="text-gray-600">Pending Payment</span>
             </div>
             <div className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded-full bg-pink-500"></div>
-              <span className="text-gray-600">Photographer</span>
+              <div className="w-3 h-3 rounded-full bg-blue-500"></div>
+              <span className="text-gray-600">Upcoming</span>
             </div>
             <div className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
-              <span className="text-gray-600">Musician</span>
+              <div className="w-3 h-3 rounded-full bg-gray-400"></div>
+              <span className="text-gray-600">Pending</span>
             </div>
           </div>
           <div className="text-xs text-gray-500 pt-2 border-t">
-            <div className="mb-1"><strong>Status:</strong> Darker = Completed, Medium = Confirmed, Light = Pending</div>
-            <div>Click dates with colored circles to view gig details</div>
+            Click dates with colored circles to view gig details
           </div>
         </CardContent>
       </Card>
