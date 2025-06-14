@@ -7,6 +7,287 @@ import { z } from "zod";
 export async function registerRoutes(app: Express): Promise<Server> {
   const currentUserId = 1; // For MVP, we'll use a single user
 
+  // Annual report export routes (register early to avoid conflicts)
+  app.get("/api/reports/annual/excel", async (req, res) => {
+    try {
+      console.log("Annual Excel route hit with query:", req.query);
+      const { year } = req.query;
+      const targetYear = year ? parseInt(year as string) : new Date().getFullYear();
+      console.log("Processing annual report for year:", targetYear);
+      
+      // Get annual data
+      const startDate = new Date(targetYear, 0, 1).toISOString().split('T')[0];
+      const endDate = new Date(targetYear, 11, 31).toISOString().split('T')[0];
+      const gigs = await storage.getGigsByDateRange(currentUserId, startDate, endDate);
+      const user = await storage.getUser(currentUserId);
+      
+      // Calculate totals
+      const totalEarnings = gigs.reduce((sum, gig) => sum + parseFloat(gig.actualPay || '0'), 0);
+      const totalTips = gigs.reduce((sum, gig) => sum + parseFloat(gig.tips || '0'), 0);
+      const totalMileage = gigs.reduce((sum, gig) => sum + (gig.mileage || 0), 0);
+      const totalExpenses = gigs.reduce((sum, gig) => sum + parseFloat(gig.parkingExpense || '0') + parseFloat(gig.otherExpenses || '0'), 0);
+      
+      // Group gigs by month for breakdown
+      const monthlyBreakdown = Array.from({length: 12}, (_, i) => {
+        const monthGigs = gigs.filter(gig => new Date(gig.date).getMonth() === i);
+        const monthEarnings = monthGigs.reduce((sum, gig) => sum + parseFloat(gig.actualPay || '0'), 0);
+        return {
+          month: new Date(targetYear, i, 1).toLocaleDateString('en-US', { month: 'long' }),
+          gigs: monthGigs.length,
+          earnings: monthEarnings
+        };
+      });
+      
+      // Create Excel workbook
+      const XLSX = await import('xlsx');
+      const workbook = XLSX.utils.book_new();
+      
+      // Annual Summary sheet
+      const summaryData = [
+        ['Annual Report Summary'],
+        ['Year', targetYear.toString()],
+        [''],
+        ['Total Earnings', `$${totalEarnings.toFixed(2)}`],
+        ['Total Tips', `$${totalTips.toFixed(2)}`],
+        ['Total Mileage', `${totalMileage} miles`],
+        ['Total Expenses', `$${totalExpenses.toFixed(2)}`],
+        ['Net Income', `$${(totalEarnings - totalExpenses).toFixed(2)}`],
+        ['Total Gigs', gigs.length.toString()],
+        ['Average per Gig', `$${gigs.length > 0 ? (totalEarnings / gigs.length).toFixed(2) : '0.00'}`],
+      ];
+      
+      const summarySheet = XLSX.utils.aoa_to_sheet(summaryData);
+      XLSX.utils.book_append_sheet(workbook, summarySheet, 'Annual Summary');
+      
+      // Monthly Breakdown sheet
+      const monthlyData = [
+        ['Month', 'Gigs', 'Earnings']
+      ];
+      
+      monthlyBreakdown.forEach(month => {
+        monthlyData.push([
+          month.month,
+          month.gigs.toString(),
+          `$${month.earnings.toFixed(2)}`
+        ]);
+      });
+      
+      const monthlySheet = XLSX.utils.aoa_to_sheet(monthlyData);
+      XLSX.utils.book_append_sheet(workbook, monthlySheet, 'Monthly Breakdown');
+      
+      // Detailed gigs sheet
+      const gigsData = [
+        ['Date', 'Client', 'Gig Type', 'Location', 'Earnings', 'Tips', 'Mileage', 'Expenses', 'Receipt Photos']
+      ];
+      
+      gigs.forEach(gig => {
+        const earnings = parseFloat(gig.actualPay || '0');
+        const expenses = parseFloat(gig.parkingExpense || '0') + parseFloat(gig.otherExpenses || '0');
+        const receiptCount = (gig.parkingReceipts?.length || 0) + (gig.otherExpenseReceipts?.length || 0);
+        
+        gigsData.push([
+          gig.date,
+          gig.clientName,
+          gig.gigType,
+          gig.gigAddress || '',
+          `$${earnings.toFixed(2)}`,
+          `$${parseFloat(gig.tips || '0').toFixed(2)}`,
+          (gig.mileage || 0).toString(),
+          `$${expenses.toFixed(2)}`,
+          receiptCount > 0 ? `${receiptCount} photos` : 'None'
+        ]);
+      });
+      
+      const gigsSheet = XLSX.utils.aoa_to_sheet(gigsData);
+      XLSX.utils.book_append_sheet(workbook, gigsSheet, 'All Gigs Detail');
+      
+      // Expense Photos Index sheet
+      const expensePhotosData = [
+        ['Date', 'Client', 'Expense Type', 'Amount', 'Photo Files']
+      ];
+      
+      gigs.forEach(gig => {
+        if (gig.parkingReceipts && gig.parkingReceipts.length > 0) {
+          expensePhotosData.push([
+            gig.date,
+            gig.clientName,
+            'Parking',
+            `$${parseFloat(gig.parkingExpense || '0').toFixed(2)}`,
+            gig.parkingReceipts.join(', ')
+          ]);
+        }
+        if (gig.otherExpenseReceipts && gig.otherExpenseReceipts.length > 0) {
+          expensePhotosData.push([
+            gig.date,
+            gig.clientName,
+            'Other Expenses',
+            `$${parseFloat(gig.otherExpenses || '0').toFixed(2)}`,
+            gig.otherExpenseReceipts.join(', ')
+          ]);
+        }
+      });
+      
+      if (expensePhotosData.length > 1) {
+        const expensePhotosSheet = XLSX.utils.aoa_to_sheet(expensePhotosData);
+        XLSX.utils.book_append_sheet(workbook, expensePhotosSheet, 'Expense Photos Index');
+      }
+      
+      // Generate Excel buffer
+      const excelBuffer = XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' });
+      
+      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+      res.setHeader('Content-Disposition', `attachment; filename="annual-report-${targetYear}.xlsx"`);
+      res.send(excelBuffer);
+      
+    } catch (error) {
+      console.error("Failed to generate annual Excel report:", error);
+      res.status(500).json({ message: "Failed to generate annual Excel report" });
+    }
+  });
+
+  app.get("/api/reports/annual/pdf", async (req, res) => {
+    try {
+      console.log("Annual PDF route hit with query:", req.query);
+      const { year } = req.query;
+      const targetYear = year ? parseInt(year as string) : new Date().getFullYear();
+      
+      // Get annual data
+      const startDate = new Date(targetYear, 0, 1).toISOString().split('T')[0];
+      const endDate = new Date(targetYear, 11, 31).toISOString().split('T')[0];
+      const gigs = await storage.getGigsByDateRange(currentUserId, startDate, endDate);
+      const user = await storage.getUser(currentUserId);
+      
+      // Calculate totals
+      const totalEarnings = gigs.reduce((sum, gig) => sum + parseFloat(gig.actualPay || '0'), 0);
+      const totalTips = gigs.reduce((sum, gig) => sum + parseFloat(gig.tips || '0'), 0);
+      const totalMileage = gigs.reduce((sum, gig) => sum + (gig.mileage || 0), 0);
+      const totalExpenses = gigs.reduce((sum, gig) => sum + parseFloat(gig.parkingExpense || '0') + parseFloat(gig.otherExpenses || '0'), 0);
+      
+      // Group gigs by month for breakdown
+      const monthlyBreakdown = Array.from({length: 12}, (_, i) => {
+        const monthGigs = gigs.filter(gig => new Date(gig.date).getMonth() === i);
+        const monthEarnings = monthGigs.reduce((sum, gig) => sum + parseFloat(gig.actualPay || '0'), 0);
+        return {
+          month: new Date(targetYear, i, 1).toLocaleDateString('en-US', { month: 'short' }),
+          gigs: monthGigs.length,
+          earnings: monthEarnings
+        };
+      }).filter(month => month.gigs > 0);
+      
+      // Create PDF
+      const { jsPDF } = await import('jspdf');
+      const autoTable = (await import('jspdf-autotable')).default;
+      
+      const doc = new jsPDF();
+      
+      // Title
+      doc.setFontSize(24);
+      doc.text('Annual Gig Report', 20, 25);
+      
+      // Report details
+      doc.setFontSize(14);
+      doc.text(`Year: ${targetYear}`, 20, 40);
+      doc.text(`Worker: ${user?.name || 'N/A'}`, 20, 50);
+      doc.text(`Generated: ${new Date().toLocaleDateString()}`, 20, 60);
+      
+      // Annual Summary section
+      doc.setFontSize(16);
+      doc.text('Annual Summary', 20, 80);
+      
+      const summaryData = [
+        ['Total Earnings', `$${totalEarnings.toFixed(2)}`],
+        ['Total Tips', `$${totalTips.toFixed(2)}`],
+        ['Total Mileage', `${totalMileage} miles`],
+        ['Total Expenses', `$${totalExpenses.toFixed(2)}`],
+        ['Net Income', `$${(totalEarnings - totalExpenses).toFixed(2)}`],
+        ['Total Gigs', gigs.length.toString()],
+        ['Average per Gig', `$${gigs.length > 0 ? (totalEarnings / gigs.length).toFixed(2) : '0.00'}`]
+      ];
+      
+      autoTable(doc, {
+        startY: 90,
+        head: [['Metric', 'Amount']],
+        body: summaryData,
+        theme: 'grid',
+        headStyles: { fillColor: [66, 139, 202] }
+      });
+      
+      // Monthly breakdown
+      if (monthlyBreakdown.length > 0) {
+        doc.addPage();
+        doc.setFontSize(16);
+        doc.text('Monthly Breakdown', 20, 20);
+        
+        const monthlyTableData = monthlyBreakdown.map(month => [
+          month.month,
+          month.gigs.toString(),
+          `$${month.earnings.toFixed(2)}`
+        ]);
+        
+        autoTable(doc, {
+          startY: 30,
+          head: [['Month', 'Gigs', 'Earnings']],
+          body: monthlyTableData,
+          theme: 'grid',
+          headStyles: { fillColor: [66, 139, 202] }
+        });
+      }
+      
+      // Expense Photos Index
+      const gigsWithReceipts = gigs.filter(gig => 
+        (gig.parkingReceipts && gig.parkingReceipts.length > 0) || 
+        (gig.otherExpenseReceipts && gig.otherExpenseReceipts.length > 0)
+      );
+      
+      if (gigsWithReceipts.length > 0) {
+        doc.addPage();
+        doc.setFontSize(16);
+        doc.text('Expense Photos Index', 20, 20);
+        
+        const expenseData: any[] = [];
+        gigsWithReceipts.forEach(gig => {
+          if (gig.parkingReceipts && gig.parkingReceipts.length > 0) {
+            expenseData.push([
+              gig.date,
+              gig.clientName,
+              'Parking',
+              `$${parseFloat(gig.parkingExpense || '0').toFixed(2)}`,
+              `${gig.parkingReceipts.length} photos`
+            ]);
+          }
+          if (gig.otherExpenseReceipts && gig.otherExpenseReceipts.length > 0) {
+            expenseData.push([
+              gig.date,
+              gig.clientName,
+              'Other',
+              `$${parseFloat(gig.otherExpenses || '0').toFixed(2)}`,
+              `${gig.otherExpenseReceipts.length} photos`
+            ]);
+          }
+        });
+        
+        autoTable(doc, {
+          startY: 30,
+          head: [['Date', 'Client', 'Type', 'Amount', 'Photos']],
+          body: expenseData,
+          theme: 'grid',
+          headStyles: { fillColor: [66, 139, 202] },
+          styles: { fontSize: 10 }
+        });
+      }
+      
+      const pdfBuffer = Buffer.from(doc.output('arraybuffer'));
+      
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename="annual-report-${targetYear}.pdf"`);
+      res.send(pdfBuffer);
+      
+    } catch (error) {
+      console.error("Failed to generate annual PDF report:", error);
+      res.status(500).json({ message: "Failed to generate annual PDF report" });
+    }
+  });
+
   // Gigs routes
   app.get("/api/gigs", async (req, res) => {
     try {
@@ -602,283 +883,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Annual report export routes
-  app.get("/api/reports/annual/excel", async (req, res) => {
-    try {
-      const { year } = req.query;
-      const targetYear = year ? parseInt(year as string) : new Date().getFullYear();
-      
-      // Get annual data
-      const startDate = new Date(targetYear, 0, 1).toISOString().split('T')[0];
-      const endDate = new Date(targetYear, 11, 31).toISOString().split('T')[0];
-      const gigs = await storage.getGigsByDateRange(currentUserId, startDate, endDate);
-      const user = await storage.getUser(currentUserId);
-      
-      // Calculate totals
-      const totalEarnings = gigs.reduce((sum, gig) => sum + parseFloat(gig.actualPay || '0'), 0);
-      const totalTips = gigs.reduce((sum, gig) => sum + parseFloat(gig.tips || '0'), 0);
-      const totalMileage = gigs.reduce((sum, gig) => sum + (gig.mileage || 0), 0);
-      const totalExpenses = gigs.reduce((sum, gig) => sum + parseFloat(gig.parkingExpense || '0') + parseFloat(gig.otherExpenses || '0'), 0);
-      
-      // Group gigs by month for breakdown
-      const monthlyBreakdown = Array.from({length: 12}, (_, i) => {
-        const monthGigs = gigs.filter(gig => new Date(gig.date).getMonth() === i);
-        const monthEarnings = monthGigs.reduce((sum, gig) => sum + parseFloat(gig.actualPay || '0'), 0);
-        return {
-          month: new Date(targetYear, i, 1).toLocaleDateString('en-US', { month: 'long' }),
-          gigs: monthGigs.length,
-          earnings: monthEarnings
-        };
-      });
-      
-      // Create Excel workbook
-      const XLSX = await import('xlsx');
-      const workbook = XLSX.utils.book_new();
-      
-      // Annual Summary sheet
-      const summaryData = [
-        ['Annual Report Summary'],
-        ['Year', targetYear.toString()],
-        [''],
-        ['Total Earnings', `$${totalEarnings.toFixed(2)}`],
-        ['Total Tips', `$${totalTips.toFixed(2)}`],
-        ['Total Mileage', `${totalMileage} miles`],
-        ['Total Expenses', `$${totalExpenses.toFixed(2)}`],
-        ['Net Income', `$${(totalEarnings - totalExpenses).toFixed(2)}`],
-        ['Total Gigs', gigs.length.toString()],
-        ['Average per Gig', `$${gigs.length > 0 ? (totalEarnings / gigs.length).toFixed(2) : '0.00'}`],
-      ];
-      
-      const summarySheet = XLSX.utils.aoa_to_sheet(summaryData);
-      XLSX.utils.book_append_sheet(workbook, summarySheet, 'Annual Summary');
-      
-      // Monthly Breakdown sheet
-      const monthlyData = [
-        ['Month', 'Gigs', 'Earnings']
-      ];
-      
-      monthlyBreakdown.forEach(month => {
-        monthlyData.push([
-          month.month,
-          month.gigs.toString(),
-          `$${month.earnings.toFixed(2)}`
-        ]);
-      });
-      
-      const monthlySheet = XLSX.utils.aoa_to_sheet(monthlyData);
-      XLSX.utils.book_append_sheet(workbook, monthlySheet, 'Monthly Breakdown');
-      
-      // Detailed gigs sheet
-      const gigsData = [
-        ['Date', 'Client', 'Gig Type', 'Location', 'Earnings', 'Tips', 'Mileage', 'Expenses', 'Receipt Photos']
-      ];
-      
-      gigs.forEach(gig => {
-        const earnings = parseFloat(gig.actualPay || '0');
-        const expenses = parseFloat(gig.parkingExpense || '0') + parseFloat(gig.otherExpenses || '0');
-        const receiptCount = (gig.parkingReceipts?.length || 0) + (gig.otherExpenseReceipts?.length || 0);
-        
-        gigsData.push([
-          gig.date,
-          gig.clientName,
-          gig.gigType,
-          gig.gigAddress || '',
-          `$${earnings.toFixed(2)}`,
-          `$${parseFloat(gig.tips || '0').toFixed(2)}`,
-          (gig.mileage || 0).toString(),
-          `$${expenses.toFixed(2)}`,
-          receiptCount > 0 ? `${receiptCount} photos` : 'None'
-        ]);
-      });
-      
-      const gigsSheet = XLSX.utils.aoa_to_sheet(gigsData);
-      XLSX.utils.book_append_sheet(workbook, gigsSheet, 'All Gigs Detail');
-      
-      // Expense Photos Index sheet
-      const expensePhotosData = [
-        ['Date', 'Client', 'Expense Type', 'Amount', 'Photo Files']
-      ];
-      
-      gigs.forEach(gig => {
-        if (gig.parkingReceipts && gig.parkingReceipts.length > 0) {
-          expensePhotosData.push([
-            gig.date,
-            gig.clientName,
-            'Parking',
-            `$${parseFloat(gig.parkingExpense || '0').toFixed(2)}`,
-            gig.parkingReceipts.join(', ')
-          ]);
-        }
-        if (gig.otherExpenseReceipts && gig.otherExpenseReceipts.length > 0) {
-          expensePhotosData.push([
-            gig.date,
-            gig.clientName,
-            'Other Expenses',
-            `$${parseFloat(gig.otherExpenses || '0').toFixed(2)}`,
-            gig.otherExpenseReceipts.join(', ')
-          ]);
-        }
-      });
-      
-      if (expensePhotosData.length > 1) {
-        const expensePhotosSheet = XLSX.utils.aoa_to_sheet(expensePhotosData);
-        XLSX.utils.book_append_sheet(workbook, expensePhotosSheet, 'Expense Photos Index');
-      }
-      
-      // Generate Excel buffer
-      const excelBuffer = XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' });
-      
-      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-      res.setHeader('Content-Disposition', `attachment; filename="annual-report-${targetYear}.xlsx"`);
-      res.send(excelBuffer);
-      
-    } catch (error) {
-      console.error("Failed to generate annual Excel report:", error);
-      res.status(500).json({ message: "Failed to generate annual Excel report" });
-    }
-  });
 
-  app.get("/api/reports/annual/pdf", async (req, res) => {
-    try {
-      const { year } = req.query;
-      const targetYear = year ? parseInt(year as string) : new Date().getFullYear();
-      
-      // Get annual data
-      const startDate = new Date(targetYear, 0, 1).toISOString().split('T')[0];
-      const endDate = new Date(targetYear, 11, 31).toISOString().split('T')[0];
-      const gigs = await storage.getGigsByDateRange(currentUserId, startDate, endDate);
-      const user = await storage.getUser(currentUserId);
-      
-      // Calculate totals
-      const totalEarnings = gigs.reduce((sum, gig) => sum + parseFloat(gig.actualPay || '0'), 0);
-      const totalTips = gigs.reduce((sum, gig) => sum + parseFloat(gig.tips || '0'), 0);
-      const totalMileage = gigs.reduce((sum, gig) => sum + (gig.mileage || 0), 0);
-      const totalExpenses = gigs.reduce((sum, gig) => sum + parseFloat(gig.parkingExpense || '0') + parseFloat(gig.otherExpenses || '0'), 0);
-      
-      // Group gigs by month for breakdown
-      const monthlyBreakdown = Array.from({length: 12}, (_, i) => {
-        const monthGigs = gigs.filter(gig => new Date(gig.date).getMonth() === i);
-        const monthEarnings = monthGigs.reduce((sum, gig) => sum + parseFloat(gig.actualPay || '0'), 0);
-        return {
-          month: new Date(targetYear, i, 1).toLocaleDateString('en-US', { month: 'short' }),
-          gigs: monthGigs.length,
-          earnings: monthEarnings
-        };
-      }).filter(month => month.gigs > 0);
-      
-      // Create PDF
-      const { jsPDF } = await import('jspdf');
-      const autoTable = (await import('jspdf-autotable')).default;
-      
-      const doc = new jsPDF();
-      
-      // Title
-      doc.setFontSize(24);
-      doc.text('Annual Gig Report', 20, 25);
-      
-      // Report details
-      doc.setFontSize(14);
-      doc.text(`Year: ${targetYear}`, 20, 40);
-      doc.text(`Worker: ${user?.name || 'N/A'}`, 20, 50);
-      doc.text(`Generated: ${new Date().toLocaleDateString()}`, 20, 60);
-      
-      // Annual Summary section
-      doc.setFontSize(16);
-      doc.text('Annual Summary', 20, 80);
-      
-      const summaryData = [
-        ['Total Earnings', `$${totalEarnings.toFixed(2)}`],
-        ['Total Tips', `$${totalTips.toFixed(2)}`],
-        ['Total Mileage', `${totalMileage} miles`],
-        ['Total Expenses', `$${totalExpenses.toFixed(2)}`],
-        ['Net Income', `$${(totalEarnings - totalExpenses).toFixed(2)}`],
-        ['Total Gigs', gigs.length.toString()],
-        ['Average per Gig', `$${gigs.length > 0 ? (totalEarnings / gigs.length).toFixed(2) : '0.00'}`]
-      ];
-      
-      autoTable(doc, {
-        startY: 90,
-        head: [['Metric', 'Amount']],
-        body: summaryData,
-        theme: 'grid',
-        headStyles: { fillColor: [66, 139, 202] }
-      });
-      
-      // Monthly breakdown
-      if (monthlyBreakdown.length > 0) {
-        doc.addPage();
-        doc.setFontSize(16);
-        doc.text('Monthly Breakdown', 20, 20);
-        
-        const monthlyTableData = monthlyBreakdown.map(month => [
-          month.month,
-          month.gigs.toString(),
-          `$${month.earnings.toFixed(2)}`
-        ]);
-        
-        autoTable(doc, {
-          startY: 30,
-          head: [['Month', 'Gigs', 'Earnings']],
-          body: monthlyTableData,
-          theme: 'grid',
-          headStyles: { fillColor: [66, 139, 202] }
-        });
-      }
-      
-      // Expense Photos Index
-      const gigsWithReceipts = gigs.filter(gig => 
-        (gig.parkingReceipts && gig.parkingReceipts.length > 0) || 
-        (gig.otherExpenseReceipts && gig.otherExpenseReceipts.length > 0)
-      );
-      
-      if (gigsWithReceipts.length > 0) {
-        doc.addPage();
-        doc.setFontSize(16);
-        doc.text('Expense Photos Index', 20, 20);
-        
-        const expenseData: any[] = [];
-        gigsWithReceipts.forEach(gig => {
-          if (gig.parkingReceipts && gig.parkingReceipts.length > 0) {
-            expenseData.push([
-              gig.date,
-              gig.clientName,
-              'Parking',
-              `$${parseFloat(gig.parkingExpense || '0').toFixed(2)}`,
-              `${gig.parkingReceipts.length} photos`
-            ]);
-          }
-          if (gig.otherExpenseReceipts && gig.otherExpenseReceipts.length > 0) {
-            expenseData.push([
-              gig.date,
-              gig.clientName,
-              'Other',
-              `$${parseFloat(gig.otherExpenses || '0').toFixed(2)}`,
-              `${gig.otherExpenseReceipts.length} photos`
-            ]);
-          }
-        });
-        
-        autoTable(doc, {
-          startY: 30,
-          head: [['Date', 'Client', 'Type', 'Amount', 'Photos']],
-          body: expenseData,
-          theme: 'grid',
-          headStyles: { fillColor: [66, 139, 202] },
-          styles: { fontSize: 10 }
-        });
-      }
-      
-      const pdfBuffer = Buffer.from(doc.output('arraybuffer'));
-      
-      res.setHeader('Content-Type', 'application/pdf');
-      res.setHeader('Content-Disposition', `attachment; filename="annual-report-${targetYear}.pdf"`);
-      res.send(pdfBuffer);
-      
-    } catch (error) {
-      console.error("Failed to generate annual PDF report:", error);
-      res.status(500).json({ message: "Failed to generate annual PDF report" });
-    }
-  });
 
   const httpServer = createServer(app);
   return httpServer;
