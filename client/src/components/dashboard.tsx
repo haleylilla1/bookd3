@@ -352,8 +352,9 @@ export default function Dashboard() {
   };
 
   const currentData = getEarningsForPeriod();
+  const projectedData = getProjectedEarningsForPeriod();
   const goalTarget = parseFloat(currentGoal?.goalAmount || "0");
-  const goalProgress = currentData.earnings && goalTarget ? (currentData.earnings / goalTarget) * 100 : 0;
+  const goalProgress = projectedData.projectedEarnings && goalTarget ? (projectedData.projectedEarnings / goalTarget) * 100 : 0;
 
   const handleEditGoal = (period: "weekly" | "monthly" | "annual") => {
     setEditingGoal(period);
@@ -591,7 +592,7 @@ export default function Dashboard() {
             <div className="flex items-center gap-2">
               {currentGoal ? (
                 <span className="text-sm text-gray-500">
-                  {formatCurrency(currentData.earnings)} / {formatCurrency(goalTarget)}
+                  {formatCurrency(projectedData.projectedEarnings)} / {formatCurrency(goalTarget)}
                 </span>
               ) : (
                 <span className="text-sm text-gray-500">
