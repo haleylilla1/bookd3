@@ -6,6 +6,10 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 export function formatCurrency(amount: number): string {
+  if (isNaN(amount) || amount === null || amount === undefined) {
+    return "$0";
+  }
+  
   return new Intl.NumberFormat("en-US", {
     style: "currency",
     currency: "USD",
@@ -15,15 +19,20 @@ export function formatCurrency(amount: number): string {
 }
 
 export function formatDate(date: string | Date): string {
+  if (!date) return "";
+  
   let d: Date;
   
   if (typeof date === 'string') {
     // Handle date strings (YYYY-MM-DD) to avoid timezone issues
     const [year, month, day] = date.split('-').map(Number);
+    if (!year || !month || !day) return "";
     d = new Date(year, month - 1, day); // month is 0-indexed
   } else {
     d = new Date(date);
   }
+  
+  if (isNaN(d.getTime())) return "";
   
   return d.toLocaleDateString("en-US", {
     year: "numeric",
