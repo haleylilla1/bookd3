@@ -33,7 +33,7 @@ export default function UserSwitcher({ currentUser, onUserChange }: UserSwitcher
       
       toast({
         title: "User Created",
-        description: `Welcome ${response.user.name}! You can now start tracking your gigs.`
+        description: `Welcome ${data.user.name}! You can now start tracking your gigs.`
       });
       
       setNewUserName("");
@@ -52,14 +52,16 @@ export default function UserSwitcher({ currentUser, onUserChange }: UserSwitcher
   const handleSwitchUser = async () => {
     try {
       const userId = parseInt(switchUserId);
-      const response = await apiRequest("/api/switch-user", {
+      const response = await fetch("/api/switch-user", {
         method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ userId })
       });
+      const data = await response.json();
       
       toast({
         title: "User Switched",
-        description: `Switched to ${response.user.name}`
+        description: `Switched to ${data.user.name}`
       });
       
       setSwitchUserId("");

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import CalendarView from "@/components/calendar-view";
 import GigForm from "@/components/gig-form";
 import Dashboard from "@/components/dashboard";
@@ -7,6 +7,7 @@ import ResumeBuilder from "@/components/resume-builder";
 import GoalTracker from "@/components/goal-tracker";
 import Profile from "@/components/profile";
 import BottomNavigation from "@/components/bottom-navigation";
+import SimpleUserManager from "@/components/simple-user-manager";
 import { Button } from "@/components/ui/button";
 import { Plus, Bell, Briefcase } from "lucide-react";
 import type { User } from "@shared/schema";
@@ -15,10 +16,16 @@ export type Screen = "calendar" | "dashboard" | "resume" | "goals" | "profile" |
 
 export default function Home() {
   const [currentScreen, setCurrentScreen] = useState<Screen>("calendar");
+  const queryClient = useQueryClient();
 
   const { data: user } = useQuery<User>({
     queryKey: ["/api/user"],
   });
+
+  const handleUserChange = () => {
+    // Refresh all data when user changes
+    queryClient.invalidateQueries();
+  };
 
   const renderScreen = () => {
     switch (currentScreen) {
@@ -51,6 +58,7 @@ export default function Home() {
             <h1 className="text-xl font-bold text-gray-900">Giggy</h1>
           </div>
           <div className="flex items-center space-x-3">
+            <SimpleUserManager currentUser={user} onUserChange={handleUserChange} />
             <Button variant="ghost" size="sm" className="relative p-2">
               <Bell className="w-5 h-5 text-gray-400" />
               <span className="absolute top-1 right-1 w-2 h-2 bg-warning rounded-full"></span>
