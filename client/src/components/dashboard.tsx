@@ -625,9 +625,7 @@ export default function Dashboard() {
                       {item.mileage > 0 && (
                         <div>Mileage: {item.mileage} mi × $0.655 = {formatCurrency(item.mileageExpense)}</div>
                       )}
-                      {item.transportation > 0 && (
-                        <div>Transportation: {formatCurrency(item.transportation)}</div>
-                      )}
+
                       {item.parking > 0 && (
                         <div>Parking: {formatCurrency(item.parking)}</div>
                       )}
