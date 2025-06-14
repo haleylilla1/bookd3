@@ -47,9 +47,11 @@ export const queryClient = new QueryClient({
       queryFn: getQueryFn({ on401: "throw" }),
       refetchInterval: false,
       refetchOnWindowFocus: false,
-      staleTime: 5 * 60 * 1000, // 5 minutes
+      staleTime: 2 * 60 * 1000, // 2 minutes for better data freshness
       retry: (failureCount, error: any) => {
-        if (error?.status === 404 || error?.status === 401 || error?.status === 403) {
+        // Don't retry on client errors
+        if (error?.message?.includes('400') || error?.message?.includes('401') || 
+            error?.message?.includes('403') || error?.message?.includes('404')) {
           return false;
         }
         return failureCount < 2;
@@ -57,7 +59,9 @@ export const queryClient = new QueryClient({
     },
     mutations: {
       retry: (failureCount, error: any) => {
-        if (error?.status === 400 || error?.status === 401 || error?.status === 403 || error?.status === 404) {
+        // Don't retry on client errors or authentication issues
+        if (error?.message?.includes('400') || error?.message?.includes('401') || 
+            error?.message?.includes('403') || error?.message?.includes('404')) {
           return false;
         }
         return failureCount < 1;

@@ -13,6 +13,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const gigs = await storage.getGigsByUser(currentUserId);
       res.json(gigs);
     } catch (error) {
+      console.error("Failed to fetch gigs:", error);
       res.status(500).json({ message: "Failed to fetch gigs" });
     }
   });
@@ -27,6 +28,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const gigs = await storage.getGigsByDateRange(currentUserId, startDate as string, endDate as string);
       res.json(gigs);
     } catch (error) {
+      console.error("Failed to fetch gigs by date range:", error);
       res.status(500).json({ message: "Failed to fetch gigs by date range" });
     }
   });
@@ -38,8 +40,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(201).json(gig);
     } catch (error) {
       if (error instanceof z.ZodError) {
+        console.error("Validation error creating gig:", error.errors);
         return res.status(400).json({ message: "Invalid gig data", errors: error.errors });
       }
+      console.error("Failed to create gig:", error);
       res.status(500).json({ message: "Failed to create gig" });
     }
   });
