@@ -17,6 +17,7 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import type { InsertGig, User } from "@shared/schema";
 import { calculateDistance } from "@/lib/distance";
+import ReceiptUpload from "@/components/receipt-upload";
 
 const gigFormSchema = z.object({
   gigType: z.string().min(1, "Gig type is required"),
@@ -35,8 +36,11 @@ const gigFormSchema = z.object({
   notes: z.string().optional(),
   status: z.enum(["upcoming", "completed", "pending_payment"]).default("upcoming"),
   transportationExpense: z.string().optional(),
+  transportationReceipts: z.array(z.string()).default([]),
   parkingExpense: z.string().optional(),
+  parkingReceipts: z.array(z.string()).default([]),
   otherExpenses: z.string().optional(),
+  otherExpenseReceipts: z.array(z.string()).default([]),
 });
 
 type GigFormData = z.infer<typeof gigFormSchema>;
@@ -189,8 +193,11 @@ export default function GigForm({ onClose }: GigFormProps) {
         mileage: data.mileage ? parseInt(data.mileage) : null,
         notes: data.notes || null,
         transportationExpense: trackExpenses && data.transportationExpense ? data.transportationExpense : null,
+        transportationReceipts: trackExpenses ? data.transportationReceipts : [],
         parkingExpense: trackExpenses && data.parkingExpense ? data.parkingExpense : null,
+        parkingReceipts: trackExpenses ? data.parkingReceipts : [],
         otherExpenses: trackExpenses && data.otherExpenses ? data.otherExpenses : null,
+        otherExpenseReceipts: trackExpenses ? data.otherExpenseReceipts : [],
         includeInResume: true,
       };
 
@@ -466,42 +473,69 @@ export default function GigForm({ onClose }: GigFormProps) {
                   <Switch checked={trackExpenses} onCheckedChange={setTrackExpenses} />
                 </div>
                 {trackExpenses && (
-                  <div className="space-y-2">
-                    <div className="grid grid-cols-2 gap-2">
+                  <div className="space-y-4">
+                    {/* Transportation Expense */}
+                    <div className="space-y-2">
                       <FormField
                         control={form.control}
                         name="transportationExpense"
                         render={({ field }) => (
                           <FormItem>
+                            <FormLabel>Transportation Expense</FormLabel>
                             <FormControl>
-                              <Input type="number" placeholder="Transportation" {...field} />
+                              <Input type="number" placeholder="0.00" {...field} />
                             </FormControl>
                           </FormItem>
                         )}
                       />
+                      <ReceiptUpload
+                        label="Transportation Receipts"
+                        receipts={form.watch("transportationReceipts")}
+                        onReceiptsChange={(receipts) => form.setValue("transportationReceipts", receipts)}
+                      />
+                    </div>
+
+                    {/* Parking Expense */}
+                    <div className="space-y-2">
                       <FormField
                         control={form.control}
                         name="parkingExpense"
                         render={({ field }) => (
                           <FormItem>
+                            <FormLabel>Parking Expense</FormLabel>
                             <FormControl>
-                              <Input type="number" placeholder="Parking" {...field} />
+                              <Input type="number" placeholder="0.00" {...field} />
                             </FormControl>
                           </FormItem>
                         )}
                       />
+                      <ReceiptUpload
+                        label="Parking Receipts"
+                        receipts={form.watch("parkingReceipts")}
+                        onReceiptsChange={(receipts) => form.setValue("parkingReceipts", receipts)}
+                      />
                     </div>
-                    <FormField
-                      control={form.control}
-                      name="otherExpenses"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormControl>
-                            <Input type="number" placeholder="Other expenses..." {...field} />
-                          </FormControl>
-                        </FormItem>
-                      )}
-                    />
+
+                    {/* Other Expenses */}
+                    <div className="space-y-2">
+                      <FormField
+                        control={form.control}
+                        name="otherExpenses"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Other Expenses</FormLabel>
+                            <FormControl>
+                              <Input type="number" placeholder="0.00" {...field} />
+                            </FormControl>
+                          </FormItem>
+                        )}
+                      />
+                      <ReceiptUpload
+                        label="Other Expense Receipts"
+                        receipts={form.watch("otherExpenseReceipts")}
+                        onReceiptsChange={(receipts) => form.setValue("otherExpenseReceipts", receipts)}
+                      />
+                    </div>
                   </div>
                 )}
               </div>
