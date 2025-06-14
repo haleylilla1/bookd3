@@ -355,6 +355,15 @@ export default function Dashboard() {
   const projectedData = getProjectedEarningsForPeriod();
   const goalTarget = parseFloat(currentGoal?.goalAmount || "0");
   const goalProgress = projectedData.projectedEarnings && goalTarget ? (projectedData.projectedEarnings / goalTarget) * 100 : 0;
+  
+  // Debug logging
+  console.log('Goal Progress Debug:', {
+    actualEarnings: currentData.earnings,
+    projectedEarnings: projectedData.projectedEarnings,
+    goalTarget,
+    goalProgress,
+    period: selectedPeriod
+  });
 
   const handleEditGoal = (period: "weekly" | "monthly" | "annual") => {
     setEditingGoal(period);
@@ -614,7 +623,7 @@ export default function Dashboard() {
               <Progress value={goalProgress} className="mb-2" />
               <p className="text-sm text-gray-600">
                 <span className="font-medium text-primary">
-                  {formatCurrency(Math.max(0, goalTarget - currentData.earnings))} to go
+                  {formatCurrency(Math.max(0, goalTarget - projectedData.projectedEarnings))} to go
                 </span>
                 {goalProgress >= 95 ? " - You're almost there!" : ""}
               </p>
