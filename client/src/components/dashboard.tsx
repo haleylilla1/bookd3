@@ -80,11 +80,30 @@ export default function Dashboard() {
 
 
 
-  // Calculate tax breakdown per gig
+  // Calculate tax breakdown per gig for current period
   const getTaxBreakdownData = () => {
     if (!gigs) return [];
     
-    return (gigs as any[])
+    // Filter gigs to current period first
+    const currentPeriodGigs = (gigs as any[]).filter(gig => {
+      const gigDate = new Date(gig.date);
+      
+      switch (selectedPeriod) {
+        case "weekly":
+          const { startOfWeek, endOfWeek } = getWeekDates(currentDate);
+          return gigDate >= startOfWeek && gigDate <= endOfWeek;
+        case "monthly":
+          return gigDate.getMonth() === currentDate.getMonth() && 
+                 gigDate.getFullYear() === currentDate.getFullYear();
+        case "annual":
+          return gigDate.getFullYear() === currentDate.getFullYear();
+        default:
+          return gigDate.getMonth() === currentDate.getMonth() && 
+                 gigDate.getFullYear() === currentDate.getFullYear();
+      }
+    });
+    
+    return currentPeriodGigs
       .filter(gig => gig.status === "completed" && gig.actualPay)
       .map(gig => {
         const pay = parseFloat(gig.actualPay || "0");
@@ -134,11 +153,30 @@ export default function Dashboard() {
       .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
   };
 
-  // Calculate tips breakdown per gig
+  // Calculate tips breakdown per gig for current period
   const getTipsBreakdownData = () => {
     if (!gigs) return [];
     
-    return (gigs as any[])
+    // Filter gigs to current period first
+    const currentPeriodGigs = (gigs as any[]).filter(gig => {
+      const gigDate = new Date(gig.date);
+      
+      switch (selectedPeriod) {
+        case "weekly":
+          const { startOfWeek, endOfWeek } = getWeekDates(currentDate);
+          return gigDate >= startOfWeek && gigDate <= endOfWeek;
+        case "monthly":
+          return gigDate.getMonth() === currentDate.getMonth() && 
+                 gigDate.getFullYear() === currentDate.getFullYear();
+        case "annual":
+          return gigDate.getFullYear() === currentDate.getFullYear();
+        default:
+          return gigDate.getMonth() === currentDate.getMonth() && 
+                 gigDate.getFullYear() === currentDate.getFullYear();
+      }
+    });
+    
+    return currentPeriodGigs
       .filter(gig => gig.status === "completed" && gig.tips)
       .map(gig => {
         const tips = parseFloat(gig.tips || "0");
@@ -498,7 +536,7 @@ export default function Dashboard() {
               </Button>
             </div>
             <p className="text-xl font-bold text-gray-900">
-              {formatCurrency(((stats as any)?.taxEstimate || 0) * (selectedPeriod === "weekly" ? 1/4.33 : selectedPeriod === "annual" ? 12 : 1))}
+              {formatCurrency(getTaxBreakdownData().reduce((sum, item) => sum + item.taxAmount, 0))}
             </p>
             <p className="text-xs text-gray-500">{user?.defaultTaxPercentage || 23}% of earnings</p>
           </CardContent>
@@ -517,7 +555,7 @@ export default function Dashboard() {
               </Button>
             </div>
             <p className="text-xl font-bold text-gray-900">
-              {formatCurrency(((stats as any)?.totalTips || 0) * (selectedPeriod === "weekly" ? 1/4.33 : selectedPeriod === "annual" ? 12 : 1))}
+              {formatCurrency(getTipsBreakdownData().reduce((sum, item) => sum + item.tips, 0))}
             </p>
             <p className="text-xs text-gray-500">Cash tips received</p>
           </CardContent>
@@ -536,7 +574,7 @@ export default function Dashboard() {
               </Button>
             </div>
             <p className="text-xl font-bold text-gray-900">
-              {formatCurrency(((stats as any)?.totalExpenses || 0) * (selectedPeriod === "weekly" ? 1/4.33 : selectedPeriod === "annual" ? 12 : 1))}
+              {formatCurrency(getExpenseBreakdownData().reduce((sum, item) => sum + item.totalExpenses, 0))}
             </p>
             <p className="text-xs text-gray-500">Mileage + costs</p>
           </CardContent>
