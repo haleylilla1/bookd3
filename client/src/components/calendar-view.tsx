@@ -606,7 +606,7 @@ export default function CalendarView() {
 
       {/* Edit Gig Dialog */}
       <Dialog open={!!editingGig} onOpenChange={() => setEditingGig(null)}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Edit Gig</DialogTitle>
           </DialogHeader>
@@ -651,23 +651,24 @@ function GigEditForm({ gig, onSave, onCancel, isLoading }: GigEditFormProps) {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      <div>
-        <label className="block text-sm font-medium mb-1">Event Name</label>
-        <Input
-          value={formData.eventName}
-          onChange={(e) => setFormData({ ...formData, eventName: e.target.value })}
-          placeholder="Corporate Event"
-        />
-      </div>
-
-      <div>
-        <label className="block text-sm font-medium mb-1">Client Name</label>
-        <Input
-          value={formData.clientName}
-          onChange={(e) => setFormData({ ...formData, clientName: e.target.value })}
-          placeholder="ABC Company"
-        />
+    <form onSubmit={handleSubmit} className="space-y-3">
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <label className="block text-sm font-medium mb-1">Event Name</label>
+          <Input
+            value={formData.eventName}
+            onChange={(e) => setFormData({ ...formData, eventName: e.target.value })}
+            placeholder="Corporate Event"
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium mb-1">Client Name</label>
+          <Input
+            value={formData.clientName}
+            onChange={(e) => setFormData({ ...formData, clientName: e.target.value })}
+            placeholder="ABC Company"
+          />
+        </div>
       </div>
 
       <div>
@@ -679,8 +680,7 @@ function GigEditForm({ gig, onSave, onCancel, isLoading }: GigEditFormProps) {
         />
       </div>
 
-      {/* Date Range */}
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-2 gap-3">
         <div>
           <label className="block text-sm font-medium mb-1">Start Date</label>
           <Input
@@ -690,17 +690,16 @@ function GigEditForm({ gig, onSave, onCancel, isLoading }: GigEditFormProps) {
           />
         </div>
         <div>
-          <label className="block text-sm font-medium mb-1">End Date (Optional)</label>
+          <label className="block text-sm font-medium mb-1">End Date</label>
           <Input
             type="date"
             value={formData.endDate}
             onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
-            placeholder="Leave empty for single day"
           />
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-3 gap-3">
         <div>
           <label className="block text-sm font-medium mb-1">Expected Pay</label>
           <Input
@@ -719,16 +718,15 @@ function GigEditForm({ gig, onSave, onCancel, isLoading }: GigEditFormProps) {
             placeholder="285"
           />
         </div>
-      </div>
-
-      <div>
-        <label className="block text-sm font-medium mb-1">Tips Earned</label>
-        <Input
-          type="number"
-          value={formData.tips}
-          onChange={(e) => setFormData({ ...formData, tips: e.target.value })}
-          placeholder="25"
-        />
+        <div>
+          <label className="block text-sm font-medium mb-1">Tips</label>
+          <Input
+            type="number"
+            value={formData.tips}
+            onChange={(e) => setFormData({ ...formData, tips: e.target.value })}
+            placeholder="25"
+          />
+        </div>
       </div>
 
       <div>
@@ -748,14 +746,14 @@ function GigEditForm({ gig, onSave, onCancel, isLoading }: GigEditFormProps) {
       <div>
         <label className="block text-sm font-medium mb-1">Duties</label>
         <textarea
-          className="w-full p-2 border rounded-md resize-none h-20"
+          className="w-full p-2 border rounded-md resize-none h-16"
           value={formData.duties}
           onChange={(e) => setFormData({ ...formData, duties: e.target.value })}
           placeholder="Key duties and responsibilities..."
         />
       </div>
 
-      <div className="flex justify-end gap-2 pt-4">
+      <div className="flex justify-end gap-2 pt-2">
         <Button type="button" variant="outline" onClick={onCancel}>
           Cancel
         </Button>
