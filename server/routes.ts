@@ -51,7 +51,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Invalid gig ID" });
       }
 
-      const updateData = req.body;
+      const updateData = { ...req.body };
+      
+      // Convert empty strings to null for numeric/decimal fields
+      const numericFields = ['expectedPay', 'actualPay', 'tips', 'transportationExpense', 'parkingExpense', 'otherExpenses', 'distanceMiles'];
+      const integerFields = ['taxPercentage', 'mileage', 'travelTimeMinutes'];
+      
+      numericFields.forEach(field => {
+        if (updateData[field] === "") {
+          updateData[field] = null;
+        }
+      });
+      
+      integerFields.forEach(field => {
+        if (updateData[field] === "") {
+          updateData[field] = null;
+        }
+      });
+
       const gig = await storage.updateGig(id, updateData);
       
       if (!gig) {
