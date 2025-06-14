@@ -22,7 +22,8 @@ const gigFormSchema = z.object({
   gigType: z.string().min(1, "Gig type is required"),
   eventName: z.string().min(1, "Event name is required"),
   clientName: z.string().min(1, "Client name is required"),
-  date: z.string().min(1, "Date is required"),
+  startDate: z.string().min(1, "Start date is required"),
+  endDate: z.string().optional(),
   gigAddress: z.string().optional(),
   expectedPay: z.string().optional(),
   actualPay: z.string().optional(),
@@ -60,7 +61,8 @@ export default function GigForm({ onClose }: GigFormProps) {
       gigType: "",
       eventName: "",
       clientName: "",
-      date: new Date().toISOString().split('T')[0],
+      startDate: new Date().toISOString().split('T')[0],
+      endDate: "",
       gigAddress: "",
       expectedPay: "",
       actualPay: "",
@@ -156,31 +158,63 @@ export default function GigForm({ onClose }: GigFormProps) {
       }
     }
 
-    const gigData: InsertGig = {
-      userId: 1, // For MVP, using single user
-      gigType: data.gigType,
-      eventName: data.eventName,
-      clientName: data.clientName,
-      date: data.date,
-      gigAddress: data.gigAddress || null,
-      distanceMiles,
-      travelTimeMinutes,
-      expectedPay: data.expectedPay || null,
-      actualPay: data.actualPay || null,
-      tips: data.tips || null,
-      paymentMethod: data.paymentMethod || null,
-      status: data.status,
-      duties: data.duties || null,
-      taxPercentage: data.taxPercentage,
-      mileage: data.mileage ? parseInt(data.mileage) : null,
-      notes: data.notes || null,
-      transportationExpense: trackExpenses && data.transportationExpense ? data.transportationExpense : null,
-      parkingExpense: trackExpenses && data.parkingExpense ? data.parkingExpense : null,
-      otherExpenses: trackExpenses && data.otherExpenses ? data.otherExpenses : null,
-      includeInResume: true,
-    };
+    // Generate array of dates for the gig
+    const startDate = new Date(data.startDate);
+    const endDate = data.endDate ? new Date(data.endDate) : startDate;
+    const gigDates: string[] = [];
+    
+    // Add all dates from start to end (inclusive)
+    for (let date = new Date(startDate); date <= endDate; date.setDate(date.getDate() + 1)) {
+      gigDates.push(date.toISOString().split('T')[0]);
+    }
 
-    createGigMutation.mutate(gigData);
+    // Create a gig entry for each date
+    for (const gigDate of gigDates) {
+      const gigData: InsertGig = {
+        userId: 1, // For MVP, using single user
+        gigType: data.gigType,
+        eventName: data.eventName,
+        clientName: data.clientName,
+        date: gigDate,
+        gigAddress: data.gigAddress || null,
+        distanceMiles,
+        travelTimeMinutes,
+        expectedPay: data.expectedPay || null,
+        actualPay: data.actualPay || null,
+        tips: data.tips || null,
+        paymentMethod: data.paymentMethod || null,
+        status: data.status,
+        duties: data.duties || null,
+        taxPercentage: data.taxPercentage,
+        mileage: data.mileage ? parseInt(data.mileage) : null,
+        notes: data.notes || null,
+        transportationExpense: trackExpenses && data.transportationExpense ? data.transportationExpense : null,
+        parkingExpense: trackExpenses && data.parkingExpense ? data.parkingExpense : null,
+        otherExpenses: trackExpenses && data.otherExpenses ? data.otherExpenses : null,
+        includeInResume: true,
+      };
+
+      try {
+        await createGigMutation.mutateAsync(gigData);
+      } catch (error) {
+        toast({
+          title: "Error",
+          description: `Failed to create gig for ${gigDate}. Please try again.`,
+          variant: "destructive",
+        });
+        return; // Stop creating more gigs if one fails
+      }
+    }
+
+    // Success message for multi-day gigs
+    if (gigDates.length > 1) {
+      toast({
+        title: "Success",
+        description: `Created ${gigDates.length} gig entries for ${data.startDate} to ${data.endDate}`,
+      });
+    }
+    
+    onClose();
   };
 
   const taxPercentage = form.watch("taxPercentage");
@@ -267,20 +301,40 @@ export default function GigForm({ onClose }: GigFormProps) {
                 )}
               />
 
-              {/* Date */}
-              <FormField
-                control={form.control}
-                name="date"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Date</FormLabel>
-                    <FormControl>
-                      <Input type="date" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              {/* Date Range */}
+              <div className="grid grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="startDate"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Start Date</FormLabel>
+                      <FormControl>
+                        <Input type="date" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="endDate"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>End Date (Optional)</FormLabel>
+                      <FormControl>
+                        <Input 
+                          type="date" 
+                          {...field} 
+                          placeholder="Leave empty for single day"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
 
               {/* Gig Address */}
               <FormField
