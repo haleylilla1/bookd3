@@ -638,18 +638,14 @@ export default function Dashboard() {
 
       {/* Key Metrics Grid */}
       <div className="grid grid-cols-3 gap-4 mb-6">
-        <Card>
+        <Card 
+          className="cursor-pointer hover:shadow-md transition-shadow"
+          onClick={() => setShowTaxBreakdown(true)}
+        >
           <CardContent className="p-4">
             <div className="flex items-center justify-between mb-2">
               <span className="text-sm font-medium text-gray-600">Tax Estimate</span>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setShowTaxBreakdown(true)}
-                className="p-1 h-8 w-8 hover:bg-orange-100"
-              >
-                <Receipt className="w-5 h-5 text-warning" />
-              </Button>
+              <Receipt className="w-5 h-5 text-orange-500" />
             </div>
             <p className="text-xl font-bold text-gray-900">
               {formatCurrency(getTaxBreakdownData().reduce((sum, item) => sum + item.taxAmount, 0))}
@@ -657,18 +653,14 @@ export default function Dashboard() {
             <p className="text-xs text-gray-500">{user?.defaultTaxPercentage || 23}% of earnings</p>
           </CardContent>
         </Card>
-        <Card>
+        <Card 
+          className="cursor-pointer hover:shadow-md transition-shadow"
+          onClick={() => setShowTipsBreakdown(true)}
+        >
           <CardContent className="p-4">
             <div className="flex items-center justify-between mb-2">
               <span className="text-sm font-medium text-gray-600">Tips Earned</span>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setShowTipsBreakdown(true)}
-                className="p-1 h-8 w-8 hover:bg-green-100"
-              >
-                <Banknote className="w-5 h-5 text-green-500" />
-              </Button>
+              <Banknote className="w-5 h-5 text-green-500" />
             </div>
             <p className="text-xl font-bold text-gray-900">
               {formatCurrency(getTipsBreakdownData().reduce((sum, item) => sum + item.tips, 0))}
@@ -676,18 +668,14 @@ export default function Dashboard() {
             <p className="text-xs text-gray-500">Cash tips received</p>
           </CardContent>
         </Card>
-        <Card>
+        <Card 
+          className="cursor-pointer hover:shadow-md transition-shadow"
+          onClick={() => setShowExpenseBreakdown(true)}
+        >
           <CardContent className="p-4">
             <div className="flex items-center justify-between mb-2">
               <span className="text-sm font-medium text-gray-600">Expenses</span>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setShowExpenseBreakdown(true)}
-                className="p-1 h-8 w-8 hover:bg-blue-100"
-              >
-                <Car className="w-5 h-5 text-gray-400" />
-              </Button>
+              <Car className="w-5 h-5 text-gray-500" />
             </div>
             <p className="text-xl font-bold text-gray-900">
               {formatCurrency(getExpenseBreakdownData().reduce((sum, item) => sum + item.totalExpenses, 0))}
