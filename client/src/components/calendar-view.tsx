@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ChevronLeft, ChevronRight, DollarSign, Calendar, Edit2, Trash2, Filter, Clock } from "lucide-react";
+import { Edit2, Trash2, Filter, Calendar, DollarSign, Clock, ChevronLeft, ChevronRight } from "lucide-react";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
@@ -24,11 +24,7 @@ export default function CalendarView() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const { data: stats } = useQuery({
-    queryKey: ["/api/dashboard/stats"],
-  });
-
-  const { data: gigs = [] } = useQuery<Gig[]>({
+  const { data: gigs = [], isLoading } = useQuery<Gig[]>({
     queryKey: ["/api/gigs"],
   });
 
@@ -55,49 +51,6 @@ export default function CalendarView() {
     },
   });
 
-  // Generate calendar days for the current month
-  const generateCalendarDays = () => {
-    const year = currentDate.getFullYear();
-    const month = currentDate.getMonth();
-    const firstDay = new Date(year, month, 1);
-    const lastDay = new Date(year, month + 1, 0);
-    const startDate = new Date(firstDay);
-    startDate.setDate(startDate.getDate() - firstDay.getDay()); // Start on Sunday
-    
-    const days = [];
-    const endDate = new Date(startDate);
-    endDate.setDate(endDate.getDate() + 41); // 6 weeks worth of days
-    
-    for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
-      days.push(new Date(d));
-    }
-    
-    return days;
-  };
-
-  // Get gigs for a specific date
-  const getGigsForDate = (date: Date) => {
-    if (!gigs) return [];
-    const dateString = date.toISOString().split('T')[0];
-    return gigs.filter(gig => gig.date === dateString);
-  };
-
-  // Handle day click
-  const handleDayClick = (date: Date) => {
-    const dayGigs = getGigsForDate(date);
-    if (dayGigs.length > 0) {
-      setSelectedDate(date);
-      setShowDayGigs(true);
-    }
-  };
-
-  // Navigation functions
-  const navigateMonth = (direction: "prev" | "next") => {
-    setCurrentDate(prev => {
-      return direction === "prev" ? addMonths(prev, -1) : addMonths(prev, 1);
-    });
-  };
-
   const deleteGigMutation = useMutation({
     mutationFn: async (gigId: number) => {
       await apiRequest("DELETE", `/api/gigs/${gigId}`);
@@ -119,13 +72,11 @@ export default function CalendarView() {
     },
   });
 
-  // Filter and search gigs for the gig log
+  // Filter and search gigs
   const filteredGigs = gigs
     .filter(gig => {
       if (filterStatus !== "all" && gig.status !== filterStatus) return false;
-      if (searchQuery && 
-          !gig.eventName?.toLowerCase().includes(searchQuery.toLowerCase()) &&
-          !gig.clientName.toLowerCase().includes(searchQuery.toLowerCase()) && 
+      if (searchQuery && !gig.clientName.toLowerCase().includes(searchQuery.toLowerCase()) && 
           !gig.gigType.toLowerCase().includes(searchQuery.toLowerCase())) return false;
       return true;
     })
@@ -170,397 +121,128 @@ export default function CalendarView() {
     }
   };
 
+  if (isLoading) {
+    return (
+      <div className="p-4">
+        <div className="space-y-4">
+          {[...Array(5)].map((_, i) => (
+            <div key={i} className="bg-gray-200 animate-pulse h-20 rounded-xl" />
+          ))}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="p-4">
-      {/* View Mode Toggle */}
-      <div className="flex bg-gray-100 p-1 rounded-lg mb-4">
-        <Button 
-          variant={viewMode === "calendar" ? "default" : "ghost"} 
-          size="sm" 
-          className="flex-1"
-          onClick={() => setViewMode("calendar")}
-        >
-          <Calendar className="w-4 h-4 mr-2" />
-          Calendar
-        </Button>
-        <Button 
-          variant={viewMode === "list" ? "default" : "ghost"} 
-          size="sm" 
-          className="flex-1"
-          onClick={() => setViewMode("list")}
-        >
-          <Filter className="w-4 h-4 mr-2" />
-          List View
-        </Button>
+      <div className="flex items-center justify-between mb-6">
+        <h2 className="text-xl font-semibold text-gray-900">Gig Log</h2>
+        <Badge variant="secondary" className="bg-primary/10 text-primary">
+          {filteredGigs.length} gigs
+        </Badge>
       </div>
 
-      {viewMode === "calendar" ? (
-        <>
-          {/* Month Navigation */}
-          <div className="flex items-center justify-between mb-6 bg-gray-50 p-3 rounded-lg">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => navigateMonth("prev")}
-              className="h-8 w-8 p-0"
-            >
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
-            
-            <div className="text-center">
-              <div className="text-lg font-semibold text-gray-900">
-                {formatMonth(currentDate)}
-              </div>
-              <Button
-                variant="link"
-                size="sm"
-                onClick={() => setCurrentDate(new Date())}
-                className="text-xs text-blue-600 p-0 h-auto"
-              >
-                Back to current month
-              </Button>
-            </div>
-            
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => navigateMonth("next")}
-              className="h-8 w-8 p-0"
-            >
-              <ChevronRight className="h-4 w-4" />
-            </Button>
-          </div>
+      {/* Filters */}
+      <div className="flex flex-col sm:flex-row gap-3 mb-6">
+        <div className="flex-1">
+          <Input
+            placeholder="Search by client or gig type..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full"
+          />
+        </div>
+        <Select value={filterStatus} onValueChange={setFilterStatus}>
+          <SelectTrigger className="w-full sm:w-40">
+            <Filter className="w-4 h-4 mr-2" />
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Status</SelectItem>
+            <SelectItem value="upcoming">Upcoming</SelectItem>
+            <SelectItem value="completed">Completed</SelectItem>
+            <SelectItem value="pending_payment">Pending Payment</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
 
-          {/* Calendar Grid */}
-          <Card className="mb-6">
-            <CardContent className="p-4">
-              {/* Calendar Header */}
-              <div className="grid grid-cols-7 gap-1 mb-2">
-                {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
-                  <div key={day} className="text-center text-sm font-medium text-gray-500 py-3">
-                    {day}
-                  </div>
-                ))}
-              </div>
-              
-              {/* Calendar Days */}
-              <div className="grid grid-cols-7 gap-1">
-                {generateCalendarDays().map((date, index) => {
-                  const isCurrentMonth = date.getMonth() === currentDate.getMonth();
-                  const isToday = date.toDateString() === new Date().toDateString();
-                  const dayGigs = getGigsForDate(date);
-                  const hasGigs = dayGigs.length > 0;
-                  
-                  return (
-                    <button
-                      key={index}
-                      onClick={() => handleDayClick(date)}
-                      className={`
-                        aspect-square p-2 text-sm rounded-lg relative transition-colors min-h-[60px]
-                        ${isCurrentMonth 
-                          ? hasGigs 
-                            ? 'bg-primary text-white hover:bg-primary/80 cursor-pointer' 
-                            : 'text-gray-900 hover:bg-gray-100'
-                          : 'text-gray-300 hover:bg-gray-50'
-                        }
-                        ${isToday && !hasGigs ? 'ring-2 ring-primary ring-offset-1' : ''}
-                        ${!hasGigs ? 'cursor-default' : ''}
-                      `}
-                      disabled={!hasGigs}
-                    >
-                      <div className="flex flex-col items-center justify-center h-full">
-                        <span className={`${isToday && hasGigs ? 'font-bold' : ''} mb-1`}>
-                          {date.getDate()}
-                        </span>
-                        {hasGigs && (
-                          <div className="flex flex-wrap gap-1 justify-center">
-                            {dayGigs.slice(0, 3).map((gig, gigIndex) => (
-                              <div 
-                                key={gigIndex}
-                                className={`w-2 h-2 rounded-full ${
-                                  gig.status === 'completed' ? 'bg-green-300' :
-                                  gig.status === 'upcoming' ? 'bg-blue-300' :
-                                  'bg-orange-300'
-                                }`}
-                              />
-                            ))}
-                            {dayGigs.length > 3 && (
-                              <div className="text-xs text-white/80">+{dayGigs.length - 3}</div>
-                            )}
-                          </div>
-                        )}
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
-              
-              <div className="mt-4 text-center text-xs text-gray-500">
-                Click on highlighted dates to see gig details
-              </div>
+      {/* Gigs List */}
+      <div className="space-y-3">
+        {filteredGigs.length === 0 ? (
+          <Card>
+            <CardContent className="p-8 text-center">
+              <Calendar className="w-16 h-16 mx-auto mb-4 text-gray-300" />
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">No Gigs Found</h3>
+              <p className="text-gray-600">
+                {searchQuery || filterStatus !== "all" 
+                  ? "No gigs match your current filters." 
+                  : "You haven't logged any gigs yet."}
+              </p>
             </CardContent>
           </Card>
-        </>
-      ) : (
-        <>
-          {/* List View - Quick Stats Cards */}
-          <div className="grid grid-cols-2 gap-3 mb-6">
-            <Card className="bg-success/10 border-success/20">
+        ) : (
+          filteredGigs.map((gig) => (
+            <Card key={gig.id} className="hover:shadow-md transition-shadow">
               <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-success text-sm font-medium">This Month</p>
-                    <p className="text-2xl font-bold text-gray-900">
-                      {formatCurrency((stats as any)?.monthlyEarnings || 0)}
-                    </p>
-                  </div>
-                  <DollarSign className="w-5 h-5 text-success" />
-                </div>
-              </CardContent>
-            </Card>
-            <Card className="bg-blue-50 border-blue-200">
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-blue-600 text-sm font-medium">Upcoming</p>
-                    <p className="text-2xl font-bold text-gray-900">{(stats as any)?.upcomingGigs || 0}</p>
-                  </div>
-                  <Clock className="w-5 h-5 text-blue-600" />
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Search and Filter */}
-          <div className="flex flex-col sm:flex-row gap-3 mb-4">
-            <div className="flex-1">
-              <Input
-                placeholder="Search gigs..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="h-10"
-              />
-            </div>
-            <Select value={filterStatus} onValueChange={setFilterStatus}>
-              <SelectTrigger className="w-full sm:w-32">
-                <SelectValue placeholder="All" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Status</SelectItem>
-                <SelectItem value="upcoming">Upcoming</SelectItem>
-                <SelectItem value="completed">Completed</SelectItem>
-                <SelectItem value="pending_payment">Pending Payment</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Gig List */}
-          <div className="space-y-3">
-            {filteredGigs.length > 0 ? (
-              filteredGigs.map((gig) => (
-                <Card key={gig.id} className="overflow-hidden">
-                  <CardContent className="p-4">
-                    <div className="flex items-center justify-between mb-3">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-1">
-                          <h3 className="text-lg font-semibold text-gray-900">
-                            {gig.eventName || "Unnamed Event"}
-                          </h3>
-                          <Badge className={getStatusColor(gig.status)}>
-                            {getStatusLabel(gig.status)}
-                          </Badge>
-                        </div>
-                        <div className="flex items-center gap-2 text-sm text-gray-600">
-                          <span>{gig.clientName}</span>
-                          <span>•</span>
-                          <span>{gig.gigType}</span>
-                          <span>•</span>
-                          <span>{formatDate(gig.date)}</span>
-                        </div>
-                      </div>
-                      <div className="flex gap-2">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleEditGig(gig)}
-                          className="h-8 w-8 p-0"
-                        >
-                          <Edit2 className="w-4 h-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => deleteGigMutation.mutate(gig.id)}
-                          className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                      </div>
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-3 mb-2">
+                      <h3 className="text-lg font-semibold text-gray-900">{gig.clientName}</h3>
+                      <Badge className={getStatusColor(gig.status)}>
+                        {getStatusLabel(gig.status)}
+                      </Badge>
                     </div>
-
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm">
-                      <div>
-                        <span className="text-gray-500">Expected Pay</span>
-                        <div className="font-medium text-green-600">
-                          {formatCurrency(parseFloat(gig.expectedPay || "0"))}
-                        </div>
+                    
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-sm text-gray-600 mb-3">
+                      <div className="flex items-center gap-1">
+                        <Calendar className="w-4 h-4" />
+                        {formatDate(gig.date)}
                       </div>
-                      {gig.actualPay && (
-                        <div>
-                          <span className="text-gray-500">Actual Pay</span>
-                          <div className="font-medium text-green-600">
-                            {formatCurrency(parseFloat(gig.actualPay))}
-                          </div>
-                        </div>
-                      )}
-                      {gig.tips && parseFloat(gig.tips) > 0 && (
-                        <div>
-                          <span className="text-gray-500">Tips</span>
-                          <div className="font-medium text-green-600">
-                            {formatCurrency(parseFloat(gig.tips))}
-                          </div>
-                        </div>
-                      )}
-                      {gig.paymentMethod && (
-                        <div>
-                          <span className="text-gray-500">Payment</span>
-                          <div className="font-medium">{gig.paymentMethod}</div>
-                        </div>
-                      )}
+                      <div className="flex items-center gap-1">
+                        <Clock className="w-4 h-4" />
+                        {gig.gigType.replace("-", " ").replace(/\b\w/g, l => l.toUpperCase())}
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <DollarSign className="w-4 h-4" />
+                        {gig.actualPay 
+                          ? formatCurrency(parseFloat(gig.actualPay))
+                          : gig.expectedPay 
+                            ? `${formatCurrency(parseFloat(gig.expectedPay))} (expected)`
+                            : "No pay set"
+                        }
+                      </div>
                     </div>
 
                     {gig.duties && (
-                      <div className="mt-3 pt-3 border-t border-gray-200">
-                        <span className="text-gray-500 text-sm">Duties:</span>
-                        <div className="text-sm text-gray-900 mt-1">{gig.duties}</div>
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-              ))
-            ) : (
-              <Card>
-                <CardContent className="p-8 text-center">
-                  <Calendar className="w-12 h-12 mx-auto mb-4 text-gray-300" />
-                  <h3 className="text-lg font-medium text-gray-900 mb-2">No gigs found</h3>
-                  <p className="text-gray-500">
-                    {searchQuery || filterStatus !== "all"
-                      ? "No gigs match your current filters"
-                      : "You haven't logged any gigs yet"}
-                  </p>
-                </CardContent>
-              </Card>
-            )}
-          </div>
-        </>
-      )}
-
-      {/* Day Gigs Modal */}
-      <Dialog open={showDayGigs} onOpenChange={setShowDayGigs}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>
-              Gigs for {selectedDate?.toLocaleDateString('en-US', { 
-                weekday: 'long', 
-                year: 'numeric', 
-                month: 'long', 
-                day: 'numeric' 
-              })}
-            </DialogTitle>
-          </DialogHeader>
-          <div className="max-h-96 overflow-y-auto">
-            {selectedDate && getGigsForDate(selectedDate).length > 0 ? (
-              <div className="space-y-3">
-                {getGigsForDate(selectedDate).map((gig, index) => (
-                  <div key={index} className="p-4 bg-gray-50 rounded-lg">
-                    <div className="flex items-center justify-between mb-3">
-                      <div className="flex-1">
-                        <div className="font-semibold text-lg text-gray-900">
-                          {gig.eventName}
-                        </div>
-                        <div className="text-sm text-gray-600">
-                          {gig.clientName} • {gig.gigType}
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <Badge 
-                          variant={
-                            gig.status === 'completed' ? 'default' : 
-                            gig.status === 'upcoming' ? 'secondary' : 
-                            'outline'
-                          }
-                          className="mb-2"
-                        >
-                          {gig.status}
-                        </Badge>
-                      </div>
-                    </div>
-                    
-                    <div className="grid grid-cols-2 gap-4 text-sm">
-                      <div>
-                        <span className="text-gray-600">Expected Pay:</span>
-                        <div className="font-medium text-green-600">
-                          {formatCurrency(parseFloat(gig.expectedPay || "0"))}
-                        </div>
-                      </div>
-                      
-                      {gig.status === 'completed' && gig.actualPay && (
-                        <div>
-                          <span className="text-gray-600">Actual Pay:</span>
-                          <div className="font-medium text-green-600">
-                            {formatCurrency(parseFloat(gig.actualPay))}
-                          </div>
-                        </div>
-                      )}
-                      
-                      {gig.tips && parseFloat(gig.tips) > 0 && (
-                        <div>
-                          <span className="text-gray-600">Tips:</span>
-                          <div className="font-medium text-green-600">
-                            {formatCurrency(parseFloat(gig.tips))}
-                          </div>
-                        </div>
-                      )}
-                      
-                      {gig.gigAddress && (
-                        <div>
-                          <span className="text-gray-600">Location:</span>
-                          <div className="font-medium text-gray-900 text-xs">
-                            {gig.gigAddress}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                    
-                    {gig.duties && (
-                      <div className="mt-3 pt-3 border-t border-gray-200">
-                        <span className="text-gray-600 text-sm">Duties:</span>
-                        <div className="text-sm text-gray-900 mt-1">
-                          {gig.duties}
-                        </div>
-                      </div>
-                    )}
-                    
-                    {gig.notes && (
-                      <div className="mt-2">
-                        <span className="text-gray-600 text-sm">Notes:</span>
-                        <div className="text-sm text-gray-900 mt-1">
-                          {gig.notes}
-                        </div>
-                      </div>
+                      <p className="text-sm text-gray-700 bg-gray-50 p-2 rounded">
+                        {gig.duties}
+                      </p>
                     )}
                   </div>
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-8 text-gray-500">
-                <Calendar className="w-12 h-12 mx-auto mb-3 text-gray-300" />
-                <p>No gigs found for this date</p>
-              </div>
-            )}
-          </div>
-        </DialogContent>
-      </Dialog>
+
+                  <div className="flex items-center gap-2 ml-4">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleEditGig(gig)}
+                    >
+                      <Edit2 className="w-4 h-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => deleteGigMutation.mutate(gig.id)}
+                      disabled={deleteGigMutation.isPending}
+                    >
+                      <Trash2 className="w-4 h-4 text-red-500" />
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))
+        )}
+      </div>
 
       {/* Edit Gig Dialog */}
       <Dialog open={!!editingGig} onOpenChange={() => setEditingGig(null)}>
@@ -591,12 +273,12 @@ interface GigEditFormProps {
 
 function GigEditForm({ gig, onSave, onCancel, isLoading }: GigEditFormProps) {
   const [formData, setFormData] = useState({
-    eventName: gig.eventName || "",
     clientName: gig.clientName,
     gigType: gig.gigType,
     date: gig.date,
     expectedPay: gig.expectedPay || "",
     actualPay: gig.actualPay || "",
+    tips: gig.tips || "",
     status: gig.status,
     duties: gig.duties || "",
     paymentMethod: gig.paymentMethod || "",
@@ -610,34 +292,52 @@ function GigEditForm({ gig, onSave, onCancel, isLoading }: GigEditFormProps) {
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div>
-        <label className="block text-sm font-medium mb-1">Event Name</label>
+        <label className="block text-sm font-medium mb-1">Client Name</label>
         <Input
-          value={formData.eventName}
-          onChange={(e) => setFormData({ ...formData, eventName: e.target.value })}
-          placeholder="e.g. Summer Festival, Product Launch..."
+          value={formData.clientName}
+          onChange={(e) => setFormData({ ...formData, clientName: e.target.value })}
           required
         />
       </div>
 
       <div>
-        <label className="block text-sm font-medium mb-1">Expected Pay</label>
+        <label className="block text-sm font-medium mb-1">Date</label>
         <Input
-          type="number"
-          step="0.01"
-          value={formData.expectedPay}
-          onChange={(e) => setFormData({ ...formData, expectedPay: e.target.value })}
-          placeholder="0.00"
+          type="date"
+          value={formData.date}
+          onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+          required
         />
       </div>
 
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <label className="block text-sm font-medium mb-1">Expected Pay</label>
+          <Input
+            type="number"
+            value={formData.expectedPay}
+            onChange={(e) => setFormData({ ...formData, expectedPay: e.target.value })}
+            placeholder="250"
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium mb-1">Actual Pay</label>
+          <Input
+            type="number"
+            value={formData.actualPay}
+            onChange={(e) => setFormData({ ...formData, actualPay: e.target.value })}
+            placeholder="285"
+          />
+        </div>
+      </div>
+
       <div>
-        <label className="block text-sm font-medium mb-1">Actual Pay</label>
+        <label className="block text-sm font-medium mb-1">Tips Earned</label>
         <Input
           type="number"
-          step="0.01"
-          value={formData.actualPay}
-          onChange={(e) => setFormData({ ...formData, actualPay: e.target.value })}
-          placeholder="0.00"
+          value={formData.tips}
+          onChange={(e) => setFormData({ ...formData, tips: e.target.value })}
+          placeholder="25"
         />
       </div>
 
@@ -656,19 +356,20 @@ function GigEditForm({ gig, onSave, onCancel, isLoading }: GigEditFormProps) {
       </div>
 
       <div>
-        <label className="block text-sm font-medium mb-1">Payment Method</label>
-        <Input
-          value={formData.paymentMethod}
-          onChange={(e) => setFormData({ ...formData, paymentMethod: e.target.value })}
-          placeholder="e.g. Cash, Check, Venmo..."
+        <label className="block text-sm font-medium mb-1">Duties</label>
+        <textarea
+          className="w-full p-2 border rounded-md resize-none h-20"
+          value={formData.duties}
+          onChange={(e) => setFormData({ ...formData, duties: e.target.value })}
+          placeholder="Key duties and responsibilities..."
         />
       </div>
 
-      <div className="flex gap-2 pt-4">
-        <Button type="button" variant="outline" onClick={onCancel} className="flex-1">
+      <div className="flex justify-end gap-2 pt-4">
+        <Button type="button" variant="outline" onClick={onCancel}>
           Cancel
         </Button>
-        <Button type="submit" disabled={isLoading} className="flex-1">
+        <Button type="submit" disabled={isLoading}>
           {isLoading ? "Saving..." : "Save Changes"}
         </Button>
       </div>

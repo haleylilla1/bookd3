@@ -78,41 +78,7 @@ export default function Dashboard() {
     },
   });
 
-  // Generate calendar days for the current month
-  const generateCalendarDays = () => {
-    const year = currentDate.getFullYear();
-    const month = currentDate.getMonth();
-    const firstDay = new Date(year, month, 1);
-    const lastDay = new Date(year, month + 1, 0);
-    const startDate = new Date(firstDay);
-    startDate.setDate(startDate.getDate() - firstDay.getDay()); // Start on Sunday
-    
-    const days = [];
-    const endDate = new Date(startDate);
-    endDate.setDate(endDate.getDate() + 41); // 6 weeks worth of days
-    
-    for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
-      days.push(new Date(d));
-    }
-    
-    return days;
-  };
 
-  // Get gigs for a specific date
-  const getGigsForDate = (date: Date) => {
-    if (!gigs) return [];
-    const dateString = date.toISOString().split('T')[0];
-    return (gigs as Gig[]).filter(gig => gig.date === dateString);
-  };
-
-  // Handle day click
-  const handleDayClick = (date: Date) => {
-    const dayGigs = getGigsForDate(date);
-    if (dayGigs.length > 0) {
-      setSelectedDate(date);
-      setShowDayGigs(true);
-    }
-  };
 
   // Calculate tax breakdown per gig
   const getTaxBreakdownData = () => {
@@ -806,112 +772,7 @@ export default function Dashboard() {
         </CardContent>
       </Card>
 
-      {/* Day Gigs Modal */}
-      <Dialog open={showDayGigs} onOpenChange={setShowDayGigs}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>
-              Gigs for {selectedDate?.toLocaleDateString('en-US', { 
-                weekday: 'long', 
-                year: 'numeric', 
-                month: 'long', 
-                day: 'numeric' 
-              })}
-            </DialogTitle>
-          </DialogHeader>
-          <div className="max-h-96 overflow-y-auto">
-            {selectedDate && getGigsForDate(selectedDate).length > 0 ? (
-              <div className="space-y-3">
-                {getGigsForDate(selectedDate).map((gig, index) => (
-                  <div key={index} className="p-4 bg-gray-50 rounded-lg">
-                    <div className="flex items-center justify-between mb-3">
-                      <div className="flex-1">
-                        <div className="font-semibold text-lg text-gray-900">
-                          {gig.eventName}
-                        </div>
-                        <div className="text-sm text-gray-600">
-                          {gig.clientName} • {gig.gigType}
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <Badge 
-                          variant={
-                            gig.status === 'completed' ? 'default' : 
-                            gig.status === 'upcoming' ? 'secondary' : 
-                            'outline'
-                          }
-                          className="mb-2"
-                        >
-                          {gig.status}
-                        </Badge>
-                      </div>
-                    </div>
-                    
-                    <div className="grid grid-cols-2 gap-4 text-sm">
-                      <div>
-                        <span className="text-gray-600">Expected Pay:</span>
-                        <div className="font-medium text-green-600">
-                          {formatCurrency(parseFloat(gig.expectedPay || "0"))}
-                        </div>
-                      </div>
-                      
-                      {gig.status === 'completed' && gig.actualPay && (
-                        <div>
-                          <span className="text-gray-600">Actual Pay:</span>
-                          <div className="font-medium text-green-600">
-                            {formatCurrency(parseFloat(gig.actualPay))}
-                          </div>
-                        </div>
-                      )}
-                      
-                      {gig.tips && parseFloat(gig.tips) > 0 && (
-                        <div>
-                          <span className="text-gray-600">Tips:</span>
-                          <div className="font-medium text-green-600">
-                            {formatCurrency(parseFloat(gig.tips))}
-                          </div>
-                        </div>
-                      )}
-                      
-                      {gig.gigAddress && (
-                        <div>
-                          <span className="text-gray-600">Location:</span>
-                          <div className="font-medium text-gray-900 text-xs">
-                            {gig.gigAddress}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                    
-                    {gig.duties && (
-                      <div className="mt-3 pt-3 border-t border-gray-200">
-                        <span className="text-gray-600 text-sm">Duties:</span>
-                        <div className="text-sm text-gray-900 mt-1">
-                          {gig.duties}
-                        </div>
-                      </div>
-                    )}
-                    
-                    {gig.notes && (
-                      <div className="mt-2">
-                        <span className="text-gray-600 text-sm">Notes:</span>
-                        <div className="text-sm text-gray-900 mt-1">
-                          {gig.notes}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-8 text-gray-500">
-                <Calendar className="w-12 h-12 mx-auto mb-3 text-gray-300" />
-                <p>No gigs found for this date</p>
-              </div>
-            )}
-          </div>
-        </DialogContent>
-      </Dialog>
+
 
       {/* Goal Edit Dialog */}
       <Dialog open={!!editingGoal} onOpenChange={() => setEditingGoal(null)}>
