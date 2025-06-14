@@ -218,6 +218,11 @@ export default function CalendarView() {
       updatePayload.date = updatedData.startDate;
     }
     
+    // Convert empty strings to null for numeric fields
+    if (updatePayload.expectedPay === "") updatePayload.expectedPay = null;
+    if (updatePayload.actualPay === "") updatePayload.actualPay = null;
+    if (updatePayload.tips === "") updatePayload.tips = null;
+    
     // Remove date range fields that aren't part of the Gig schema
     delete updatePayload.startDate;
     delete updatePayload.endDate;
