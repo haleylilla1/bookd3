@@ -33,9 +33,6 @@ export default function Dashboard() {
   const [showTaxBreakdown, setShowTaxBreakdown] = useState(false);
   const [showExpenseBreakdown, setShowExpenseBreakdown] = useState(false);
   const [showTipsBreakdown, setShowTipsBreakdown] = useState(false);
-  const [showCalendar, setShowCalendar] = useState(false);
-  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
-  const [showDayGigs, setShowDayGigs] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
   
@@ -423,79 +420,7 @@ export default function Dashboard() {
         </Button>
       </div>
 
-      {/* Calendar View Toggle */}
-      <div className="mb-4">
-        <Button
-          variant={showCalendar ? "default" : "outline"}
-          onClick={() => setShowCalendar(!showCalendar)}
-          className="w-full flex items-center justify-center space-x-2"
-        >
-          <Calendar className="w-4 h-4" />
-          <span>{showCalendar ? 'Hide Calendar' : 'Show Calendar View'}</span>
-        </Button>
-      </div>
 
-      {/* Calendar Grid */}
-      {showCalendar && selectedPeriod === "monthly" && (
-        <Card className="mb-6">
-          <CardContent className="p-4">
-            <div className="text-center mb-4">
-              <h3 className="text-lg font-semibold text-gray-900">
-                {formatMonth(currentDate)}
-              </h3>
-            </div>
-            
-            {/* Calendar Header */}
-            <div className="grid grid-cols-7 gap-1 mb-2">
-              {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
-                <div key={day} className="text-center text-xs font-medium text-gray-500 py-2">
-                  {day}
-                </div>
-              ))}
-            </div>
-            
-            {/* Calendar Days */}
-            <div className="grid grid-cols-7 gap-1">
-              {generateCalendarDays().map((date, index) => {
-                const isCurrentMonth = date.getMonth() === currentDate.getMonth();
-                const isToday = date.toDateString() === new Date().toDateString();
-                const dayGigs = getGigsForDate(date);
-                const hasGigs = dayGigs.length > 0;
-                
-                return (
-                  <button
-                    key={index}
-                    onClick={() => handleDayClick(date)}
-                    className={`
-                      aspect-square p-1 text-xs rounded-lg relative transition-colors
-                      ${isCurrentMonth 
-                        ? hasGigs 
-                          ? 'bg-primary text-white hover:bg-primary/80 cursor-pointer' 
-                          : 'text-gray-900 hover:bg-gray-100'
-                        : 'text-gray-300 hover:bg-gray-50'
-                      }
-                      ${isToday && !hasGigs ? 'ring-2 ring-primary ring-offset-1' : ''}
-                      ${!hasGigs ? 'cursor-default' : ''}
-                    `}
-                    disabled={!hasGigs}
-                  >
-                    <div className="flex flex-col items-center justify-center h-full">
-                      <span className={isToday && hasGigs ? 'font-bold' : ''}>{date.getDate()}</span>
-                      {hasGigs && (
-                        <div className="absolute bottom-0 right-0 w-2 h-2 bg-white rounded-full opacity-80" />
-                      )}
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-            
-            <div className="mt-4 text-center text-xs text-gray-500">
-              Click on highlighted dates to see gigs
-            </div>
-          </CardContent>
-        </Card>
-      )}
 
       {/* Earnings Overview */}
       <div className="gradient-primary rounded-xl p-6 mb-4 text-white">
