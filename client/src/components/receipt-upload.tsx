@@ -28,13 +28,13 @@ export default function ReceiptUpload({
     if (!files) return;
 
     Array.from(files).forEach(file => {
-      if (receipts.length >= maxFiles) return;
+      if ((receipts || []).length >= maxFiles) return;
       
       const reader = new FileReader();
       reader.onload = (e) => {
         const result = e.target?.result as string;
         if (result) {
-          onReceiptsChange([...receipts, result]);
+          onReceiptsChange([...(receipts || []), result]);
         }
       };
       reader.readAsDataURL(file);
@@ -45,7 +45,7 @@ export default function ReceiptUpload({
   };
 
   const removeReceipt = (index: number) => {
-    const newReceipts = receipts.filter((_, i) => i !== index);
+    const newReceipts = (receipts || []).filter((_, i) => i !== index);
     onReceiptsChange(newReceipts);
   };
 
@@ -72,7 +72,7 @@ export default function ReceiptUpload({
           variant="outline"
           size="sm"
           onClick={openCamera}
-          disabled={receipts.length >= maxFiles}
+          disabled={(receipts || []).length >= maxFiles}
           className="flex items-center gap-2"
         >
           <Camera className="w-4 h-4" />
@@ -83,15 +83,15 @@ export default function ReceiptUpload({
           variant="outline"
           size="sm"
           onClick={openFileSelector}
-          disabled={receipts.length >= maxFiles}
+          disabled={(receipts || []).length >= maxFiles}
           className="flex items-center gap-2"
         >
           <Upload className="w-4 h-4" />
           Upload
         </Button>
-        {receipts.length > 0 && (
+        {(receipts || []).length > 0 && (
           <Badge variant="secondary">
-            {receipts.length}/{maxFiles} photos
+            {(receipts || []).length}/{maxFiles} photos
           </Badge>
         )}
       </div>
@@ -115,9 +115,9 @@ export default function ReceiptUpload({
       />
 
       {/* Receipt Thumbnails */}
-      {receipts.length > 0 && (
+      {(receipts || []).length > 0 && (
         <div className="grid grid-cols-2 gap-2">
-          {receipts.map((receipt, index) => (
+          {(receipts || []).map((receipt, index) => (
             <Card key={index} className="relative">
               <CardContent className="p-2">
                 <div className="relative aspect-square">
@@ -156,7 +156,7 @@ export default function ReceiptUpload({
       )}
 
       {/* Empty State */}
-      {receipts.length === 0 && (
+      {(receipts || []).length === 0 && (
         <Card className="border-dashed">
           <CardContent className="p-6 text-center">
             <FileImage className="w-8 h-8 mx-auto mb-2 text-gray-400" />
