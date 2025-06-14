@@ -355,15 +355,6 @@ export default function Dashboard() {
   const projectedData = getProjectedEarningsForPeriod();
   const goalTarget = parseFloat(currentGoal?.goalAmount || "0");
   const goalProgress = projectedData.projectedEarnings && goalTarget ? (projectedData.projectedEarnings / goalTarget) * 100 : 0;
-  
-  // Debug logging
-  console.log('Goal Progress Debug:', {
-    actualEarnings: currentData.earnings,
-    projectedEarnings: projectedData.projectedEarnings,
-    goalTarget,
-    goalProgress,
-    period: selectedPeriod
-  });
 
   const handleEditGoal = (period: "weekly" | "monthly" | "annual") => {
     setEditingGoal(period);
@@ -620,12 +611,23 @@ export default function Dashboard() {
           </div>
           {currentGoal ? (
             <>
-              <Progress value={goalProgress} className="mb-2" />
+              <div className="relative mb-2">
+                <div className="w-full bg-gray-200 rounded-full h-3">
+                  <div 
+                    className="bg-gradient-to-r from-blue-500 to-green-500 h-3 rounded-full transition-all duration-500 ease-out"
+                    style={{ width: `${Math.min(goalProgress, 100)}%` }}
+                  ></div>
+                </div>
+                <div className="text-xs text-gray-500 mt-1 text-right">
+                  {goalProgress.toFixed(1)}%
+                </div>
+              </div>
               <p className="text-sm text-gray-600">
+                With what is scheduled, you have{" "}
                 <span className="font-medium text-primary">
                   {formatCurrency(Math.max(0, goalTarget - projectedData.projectedEarnings))} to go
                 </span>
-                {goalProgress >= 95 ? " - You're almost there!" : ""}
+                {goalProgress >= 95 ? " - you're almost there!" : goalProgress >= 100 ? " - goal achieved!" : ""}
               </p>
             </>
           ) : (
