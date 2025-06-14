@@ -114,14 +114,67 @@ export default function CalendarView() {
     });
   };
 
+  // Group consecutive gigs with same details into multi-day entries
+  const groupMultiDayGigs = (gigs: Gig[]) => {
+    if (gigs.length === 0) return [];
+    
+    const sortedGigs = [...gigs].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+    const grouped: (Gig & { isMultiDay?: boolean; startDate?: string; endDate?: string; gigIds?: number[] })[] = [];
+    
+    for (let i = 0; i < sortedGigs.length; i++) {
+      const currentGig = sortedGigs[i];
+      
+      // Check if this gig can be grouped with subsequent gigs
+      const similarGigs = [currentGig];
+      let j = i + 1;
+      
+      while (j < sortedGigs.length) {
+        const nextGig = sortedGigs[j];
+        const currentDate = new Date(currentGig.date);
+        const nextDate = new Date(nextGig.date);
+        const dayDiff = (nextDate.getTime() - currentDate.getTime()) / (1000 * 60 * 60 * 24);
+        
+        // Group if same event, client, type and consecutive days
+        if (nextGig.eventName === currentGig.eventName &&
+            nextGig.clientName === currentGig.clientName &&
+            nextGig.gigType === currentGig.gigType &&
+            dayDiff <= similarGigs.length) {
+          similarGigs.push(nextGig);
+          j++;
+        } else {
+          break;
+        }
+      }
+      
+      if (similarGigs.length > 1) {
+        // Create multi-day gig entry
+        const multiDayGig = {
+          ...currentGig,
+          isMultiDay: true,
+          startDate: similarGigs[0].date,
+          endDate: similarGigs[similarGigs.length - 1].date,
+          gigIds: similarGigs.map(g => g.id)
+        };
+        grouped.push(multiDayGig);
+        i = j - 1; // Skip the grouped gigs
+      } else {
+        grouped.push(currentGig);
+      }
+    }
+    
+    return grouped;
+  };
+
   // Filter and search gigs
-  const filteredGigs = gigs
+  const filteredIndividualGigs = gigs
     .filter(gig => {
       if (filterStatus !== "all" && gig.status !== filterStatus) return false;
       if (searchQuery && !gig.eventName.toLowerCase().includes(searchQuery.toLowerCase()) &&
           !gig.clientName.toLowerCase().includes(searchQuery.toLowerCase())) return false;
       return true;
-    })
+    });
+
+  const filteredGigs = groupMultiDayGigs(filteredIndividualGigs)
     .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
   const getStatusColor = (status: string) => {
@@ -370,7 +423,10 @@ export default function CalendarView() {
                     <div className="grid grid-cols-2 gap-4 text-sm text-gray-600 mb-3">
                       <div className="flex items-center gap-1">
                         <Calendar className="w-4 h-4" />
-                        {formatDate(gig.date)}
+                        {gig.isMultiDay 
+                          ? `${formatDate(gig.startDate!)} - ${formatDate(gig.endDate!)}`
+                          : formatDate(gig.date)
+                        }
                       </div>
                       <div className="flex items-center gap-1">
                         <Clock className="w-4 h-4" />
@@ -408,7 +464,14 @@ export default function CalendarView() {
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => deleteGigMutation.mutate(gig.id)}
+                      onClick={() => {
+                        if (gig.isMultiDay && gig.gigIds) {
+                          // Delete all gigs in the multi-day series
+                          gig.gigIds.forEach(id => deleteGigMutation.mutate(id));
+                        } else {
+                          deleteGigMutation.mutate(gig.id);
+                        }
+                      }}
                       disabled={deleteGigMutation.isPending}
                     >
                       <Trash2 className="w-4 h-4 text-red-500" />
@@ -549,7 +612,7 @@ export default function CalendarView() {
 }
 
 interface GigEditFormProps {
-  gig: Gig;
+  gig: Gig & { isMultiDay?: boolean; startDate?: string; endDate?: string; gigIds?: number[] };
   onSave: (data: Partial<Gig>) => void;
   onCancel: () => void;
   isLoading: boolean;
@@ -560,7 +623,8 @@ function GigEditForm({ gig, onSave, onCancel, isLoading }: GigEditFormProps) {
     eventName: gig.eventName,
     clientName: gig.clientName,
     gigType: gig.gigType,
-    date: gig.date,
+    startDate: gig.isMultiDay ? gig.startDate! : gig.date,
+    endDate: gig.isMultiDay ? gig.endDate! : "",
     expectedPay: gig.expectedPay || "",
     actualPay: gig.actualPay || "",
     tips: gig.tips || "",
@@ -600,6 +664,27 @@ function GigEditForm({ gig, onSave, onCancel, isLoading }: GigEditFormProps) {
           onChange={(e) => setFormData({ ...formData, gigType: e.target.value })}
           placeholder="Brand Ambassador"
         />
+      </div>
+
+      {/* Date Range */}
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <label className="block text-sm font-medium mb-1">Start Date</label>
+          <Input
+            type="date"
+            value={formData.startDate}
+            onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium mb-1">End Date (Optional)</label>
+          <Input
+            type="date"
+            value={formData.endDate}
+            onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
+            placeholder="Leave empty for single day"
+          />
+        </div>
       </div>
 
       <div className="grid grid-cols-2 gap-4">
