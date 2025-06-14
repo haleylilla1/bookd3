@@ -13,26 +13,7 @@ export const sessions = pgTable(
   (table) => [index("IDX_session_expire").on(table.expire)],
 );
 
-// Auth users table for Replit Auth (separate from existing users)
-export const authUsers = pgTable("auth_users", {
-  id: varchar("id").primaryKey().notNull(),
-  email: varchar("email").unique(),
-  firstName: varchar("first_name"),
-  lastName: varchar("last_name"),
-  profileImageUrl: varchar("profile_image_url"),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
-  // Link to existing users table
-  legacyUserId: integer("legacy_user_id").references(() => users.id),
-  // Additional fields for gig tracking
-  phone: text("phone"),
-  title: text("title").default("Gig Worker"),
-  defaultTaxPercentage: integer("default_tax_percentage").default(23),
-  customGigTypes: text("custom_gig_types").array().default([]),
-  homeAddress: text("home_address"),
-});
-
-// Keep existing users table structure
+// Keep existing users table structure but add auth fields
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
@@ -42,6 +23,13 @@ export const users = pgTable("users", {
   defaultTaxPercentage: integer("default_tax_percentage").default(23),
   customGigTypes: text("custom_gig_types").array().default([]),
   homeAddress: text("home_address"),
+  // Auth fields for Replit Auth integration
+  replitId: varchar("replit_id").unique(),
+  firstName: varchar("first_name"),
+  lastName: varchar("last_name"),
+  profileImageUrl: varchar("profile_image_url"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
 });
 
 export const monthlyGoals = pgTable("monthly_goals", {

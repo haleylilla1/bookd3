@@ -26,14 +26,13 @@ import { db } from "./db";
 import { eq, and, gte, lte, desc } from "drizzle-orm";
 
 export interface IStorage {
-  // User operations (mandatory for Replit Auth)
-  getUser(id: string): Promise<User | undefined>;
-  upsertUser(user: UpsertUser): Promise<User>;
-  
-  // Legacy user operations
+  // User operations
+  getUser(id: number): Promise<User | undefined>;
+  getUserByReplitId(replitId: string): Promise<User | undefined>;
   getUserByEmail(email: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
-  updateUser(id: string, user: Partial<InsertUser>): Promise<User | undefined>;
+  updateUser(id: number, user: Partial<InsertUser>): Promise<User | undefined>;
+  upsertUserByReplitId(replitId: string, userData: Partial<User>): Promise<User>;
 
   // Gigs
   getGig(id: number): Promise<Gig | undefined>;
@@ -94,6 +93,41 @@ export class DatabaseStorage implements IStorage {
       .where(eq(users.id, id))
       .returning();
     return user || undefined;
+  }
+
+  async getUserByReplitId(replitId: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.replitId, replitId));
+    return user;
+  }
+
+  async upsertUserByReplitId(replitId: string, userData: Partial<User>): Promise<User> {
+    const existingUser = await this.getUserByReplitId(replitId);
+    
+    if (existingUser) {
+      const [updatedUser] = await db
+        .update(users)
+        .set({
+          ...userData,
+          updatedAt: new Date(),
+        })
+        .where(eq(users.replitId, replitId))
+        .returning();
+      return updatedUser;
+    } else {
+      const [newUser] = await db
+        .insert(users)
+        .values({
+          replitId,
+          name: `${userData.firstName || ''} ${userData.lastName || ''}`.trim() || 'New User',
+          email: userData.email || 'user@example.com',
+          firstName: userData.firstName,
+          lastName: userData.lastName,
+          profileImageUrl: userData.profileImageUrl,
+          ...userData,
+        })
+        .returning();
+      return newUser;
+    }
   }
 
   async getGig(id: number): Promise<Gig | undefined> {

@@ -3,23 +3,50 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { insertGigSchema, insertGoalSchema, insertAllocationSchema } from "@shared/schema";
 import { z } from "zod";
+import { setupAuth, isAuthenticated } from "./replitAuth";
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  const currentUserId = 1; // For MVP, we'll use a single user
+  // Setup authentication
+  await setupAuth(app);
+
+  // Helper function to get current user
+  const getCurrentUser = async (req: any) => {
+    if (req.isAuthenticated() && req.user?.claims?.sub) {
+      return await storage.getUserByReplitId(req.user.claims.sub);
+    }
+    // Fallback to user ID 1 for development/testing
+    return await storage.getUser(1);
+  };
+
+  // Add authentication routes
+  app.get('/api/auth/user', async (req: any, res) => {
+    try {
+      const user = await getCurrentUser(req);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      res.json(user);
+    } catch (error) {
+      console.error("Error fetching user:", error);
+      res.status(500).json({ message: "Failed to fetch user" });
+    }
+  });
 
   // Annual report export routes (register early to avoid conflicts)
   app.get("/api/reports/annual/excel", async (req, res) => {
     try {
-      console.log("Annual Excel route hit with query:", req.query);
       const { year } = req.query;
       const targetYear = year ? parseInt(year as string) : new Date().getFullYear();
-      console.log("Processing annual report for year:", targetYear);
+      
+      const user = await getCurrentUser(req);
+      if (!user) {
+        return res.status(401).json({ message: "User not authenticated" });
+      }
       
       // Get annual data
       const startDate = new Date(targetYear, 0, 1).toISOString().split('T')[0];
       const endDate = new Date(targetYear, 11, 31).toISOString().split('T')[0];
-      const gigs = await storage.getGigsByDateRange(currentUserId, startDate, endDate);
-      const user = await storage.getUser(currentUserId);
+      const gigs = await storage.getGigsByDateRange(user.id, startDate, endDate);
       
       // Calculate totals
       const totalEarnings = gigs.reduce((sum, gig) => sum + parseFloat(gig.actualPay || '0'), 0);
