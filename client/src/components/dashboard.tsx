@@ -628,6 +628,38 @@ export default function Dashboard() {
     });
   };
 
+  const exportAnnualExcel = () => {
+    const year = currentDate.getFullYear();
+    
+    const link = document.createElement('a');
+    link.href = `/api/reports/annual/excel?year=${year}`;
+    link.download = `annual-report-${year}.xlsx`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    toast({
+      title: "Annual Excel Report Downloaded",
+      description: `Downloaded comprehensive annual report for ${year}`,
+    });
+  };
+
+  const exportAnnualPDF = () => {
+    const year = currentDate.getFullYear();
+    
+    const link = document.createElement('a');
+    link.href = `/api/reports/annual/pdf?year=${year}`;
+    link.download = `annual-report-${year}.pdf`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    toast({
+      title: "Annual PDF Report Downloaded",
+      description: `Downloaded comprehensive annual report for ${year}`,
+    });
+  };
+
   if (isLoading) {
     return (
       <div className="p-4">
@@ -1128,6 +1160,33 @@ export default function Dashboard() {
               >
                 <Download className="w-4 h-4" />
                 <span className="text-xs font-medium">PDF Report</span>
+              </Button>
+            </div>
+          ) : selectedPeriod === "annual" ? (
+            <div className="grid grid-cols-3 gap-3">
+              <Button 
+                variant="outline" 
+                onClick={exportTaxData}
+                className="flex items-center justify-center space-x-2 p-3 bg-primary/10 text-primary border-primary/20 hover:bg-primary/20"
+              >
+                <Download className="w-4 h-4" />
+                <span className="text-xs font-medium">Tax Data</span>
+              </Button>
+              <Button 
+                variant="outline"
+                onClick={exportAnnualExcel}
+                className="flex items-center justify-center space-x-2 p-3 bg-green-50 text-green-700 border-green-200 hover:bg-green-100"
+              >
+                <Download className="w-4 h-4" />
+                <span className="text-xs font-medium">Annual Excel</span>
+              </Button>
+              <Button 
+                variant="outline"
+                onClick={exportAnnualPDF}
+                className="flex items-center justify-center space-x-2 p-3 bg-red-50 text-red-700 border-red-200 hover:bg-red-100"
+              >
+                <Download className="w-4 h-4" />
+                <span className="text-xs font-medium">Annual PDF</span>
               </Button>
             </div>
           ) : (
