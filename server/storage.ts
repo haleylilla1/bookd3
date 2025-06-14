@@ -6,7 +6,8 @@ import {
   monthlyGoals,
   weeklyGoals,
   yearlyGoals,
-  type User, 
+  type User,
+  type UpsertUser,
   type InsertUser, 
   type Gig, 
   type InsertGig, 
@@ -25,11 +26,14 @@ import { db } from "./db";
 import { eq, and, gte, lte, desc } from "drizzle-orm";
 
 export interface IStorage {
-  // Users
-  getUser(id: number): Promise<User | undefined>;
+  // User operations (mandatory for Replit Auth)
+  getUser(id: string): Promise<User | undefined>;
+  upsertUser(user: UpsertUser): Promise<User>;
+  
+  // Legacy user operations
   getUserByEmail(email: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
-  updateUser(id: number, user: Partial<InsertUser>): Promise<User | undefined>;
+  updateUser(id: string, user: Partial<InsertUser>): Promise<User | undefined>;
 
   // Gigs
   getGig(id: number): Promise<Gig | undefined>;

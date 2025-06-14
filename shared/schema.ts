@@ -1,11 +1,28 @@
-import { pgTable, text, serial, integer, boolean, date, decimal, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, date, decimal, timestamp, varchar, jsonb, index } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
+// Session storage table for Replit Auth
+export const sessions = pgTable(
+  "sessions",
+  {
+    sid: varchar("sid").primaryKey(),
+    sess: jsonb("sess").notNull(),
+    expire: timestamp("expire").notNull(),
+  },
+  (table) => [index("IDX_session_expire").on(table.expire)],
+);
+
+// User storage table for Replit Auth
 export const users = pgTable("users", {
-  id: serial("id").primaryKey(),
-  name: text("name").notNull(),
-  email: text("email").notNull().unique(),
+  id: varchar("id").primaryKey().notNull(),
+  email: varchar("email").unique(),
+  firstName: varchar("first_name"),
+  lastName: varchar("last_name"),
+  profileImageUrl: varchar("profile_image_url"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+  // Additional fields for gig tracking
   phone: text("phone"),
   title: text("title").default("Gig Worker"),
   defaultTaxPercentage: integer("default_tax_percentage").default(23),
@@ -15,7 +32,7 @@ export const users = pgTable("users", {
 
 export const monthlyGoals = pgTable("monthly_goals", {
   id: serial("id").primaryKey(),
-  userId: integer("user_id").notNull().references(() => users.id),
+  userId: varchar("user_id").notNull().references(() => users.id),
   month: integer("month").notNull(), // 1-12
   year: integer("year").notNull(),
   goalAmount: decimal("goal_amount", { precision: 10, scale: 2 }).notNull(),
@@ -25,7 +42,7 @@ export const monthlyGoals = pgTable("monthly_goals", {
 
 export const weeklyGoals = pgTable("weekly_goals", {
   id: serial("id").primaryKey(),
-  userId: integer("user_id").notNull().references(() => users.id),
+  userId: varchar("user_id").notNull().references(() => users.id),
   weekStartDate: date("week_start_date").notNull(),
   goalAmount: decimal("goal_amount", { precision: 10, scale: 2 }).notNull(),
   createdAt: timestamp("created_at").defaultNow(),
@@ -34,7 +51,7 @@ export const weeklyGoals = pgTable("weekly_goals", {
 
 export const yearlyGoals = pgTable("yearly_goals", {
   id: serial("id").primaryKey(),
-  userId: integer("user_id").notNull().references(() => users.id),
+  userId: varchar("user_id").notNull().references(() => users.id),
   year: integer("year").notNull(),
   goalAmount: decimal("goal_amount", { precision: 10, scale: 2 }).notNull(),
   createdAt: timestamp("created_at").defaultNow(),
@@ -43,7 +60,7 @@ export const yearlyGoals = pgTable("yearly_goals", {
 
 export const gigs = pgTable("gigs", {
   id: serial("id").primaryKey(),
-  userId: integer("user_id").notNull(),
+  userId: varchar("user_id").notNull(),
   gigType: text("gig_type").notNull(),
   eventName: text("event_name").notNull().default("Event"),
   clientName: text("client_name").notNull(),
@@ -70,7 +87,7 @@ export const gigs = pgTable("gigs", {
 
 export const goals = pgTable("goals", {
   id: serial("id").primaryKey(),
-  userId: integer("user_id").notNull(),
+  userId: varchar("user_id").notNull(),
   category: text("category").notNull(), // savings, rent, gear, tax, other
   name: text("name").notNull(),
   targetAmount: decimal("target_amount", { precision: 10, scale: 2 }).notNull(),
@@ -82,7 +99,7 @@ export const goals = pgTable("goals", {
 
 export const allocations = pgTable("allocations", {
   id: serial("id").primaryKey(),
-  userId: integer("user_id").notNull(),
+  userId: varchar("user_id").notNull(),
   gigId: integer("gig_id").notNull(),
   goalId: integer("goal_id"), // nullable for piggy bank allocations
   amount: decimal("amount", { precision: 10, scale: 2 }).notNull(),
@@ -92,7 +109,7 @@ export const allocations = pgTable("allocations", {
 
 export const weeklyStats = pgTable("weekly_stats", {
   id: serial("id").primaryKey(),
-  userId: integer("user_id").notNull().references(() => users.id),
+  userId: varchar("user_id").notNull().references(() => users.id),
   weekStartDate: date("week_start_date").notNull(), // Monday of the week
   weekEndDate: date("week_end_date").notNull(), // Sunday of the week
   actualEarnings: decimal("actual_earnings", { precision: 10, scale: 2 }).default("0"),
@@ -105,7 +122,7 @@ export const weeklyStats = pgTable("weekly_stats", {
 
 export const monthlyStats = pgTable("monthly_stats", {
   id: serial("id").primaryKey(),
-  userId: integer("user_id").notNull().references(() => users.id),
+  userId: varchar("user_id").notNull().references(() => users.id),
   month: integer("month").notNull(), // 1-12
   year: integer("year").notNull(),
   actualEarnings: decimal("actual_earnings", { precision: 10, scale: 2 }).default("0"),
@@ -118,7 +135,7 @@ export const monthlyStats = pgTable("monthly_stats", {
 
 export const yearlyStats = pgTable("yearly_stats", {
   id: serial("id").primaryKey(),
-  userId: integer("user_id").notNull().references(() => users.id),
+  userId: varchar("user_id").notNull().references(() => users.id),
   year: integer("year").notNull(),
   actualEarnings: decimal("actual_earnings", { precision: 10, scale: 2 }).default("0"),
   projectedEarnings: decimal("projected_earnings", { precision: 10, scale: 2 }).default("0"),
@@ -129,7 +146,8 @@ export const yearlyStats = pgTable("yearly_stats", {
 });
 
 export const insertUserSchema = createInsertSchema(users).omit({
-  id: true,
+  createdAt: true,
+  updatedAt: true,
 });
 
 export const insertGigSchema = createInsertSchema(gigs).omit({
@@ -146,6 +164,7 @@ export const insertAllocationSchema = createInsertSchema(allocations).omit({
   createdAt: true,
 });
 
+export type UpsertUser = typeof users.$inferInsert;
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
 export type InsertGig = z.infer<typeof insertGigSchema>;
