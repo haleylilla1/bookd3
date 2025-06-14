@@ -623,11 +623,22 @@ export default function Dashboard() {
                 </div>
               </div>
               <p className="text-sm text-gray-600">
-                With what is scheduled, you have{" "}
-                <span className="font-medium text-primary">
-                  {formatCurrency(Math.max(0, goalTarget - projectedData.projectedEarnings))} to go
-                </span>
-                {goalProgress >= 95 ? " - you're almost there!" : goalProgress >= 100 ? " - goal achieved!" : ""}
+                {goalProgress >= 100 ? (
+                  <>
+                    <span className="font-medium text-green-600">
+                      Congratulations! You've exceeded your goal by {formatCurrency(projectedData.projectedEarnings - goalTarget)}
+                    </span>
+                    {" - keep up the great work!"}
+                  </>
+                ) : (
+                  <>
+                    With what is scheduled, you have{" "}
+                    <span className="font-medium text-primary">
+                      {formatCurrency(Math.max(0, goalTarget - projectedData.projectedEarnings))} to go
+                    </span>
+                    {goalProgress >= 95 ? " - you're almost there!" : ""}
+                  </>
+                )}
               </p>
             </>
           ) : (
