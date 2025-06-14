@@ -54,9 +54,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const updateData = { ...req.body };
       
       // Convert empty strings to null for numeric/decimal fields
-      const numericFields = ['expectedPay', 'actualPay', 'tips', 'transportationExpense', 'parkingExpense', 'otherExpenses', 'distanceMiles'];
+      const numericFields = ['expectedPay', 'actualPay', 'tips', 'parkingExpense', 'otherExpenses', 'distanceMiles'];
       const integerFields = ['taxPercentage', 'mileage', 'travelTimeMinutes'];
-      const arrayFields = ['transportationReceipts', 'parkingReceipts', 'otherExpenseReceipts'];
+      const arrayFields = ['parkingReceipts', 'otherExpenseReceipts'];
       
       numericFields.forEach(field => {
         if (updateData[field] === "") {
@@ -280,8 +280,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const totalTips = completedGigs.reduce((sum, gig) => 
         sum + parseFloat(gig.tips || "0"), 0);
       const totalExpenses = completedGigs.reduce((sum, gig) => 
-        sum + parseFloat(gig.transportationExpense || "0") + 
-             parseFloat(gig.parkingExpense || "0") + 
+        sum + parseFloat(gig.parkingExpense || "0") + 
              parseFloat(gig.otherExpenses || "0"), 0);
       
       // Client leaderboard
