@@ -554,16 +554,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
         doc.setFontSize(14);
         doc.text('Gig Details', 20, 20);
         
-        const gigsTableData = gigs.map(gig => [
-          gig.date,
-          gig.clientName,
-          gig.gigType,
-          gig.location || '',
-          `$${parseFloat(gig.totalEarnings).toFixed(2)}`,
-          `$${parseFloat(gig.tips || '0').toFixed(2)}`,
-          gig.mileage || '0',
-          `$${parseFloat(gig.expenses || '0').toFixed(2)}`
-        ]);
+        const gigsTableData = gigs.map(gig => {
+          const earnings = parseFloat(gig.actualPay || '0');
+          const expenses = parseFloat(gig.parkingExpense || '0') + parseFloat(gig.otherExpenses || '0');
+          
+          return [
+            gig.date,
+            gig.clientName,
+            gig.gigType,
+            gig.gigAddress || '',
+            `$${earnings.toFixed(2)}`,
+            `$${parseFloat(gig.tips || '0').toFixed(2)}`,
+            (gig.mileage || 0).toString(),
+            `$${expenses.toFixed(2)}`
+          ];
+        });
         
         autoTable(doc, {
           startY: 30,
