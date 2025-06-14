@@ -13,8 +13,8 @@ export const sessions = pgTable(
   (table) => [index("IDX_session_expire").on(table.expire)],
 );
 
-// User storage table for Replit Auth
-export const users = pgTable("users", {
+// Auth users table for Replit Auth (separate from existing users)
+export const authUsers = pgTable("auth_users", {
   id: varchar("id").primaryKey().notNull(),
   email: varchar("email").unique(),
   firstName: varchar("first_name"),
@@ -22,7 +22,21 @@ export const users = pgTable("users", {
   profileImageUrl: varchar("profile_image_url"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
+  // Link to existing users table
+  legacyUserId: integer("legacy_user_id").references(() => users.id),
   // Additional fields for gig tracking
+  phone: text("phone"),
+  title: text("title").default("Gig Worker"),
+  defaultTaxPercentage: integer("default_tax_percentage").default(23),
+  customGigTypes: text("custom_gig_types").array().default([]),
+  homeAddress: text("home_address"),
+});
+
+// Keep existing users table structure
+export const users = pgTable("users", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  email: text("email").notNull().unique(),
   phone: text("phone"),
   title: text("title").default("Gig Worker"),
   defaultTaxPercentage: integer("default_tax_percentage").default(23),
@@ -32,7 +46,7 @@ export const users = pgTable("users", {
 
 export const monthlyGoals = pgTable("monthly_goals", {
   id: serial("id").primaryKey(),
-  userId: varchar("user_id").notNull().references(() => users.id),
+  userId: integer("user_id").notNull().references(() => users.id),
   month: integer("month").notNull(), // 1-12
   year: integer("year").notNull(),
   goalAmount: decimal("goal_amount", { precision: 10, scale: 2 }).notNull(),
@@ -42,7 +56,7 @@ export const monthlyGoals = pgTable("monthly_goals", {
 
 export const weeklyGoals = pgTable("weekly_goals", {
   id: serial("id").primaryKey(),
-  userId: varchar("user_id").notNull().references(() => users.id),
+  userId: integer("user_id").notNull().references(() => users.id),
   weekStartDate: date("week_start_date").notNull(),
   goalAmount: decimal("goal_amount", { precision: 10, scale: 2 }).notNull(),
   createdAt: timestamp("created_at").defaultNow(),
@@ -51,7 +65,7 @@ export const weeklyGoals = pgTable("weekly_goals", {
 
 export const yearlyGoals = pgTable("yearly_goals", {
   id: serial("id").primaryKey(),
-  userId: varchar("user_id").notNull().references(() => users.id),
+  userId: integer("user_id").notNull().references(() => users.id),
   year: integer("year").notNull(),
   goalAmount: decimal("goal_amount", { precision: 10, scale: 2 }).notNull(),
   createdAt: timestamp("created_at").defaultNow(),
@@ -60,7 +74,7 @@ export const yearlyGoals = pgTable("yearly_goals", {
 
 export const gigs = pgTable("gigs", {
   id: serial("id").primaryKey(),
-  userId: varchar("user_id").notNull(),
+  userId: integer("user_id").notNull(),
   gigType: text("gig_type").notNull(),
   eventName: text("event_name").notNull().default("Event"),
   clientName: text("client_name").notNull(),
