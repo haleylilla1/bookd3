@@ -1103,30 +1103,24 @@ export default function Dashboard() {
       <Card>
         <CardContent className="p-4">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">Export & Reports</h3>
-          <div className="grid grid-cols-2 gap-3 mb-3">
-            <Button 
-              variant="outline" 
-              onClick={exportTaxData}
-              className="flex items-center justify-center space-x-2 p-3 bg-primary/10 text-primary border-primary/20 hover:bg-primary/20"
-            >
-              <Download className="w-4 h-4" />
-              <span className="text-sm font-medium">Export Tax Data</span>
-            </Button>
-            {selectedPeriod === "monthly" && (
-              <>
-                <Button 
-                  variant="outline"
-                  onClick={exportMonthlyExcel}
-                  className="flex items-center justify-center space-x-2 p-3 bg-green-50 text-green-700 border-green-200 hover:bg-green-100"
-                >
-                  <Download className="w-4 h-4" />
-                  <span className="text-sm font-medium">Monthly Report (Excel)</span>
-                </Button>
-              </>
-            )}
-          </div>
-          {selectedPeriod === "monthly" && (
-            <div className="grid grid-cols-1 gap-3">
+          {selectedPeriod === "monthly" ? (
+            <div className="grid grid-cols-3 gap-3">
+              <Button 
+                variant="outline" 
+                onClick={exportTaxData}
+                className="flex items-center justify-center space-x-2 p-3 bg-primary/10 text-primary border-primary/20 hover:bg-primary/20"
+              >
+                <Download className="w-4 h-4" />
+                <span className="text-sm font-medium">Export Tax Data</span>
+              </Button>
+              <Button 
+                variant="outline"
+                onClick={exportMonthlyExcel}
+                className="flex items-center justify-center space-x-2 p-3 bg-green-50 text-green-700 border-green-200 hover:bg-green-100"
+              >
+                <Download className="w-4 h-4" />
+                <span className="text-sm font-medium">Monthly Report (Excel)</span>
+              </Button>
               <Button 
                 variant="outline"
                 onClick={exportMonthlyPDF}
@@ -1134,6 +1128,17 @@ export default function Dashboard() {
               >
                 <Download className="w-4 h-4" />
                 <span className="text-sm font-medium">Monthly Report (PDF)</span>
+              </Button>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 gap-3">
+              <Button 
+                variant="outline" 
+                onClick={exportTaxData}
+                className="flex items-center justify-center space-x-2 p-3 bg-primary/10 text-primary border-primary/20 hover:bg-primary/20"
+              >
+                <Download className="w-4 h-4" />
+                <span className="text-sm font-medium">Export Tax Data</span>
               </Button>
             </div>
           )}
