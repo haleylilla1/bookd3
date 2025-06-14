@@ -196,30 +196,58 @@ export default function Dashboard() {
 
   // Calculate projected earnings based on selected period (actual + expected, but NOT tips)
   const getProjectedEarningsForPeriod = () => {
-    if (!stats) return { projectedEarnings: 0, period: "" };
+    if (!gigs) return { projectedEarnings: 0, period: "" };
     
-    const monthlyActual = (stats as any).monthlyEarnings || 0;
-    const monthlyTips = (stats as any).totalTips || 0;
-    const monthlyExpected = (stats as any).projectedEarnings || 0;
+    // Filter gigs to current period
+    const currentPeriodGigs = (gigs as any[]).filter(gig => {
+      const gigDate = new Date(gig.date);
+      
+      switch (selectedPeriod) {
+        case "weekly":
+          const { startOfWeek, endOfWeek } = getWeekDates(currentDate);
+          return gigDate >= startOfWeek && gigDate <= endOfWeek;
+        case "monthly":
+          return gigDate.getMonth() === currentDate.getMonth() && 
+                 gigDate.getFullYear() === currentDate.getFullYear();
+        case "annual":
+          return gigDate.getFullYear() === currentDate.getFullYear();
+        default:
+          return gigDate.getMonth() === currentDate.getMonth() && 
+                 gigDate.getFullYear() === currentDate.getFullYear();
+      }
+    });
     
-    // Projected earnings = actual pay (without tips) + expected pay
-    const monthlyActualWithoutTips = monthlyActual - monthlyTips;
-    const monthlyTotal = monthlyActualWithoutTips + monthlyExpected;
+    // Calculate actual earnings (completed gigs only, without tips)
+    const actualEarnings = currentPeriodGigs
+      .filter(gig => gig.status === "completed")
+      .reduce((sum, gig) => sum + parseFloat(gig.actualPay || "0"), 0);
+    
+    const actualTips = currentPeriodGigs
+      .filter(gig => gig.status === "completed")
+      .reduce((sum, gig) => sum + parseFloat(gig.tips || "0"), 0);
+    
+    // Calculate expected earnings (upcoming/pending gigs)
+    const expectedEarnings = currentPeriodGigs
+      .filter(gig => gig.status === "upcoming" || gig.status === "pending" || gig.status === "confirmed")
+      .reduce((sum, gig) => sum + parseFloat(gig.expectedPay || "0"), 0);
+    
+    const actualWithoutTips = actualEarnings - actualTips;
+    const projectedTotal = actualWithoutTips + expectedEarnings;
     
     switch (selectedPeriod) {
       case "weekly":
         return {
-          projectedEarnings: monthlyTotal / 4.33,
+          projectedEarnings: projectedTotal,
           period: "This Week"
         };
       case "annual":
         return {
-          projectedEarnings: monthlyTotal * 12,
+          projectedEarnings: projectedTotal,
           period: "This Year"
         };
       default:
         return {
-          projectedEarnings: monthlyTotal,
+          projectedEarnings: projectedTotal,
           period: "This Month"
         };
     }
