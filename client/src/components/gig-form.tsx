@@ -89,6 +89,7 @@ export default function GigForm({ onClose }: GigFormProps) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/gigs"] });
       queryClient.invalidateQueries({ queryKey: ["/api/dashboard/stats"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/goals"] });
       toast({
         title: "Success",
         description: "Gig saved successfully!",
@@ -96,6 +97,7 @@ export default function GigForm({ onClose }: GigFormProps) {
       onClose();
     },
     onError: (error) => {
+      console.error("Failed to create gig:", error);
       toast({
         title: "Error",
         description: "Failed to save gig. Please try again.",

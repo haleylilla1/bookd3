@@ -1,37 +1,21 @@
-import { pgTable, text, serial, integer, boolean, date, decimal, timestamp, varchar, jsonb, index } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, date, decimal, timestamp } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
-// Session storage table for Replit Auth
-export const sessions = pgTable(
-  "sessions",
-  {
-    sid: varchar("sid").primaryKey(),
-    sess: jsonb("sess").notNull(),
-    expire: timestamp("expire").notNull(),
-  },
-  (table) => [index("IDX_session_expire").on(table.expire)],
-);
-
-// Updated users table for Replit Auth
 export const users = pgTable("users", {
-  id: varchar("id").primaryKey().notNull(), // Changed to varchar for Replit user IDs
-  email: varchar("email").unique(),
-  firstName: varchar("first_name"),
-  lastName: varchar("last_name"),
-  profileImageUrl: varchar("profile_image_url"),
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  email: text("email").notNull().unique(),
   phone: text("phone"),
   title: text("title").default("Gig Worker"),
   defaultTaxPercentage: integer("default_tax_percentage").default(23),
   customGigTypes: text("custom_gig_types").array().default([]),
   homeAddress: text("home_address"),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
 });
 
 export const monthlyGoals = pgTable("monthly_goals", {
   id: serial("id").primaryKey(),
-  userId: varchar("user_id").notNull().references(() => users.id),
+  userId: integer("user_id").notNull().references(() => users.id),
   month: integer("month").notNull(), // 1-12
   year: integer("year").notNull(),
   goalAmount: decimal("goal_amount", { precision: 10, scale: 2 }).notNull(),
@@ -41,7 +25,7 @@ export const monthlyGoals = pgTable("monthly_goals", {
 
 export const weeklyGoals = pgTable("weekly_goals", {
   id: serial("id").primaryKey(),
-  userId: varchar("user_id").notNull().references(() => users.id),
+  userId: integer("user_id").notNull().references(() => users.id),
   weekStartDate: date("week_start_date").notNull(),
   goalAmount: decimal("goal_amount", { precision: 10, scale: 2 }).notNull(),
   createdAt: timestamp("created_at").defaultNow(),
