@@ -6,11 +6,11 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Receipt, Car, Download, TrendingUp, Edit2, Target, ChevronLeft, ChevronRight, Banknote } from "lucide-react";
+import { Receipt, Car, Download, TrendingUp, Edit2, Target, ChevronLeft, ChevronRight, Banknote, Calendar } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
-import type { User } from "@shared/schema";
+import type { User, Gig } from "@shared/schema";
 import { 
   getWeekDates, 
   getMonthDates, 
@@ -33,6 +33,9 @@ export default function Dashboard() {
   const [showTaxBreakdown, setShowTaxBreakdown] = useState(false);
   const [showExpenseBreakdown, setShowExpenseBreakdown] = useState(false);
   const [showTipsBreakdown, setShowTipsBreakdown] = useState(false);
+  const [showCalendar, setShowCalendar] = useState(false);
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  const [showDayGigs, setShowDayGigs] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
   
@@ -77,6 +80,42 @@ export default function Dashboard() {
       });
     },
   });
+
+  // Generate calendar days for the current month
+  const generateCalendarDays = () => {
+    const year = currentDate.getFullYear();
+    const month = currentDate.getMonth();
+    const firstDay = new Date(year, month, 1);
+    const lastDay = new Date(year, month + 1, 0);
+    const startDate = new Date(firstDay);
+    startDate.setDate(startDate.getDate() - firstDay.getDay()); // Start on Sunday
+    
+    const days = [];
+    const endDate = new Date(startDate);
+    endDate.setDate(endDate.getDate() + 41); // 6 weeks worth of days
+    
+    for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
+      days.push(new Date(d));
+    }
+    
+    return days;
+  };
+
+  // Get gigs for a specific date
+  const getGigsForDate = (date: Date) => {
+    if (!gigs) return [];
+    const dateString = date.toISOString().split('T')[0];
+    return (gigs as Gig[]).filter(gig => gig.date === dateString);
+  };
+
+  // Handle day click
+  const handleDayClick = (date: Date) => {
+    const dayGigs = getGigsForDate(date);
+    if (dayGigs.length > 0) {
+      setSelectedDate(date);
+      setShowDayGigs(true);
+    }
+  };
 
   // Calculate tax breakdown per gig
   const getTaxBreakdownData = () => {
@@ -383,6 +422,80 @@ export default function Dashboard() {
           <ChevronRight className="h-4 w-4" />
         </Button>
       </div>
+
+      {/* Calendar View Toggle */}
+      <div className="mb-4">
+        <Button
+          variant={showCalendar ? "default" : "outline"}
+          onClick={() => setShowCalendar(!showCalendar)}
+          className="w-full flex items-center justify-center space-x-2"
+        >
+          <Calendar className="w-4 h-4" />
+          <span>{showCalendar ? 'Hide Calendar' : 'Show Calendar View'}</span>
+        </Button>
+      </div>
+
+      {/* Calendar Grid */}
+      {showCalendar && selectedPeriod === "monthly" && (
+        <Card className="mb-6">
+          <CardContent className="p-4">
+            <div className="text-center mb-4">
+              <h3 className="text-lg font-semibold text-gray-900">
+                {formatMonth(currentDate)}
+              </h3>
+            </div>
+            
+            {/* Calendar Header */}
+            <div className="grid grid-cols-7 gap-1 mb-2">
+              {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
+                <div key={day} className="text-center text-xs font-medium text-gray-500 py-2">
+                  {day}
+                </div>
+              ))}
+            </div>
+            
+            {/* Calendar Days */}
+            <div className="grid grid-cols-7 gap-1">
+              {generateCalendarDays().map((date, index) => {
+                const isCurrentMonth = date.getMonth() === currentDate.getMonth();
+                const isToday = date.toDateString() === new Date().toDateString();
+                const dayGigs = getGigsForDate(date);
+                const hasGigs = dayGigs.length > 0;
+                
+                return (
+                  <button
+                    key={index}
+                    onClick={() => handleDayClick(date)}
+                    className={`
+                      aspect-square p-1 text-xs rounded-lg relative transition-colors
+                      ${isCurrentMonth 
+                        ? hasGigs 
+                          ? 'bg-primary text-white hover:bg-primary/80 cursor-pointer' 
+                          : 'text-gray-900 hover:bg-gray-100'
+                        : 'text-gray-300 hover:bg-gray-50'
+                      }
+                      ${isToday && !hasGigs ? 'ring-2 ring-primary ring-offset-1' : ''}
+                      ${!hasGigs ? 'cursor-default' : ''}
+                    `}
+                    disabled={!hasGigs}
+                  >
+                    <div className="flex flex-col items-center justify-center h-full">
+                      <span className={isToday && hasGigs ? 'font-bold' : ''}>{date.getDate()}</span>
+                      {hasGigs && (
+                        <div className="absolute bottom-0 right-0 w-2 h-2 bg-white rounded-full opacity-80" />
+                      )}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+            
+            <div className="mt-4 text-center text-xs text-gray-500">
+              Click on highlighted dates to see gigs
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Earnings Overview */}
       <div className="gradient-primary rounded-xl p-6 mb-4 text-white">
