@@ -33,6 +33,8 @@ export default function Dashboard() {
   const [showTaxBreakdown, setShowTaxBreakdown] = useState(false);
   const [showExpenseBreakdown, setShowExpenseBreakdown] = useState(false);
   const [showTipsBreakdown, setShowTipsBreakdown] = useState(false);
+  const [showClientsModal, setShowClientsModal] = useState(false);
+  const [selectedClient, setSelectedClient] = useState<string | null>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
   
@@ -151,6 +153,66 @@ export default function Dashboard() {
       })
       .filter(item => item.totalExpenses > 0)
       .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  };
+
+  // Calculate client statistics for current period
+  const getClientData = () => {
+    if (!gigs) return [];
+    
+    // Filter gigs to current period first
+    const currentPeriodGigs = (gigs as any[]).filter(gig => {
+      const gigDate = new Date(gig.date);
+      
+      switch (selectedPeriod) {
+        case "weekly":
+          const { startOfWeek, endOfWeek } = getWeekDates(currentDate);
+          return gigDate >= startOfWeek && gigDate <= endOfWeek;
+        case "monthly":
+          return gigDate.getMonth() === currentDate.getMonth() && 
+                 gigDate.getFullYear() === currentDate.getFullYear();
+        case "annual":
+          return gigDate.getFullYear() === currentDate.getFullYear();
+        default:
+          return gigDate.getMonth() === currentDate.getMonth() && 
+                 gigDate.getFullYear() === currentDate.getFullYear();
+      }
+    });
+    
+    // Group by client and calculate totals
+    const clientStats = new Map<string, { gigs: any[], total: number, gigCount: number }>();
+    
+    currentPeriodGigs
+      .filter(gig => gig.status === "completed" && gig.clientName)
+      .forEach(gig => {
+        const clientName = gig.clientName;
+        const earnings = parseFloat(gig.actualPay || "0");
+        
+        if (!clientStats.has(clientName)) {
+          clientStats.set(clientName, { gigs: [], total: 0, gigCount: 0 });
+        }
+        
+        const client = clientStats.get(clientName)!;
+        client.gigs.push(gig);
+        client.total += earnings;
+        client.gigCount++;
+      });
+    
+    // Convert to array and sort by total earnings
+    return Array.from(clientStats.entries())
+      .map(([name, data]) => ({
+        name,
+        gigs: data.gigs,
+        total: data.total,
+        gigCount: data.gigCount
+      }))
+      .sort((a, b) => b.total - a.total);
+  };
+
+  // Get gigs for a specific client
+  const getClientGigs = (clientName: string) => {
+    const clientData = getClientData();
+    const client = clientData.find(c => c.name === clientName);
+    return client ? client.gigs : [];
   };
 
   // Calculate tips breakdown per gig for current period
@@ -812,14 +874,26 @@ export default function Dashboard() {
         <CardContent className="p-4">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-semibold text-gray-900">Top Clients</h3>
-            <Button variant="ghost" size="sm" className="text-primary">
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              className="text-primary"
+              onClick={() => setShowClientsModal(true)}
+            >
               View All
             </Button>
           </div>
           <div className="space-y-3">
-            {(stats as any)?.topClients?.length > 0 ? (
-              (stats as any).topClients.slice(0, 3).map((client: any, index: number) => (
-                <div key={index} className="flex items-center justify-between">
+            {getClientData().length > 0 ? (
+              getClientData().slice(0, 3).map((client, index) => (
+                <button
+                  key={index}
+                  onClick={() => {
+                    setSelectedClient(client.name);
+                    setShowClientsModal(true);
+                  }}
+                  className="w-full flex items-center justify-between p-2 rounded-lg hover:bg-gray-50 transition-colors"
+                >
                   <div className="flex items-center space-x-3">
                     <Badge 
                       variant={index === 0 ? "default" : "secondary"}
@@ -827,15 +901,15 @@ export default function Dashboard() {
                     >
                       {index + 1}
                     </Badge>
-                    <div>
+                    <div className="text-left">
                       <p className="text-sm font-medium text-gray-900">{client.name}</p>
-                      <p className="text-xs text-gray-500">{client.gigs} gigs</p>
+                      <p className="text-xs text-gray-500">{client.gigCount} gigs</p>
                     </div>
                   </div>
                   <span className="text-sm font-semibold text-gray-900">
                     {formatCurrency(client.total)}
                   </span>
-                </div>
+                </button>
               ))
             ) : (
               <div className="text-center py-8 text-gray-500">
@@ -871,7 +945,110 @@ export default function Dashboard() {
         </CardContent>
       </Card>
 
-
+      {/* Clients Modal */}
+      <Dialog open={showClientsModal} onOpenChange={(open) => {
+        setShowClientsModal(open);
+        if (!open) setSelectedClient(null);
+      }}>
+        <DialogContent className="max-w-4xl">
+          <DialogHeader>
+            <DialogTitle>
+              {selectedClient ? `${selectedClient} - Gig History` : 'All Clients'}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="max-h-96 overflow-y-auto">
+            {selectedClient ? (
+              // Individual client gig history
+              <div className="space-y-3">
+                <div className="flex items-center justify-between mb-4">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setSelectedClient(null)}
+                    className="text-gray-500 hover:text-gray-700"
+                  >
+                    ← Back to All Clients
+                  </Button>
+                  <div className="text-sm text-gray-500">
+                    {getClientGigs(selectedClient).length} gigs • {formatCurrency(
+                      getClientGigs(selectedClient).reduce((sum, gig) => sum + parseFloat(gig.actualPay || "0"), 0)
+                    )} total
+                  </div>
+                </div>
+                {getClientGigs(selectedClient).map((gig, index) => (
+                  <div key={index} className="p-3 bg-gray-50 rounded-lg">
+                    <div className="flex items-center justify-between mb-2">
+                      <div>
+                        <div className="font-medium text-gray-900">
+                          {gig.eventName || "Unnamed Gig"}
+                        </div>
+                        <div className="text-sm text-gray-500">
+                          {gig.gigType} • {new Date(gig.date).toLocaleDateString()}
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <div className="font-bold text-lg text-green-600">
+                          {formatCurrency(parseFloat(gig.actualPay || "0"))}
+                        </div>
+                        {parseFloat(gig.tips || "0") > 0 && (
+                          <div className="text-xs text-gray-500">
+                            +{formatCurrency(parseFloat(gig.tips || "0"))} tips
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    {gig.notes && (
+                      <div className="text-xs text-gray-600 mt-2">
+                        Notes: {gig.notes}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            ) : (
+              // All clients list
+              <div className="space-y-3">
+                {getClientData().length > 0 ? (
+                  getClientData().map((client, index) => (
+                    <button
+                      key={index}
+                      onClick={() => setSelectedClient(client.name)}
+                      className="w-full flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+                    >
+                      <div className="flex items-center space-x-3">
+                        <Badge 
+                          variant={index === 0 ? "default" : "secondary"}
+                          className="w-8 h-8 rounded-full flex items-center justify-center p-0"
+                        >
+                          {index + 1}
+                        </Badge>
+                        <div className="text-left">
+                          <p className="text-sm font-medium text-gray-900">{client.name}</p>
+                          <p className="text-xs text-gray-500">{client.gigCount} gigs completed</p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <div className="text-lg font-semibold text-gray-900">
+                          {formatCurrency(client.total)}
+                        </div>
+                        <div className="text-xs text-gray-500">
+                          Avg: {formatCurrency(client.total / client.gigCount)}
+                        </div>
+                      </div>
+                    </button>
+                  ))
+                ) : (
+                  <div className="text-center py-8 text-gray-500">
+                    <TrendingUp className="w-12 h-12 mx-auto mb-3 text-gray-300" />
+                    <p>No client data available</p>
+                    <p className="text-sm">Complete gigs with clients to see them here</p>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Goal Edit Dialog */}
       <Dialog open={!!editingGoal} onOpenChange={() => setEditingGoal(null)}>
