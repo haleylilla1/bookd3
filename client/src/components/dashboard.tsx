@@ -113,11 +113,10 @@ export default function Dashboard() {
       .filter(gig => gig.status === "completed")
       .map(gig => {
         const mileage = parseInt(gig.mileage || "0");
-        const transportation = parseFloat(gig.transportationExpense || "0");
         const parking = parseFloat(gig.parkingExpense || "0");
         const other = parseFloat(gig.otherExpenses || "0");
         const mileageExpense = mileage * 0.655; // 2024 IRS standard mileage rate
-        const totalExpenses = mileageExpense + transportation + parking + other;
+        const totalExpenses = mileageExpense + parking + other;
         
         return {
           gigName: gig.eventName || "Unnamed Gig",
@@ -126,7 +125,6 @@ export default function Dashboard() {
           date: gig.date,
           mileage,
           mileageExpense,
-          transportation,
           parking,
           other,
           totalExpenses
