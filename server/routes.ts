@@ -3,25 +3,52 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { insertGigSchema, insertGoalSchema, insertAllocationSchema } from "@shared/schema";
 import { z } from "zod";
-import { setupAuth, isAuthenticated } from "./replitAuth";
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // Setup authentication
-  await setupAuth(app);
-
+  // Simple session-based user switching for multi-user testing
+  let currentUserId = 1; // Default user
+  
   // Helper function to get current user
-  const getCurrentUser = async (req: any) => {
-    if (req.isAuthenticated() && req.user?.claims?.sub) {
-      return await storage.getUserByReplitId(req.user.claims.sub);
-    }
-    // Fallback to user ID 1 for development/testing
-    return await storage.getUser(1);
+  const getCurrentUser = async () => {
+    return await storage.getUser(currentUserId);
   };
+
+  // User switching endpoint for testing
+  app.post("/api/switch-user", async (req, res) => {
+    try {
+      const { userId } = req.body;
+      const user = await storage.getUser(userId);
+      if (user) {
+        currentUserId = userId;
+        res.json({ message: "User switched successfully", user });
+      } else {
+        res.status(404).json({ message: "User not found" });
+      }
+    } catch (error) {
+      res.status(500).json({ message: "Failed to switch user" });
+    }
+  });
+
+  // Create new user endpoint
+  app.post("/api/create-user", async (req, res) => {
+    try {
+      const { name, email } = req.body;
+      const newUser = await storage.createUser({
+        name: name || "New User",
+        email: email || `user${Date.now()}@example.com`,
+      });
+      currentUserId = newUser.id;
+      res.json({ message: "User created successfully", user: newUser });
+    } catch (error) {
+      console.error("Failed to create user:", error);
+      res.status(500).json({ message: "Failed to create user" });
+    }
+  });
 
   // Add authentication routes
   app.get('/api/auth/user', async (req: any, res) => {
     try {
-      const user = await getCurrentUser(req);
+      const user = await getCurrentUser();
       if (!user) {
         return res.status(404).json({ message: "User not found" });
       }
@@ -38,7 +65,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { year } = req.query;
       const targetYear = year ? parseInt(year as string) : new Date().getFullYear();
       
-      const user = await getCurrentUser(req);
+      const user = await getCurrentUser();
       if (!user) {
         return res.status(401).json({ message: "User not authenticated" });
       }
