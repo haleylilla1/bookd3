@@ -14,7 +14,7 @@ import type { Gig } from "@shared/schema";
 import { formatMonth, addMonths } from "@/lib/dateUtils";
 
 export default function CalendarView() {
-  const [editingGig, setEditingGig] = useState<Gig | null>(null);
+  const [editingGig, setEditingGig] = useState<(Gig & { isMultiDay?: boolean; startDate?: string; endDate?: string; gigIds?: number[] }) | null>(null);
   const [filterStatus, setFilterStatus] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -203,17 +203,30 @@ export default function CalendarView() {
     }
   };
 
-  const handleEditGig = (gig: Gig) => {
+  const handleEditGig = (gig: Gig & { isMultiDay?: boolean; startDate?: string; endDate?: string; gigIds?: number[] }) => {
     setEditingGig(gig);
   };
 
-  const handleSaveEdit = (updatedData: Partial<Gig>) => {
-    if (editingGig) {
-      updateGigMutation.mutate({
-        id: editingGig.id,
-        data: updatedData,
-      });
+  const handleSaveEdit = (updatedData: any) => {
+    if (!editingGig) return;
+
+    // Prepare update payload
+    const updatePayload: any = { ...updatedData };
+    
+    // Handle date field mapping
+    if (updatedData.startDate && updatedData.startDate !== editingGig.date) {
+      updatePayload.date = updatedData.startDate;
     }
+    
+    // Remove date range fields that aren't part of the Gig schema
+    delete updatePayload.startDate;
+    delete updatePayload.endDate;
+
+    // Use the existing mutation
+    updateGigMutation.mutate({
+      id: editingGig.id,
+      data: updatePayload,
+    });
   };
 
   if (isLoading) {
