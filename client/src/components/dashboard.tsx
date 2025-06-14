@@ -953,7 +953,7 @@ export default function Dashboard() {
         <DialogContent className="max-w-4xl">
           <DialogHeader>
             <DialogTitle>
-              {selectedClient ? `${selectedClient} - Gig History` : 'All Clients'}
+              {selectedClient ? `${selectedClient} - Gig History` : `All Clients (${getClientData().length} total)`}
             </DialogTitle>
           </DialogHeader>
           <div className="max-h-96 overflow-y-auto">
