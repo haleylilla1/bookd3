@@ -151,6 +151,30 @@ export const yearlyStats = pgTable("yearly_stats", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+export const invoices = pgTable("invoices", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull().references(() => users.id),
+  invoiceNumber: varchar("invoice_number", { length: 50 }).notNull(),
+  clientName: varchar("client_name", { length: 255 }).notNull(),
+  clientEmail: varchar("client_email", { length: 255 }),
+  clientAddress: text("client_address"),
+  businessName: varchar("business_name", { length: 255 }).notNull(),
+  businessAddress: text("business_address"),
+  businessEmail: varchar("business_email", { length: 255 }),
+  businessPhone: varchar("business_phone", { length: 50 }),
+  invoiceDate: date("invoice_date").notNull(),
+  dueDate: date("due_date").notNull(),
+  items: jsonb("items").notNull(),
+  subtotal: decimal("subtotal", { precision: 10, scale: 2 }).notNull(),
+  taxRate: decimal("tax_rate", { precision: 5, scale: 2 }).notNull().default("0"),
+  taxAmount: decimal("tax_amount", { precision: 10, scale: 2 }).notNull().default("0"),
+  total: decimal("total", { precision: 10, scale: 2 }).notNull(),
+  notes: text("notes"),
+  status: varchar("status", { length: 20 }).notNull().default("draft"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 export const insertUserSchema = createInsertSchema(users).omit({
   createdAt: true,
   updatedAt: true,
@@ -226,3 +250,12 @@ export type InsertWeeklyGoal = z.infer<typeof insertWeeklyGoalSchema>;
 export type WeeklyGoal = typeof weeklyGoals.$inferSelect;
 export type InsertYearlyGoal = z.infer<typeof insertYearlyGoalSchema>;
 export type YearlyGoal = typeof yearlyGoals.$inferSelect;
+
+export const insertInvoiceSchema = createInsertSchema(invoices).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type InsertInvoice = z.infer<typeof insertInvoiceSchema>;
+export type Invoice = typeof invoices.$inferSelect;

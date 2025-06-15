@@ -6,6 +6,7 @@ import {
   monthlyGoals,
   weeklyGoals,
   yearlyGoals,
+  invoices,
   type User,
   type UpsertUser,
   type InsertUser, 
@@ -20,7 +21,9 @@ import {
   type WeeklyGoal,
   type InsertWeeklyGoal,
   type YearlyGoal,
-  type InsertYearlyGoal
+  type InsertYearlyGoal,
+  type Invoice,
+  type InsertInvoice
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, gte, lte, desc } from "drizzle-orm";
@@ -65,6 +68,13 @@ export interface IStorage {
   setWeeklyGoal(userId: number, weekStartDate: string, goalAmount: string): Promise<WeeklyGoal>;
   getYearlyGoal(userId: number, year: number): Promise<YearlyGoal | undefined>;
   setYearlyGoal(userId: number, year: number, goalAmount: string): Promise<YearlyGoal>;
+
+  // Invoices
+  getInvoice(id: number): Promise<Invoice | undefined>;
+  getInvoicesByUser(userId: number): Promise<Invoice[]>;
+  createInvoice(invoice: InsertInvoice): Promise<Invoice>;
+  updateInvoice(id: number, invoice: Partial<InsertInvoice>): Promise<Invoice | undefined>;
+  deleteInvoice(id: number): Promise<boolean>;
 }
 
 export class DatabaseStorage implements IStorage {
