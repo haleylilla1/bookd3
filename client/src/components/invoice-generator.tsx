@@ -186,7 +186,7 @@ export default function InvoiceGenerator() {
     });
     
     // Totals
-    const finalY = (doc as any).previousAutoTable.finalY + 10;
+    const finalY = doc.internal.pageSize.height - 80;
     doc.text(`Subtotal: ${formatCurrency(subtotal)}`, 150, finalY);
     if (invoice.taxRate > 0) {
       doc.text(`Tax (${invoice.taxRate}%): ${formatCurrency(taxAmount)}`, 150, finalY + 5);

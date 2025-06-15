@@ -189,8 +189,61 @@ export default function Profile() {
                   <Percent className="w-4 h-4 absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
                 </div>
                 <p className="text-sm text-gray-600">
-                  This percentage will be used as default for new gigs, but can be adjusted per gig.
+                  This percentage will be used as default for new gigs and invoices.
                 </p>
+              </div>
+
+              {/* Business Information Section */}
+              <div className="pt-4 border-t">
+                <h3 className="text-md font-semibold mb-4">Business Information</h3>
+                <p className="text-sm text-gray-600 mb-4">
+                  These details will automatically populate in your invoices.
+                </p>
+                
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="businessName">Business Name</Label>
+                    <Input
+                      id="businessName"
+                      value={editedBusinessName}
+                      onChange={(e) => setEditedBusinessName(e.target.value)}
+                      placeholder="Your Business or Professional Name"
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="businessAddress">Business Address</Label>
+                    <Input
+                      id="businessAddress"
+                      value={editedBusinessAddress}
+                      onChange={(e) => setEditedBusinessAddress(e.target.value)}
+                      placeholder="123 Business St, City, State 12345"
+                    />
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="businessPhone">Business Phone</Label>
+                      <Input
+                        id="businessPhone"
+                        value={editedBusinessPhone}
+                        onChange={(e) => setEditedBusinessPhone(e.target.value)}
+                        placeholder="(555) 123-4567"
+                      />
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label htmlFor="businessEmail">Business Email</Label>
+                      <Input
+                        id="businessEmail"
+                        type="email"
+                        value={editedBusinessEmail}
+                        onChange={(e) => setEditedBusinessEmail(e.target.value)}
+                        placeholder="hello@yourbusiness.com"
+                      />
+                    </div>
+                  </div>
+                </div>
               </div>
               
               <div className="flex gap-2 pt-2">
@@ -231,8 +284,38 @@ export default function Profile() {
                   <div className="flex items-center gap-2">
                     <p className="text-gray-900">{user.defaultTaxPercentage || 23}%</p>
                     <Badge variant="secondary" className="text-xs">
-                      Applied to new gigs
+                      Applied to new gigs & invoices
                     </Badge>
+                  </div>
+                </div>
+
+                {/* Business Information Display */}
+                <div className="pt-4 border-t">
+                  <Label className="text-sm text-gray-600 font-medium">Business Information</Label>
+                  <div className="mt-2 space-y-2">
+                    <div>
+                      <Label className="text-xs text-gray-500">Business Name</Label>
+                      <p className="text-gray-900">{user.businessName || "Not set"}</p>
+                    </div>
+                    <div>
+                      <Label className="text-xs text-gray-500">Business Address</Label>
+                      <p className="text-gray-900">{user.businessAddress || "Not set"}</p>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <Label className="text-xs text-gray-500">Business Phone</Label>
+                        <p className="text-gray-900">{user.businessPhone || "Not set"}</p>
+                      </div>
+                      <div>
+                        <Label className="text-xs text-gray-500">Business Email</Label>
+                        <p className="text-gray-900">{user.businessEmail || "Not set"}</p>
+                      </div>
+                    </div>
+                    {(user.businessName || user.businessAddress || user.businessPhone || user.businessEmail) && (
+                      <p className="text-xs text-gray-500 mt-1">
+                        Auto-populates in invoice generator
+                      </p>
+                    )}
                   </div>
                 </div>
               </div>
