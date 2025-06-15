@@ -16,6 +16,10 @@ export default function Profile() {
   const [editedName, setEditedName] = useState("");
   const [editedTaxPercentage, setEditedTaxPercentage] = useState("");
   const [editedHomeAddress, setEditedHomeAddress] = useState("");
+  const [editedBusinessName, setEditedBusinessName] = useState("");
+  const [editedBusinessAddress, setEditedBusinessAddress] = useState("");
+  const [editedBusinessPhone, setEditedBusinessPhone] = useState("");
+  const [editedBusinessEmail, setEditedBusinessEmail] = useState("");
   const [newGigType, setNewGigType] = useState("");
   const [isAddingGigType, setIsAddingGigType] = useState(false);
   const { toast } = useToast();
@@ -52,6 +56,10 @@ export default function Profile() {
     setEditedName(user?.name || "");
     setEditedTaxPercentage(user?.defaultTaxPercentage?.toString() || "23");
     setEditedHomeAddress(user?.homeAddress || "");
+    setEditedBusinessName(user?.businessName || "");
+    setEditedBusinessAddress(user?.businessAddress || "");
+    setEditedBusinessPhone(user?.businessPhone || "");
+    setEditedBusinessEmail(user?.businessEmail || "");
   };
 
   const handleSave = () => {
@@ -69,6 +77,10 @@ export default function Profile() {
       name: editedName,
       defaultTaxPercentage: taxPercentage,
       homeAddress: editedHomeAddress,
+      businessName: editedBusinessName,
+      businessAddress: editedBusinessAddress,
+      businessPhone: editedBusinessPhone,
+      businessEmail: editedBusinessEmail,
     });
   };
 

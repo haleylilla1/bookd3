@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -45,21 +45,35 @@ export default function InvoiceGenerator() {
     queryKey: ["/api/user"],
   });
 
-  const [invoice, setInvoice] = useState<InvoiceData>({
+  const [invoice, setInvoice] = useState<InvoiceData>(() => ({
     invoiceNumber: `INV-${Date.now().toString().slice(-6)}`,
     date: new Date().toISOString().split('T')[0],
     dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-    businessName: "Your Business Name",
-    businessAddress: "123 Business St\nCity, State 12345",
-    businessEmail: "hello@yourbusiness.com",
-    businessPhone: "(555) 123-4567",
+    businessName: user?.businessName || user?.name || "Your Business Name",
+    businessAddress: user?.businessAddress || "123 Business St\nCity, State 12345",
+    businessEmail: user?.businessEmail || user?.email || "hello@yourbusiness.com",
+    businessPhone: user?.businessPhone || user?.phone || "(555) 123-4567",
     clientName: "",
     clientAddress: "",
     clientEmail: "",
     items: [{ description: "", quantity: 1, rate: 0, amount: 0 }],
     notes: "Thank you for your business!",
-    taxRate: 0
-  });
+    taxRate: user?.defaultTaxPercentage || 0
+  }));
+
+  // Update invoice when user data loads
+  useEffect(() => {
+    if (user) {
+      setInvoice(prev => ({
+        ...prev,
+        businessName: user.businessName || user.name || prev.businessName,
+        businessAddress: user.businessAddress || prev.businessAddress,
+        businessEmail: user.businessEmail || user.email || prev.businessEmail,
+        businessPhone: user.businessPhone || user.phone || prev.businessPhone,
+        taxRate: user.defaultTaxPercentage || prev.taxRate
+      }));
+    }
+  }, [user]);
 
   const addItem = () => {
     setInvoice(prev => ({
