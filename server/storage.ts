@@ -192,7 +192,7 @@ export class DatabaseStorage implements IStorage {
 
   async getGoalsByUser(userId: number): Promise<Goal[]> {
     return await db.select().from(goals)
-      .where(eq(goals.userId, userId.toString()))
+      .where(eq(goals.userId, userId))
       .orderBy(goals.category, goals.name);
   }
 
