@@ -48,6 +48,64 @@ export default function InvoiceGenerator() {
     queryKey: ["/api/user"],
   });
 
+  const { data: savedInvoices = [] } = useQuery<Invoice[]>({
+    queryKey: ["/api/invoices"],
+  });
+
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  const saveInvoiceMutation = useMutation({
+    mutationFn: async (invoiceData: any) => {
+      const response = await apiRequest("POST", "/api/invoices", invoiceData);
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/invoices"] });
+      toast({
+        title: "Invoice Saved",
+        description: "Your invoice has been saved successfully!"
+      });
+      // Generate new invoice number for next invoice
+      setInvoice(prev => ({
+        ...prev,
+        invoiceNumber: `INV-${Date.now().toString().slice(-6)}`,
+        clientName: "",
+        clientAddress: "",
+        clientEmail: "",
+        items: [{ description: "", quantity: 1, rate: 0, amount: 0 }],
+        notes: "Thank you for your business!"
+      }));
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to save invoice. Please try again.",
+        variant: "destructive"
+      });
+    }
+  });
+
+  const deleteInvoiceMutation = useMutation({
+    mutationFn: async (invoiceId: number) => {
+      await apiRequest("DELETE", `/api/invoices/${invoiceId}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/invoices"] });
+      toast({
+        title: "Invoice Deleted",
+        description: "Invoice has been deleted successfully."
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to delete invoice.",
+        variant: "destructive"
+      });
+    }
+  });
+
   const [invoice, setInvoice] = useState<InvoiceData>(() => ({
     invoiceNumber: `INV-${Date.now().toString().slice(-6)}`,
     date: new Date().toISOString().split('T')[0],
@@ -127,6 +185,48 @@ export default function InvoiceGenerator() {
   const subtotal = invoice.items.reduce((sum, item) => sum + item.amount, 0);
   const taxAmount = subtotal * (invoice.taxRate / 100);
   const total = subtotal + taxAmount;
+
+  const saveInvoice = () => {
+    const invoiceToSave = {
+      invoiceNumber: invoice.invoiceNumber,
+      clientName: invoice.clientName,
+      clientEmail: invoice.clientEmail,
+      clientAddress: invoice.clientAddress,
+      businessName: invoice.businessName,
+      businessAddress: invoice.businessAddress,
+      businessEmail: invoice.businessEmail,
+      businessPhone: invoice.businessPhone,
+      invoiceDate: invoice.date,
+      dueDate: invoice.dueDate,
+      items: invoice.items,
+      subtotal: subtotal.toString(),
+      taxRate: invoice.taxRate.toString(),
+      taxAmount: taxAmount.toString(),
+      total: total.toString(),
+      notes: invoice.notes,
+      status: "draft"
+    };
+    
+    saveInvoiceMutation.mutate(invoiceToSave);
+  };
+
+  const loadInvoice = (savedInvoice: Invoice) => {
+    setInvoice({
+      invoiceNumber: savedInvoice.invoiceNumber,
+      date: savedInvoice.invoiceDate,
+      dueDate: savedInvoice.dueDate,
+      businessName: savedInvoice.businessName,
+      businessAddress: savedInvoice.businessAddress || "",
+      businessEmail: savedInvoice.businessEmail || "",
+      businessPhone: savedInvoice.businessPhone || "",
+      clientName: savedInvoice.clientName,
+      clientAddress: savedInvoice.clientAddress || "",
+      clientEmail: savedInvoice.clientEmail || "",
+      items: Array.isArray(savedInvoice.items) ? savedInvoice.items : [{ description: "", quantity: 1, rate: 0, amount: 0 }],
+      notes: savedInvoice.notes || "",
+      taxRate: parseFloat(savedInvoice.taxRate?.toString() || "0")
+    });
+  };
 
   const generatePDF = () => {
     const doc = new jsPDF();
@@ -208,16 +308,38 @@ export default function InvoiceGenerator() {
   };
 
   return (
-    <div className="max-w-4xl mx-auto p-6 space-y-6">
+    <div className="max-w-6xl mx-auto p-6 space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold text-gray-900">Invoice Generator</h1>
-        <div className="flex gap-2">
-          <Button onClick={generatePDF} className="flex items-center gap-2">
-            <Download className="w-4 h-4" />
-            Download PDF
-          </Button>
-        </div>
       </div>
+
+      <Tabs defaultValue="create" className="w-full">
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="create" className="flex items-center gap-2">
+            <FileText className="w-4 h-4" />
+            Create Invoice
+          </TabsTrigger>
+          <TabsTrigger value="history" className="flex items-center gap-2">
+            <History className="w-4 h-4" />
+            Invoice History ({savedInvoices.length})
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="create" className="space-y-6">
+          <div className="flex gap-2 mb-4">
+            <Button onClick={generatePDF} className="flex items-center gap-2">
+              <Download className="w-4 h-4" />
+              Download PDF
+            </Button>
+            <Button 
+              onClick={saveInvoice} 
+              disabled={saveInvoiceMutation.isPending}
+              className="flex items-center gap-2"
+            >
+              <Save className="w-4 h-4" />
+              {saveInvoiceMutation.isPending ? "Saving..." : "Save Invoice"}
+            </Button>
+          </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Invoice Form */}
@@ -456,6 +578,86 @@ export default function InvoiceGenerator() {
           </Card>
         </div>
       </div>
+        </TabsContent>
+
+        <TabsContent value="history" className="space-y-4">
+          <div className="grid gap-4">
+            {savedInvoices.length === 0 ? (
+              <Card>
+                <CardContent className="p-8 text-center">
+                  <FileText className="w-12 h-12 mx-auto text-gray-400 mb-4" />
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">No saved invoices</h3>
+                  <p className="text-gray-500">Create and save your first invoice to see it here.</p>
+                </CardContent>
+              </Card>
+            ) : (
+              savedInvoices.map((savedInvoice) => (
+                <Card key={savedInvoice.id} className="hover:shadow-md transition-shadow">
+                  <CardContent className="p-6">
+                    <div className="flex items-center justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-4 mb-2">
+                          <h3 className="text-lg font-medium text-gray-900">
+                            {savedInvoice.invoiceNumber}
+                          </h3>
+                          <span className="px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded-full">
+                            {savedInvoice.status || 'Draft'}
+                          </span>
+                        </div>
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm text-gray-600">
+                          <div>
+                            <span className="font-medium">Client:</span>
+                            <br />
+                            {savedInvoice.clientName}
+                          </div>
+                          <div>
+                            <span className="font-medium">Date:</span>
+                            <br />
+                            {formatDate(savedInvoice.invoiceDate)}
+                          </div>
+                          <div>
+                            <span className="font-medium">Due:</span>
+                            <br />
+                            {formatDate(savedInvoice.dueDate)}
+                          </div>
+                          <div>
+                            <span className="font-medium">Total:</span>
+                            <br />
+                            <span className="text-lg font-semibold text-green-600">
+                              {formatCurrency(parseFloat(savedInvoice.total || "0"))}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 ml-4">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => loadInvoice(savedInvoice)}
+                          className="flex items-center gap-1"
+                        >
+                          <Eye className="w-4 h-4" />
+                          Load
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => deleteInvoiceMutation.mutate(savedInvoice.id)}
+                          disabled={deleteInvoiceMutation.isPending}
+                          className="flex items-center gap-1 text-red-600 hover:text-red-700"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                          Delete
+                        </Button>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))
+            )}
+          </div>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
