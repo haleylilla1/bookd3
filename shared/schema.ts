@@ -93,7 +93,7 @@ export const gigs = pgTable("gigs", {
 
 export const goals = pgTable("goals", {
   id: serial("id").primaryKey(),
-  userId: varchar("user_id").notNull(),
+  userId: integer("user_id").notNull().references(() => users.id),
   category: text("category").notNull(), // savings, rent, gear, tax, other
   name: text("name").notNull(),
   targetAmount: decimal("target_amount", { precision: 10, scale: 2 }).notNull(),
@@ -105,7 +105,7 @@ export const goals = pgTable("goals", {
 
 export const allocations = pgTable("allocations", {
   id: serial("id").primaryKey(),
-  userId: varchar("user_id").notNull(),
+  userId: integer("user_id").notNull().references(() => users.id),
   gigId: integer("gig_id").notNull(),
   goalId: integer("goal_id"), // nullable for piggy bank allocations
   amount: decimal("amount", { precision: 10, scale: 2 }).notNull(),
