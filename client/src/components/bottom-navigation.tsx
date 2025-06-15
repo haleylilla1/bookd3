@@ -11,8 +11,8 @@ export default function BottomNavigation({ currentScreen, onScreenChange }: Bott
   const navItems = [
     { id: "calendar" as const, label: "Calendar", icon: Calendar },
     { id: "dashboard" as const, label: "Dashboard", icon: PieChart },
-    { id: "invoices" as const, label: "Invoices", icon: Receipt },
     { id: "goals" as const, label: "Goals", icon: Target },
+    { id: "invoices" as const, label: "Invoices", icon: Receipt },
     { id: "profile" as const, label: "Profile", icon: User },
   ];
 
