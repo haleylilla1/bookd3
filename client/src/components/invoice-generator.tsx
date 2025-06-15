@@ -9,9 +9,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Separator } from "@/components/ui/separator";
 import { Calendar, Download, Plus, Trash2, FileText } from "lucide-react";
 import { formatCurrency, formatDate } from "@/lib/utils";
-import type { Gig } from "@shared/schema";
+import type { Gig, User } from "@shared/schema";
 import jsPDF from "jspdf";
-import "jspdf-autotable";
+import autoTable from "jspdf-autotable";
 
 interface InvoiceItem {
   description: string;
@@ -39,6 +39,10 @@ interface InvoiceData {
 export default function InvoiceGenerator() {
   const { data: gigs = [] } = useQuery<Gig[]>({
     queryKey: ["/api/gigs"],
+  });
+
+  const { data: user } = useQuery<User>({
+    queryKey: ["/api/user"],
   });
 
   const [invoice, setInvoice] = useState<InvoiceData>({
@@ -158,7 +162,7 @@ export default function InvoiceGenerator() {
       formatCurrency(item.amount)
     ]);
     
-    (doc as any).autoTable({
+    autoTable(doc, {
       startY: 120,
       head: [['Description', 'Qty', 'Rate', 'Amount']],
       body: tableData,
@@ -168,7 +172,7 @@ export default function InvoiceGenerator() {
     });
     
     // Totals
-    const finalY = (doc as any).lastAutoTable.finalY + 10;
+    const finalY = (doc as any).previousAutoTable.finalY + 10;
     doc.text(`Subtotal: ${formatCurrency(subtotal)}`, 150, finalY);
     if (invoice.taxRate > 0) {
       doc.text(`Tax (${invoice.taxRate}%): ${formatCurrency(taxAmount)}`, 150, finalY + 5);

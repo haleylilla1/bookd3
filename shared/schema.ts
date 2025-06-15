@@ -23,6 +23,10 @@ export const users = pgTable("users", {
   defaultTaxPercentage: integer("default_tax_percentage").default(23),
   customGigTypes: text("custom_gig_types").array().default([]),
   homeAddress: text("home_address"),
+  businessName: text("business_name"),
+  businessAddress: text("business_address"),
+  businessPhone: text("business_phone"),
+  businessEmail: text("business_email"),
   // Auth fields for Replit Auth integration
   replitId: varchar("replit_id").unique(),
   firstName: varchar("first_name"),
