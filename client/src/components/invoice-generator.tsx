@@ -341,42 +341,42 @@ export default function InvoiceGenerator() {
             </Button>
           </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Invoice Form */}
-        <div className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Invoice Details</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="invoiceNumber">Invoice Number</Label>
-                  <Input
-                    id="invoiceNumber"
-                    value={invoice.invoiceNumber}
-                    onChange={(e) => setInvoice(prev => ({ ...prev, invoiceNumber: e.target.value }))}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="date">Date</Label>
-                  <Input
-                    id="date"
-                    type="date"
-                    value={invoice.date}
-                    onChange={(e) => setInvoice(prev => ({ ...prev, date: e.target.value }))}
-                  />
-                </div>
-              </div>
-              <div>
-                <Label htmlFor="dueDate">Due Date</Label>
-                <Input
-                  id="dueDate"
-                  type="date"
-                  value={invoice.dueDate}
-                  onChange={(e) => setInvoice(prev => ({ ...prev, dueDate: e.target.value }))}
-                />
-              </div>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Invoice Form */}
+            <div className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Invoice Details</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="invoiceNumber">Invoice Number</Label>
+                      <Input
+                        id="invoiceNumber"
+                        value={invoice.invoiceNumber}
+                        onChange={(e) => setInvoice(prev => ({ ...prev, invoiceNumber: e.target.value }))}
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="date">Date</Label>
+                      <Input
+                        id="date"
+                        type="date"
+                        value={invoice.date}
+                        onChange={(e) => setInvoice(prev => ({ ...prev, date: e.target.value }))}
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <Label htmlFor="dueDate">Due Date</Label>
+                    <Input
+                      id="dueDate"
+                      type="date"
+                      value={invoice.dueDate}
+                      onChange={(e) => setInvoice(prev => ({ ...prev, dueDate: e.target.value }))}
+                    />
+                  </div>
               <div>
                 <Label>Auto-fill from Gig</Label>
                 <Select onValueChange={populateFromGig}>
@@ -574,10 +574,10 @@ export default function InvoiceGenerator() {
                   rows={3}
                 />
               </div>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
         </TabsContent>
 
         <TabsContent value="history" className="space-y-4">
