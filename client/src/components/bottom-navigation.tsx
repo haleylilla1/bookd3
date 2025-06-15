@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { Calendar, PieChart, FileText, Target, User } from "lucide-react";
+import { Calendar, PieChart, FileText, Target, User, Receipt } from "lucide-react";
 import type { Screen } from "@/pages/home";
 
 interface BottomNavigationProps {
