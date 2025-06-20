@@ -70,6 +70,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Update user profile
+  app.patch("/api/user", async (req, res) => {
+    try {
+      const userId = getCurrentUserId(req);
+      const { name, email, homeAddress, defaultTaxPercentage } = req.body;
+      
+      const updatedUser = await storage.updateUser(userId, {
+        name,
+        email,
+        homeAddress,
+        defaultTaxPercentage,
+      });
+      
+      if (!updatedUser) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      res.json(updatedUser);
+    } catch (error) {
+      console.error("Update user error:", error);
+      res.status(500).json({ message: "Failed to update user" });
+    }
+  });
+
   // Gig routes
   app.get("/api/gigs", async (req, res) => {
     try {

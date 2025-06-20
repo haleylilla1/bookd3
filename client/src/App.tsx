@@ -6,6 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import ErrorBoundary from "@/components/error-boundary";
 import { useState, useEffect } from "react";
 import Home from "@/pages/home";
+import Profile from "@/pages/profile";
 import LandingPage from "@/components/landing-page";
 import NotFound from "@/pages/not-found";
 
@@ -70,7 +71,10 @@ function Router() {
   return (
     <Switch>
       {user ? (
-        <Route path="/" component={Home} />
+        <>
+          <Route path="/" component={Home} />
+          <Route path="/profile" component={Profile} />
+        </>
       ) : (
         <Route path="/" component={LandingPage} />
       )}
