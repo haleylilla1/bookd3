@@ -45,10 +45,14 @@ export default function CalendarView() {
 
   const { data: gigs = [], isLoading } = useQuery<Gig[]>({
     queryKey: ["/api/gigs"],
+    staleTime: 5 * 60 * 1000, // Cache for 5 minutes
+    retry: 2,
   });
 
   const { data: user } = useQuery({
     queryKey: ["/api/user"],
+    staleTime: 10 * 60 * 1000, // Cache for 10 minutes
+    retry: 1,
   });
 
   const updateGigMutation = useMutation({
@@ -152,58 +156,7 @@ export default function CalendarView() {
     });
   };
 
-  // Optimize multi-day grouping with memoization
-  const groupedGigs = useMemo(() => {
-    if (!gigs || gigs.length === 0) return [];
-    
-    const sortedGigs = [...gigs].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-    const grouped: (Gig & { isMultiDay?: boolean; startDate?: string; endDate?: string; gigIds?: number[] })[] = [];
-    const processed = new Set<number>();
-    
-    for (let i = 0; i < sortedGigs.length; i++) {
-      if (processed.has(sortedGigs[i].id)) continue;
-      
-      const currentGig = sortedGigs[i];
-      const similarGigs = [currentGig];
-      processed.add(currentGig.id);
-      
-      // Look for consecutive similar gigs
-      for (let j = i + 1; j < sortedGigs.length; j++) {
-        const nextGig = sortedGigs[j];
-        if (processed.has(nextGig.id)) continue;
-        
-        const currentDate = new Date(currentGig.date);
-        const nextDate = new Date(nextGig.date);
-        const dayDiff = Math.abs((nextDate.getTime() - currentDate.getTime()) / (1000 * 60 * 60 * 24));
-        
-        // Group if same event, client, type and within reasonable range
-        if (nextGig.eventName === currentGig.eventName &&
-            nextGig.clientName === currentGig.clientName &&
-            nextGig.gigType === currentGig.gigType &&
-            dayDiff <= 7) { // Within a week
-          similarGigs.push(nextGig);
-          processed.add(nextGig.id);
-        }
-      }
-      
-      if (similarGigs.length > 1) {
-        // Sort similar gigs by date
-        similarGigs.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-        const multiDayGig = {
-          ...currentGig,
-          isMultiDay: true,
-          startDate: similarGigs[0].date,
-          endDate: similarGigs[similarGigs.length - 1].date,
-          gigIds: similarGigs.map(g => g.id)
-        };
-        grouped.push(multiDayGig);
-      } else {
-        grouped.push(currentGig);
-      }
-    }
-    
-    return grouped;
-  }, [gigs]);
+
 
   // Memoize filtered gigs for better performance
   const filteredGigs = useMemo(() => {
@@ -325,9 +278,13 @@ export default function CalendarView() {
   if (isLoading) {
     return (
       <div className="p-4">
-        <div className="space-y-4">
-          {[...Array(5)].map((_, i) => (
-            <div key={i} className="bg-gray-200 animate-pulse h-20 rounded-xl" />
+        <div className="space-y-6">
+          {/* Calendar skeleton */}
+          <div className="bg-gray-200 animate-pulse h-12 rounded-lg" />
+          <div className="bg-gray-200 animate-pulse h-80 rounded-xl" />
+          {/* Gig list skeleton */}
+          {[...Array(3)].map((_, i) => (
+            <div key={i} className="bg-gray-200 animate-pulse h-24 rounded-xl" />
           ))}
         </div>
       </div>
@@ -408,6 +365,8 @@ export default function CalendarView() {
                     ${!hasGigs && isCurrentMonth ? 'cursor-default' : ''}
                   `}
                   disabled={!hasGigs}
+                  aria-label={`${date.getDate()} ${date.toLocaleDateString('en-US', { month: 'long' })} ${date.getFullYear()}${hasGigs ? `, ${dayGigs.length} gig${dayGigs.length > 1 ? 's' : ''}` : ''}`}
+                  tabIndex={hasGigs ? 0 : -1}
                 >
                   <div className="flex flex-col items-center justify-center h-full relative">
                     <span className={`${isToday ? 'font-semibold' : ''} relative z-10`}>
@@ -635,7 +594,7 @@ export default function CalendarView() {
           <div className="max-h-96 overflow-y-auto">
             {selectedDate && getGigsForDate(selectedDate).length > 0 ? (
               <div className="space-y-3">
-                {getGigsForDate(selectedDate).map((gig, index) => (
+                {getGigsForDate(selectedDate).map((gig: Gig, index: number) => (
                   <div key={index} className="p-4 bg-gray-50 rounded-lg">
                     <div className="flex items-center justify-between mb-3">
                       <div className="flex-1">
