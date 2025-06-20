@@ -98,6 +98,53 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Distance calculation endpoint
+  app.post("/api/calculate-distance", async (req, res) => {
+    try {
+      const { origin, destination } = req.body;
+      
+      if (!origin || !destination) {
+        return res.status(400).json({ error: "Origin and destination are required" });
+      }
+
+      const apiKey = process.env.VITE_GOOGLE_MAPS_API_KEY;
+      
+      if (!apiKey) {
+        return res.status(500).json({ error: "Google Maps API key not configured" });
+      }
+
+      const url = `https://maps.googleapis.com/maps/api/distancematrix/json?origins=${encodeURIComponent(origin)}&destinations=${encodeURIComponent(destination)}&units=imperial&key=${apiKey}`;
+      
+      const response = await fetch(url);
+      const data = await response.json();
+
+      if (data.status !== 'OK') {
+        return res.status(500).json({ error: `Google Maps API error: ${data.status}` });
+      }
+
+      const element = data.rows[0]?.elements[0];
+      
+      if (!element || element.status !== 'OK') {
+        return res.status(500).json({ error: 'Could not calculate distance between addresses' });
+      }
+
+      // Convert meters to miles (1 meter = 0.000621371 miles)
+      const distanceMiles = Math.round((element.distance.value * 0.000621371) * 100) / 100;
+      
+      // Convert seconds to minutes
+      const travelTimeMinutes = Math.round(element.duration.value / 60);
+
+      res.json({
+        distanceMiles,
+        travelTimeMinutes,
+        status: 'success'
+      });
+    } catch (error) {
+      console.error("Distance calculation error:", error);
+      res.status(500).json({ error: "Failed to calculate distance" });
+    }
+  });
+
   app.post("/api/gigs", async (req, res) => {
     try {
       const userId = getCurrentUserId(req);
