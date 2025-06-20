@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { useState, useCallback, useMemo, useRef, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
+import type { User } from "@shared/schema";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -67,16 +68,31 @@ export default function BulkGigImport({ onClose }: BulkGigImportProps) {
     errors: []
   });
 
+  const progressIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  // Fetch user profile to get custom gig types
-  const { data: user } = useQuery({
+  // Fetch user profile to get custom gig types with proper caching
+  const { data: user, isLoading: userLoading } = useQuery<User>({
     queryKey: ["/api/user"],
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    retry: 2,
   });
 
-  // Get user's custom gig types from profile
-  const availableGigTypes = (user as any)?.customGigTypes || ["Other"];
+  // Memoized gig types to prevent unnecessary re-renders
+  const availableGigTypes = useMemo(() => {
+    const defaultTypes = ["Brand Ambassador", "Bartending", "Catering", "Event Staff", "Promotional", "Other"];
+    return user?.customGigTypes?.length ? user.customGigTypes : defaultTypes;
+  }, [user?.customGigTypes]);
+
+  // Cleanup progress interval on unmount
+  useEffect(() => {
+    return () => {
+      if (progressIntervalRef.current) {
+        clearInterval(progressIntervalRef.current);
+      }
+    };
+  }, []);
 
   const form = useForm<ImportFormData>({
     resolver: zodResolver(importFormSchema),
@@ -100,29 +116,61 @@ May 5th promotional event at Mall, $180`;
   const parseTextMutation = useMutation({
     mutationFn: async (text: string) => {
       const response = await apiRequest("POST", "/api/gigs/parse-bulk", { text });
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || `HTTP ${response.status}: ${response.statusText}`);
+      }
       return await response.json();
     },
-    onSuccess: (data: any) => {
+    onSuccess: (data: { parsedGigs: any[] }) => {
+      if (!data.parsedGigs || !Array.isArray(data.parsedGigs)) {
+        throw new Error("Invalid response format from parsing service");
+      }
+      
       const parsed = data.parsedGigs.map((gig: any, index: number) => ({
         ...gig,
-        id: `gig-${index}`,
+        id: `gig-${index}-${Date.now()}`,
         selected: true,
         userEdited: false,
       }));
+      
       setParsedGigs(parsed);
       setProcessingProgress(100);
+      
+      // Clear progress interval
+      if (progressIntervalRef.current) {
+        clearInterval(progressIntervalRef.current);
+        progressIntervalRef.current = null;
+      }
+      
       setStep('review');
+      
+      toast({
+        title: "Parsing Complete",
+        description: `Successfully parsed ${parsed.length} gigs from your notes.`,
+      });
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       console.error("Parsing error:", error);
+      
+      // Clear progress interval on error
+      if (progressIntervalRef.current) {
+        clearInterval(progressIntervalRef.current);
+        progressIntervalRef.current = null;
+      }
+      
       let errorMessage = "Could not parse your gig notes. Please try again.";
       
-      if (error.message?.includes('OpenAI service error')) {
+      if (error.message?.includes('401')) {
+        errorMessage = "You need to be logged in to use this feature.";
+      } else if (error.message?.includes('OpenAI') || error.message?.includes('AI service')) {
         errorMessage = "AI service temporarily unavailable. Please try again in a moment.";
-      } else if (error.message?.includes('format error')) {
+      } else if (error.message?.includes('format')) {
         errorMessage = "AI response was malformed. Please try again with different text.";
       } else if (error.message?.includes('Text input is required')) {
         errorMessage = "Please enter some gig notes to parse.";
+      } else if (error.message?.includes('500')) {
+        errorMessage = "Server error occurred. Please try again.";
       }
       
       toast({
@@ -133,15 +181,24 @@ May 5th promotional event at Mall, $180`;
       setProcessingProgress(0);
       setStep('input');
     },
+    retry: 1,
   });
 
   const importGigsMutation = useMutation({
     mutationFn: async (gigs: ParsedGig[]) => {
       const selectedGigs = gigs.filter(g => g.selected);
+      if (selectedGigs.length === 0) {
+        throw new Error("No gigs selected for import");
+      }
+      
       const response = await apiRequest("POST", "/api/gigs/bulk-import", { gigs: selectedGigs });
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || `HTTP ${response.status}: ${response.statusText}`);
+      }
       return await response.json();
     },
-    onSuccess: (data: any) => {
+    onSuccess: (data: { imported: number; skipped: number; errors: string[] }) => {
       setImportResults(data);
       
       // Invalidate all related queries to refresh calendar and dashboard
@@ -149,37 +206,56 @@ May 5th promotional event at Mall, $180`;
       queryClient.invalidateQueries({ queryKey: ["/api/dashboard/stats"] });
       queryClient.invalidateQueries({ queryKey: ["/api/goals"] });
       queryClient.invalidateQueries({ queryKey: ["/api/allocations"] });
-      
-      // Force refresh any monthly goals that might be affected
-      const currentDate = new Date().toISOString();
-      queryClient.invalidateQueries({ 
-        queryKey: ["/api/goals/period/monthly", currentDate] 
-      });
+      queryClient.invalidateQueries({ queryKey: ["/api/goals/period"] });
       
       setStep('complete');
+      
+      const successMessage = data.imported > 0 
+        ? `Successfully imported ${data.imported} gigs${data.skipped > 0 ? ` (${data.skipped} skipped)` : ''}.`
+        : "No new gigs were imported.";
+      
       toast({
         title: "Import Complete!",
-        description: `Successfully imported ${data.imported} gigs. Check your calendar and dashboard for updates.`,
+        description: successMessage,
+        variant: data.imported > 0 ? "default" : "destructive",
       });
     },
-    onError: (error) => {
+    onError: (error: Error) => {
+      console.error("Import error:", error);
+      
+      let errorMessage = "Some gigs could not be imported. Please try again.";
+      
+      if (error.message?.includes('401')) {
+        errorMessage = "You need to be logged in to import gigs.";
+      } else if (error.message?.includes('No gigs selected')) {
+        errorMessage = "Please select at least one gig to import.";
+      } else if (error.message?.includes('500')) {
+        errorMessage = "Server error occurred during import. Please try again.";
+      }
+      
       toast({
         title: "Import Failed",
-        description: "Some gigs could not be imported. Please try again.",
+        description: errorMessage,
         variant: "destructive",
       });
+      setStep('review');
     },
+    retry: 1,
   });
 
-  const onSubmit = (data: ImportFormData) => {
+  const onSubmit = useCallback((data: ImportFormData) => {
     setStep('processing');
     setProcessingProgress(0);
     
-    // Simulate processing progress
-    const progressInterval = setInterval(() => {
+    // Clear any existing interval
+    if (progressIntervalRef.current) {
+      clearInterval(progressIntervalRef.current);
+    }
+    
+    // Simulate processing progress with proper cleanup
+    progressIntervalRef.current = setInterval(() => {
       setProcessingProgress(prev => {
         if (prev >= 90) {
-          clearInterval(progressInterval);
           return prev;
         }
         return prev + 10;
@@ -187,9 +263,9 @@ May 5th promotional event at Mall, $180`;
     }, 300);
 
     parseTextMutation.mutate(data.rawText);
-  };
+  }, [parseTextMutation]);
 
-  const handleGigEdit = (gigId: string, field: string, value: string) => {
+  const handleGigEdit = useCallback((gigId: string, field: string, value: string) => {
     setParsedGigs(prev => prev.map(gig => 
       gig.id === gigId 
         ? { 
@@ -199,41 +275,46 @@ May 5th promotional event at Mall, $180`;
           }
         : gig
     ));
-  };
+  }, []);
 
-  const handleGigToggle = (gigId: string) => {
+  const handleGigToggle = useCallback((gigId: string) => {
     setParsedGigs(prev => prev.map(gig => 
       gig.id === gigId ? { ...gig, selected: !gig.selected } : gig
     ));
-  };
+  }, []);
 
-  const handleSelectAll = () => {
+  const handleSelectAll = useCallback(() => {
     const allSelected = parsedGigs.every(g => g.selected);
     setParsedGigs(prev => prev.map(gig => ({ ...gig, selected: !allSelected })));
-  };
+  }, [parsedGigs]);
 
-  const handleImport = () => {
+  const handleImport = useCallback(() => {
     setStep('importing');
     importGigsMutation.mutate(parsedGigs);
-  };
+  }, [importGigsMutation, parsedGigs]);
 
-  const getConfidenceColor = (confidence: string) => {
+  // Memoized helper functions to prevent unnecessary re-renders
+  const getConfidenceColor = useCallback((confidence: string) => {
     switch (confidence) {
-      case 'high': return 'bg-green-100 text-green-800';
-      case 'medium': return 'bg-yellow-100 text-yellow-800';
-      case 'low': return 'bg-red-100 text-red-800';
-      default: return 'bg-gray-100 text-gray-800';
+      case 'high': return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200';
+      case 'medium': return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200';
+      case 'low': return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200';
+      default: return 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200';
     }
-  };
+  }, []);
 
-  const getConfidenceIcon = (confidence: string) => {
+  const getConfidenceIcon = useCallback((confidence: string) => {
     switch (confidence) {
-      case 'high': return <CheckCircle className="w-4 h-4" />;
-      case 'medium': return <AlertCircle className="w-4 h-4" />;
-      case 'low': return <AlertCircle className="w-4 h-4" />;
-      default: return <AlertCircle className="w-4 h-4" />;
+      case 'high': return <CheckCircle className="w-4 h-4" aria-label="High confidence" />;
+      case 'medium': return <AlertCircle className="w-4 h-4" aria-label="Medium confidence" />;
+      case 'low': return <AlertCircle className="w-4 h-4" aria-label="Low confidence" />;
+      default: return <AlertCircle className="w-4 h-4" aria-label="Unknown confidence" />;
     }
-  };
+  }, []);
+
+  // Memoized calculations for performance
+  const selectedCount = useMemo(() => parsedGigs.filter(g => g.selected).length, [parsedGigs]);
+  const allSelected = useMemo(() => parsedGigs.length > 0 && parsedGigs.every(g => g.selected), [parsedGigs]);
 
   if (step === 'input') {
     return (
@@ -332,8 +413,6 @@ May 5th promotional event at Mall, $180`;
   }
 
   if (step === 'review') {
-    const selectedCount = parsedGigs.filter(g => g.selected).length;
-    
     return (
       <div className="max-w-6xl mx-auto p-6">
         <Card>
@@ -342,7 +421,7 @@ May 5th promotional event at Mall, $180`;
               <Edit3 className="w-5 h-5" />
               Review & Edit Parsed Gigs
             </CardTitle>
-            <p className="text-sm text-gray-600">
+            <p className="text-sm text-gray-600 dark:text-gray-300">
               Review the extracted information and make any necessary corrections before importing
             </p>
           </CardHeader>
@@ -353,24 +432,29 @@ May 5th promotional event at Mall, $180`;
                   variant="outline"
                   size="sm"
                   onClick={handleSelectAll}
+                  aria-label={allSelected ? 'Deselect all gigs' : 'Select all gigs'}
                 >
-                  {parsedGigs.every(g => g.selected) ? 'Deselect All' : 'Select All'}
+                  {allSelected ? 'Deselect All' : 'Select All'}
                 </Button>
-                <span className="text-sm text-gray-600">
+                <span className="text-sm text-gray-600 dark:text-gray-300">
                   {selectedCount} of {parsedGigs.length} gigs selected
                 </span>
               </div>
               <div className="flex gap-2">
-                <Button variant="outline" onClick={() => setStep('input')}>
+                <Button 
+                  variant="outline" 
+                  onClick={() => setStep('input')}
+                  disabled={parseTextMutation.isPending}
+                >
                   Back to Edit
                 </Button>
                 <Button 
                   onClick={handleImport}
-                  disabled={selectedCount === 0}
+                  disabled={selectedCount === 0 || importGigsMutation.isPending}
                   className="flex items-center gap-2"
                 >
                   <Download className="w-4 h-4" />
-                  Import {selectedCount} Gigs
+                  {importGigsMutation.isPending ? 'Importing...' : `Import ${selectedCount} Gigs`}
                 </Button>
               </div>
             </div>
