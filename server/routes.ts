@@ -194,10 +194,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(500).json({ error: "OpenAI API key not configured" });
       }
 
-      // Get user's existing gig types
-      const existingGigs = await storage.getGigsByUser(userId);
-      const userGigTypes = [...new Set(existingGigs.map(gig => gig.gigType).filter(Boolean))];
+      // Get user's custom gig types from profile
+      const user = await storage.getUser(userId);
+      console.log("User profile:", JSON.stringify(user, null, 2));
+      const userGigTypes = user?.customGigTypes || [];
+      console.log("User gig types:", userGigTypes);
       const availableTypes = userGigTypes.length > 0 ? userGigTypes : ["Other"];
+      console.log("Available types for AI:", availableTypes);
 
       const systemPrompt = `You are a data extraction specialist for gig worker records. Parse messy gig notes and extract structured data.
 
@@ -208,10 +211,20 @@ Extract individual gigs from the text and return a JSON array. For each gig, ext
 - endDate: End date if different from start date
 - expectedPay: Expected payment amount (numbers only, no currency symbols)
 - actualPay: Actual payment received (numbers only, no currency symbols) 
-- gigType: One of: "Brand Ambassador", "Catering", "Bartending", "Event Staff", "Promotional", "Other"
+- gigType: Must be one of these EXACT types: ${availableTypes.map(type => `"${type}"`).join(", ")}
 - location: Venue, address, or general location
 - duties: What they did at the gig
 - notes: Any additional details
+
+CRITICAL: For gigType, you MUST ONLY use these EXACT values: ${availableTypes.join(", ")}
+
+MATCHING RULES:
+- ANY photography work = "Photo Assistant" 
+- ANY promotional/brand/marketing work = "Brand Ambassador"
+- ANY research/survey work = "Market Research"
+- If none match perfectly = "Other"
+
+DO NOT use any other gigType values. These are the only allowed values: ${availableTypes.join(", ")}
 
 Also assign a confidence level:
 - "high": Clear, unambiguous data extraction
