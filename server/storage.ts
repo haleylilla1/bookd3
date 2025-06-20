@@ -23,7 +23,16 @@ import {
   type YearlyGoal,
   type InsertYearlyGoal,
   type Invoice,
-  type InsertInvoice
+  type InsertInvoice,
+  expenses,
+  budgets,
+  expenseCategories,
+  type Expense,
+  type InsertExpense,
+  type Budget,
+  type InsertBudget,
+  type ExpenseCategory,
+  type InsertExpenseCategory
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, gte, lte, desc } from "drizzle-orm";
@@ -75,6 +84,28 @@ export interface IStorage {
   createInvoice(invoice: InsertInvoice): Promise<Invoice>;
   updateInvoice(id: number, invoice: Partial<InsertInvoice>): Promise<Invoice | undefined>;
   deleteInvoice(id: number): Promise<boolean>;
+
+  // Expenses
+  getExpense(id: number): Promise<Expense | undefined>;
+  getExpensesByUser(userId: number): Promise<Expense[]>;
+  getExpensesByDateRange(userId: number, startDate: string, endDate: string): Promise<Expense[]>;
+  createExpense(expense: InsertExpense): Promise<Expense>;
+  updateExpense(id: number, expense: Partial<InsertExpense>): Promise<Expense | undefined>;
+  deleteExpense(id: number): Promise<boolean>;
+
+  // Budgets
+  getBudget(id: number): Promise<Budget | undefined>;
+  getBudgetsByUser(userId: number): Promise<Budget[]>;
+  getBudgetsByMonth(userId: number, month: number, year: number): Promise<Budget[]>;
+  createBudget(budget: InsertBudget): Promise<Budget>;
+  updateBudget(id: number, budget: Partial<InsertBudget>): Promise<Budget | undefined>;
+  deleteBudget(id: number): Promise<boolean>;
+
+  // Expense Categories
+  getExpenseCategoriesByUser(userId: number): Promise<ExpenseCategory[]>;
+  createExpenseCategory(category: InsertExpenseCategory): Promise<ExpenseCategory>;
+  updateExpenseCategory(id: number, category: Partial<InsertExpenseCategory>): Promise<ExpenseCategory | undefined>;
+  deleteExpenseCategory(id: number): Promise<boolean>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -362,6 +393,122 @@ export class DatabaseStorage implements IStorage {
 
   async deleteInvoice(id: number): Promise<boolean> {
     const result = await db.delete(invoices).where(eq(invoices.id, id));
+    return result.rowCount !== null && result.rowCount > 0;
+  }
+
+  // Expense operations
+  async getExpense(id: number): Promise<Expense | undefined> {
+    const [expense] = await db.select().from(expenses).where(eq(expenses.id, id));
+    return expense || undefined;
+  }
+
+  async getExpensesByUser(userId: number): Promise<Expense[]> {
+    return await db.select().from(expenses)
+      .where(eq(expenses.userId, userId))
+      .orderBy(desc(expenses.date));
+  }
+
+  async getExpensesByDateRange(userId: number, startDate: string, endDate: string): Promise<Expense[]> {
+    return await db.select().from(expenses)
+      .where(and(
+        eq(expenses.userId, userId),
+        gte(expenses.date, startDate),
+        lte(expenses.date, endDate)
+      ))
+      .orderBy(desc(expenses.date));
+  }
+
+  async createExpense(insertExpense: InsertExpense): Promise<Expense> {
+    const [expense] = await db
+      .insert(expenses)
+      .values(insertExpense)
+      .returning();
+    return expense;
+  }
+
+  async updateExpense(id: number, updateData: Partial<InsertExpense>): Promise<Expense | undefined> {
+    const [expense] = await db
+      .update(expenses)
+      .set(updateData)
+      .where(eq(expenses.id, id))
+      .returning();
+    return expense || undefined;
+  }
+
+  async deleteExpense(id: number): Promise<boolean> {
+    const result = await db.delete(expenses).where(eq(expenses.id, id));
+    return result.rowCount !== null && result.rowCount > 0;
+  }
+
+  // Budget operations
+  async getBudget(id: number): Promise<Budget | undefined> {
+    const [budget] = await db.select().from(budgets).where(eq(budgets.id, id));
+    return budget || undefined;
+  }
+
+  async getBudgetsByUser(userId: number): Promise<Budget[]> {
+    return await db.select().from(budgets)
+      .where(eq(budgets.userId, userId))
+      .orderBy(budgets.year, budgets.month);
+  }
+
+  async getBudgetsByMonth(userId: number, month: number, year: number): Promise<Budget[]> {
+    return await db.select().from(budgets)
+      .where(and(
+        eq(budgets.userId, userId),
+        eq(budgets.month, month),
+        eq(budgets.year, year)
+      ));
+  }
+
+  async createBudget(insertBudget: InsertBudget): Promise<Budget> {
+    const [budget] = await db
+      .insert(budgets)
+      .values(insertBudget)
+      .returning();
+    return budget;
+  }
+
+  async updateBudget(id: number, updateData: Partial<InsertBudget>): Promise<Budget | undefined> {
+    const [budget] = await db
+      .update(budgets)
+      .set(updateData)
+      .where(eq(budgets.id, id))
+      .returning();
+    return budget || undefined;
+  }
+
+  async deleteBudget(id: number): Promise<boolean> {
+    const result = await db.delete(budgets).where(eq(budgets.id, id));
+    return result.rowCount !== null && result.rowCount > 0;
+  }
+
+  // Expense Category operations
+  async getExpenseCategoriesByUser(userId: number): Promise<ExpenseCategory[]> {
+    return await db.select().from(expenseCategories)
+      .where(eq(expenseCategories.userId, userId))
+      .orderBy(expenseCategories.name);
+  }
+
+  async createExpenseCategory(insertCategory: InsertExpenseCategory): Promise<ExpenseCategory> {
+    const [category] = await db
+      .insert(expenseCategories)
+      .values(insertCategory)
+      .returning();
+    return category;
+  }
+
+  async updateExpenseCategory(id: number, updateData: Partial<InsertExpenseCategory>): Promise<ExpenseCategory | undefined> {
+    const [category] = await db
+      .update(expenseCategories)
+      .set(updateData)
+      .where(eq(expenseCategories.id, id))
+      .returning();
+    return category || undefined;
+  }
+
+  async deleteExpenseCategory(id: number): Promise<boolean> {
+    const result = await db.delete(expenseCategories).where(eq(expenseCategories.id, id));
     return result.rowCount !== null && result.rowCount > 0;
   }
 }
