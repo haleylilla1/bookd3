@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Edit2, Trash2, Filter, Calendar, DollarSign, Clock, ChevronLeft, ChevronRight } from "lucide-react";
+import { Edit2, Trash2, Filter, Calendar, DollarSign, Clock, ChevronLeft, ChevronRight, Car } from "lucide-react";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
@@ -707,6 +707,8 @@ function GigEditForm({ gig, onSave, onCancel, isLoading }: GigEditFormProps) {
     tips: gig.tips || "",
     status: gig.status,
     duties: gig.duties || "",
+    gigAddress: gig.gigAddress || "",
+    mileage: gig.mileage || 0,
     parkingExpense: gig.parkingExpense || "",
     parkingReceipts: (gig as any).parkingReceipts || [],
     otherExpenses: gig.otherExpenses || "",
@@ -818,6 +820,28 @@ function GigEditForm({ gig, onSave, onCancel, isLoading }: GigEditFormProps) {
           value={formData.duties}
           onChange={(e) => setFormData({ ...formData, duties: e.target.value })}
           placeholder="Key duties and responsibilities..."
+        />
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium mb-1">Gig Address</label>
+        <Input
+          value={formData.gigAddress}
+          onChange={(e) => setFormData({ ...formData, gigAddress: e.target.value })}
+          placeholder="123 Event Venue St, City, State"
+        />
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium mb-1 flex items-center gap-2">
+          <Car className="h-4 w-4" />
+          Mileage (miles)
+        </label>
+        <Input
+          type="number"
+          value={formData.mileage}
+          onChange={(e) => setFormData({ ...formData, mileage: parseInt(e.target.value) || 0 })}
+          placeholder="0"
         />
       </div>
 
