@@ -130,6 +130,17 @@ export default function BudgetTracker() {
     },
   });
 
+  // Update budget mutation
+  const updateBudgetMutation = useMutation({
+    mutationFn: async ({ id, budgetAmount }: { id: number; budgetAmount: string }) => {
+      const response = await apiRequest("PATCH", `/api/budgets/${id}`, { budgetAmount });
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/budgets"] });
+    },
+  });
+
   // Auto-create monthly budgets based on category defaults
   const createMonthlyBudgets = () => {
     let budgetsCreated = 0;
@@ -350,9 +361,10 @@ export default function BudgetTracker() {
             onClick={createMonthlyBudgets}
             variant="outline"
             disabled={addBudgetMutation.isPending}
+            className="bg-blue-50 hover:bg-blue-100 text-blue-700 border-blue-300"
           >
             <Target className="w-4 h-4 mr-2" />
-            Auto-Create Budget
+            Fill From Defaults
           </Button>
           <Select value={selectedMonth.toString()} onValueChange={(v) => setSelectedMonth(parseInt(v))}>
             <SelectTrigger className="w-32">
@@ -514,52 +526,104 @@ export default function BudgetTracker() {
         </TabsContent>
 
         <TabsContent value="budget" className="space-y-6">
-          <div className="grid gap-6">
-            {categoryBreakdown.map((category) => (
-              <Card key={category.name}>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <category.icon className="w-5 h-5" />
-                    {category.name}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <div>
-                      <h4 className="font-medium mb-2">Budget vs Actual</h4>
-                      <div className="space-y-2">
-                        <div className="flex justify-between">
-                          <span>Budget:</span>
-                          <span className="font-bold">{formatCurrency(category.budgetAmount)}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span>Actual:</span>
-                          <span className="font-bold">{formatCurrency(category.totalAmount)}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span>Difference:</span>
-                          <span className={`font-bold ${category.budgetAmount - category.totalAmount >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                            {formatCurrency(category.budgetAmount - category.totalAmount)}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                    
-                    <div className="md:col-span-2">
-                      <h4 className="font-medium mb-2">Subcategory Breakdown</h4>
-                      <div className="space-y-2">
-                        {category.subcategoryBreakdown.map((sub) => (
-                          <div key={sub.name} className="flex justify-between">
-                            <span>{sub.name}:</span>
-                            <span className="font-medium">{formatCurrency(sub.amount)}</span>
+          <div className="grid gap-4">
+            {availableCategories.map((category) => {
+              const categoryExpenses = currentMonthExpenses.filter(expense => expense.category === category.name);
+              const totalSpent = categoryExpenses.reduce((sum, expense) => sum + parseFloat(expense.amount), 0);
+              
+              return (
+                <Card key={category.name}>
+                  <CardHeader className="pb-3">
+                    <CardTitle className="flex items-center gap-2 text-lg">
+                      <category.icon className="w-5 h-5" />
+                      {category.name}
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-3">
+                      {category.subcategories.map((subcategory) => {
+                        const subExpenses = categoryExpenses.filter(e => e.subcategory === subcategory);
+                        const subSpent = subExpenses.reduce((sum, e) => sum + parseFloat(e.amount), 0);
+                        const budget = currentMonthBudgets.find(b => b.category === category.name && b.subcategory === subcategory);
+                        const budgetAmount = budget ? parseFloat(budget.budgetAmount) : 0;
+                        const remaining = budgetAmount - subSpent;
+                        const percentage = budgetAmount > 0 ? (subSpent / budgetAmount) * 100 : 0;
+                        
+                        const defaults = (category as any).subcategoryDefaults as Record<string, { amount: string; type: "constant" | "variable" }> || {};
+                        const defaultConfig = defaults[subcategory];
+                        
+                        return (
+                          <div key={subcategory} className="flex items-center justify-between p-3 border rounded-lg">
+                            <div className="flex-1">
+                              <div className="flex items-center justify-between mb-1">
+                                <span className="font-medium">{subcategory}</span>
+                                <div className="flex items-center gap-4">
+                                  <div className="text-sm text-gray-600">
+                                    ${subSpent.toFixed(2)} / ${budgetAmount.toFixed(2)}
+                                  </div>
+                                  {!budget && defaultConfig && (
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      onClick={() => addBudgetMutation.mutate({
+                                        userId: 1,
+                                        month: selectedMonth,
+                                        year: selectedYear,
+                                        category: category.name,
+                                        subcategory: subcategory,
+                                        budgetAmount: defaultConfig.amount,
+                                        actualAmount: "0"
+                                      })}
+                                    >
+                                      Set ${defaultConfig.amount} Budget
+                                    </Button>
+                                  )}
+                                  {budget && defaultConfig?.type === "variable" && (
+                                    <Input
+                                      type="number"
+                                      value={budgetAmount}
+                                      onChange={(e) => {
+                                        if (e.target.value && budget) {
+                                          updateBudgetMutation.mutate({
+                                            id: budget.id,
+                                            budgetAmount: e.target.value
+                                          });
+                                        }
+                                      }}
+                                      onBlur={(e) => {
+                                        if (e.target.value && budget) {
+                                          updateBudgetMutation.mutate({
+                                            id: budget.id,
+                                            budgetAmount: e.target.value
+                                          });
+                                        }
+                                      }}
+                                      className="w-20 h-8 text-sm"
+                                      placeholder="$0"
+                                    />
+                                  )}
+                                </div>
+                              </div>
+                              {budgetAmount > 0 && (
+                                <div className="space-y-1">
+                                  <Progress value={Math.min(percentage, 100)} className="h-2" />
+                                  <div className="flex justify-between text-xs text-gray-500">
+                                    <span>{percentage.toFixed(1)}% used</span>
+                                    <span className={remaining >= 0 ? 'text-green-600' : 'text-red-600'}>
+                                      ${Math.abs(remaining).toFixed(2)} {remaining >= 0 ? 'left' : 'over'}
+                                    </span>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
                           </div>
-                        ))}
-                      </div>
+                        );
+                      })}
                     </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+                  </CardContent>
+                </Card>
+              );
+            })}
           </div>
         </TabsContent>
 

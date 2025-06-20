@@ -687,8 +687,8 @@ export default function Profile() {
                         onClick={() => startEditingDefaults(category)}
                         className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
                       >
-                        <Settings className="w-3 h-3 mr-1" />
-                        Defaults
+                        <DollarSign className="w-3 h-3 mr-1" />
+                        Set Budgets
                       </Button>
                       <Button
                         variant="ghost"
@@ -732,71 +732,79 @@ export default function Profile() {
                         })}
                       </div>
                       
-                      {/* Default amounts editing interface */}
+                      {/* Simplified budget defaults interface */}
                       {editingDefaults === category.id && (
-                        <div className="mt-4 p-4 border rounded-lg bg-blue-50">
-                          <h5 className="font-medium mb-3">Set Default Amounts</h5>
-                          <div className="space-y-3">
-                            {category.subcategories.map((subcategory, index) => (
-                              <div key={index} className="grid grid-cols-3 gap-2 items-center">
-                                <Label className="text-sm">{subcategory}</Label>
-                                <Input
-                                  type="number"
-                                  placeholder="0.00"
-                                  value={defaultAmounts[subcategory]?.amount || ""}
-                                  onChange={(e) => setDefaultAmounts({
-                                    ...defaultAmounts,
-                                    [subcategory]: {
-                                      ...defaultAmounts[subcategory],
-                                      amount: e.target.value,
-                                      type: defaultAmounts[subcategory]?.type || "variable"
-                                    }
-                                  })}
-                                />
-                                <Select
-                                  value={defaultAmounts[subcategory]?.type || "variable"}
-                                  onValueChange={(value: "constant" | "variable") => setDefaultAmounts({
-                                    ...defaultAmounts,
-                                    [subcategory]: {
-                                      ...defaultAmounts[subcategory],
-                                      amount: defaultAmounts[subcategory]?.amount || "",
-                                      type: value
-                                    }
-                                  })}
-                                >
-                                  <SelectTrigger>
-                                    <SelectValue />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    <SelectItem value="constant">Constant</SelectItem>
-                                    <SelectItem value="variable">Variable</SelectItem>
-                                  </SelectContent>
-                                </Select>
-                              </div>
-                            ))}
+                        <div className="mt-4 p-3 border rounded-lg bg-blue-50">
+                          <div className="flex items-center justify-between mb-3">
+                            <h5 className="font-medium text-gray-900">Budget Defaults</h5>
+                            <div className="flex gap-2">
+                              <Button 
+                                onClick={() => handleUpdateDefaults(category.id)}
+                                disabled={updateCategoryMutation.isPending}
+                                size="sm"
+                              >
+                                Save
+                              </Button>
+                              <Button 
+                                variant="outline"
+                                onClick={() => {
+                                  setEditingDefaults(null);
+                                  setDefaultAmounts({});
+                                }}
+                                size="sm"
+                              >
+                                Cancel
+                              </Button>
+                            </div>
                           </div>
-                          <div className="flex gap-2 mt-4">
-                            <Button 
-                              onClick={() => handleUpdateDefaults(category.id)}
-                              disabled={updateCategoryMutation.isPending}
-                              size="sm"
-                            >
-                              <Save className="w-3 h-3 mr-1" />
-                              Save Defaults
-                            </Button>
-                            <Button 
-                              variant="outline"
-                              onClick={() => {
-                                setEditingDefaults(null);
-                                setDefaultAmounts({});
-                              }}
-                              size="sm"
-                            >
-                              Cancel
-                            </Button>
+                          <div className="space-y-2">
+                            {category.subcategories.map((subcategory, index) => {
+                              const currentDefault = defaultAmounts[subcategory] || { amount: "", type: "variable" };
+                              return (
+                                <div key={index} className="flex items-center gap-3 p-2 bg-white rounded border">
+                                  <div className="flex-1 text-sm font-medium">{subcategory}</div>
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-sm text-gray-500">$</span>
+                                    <Input
+                                      type="number"
+                                      placeholder="0"
+                                      value={currentDefault.amount}
+                                      onChange={(e) => setDefaultAmounts({
+                                        ...defaultAmounts,
+                                        [subcategory]: {
+                                          ...defaultAmounts[subcategory],
+                                          amount: e.target.value,
+                                          type: defaultAmounts[subcategory]?.type || "variable"
+                                        }
+                                      })}
+                                      className="w-20 h-8 text-sm"
+                                    />
+                                    <Select
+                                      value={currentDefault.type}
+                                      onValueChange={(value: "constant" | "variable") => setDefaultAmounts({
+                                        ...defaultAmounts,
+                                        [subcategory]: {
+                                          ...defaultAmounts[subcategory],
+                                          amount: defaultAmounts[subcategory]?.amount || "",
+                                          type: value
+                                        }
+                                      })}
+                                    >
+                                      <SelectTrigger className="w-24 h-8 text-sm">
+                                        <SelectValue />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        <SelectItem value="constant">Fixed</SelectItem>
+                                        <SelectItem value="variable">Variable</SelectItem>
+                                      </SelectContent>
+                                    </Select>
+                                  </div>
+                                </div>
+                              );
+                            })}
                           </div>
                           <p className="text-xs text-gray-500 mt-2">
-                            Constant amounts (like rent) stay the same each month. Variable amounts provide suggested budgets.
+                            Fixed amounts (like rent) stay the same monthly. Variable amounts can be adjusted each month.
                           </p>
                         </div>
                       )}
