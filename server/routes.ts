@@ -1019,7 +1019,93 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Expense routes
+  app.get("/api/expenses", async (req, res) => {
+    try {
+      const expenses = await storage.getExpensesByUser(currentUserId);
+      res.json(expenses);
+    } catch (error) {
+      console.error("Get expenses error:", error);
+      res.status(500).json({ message: "Failed to fetch expenses" });
+    }
+  });
 
+  app.post("/api/expenses", async (req, res) => {
+    try {
+      const validatedData = insertExpenseSchema.parse({
+        ...req.body,
+        userId: currentUserId
+      });
+      
+      const expense = await storage.createExpense(validatedData);
+      res.status(201).json(expense);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid expense data", errors: error.errors });
+      }
+      console.error("Create expense error:", error);
+      res.status(500).json({ message: "Failed to create expense" });
+    }
+  });
+
+  app.delete("/api/expenses/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid expense ID" });
+      }
+
+      const deleted = await storage.deleteExpense(id);
+      
+      if (!deleted) {
+        return res.status(404).json({ message: "Expense not found" });
+      }
+      
+      res.status(204).send();
+    } catch (error) {
+      console.error("Delete expense error:", error);
+      res.status(500).json({ message: "Failed to delete expense" });
+    }
+  });
+
+  // Budget routes
+  app.get("/api/budgets", async (req, res) => {
+    try {
+      const budgets = await storage.getBudgetsByUser(currentUserId);
+      res.json(budgets);
+    } catch (error) {
+      console.error("Get budgets error:", error);
+      res.status(500).json({ message: "Failed to fetch budgets" });
+    }
+  });
+
+  app.post("/api/budgets", async (req, res) => {
+    try {
+      const validatedData = insertBudgetSchema.parse({
+        ...req.body,
+        userId: currentUserId
+      });
+      
+      const budget = await storage.createBudget(validatedData);
+      res.status(201).json(budget);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid budget data", errors: error.errors });
+      }
+      console.error("Create budget error:", error);
+      res.status(500).json({ message: "Failed to create budget" });
+    }
+  });
+
+  app.get("/api/expense-categories", async (req, res) => {
+    try {
+      const categories = await storage.getExpenseCategoriesByUser(currentUserId);
+      res.json(categories);
+    } catch (error) {
+      console.error("Get expense categories error:", error);
+      res.status(500).json({ message: "Failed to fetch expense categories" });
+    }
+  });
 
   const httpServer = createServer(app);
   return httpServer;

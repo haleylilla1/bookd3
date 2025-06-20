@@ -28,7 +28,10 @@ import {
 
 type TimePeriod = "monthly" | "yearly";
 
+import BudgetTracker from "./budget-tracker";
+
 export default function GoalTracker() {
+  return <BudgetTracker />;
   const [newGoalName, setNewGoalName] = useState("");
   const [newGoalAmount, setNewGoalAmount] = useState("");
   const [newGoalCategory, setNewGoalCategory] = useState("savings");

@@ -179,8 +179,13 @@ export default function BudgetTracker() {
     const handleSubmit = (e: React.FormEvent) => {
       e.preventDefault();
       addExpenseMutation.mutate({
-        ...formData,
+        date: formData.date,
         amount: formData.amount,
+        category: formData.category,
+        subcategory: formData.subcategory,
+        description: formData.description,
+        isIncome: formData.isIncome,
+        userId: 1, // Will be set by the server
         gigId: formData.isIncome ? gigs.find(g => g.gigType === formData.subcategory)?.id : undefined
       });
       setFormData({ ...formData, amount: "", description: "" });
