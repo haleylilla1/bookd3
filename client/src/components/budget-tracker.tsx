@@ -68,7 +68,10 @@ const DEFAULT_CATEGORIES = [
   }
 ];
 
+import ComprehensiveBudgetTracker from "./comprehensive-budget-tracker";
+
 export default function BudgetTracker() {
+  return <ComprehensiveBudgetTracker />;
   const { data: expenses = [] } = useQuery<Expense[]>({
     queryKey: ["/api/expenses"],
   });
