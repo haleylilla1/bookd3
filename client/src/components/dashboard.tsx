@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -40,6 +40,8 @@ export default function Dashboard() {
   
   const { data: stats, isLoading } = useQuery({
     queryKey: ["/api/dashboard/stats"],
+    retry: 1,
+    staleTime: 5 * 60 * 1000, // 5 minutes
   });
 
   const { data: user } = useQuery<User>({
@@ -82,12 +84,11 @@ export default function Dashboard() {
 
 
 
-  // Calculate tax breakdown per gig for current period
-  const getTaxBreakdownData = () => {
+  // Memoize expensive calculations
+  const currentPeriodGigs = useMemo(() => {
     if (!gigs || gigs.length === 0) return [];
     
-    // Filter gigs to current period first
-    const currentPeriodGigs = gigs.filter(gig => {
+    return gigs.filter(gig => {
       const gigDate = new Date(gig.date);
       
       switch (selectedPeriod) {
@@ -104,10 +105,15 @@ export default function Dashboard() {
                  gigDate.getFullYear() === currentDate.getFullYear();
       }
     });
+  }, [gigs, selectedPeriod, currentDate]);
+
+  // Calculate tax breakdown per gig for current period
+  const getTaxBreakdownData = () => {
+    if (!currentPeriodGigs || currentPeriodGigs.length === 0) return [];
     
     return currentPeriodGigs
-      .filter(gig => gig.status === "completed" && gig.actualPay)
-      .map(gig => {
+      .filter((gig: any) => gig.status === "completed" && gig.actualPay)
+      .map((gig: any) => {
         const pay = parseFloat(gig.actualPay || "0");
         const taxPercentage = gig.taxPercentage || user?.defaultTaxPercentage || 23;
         const taxAmount = pay * (taxPercentage / 100);
@@ -122,17 +128,17 @@ export default function Dashboard() {
           date: gig.date
         };
       })
-      .filter(item => item.taxAmount > 0)
-      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+      .filter((item: any) => item.taxAmount > 0)
+      .sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime());
   };
 
   // Calculate expense breakdown per gig
   const getExpenseBreakdownData = () => {
-    if (!gigs || gigs.length === 0) return [];
+    if (!currentPeriodGigs || currentPeriodGigs.length === 0) return [];
     
-    return gigs
-      .filter(gig => gig.status === "completed")
-      .map(gig => {
+    return currentPeriodGigs
+      .filter((gig: any) => gig.status === "completed")
+      .map((gig: any) => {
         const mileage = parseInt(String(gig.mileage || "0"));
         const parking = parseFloat(String(gig.parkingExpense || "0"));
         const other = parseFloat(String(gig.otherExpenses || "0"));
@@ -573,7 +579,7 @@ export default function Dashboard() {
       '',
       'GOAL PROGRESS',
       currentGoal ? 
-        `Goal: $${parseFloat((currentGoal as any).goalAmount).toFixed(2)} | Progress: ${((projectedData.projectedEarnings / parseFloat((currentGoal as any).goalAmount)) * 100).toFixed(1)}%` :
+        `Goal: $${parseFloat(currentGoal.goalAmount).toFixed(2)} | Progress: ${((projectedData.projectedEarnings / parseFloat(currentGoal.goalAmount)) * 100).toFixed(1)}%` :
         'No goal set for this period',
     ].join('\n');
 
