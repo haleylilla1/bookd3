@@ -684,6 +684,15 @@ export default function Profile() {
                       <Button
                         variant="ghost"
                         size="sm"
+                        onClick={() => startEditingDefaults(category)}
+                        className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                      >
+                        <Settings className="w-3 h-3 mr-1" />
+                        Defaults
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
                         onClick={() => deleteCategoryMutation.mutate(category.id)}
                         className="text-red-600 hover:text-red-700 hover:bg-red-50"
                       >
@@ -693,23 +702,104 @@ export default function Profile() {
                   </div>
                   
                   {category.subcategories && category.subcategories.length > 0 && (
-                    <div className="flex flex-wrap gap-2">
-                      {category.subcategories.map((subcategory, index) => (
-                        <div
-                          key={index}
-                          className="flex items-center gap-1 px-2 py-1 bg-gray-100 rounded text-sm"
-                        >
-                          <span>{subcategory}</span>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleRemoveSubcategory(category.id, subcategory)}
-                            className="h-4 w-4 p-0 text-gray-500 hover:text-red-600"
-                          >
-                            <X className="w-3 h-3" />
-                          </Button>
+                    <div className="space-y-2">
+                      <div className="flex flex-wrap gap-2">
+                        {category.subcategories.map((subcategory, index) => {
+                          const defaults = category.subcategoryDefaults as Record<string, { amount: string; type: "constant" | "variable" }> || {};
+                          const subcategoryDefault = defaults[subcategory];
+                          
+                          return (
+                            <div
+                              key={index}
+                              className="flex items-center gap-1 px-2 py-1 bg-gray-100 rounded text-sm"
+                            >
+                              <span>{subcategory}</span>
+                              {subcategoryDefault && (
+                                <Badge variant="outline" className="text-xs ml-1">
+                                  ${subcategoryDefault.amount} ({subcategoryDefault.type})
+                                </Badge>
+                              )}
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleRemoveSubcategory(category.id, subcategory)}
+                                className="h-4 w-4 p-0 text-gray-500 hover:text-red-600"
+                              >
+                                <X className="w-3 h-3" />
+                              </Button>
+                            </div>
+                          );
+                        })}
+                      </div>
+                      
+                      {/* Default amounts editing interface */}
+                      {editingDefaults === category.id && (
+                        <div className="mt-4 p-4 border rounded-lg bg-blue-50">
+                          <h5 className="font-medium mb-3">Set Default Amounts</h5>
+                          <div className="space-y-3">
+                            {category.subcategories.map((subcategory, index) => (
+                              <div key={index} className="grid grid-cols-3 gap-2 items-center">
+                                <Label className="text-sm">{subcategory}</Label>
+                                <Input
+                                  type="number"
+                                  placeholder="0.00"
+                                  value={defaultAmounts[subcategory]?.amount || ""}
+                                  onChange={(e) => setDefaultAmounts({
+                                    ...defaultAmounts,
+                                    [subcategory]: {
+                                      ...defaultAmounts[subcategory],
+                                      amount: e.target.value,
+                                      type: defaultAmounts[subcategory]?.type || "variable"
+                                    }
+                                  })}
+                                />
+                                <Select
+                                  value={defaultAmounts[subcategory]?.type || "variable"}
+                                  onValueChange={(value: "constant" | "variable") => setDefaultAmounts({
+                                    ...defaultAmounts,
+                                    [subcategory]: {
+                                      ...defaultAmounts[subcategory],
+                                      amount: defaultAmounts[subcategory]?.amount || "",
+                                      type: value
+                                    }
+                                  })}
+                                >
+                                  <SelectTrigger>
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="constant">Constant</SelectItem>
+                                    <SelectItem value="variable">Variable</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                            ))}
+                          </div>
+                          <div className="flex gap-2 mt-4">
+                            <Button 
+                              onClick={() => handleUpdateDefaults(category.id)}
+                              disabled={updateCategoryMutation.isPending}
+                              size="sm"
+                            >
+                              <Save className="w-3 h-3 mr-1" />
+                              Save Defaults
+                            </Button>
+                            <Button 
+                              variant="outline"
+                              onClick={() => {
+                                setEditingDefaults(null);
+                                setDefaultAmounts({});
+                              }}
+                              size="sm"
+                            >
+                              Cancel
+                            </Button>
+                          </div>
+                          <p className="text-xs text-gray-500 mt-2">
+                            Constant amounts (like rent) stay the same each month. Variable amounts provide suggested budgets.
+                          </p>
                         </div>
-                      ))}
+                      )}
                     </div>
                   )}
                 </div>

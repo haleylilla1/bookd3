@@ -130,6 +130,50 @@ export default function BudgetTracker() {
     },
   });
 
+  // Auto-create monthly budgets based on category defaults
+  const createMonthlyBudgets = () => {
+    let budgetsCreated = 0;
+    
+    availableCategories.forEach(category => {
+      const defaults = (category as any).subcategoryDefaults as Record<string, { amount: string; type: "constant" | "variable" }> || {};
+      
+      Object.entries(defaults).forEach(([subcategory, config]) => {
+        if (config.amount && parseFloat(config.amount) > 0) {
+          // Check if budget already exists for this month/category/subcategory
+          const existingBudget = currentMonthBudgets.find(b => 
+            b.category === category.name && 
+            b.subcategory === subcategory
+          );
+          
+          if (!existingBudget) {
+            addBudgetMutation.mutate({
+              userId: 1,
+              month: selectedMonth,
+              year: selectedYear,
+              category: category.name,
+              subcategory: subcategory,
+              budgetAmount: config.amount,
+              actualAmount: "0"
+            });
+            budgetsCreated++;
+          }
+        }
+      });
+    });
+
+    if (budgetsCreated === 0) {
+      toast({ 
+        title: "No new budgets to create",
+        description: "All default amounts already have budgets for this month.",
+      });
+    } else {
+      toast({ 
+        title: `Created ${budgetsCreated} budget entries`,
+        description: "Default amounts have been applied to this month's budget.",
+      });
+    }
+  };
+
   // Calculate current month data
   const currentMonthExpenses = expenses.filter(expense => {
     const expenseDate = new Date(expense.date);
@@ -302,6 +346,14 @@ export default function BudgetTracker() {
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold text-gray-900">Budget Tracker</h1>
         <div className="flex gap-4">
+          <Button 
+            onClick={createMonthlyBudgets}
+            variant="outline"
+            disabled={addBudgetMutation.isPending}
+          >
+            <Target className="w-4 h-4 mr-2" />
+            Auto-Create Budget
+          </Button>
           <Select value={selectedMonth.toString()} onValueChange={(v) => setSelectedMonth(parseInt(v))}>
             <SelectTrigger className="w-32">
               <SelectValue />
