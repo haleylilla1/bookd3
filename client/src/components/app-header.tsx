@@ -133,9 +133,9 @@ export default function AppHeader({ currentScreen, onScreenChange }: AppHeaderPr
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
               
-              <DropdownMenuItem onClick={() => onScreenChange('profile')}>
+              <DropdownMenuItem onClick={() => setLocation('/profile')}>
                 <User className="mr-2 h-4 w-4" />
-                <span>Profile</span>
+                <span>Profile Settings</span>
               </DropdownMenuItem>
               
               <DropdownMenuItem onClick={() => onScreenChange('settings')}>

@@ -3,6 +3,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useLocation } from "wouter";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,6 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Slider } from "@/components/ui/slider";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { ArrowLeft } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import type { User } from "@shared/schema";
 
@@ -25,6 +27,7 @@ type ProfileFormData = z.infer<typeof profileFormSchema>;
 export default function Profile() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const [, setLocation] = useLocation();
 
   const { data: user, isLoading } = useQuery<User>({
     queryKey: ["/api/user"],
@@ -101,7 +104,15 @@ export default function Profile() {
     <div className="container mx-auto px-4 py-8">
       <div className="max-w-md mx-auto">
         <Card>
-          <CardHeader>
+          <CardHeader className="flex flex-row items-center space-y-0 pb-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setLocation('/')}
+              className="mr-2"
+            >
+              <ArrowLeft className="h-4 w-4" />
+            </Button>
             <CardTitle>Profile Settings</CardTitle>
           </CardHeader>
           <CardContent>
