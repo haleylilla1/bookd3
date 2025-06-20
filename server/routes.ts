@@ -391,10 +391,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return gigDate.getMonth() === now.getMonth() && 
                  gigDate.getFullYear() === now.getFullYear();
         })
-        .reduce((sum, gig) => sum + parseFloat(gig.basePay), 0);
+        .reduce((sum, gig) => {
+          const pay = parseFloat(String(gig.actualPay || gig.expectedPay || "0"));
+          return sum + (isNaN(pay) ? 0 : pay);
+        }, 0);
 
-      const totalTips = gigs.reduce((sum, gig) => sum + parseFloat(gig.tips || "0"), 0);
-      const totalEarnings = gigs.reduce((sum, gig) => sum + parseFloat(gig.basePay) + parseFloat(gig.tips || "0"), 0);
+      const totalTips = gigs.reduce((sum, gig) => {
+        const tips = parseFloat(String(gig.tips || "0"));
+        return sum + (isNaN(tips) ? 0 : tips);
+      }, 0);
+      
+      const totalEarnings = gigs.reduce((sum, gig) => {
+        const pay = parseFloat(String(gig.actualPay || gig.expectedPay || "0"));
+        const tips = parseFloat(String(gig.tips || "0"));
+        return sum + (isNaN(pay) ? 0 : pay) + (isNaN(tips) ? 0 : tips);
+      }, 0);
       const totalGigs = gigs.length;
       
       const averageEarningsPerGig = totalGigs > 0 ? totalEarnings / totalGigs : 0;
