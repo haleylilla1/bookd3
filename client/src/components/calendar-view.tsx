@@ -330,7 +330,7 @@ export default function CalendarView() {
                     aspect-square p-2 text-sm relative transition-all duration-200 rounded-lg min-h-[48px]
                     ${isCurrentMonth 
                       ? hasGigs 
-                        ? 'hover:bg-gray-50 cursor-pointer' 
+                        ? 'hover:bg-blue-50 cursor-pointer border border-transparent hover:border-blue-200 hover:shadow-sm' 
                         : isToday
                           ? 'text-blue-600 font-semibold hover:bg-blue-50'
                           : 'text-gray-700 hover:bg-gray-50'
@@ -381,6 +381,11 @@ export default function CalendarView() {
                     {isToday && hasGigs && (
                       <div className="absolute top-1 right-1 w-2 h-2 bg-blue-600 rounded-full z-20"></div>
                     )}
+                    {hasGigs && (
+                      <div className="absolute top-1 left-1 opacity-0 hover:opacity-60 transition-opacity z-20">
+                        <Edit2 className="w-3 h-3 text-gray-600" />
+                      </div>
+                    )}
                   </div>
                 </button>
               );
@@ -388,7 +393,7 @@ export default function CalendarView() {
           </div>
           
           <div className="mt-4 text-center text-xs text-gray-500">
-            Click on highlighted dates to see gig details
+            Click on highlighted dates to view and edit gig details
           </div>
         </CardContent>
       </Card>
