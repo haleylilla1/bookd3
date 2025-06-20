@@ -11,8 +11,7 @@ import {
   insertExpenseCategorySchema 
 } from "@shared/schema";
 import { z } from "zod";
-import passport from "passport";
-import { setupGoogleAuth, setupLocalAuth, setupPassportSerialization } from "./authStrategies";
+import { setupAuthRoutes } from "./auth-routes";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Initialize passport strategies
@@ -23,12 +22,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.use(passport.initialize());
   app.use(passport.session());
   
-  // Simple session-based user switching for multi-user testing
-  let currentUserId = 1; // Default user
+  // Helper function to get current authenticated user
+  const getCurrentUser = async (req: any) => {
+    if (req.isAuthenticated && req.isAuthenticated()) {
+      return req.user;
+    }
+    // Fallback for development - remove in production
+    return await storage.getUser(1);
+  };
   
-  // Helper function to get current user
-  const getCurrentUser = async () => {
-    return await storage.getUser(currentUserId);
+  // Helper function to get current user ID
+  const getCurrentUserId = (req: any) => {
+    if (req.isAuthenticated && req.isAuthenticated()) {
+      return req.user.id;
+    }
+    // Fallback for development - remove in production
+    return 1;
   };
 
   // User switching endpoint for testing
@@ -1257,16 +1266,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (err) {
         return res.status(500).json({ message: 'Logout failed' });
       }
-      req.session.destroy((err) => {
-        if (err) {
-          console.error('Session destroy error:', err);
+      
+      req.session.destroy((destroyErr) => {
+        if (destroyErr) {
+          console.error('Session destroy error:', destroyErr);
         }
+        
+        // Clear the session cookie
+        res.clearCookie('connect.sid');
         res.json({ message: 'Logout successful' });
       });
     });
   });
 
-  // Get current user
+  // Get current authenticated user
   app.get('/api/auth/user', (req, res) => {
     if (req.isAuthenticated()) {
       res.json(req.user);

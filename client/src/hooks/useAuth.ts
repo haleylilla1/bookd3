@@ -19,8 +19,12 @@ export function useAuth() {
       return response.json();
     },
     onSuccess: () => {
+      // Clear all cached data
       queryClient.clear();
-      window.location.href = "/";
+      // Invalidate the user query specifically
+      queryClient.setQueryData(["/api/auth/user"], null);
+      // Force reload to clear any remaining state
+      window.location.reload();
     },
     onError: () => {
       toast({
