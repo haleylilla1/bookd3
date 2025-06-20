@@ -572,7 +572,7 @@ export default function CalendarView() {
                           {gig.clientName} • {gig.gigType}
                         </div>
                       </div>
-                      <div className="text-right">
+                      <div className="flex items-center gap-2">
                         <Badge 
                           variant={
                             gig.status === 'completed' ? 'default' : 
@@ -583,6 +583,17 @@ export default function CalendarView() {
                         >
                           {gig.status}
                         </Badge>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => {
+                            setEditingGig(gig);
+                            setShowDayGigs(false);
+                          }}
+                          className="h-8 w-8 p-0"
+                        >
+                          <Edit2 className="h-4 w-4" />
+                        </Button>
                       </div>
                     </div>
                     
