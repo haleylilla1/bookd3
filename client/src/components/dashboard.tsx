@@ -47,15 +47,15 @@ export default function Dashboard() {
   });
 
   // Fetch period-specific goal
-  const { data: currentGoal, refetch: refetchGoal } = useQuery({
+  const { data: currentGoal, refetch: refetchGoal } = useQuery<{ goalAmount: string; id: number }>({
     queryKey: ["/api/goals/period", selectedPeriod, currentDate.toISOString()],
-    queryFn: () => fetch(`/api/goals/period/${selectedPeriod}/${currentDate.toISOString()}`).then(res => res.json()),
+    retry: 1,
   });
 
-  // Fetch gigs for tax breakdown
-  const { data: gigs } = useQuery({
+  // Fetch gigs for calculations
+  const { data: gigs = [], isLoading: gigsLoading } = useQuery<Gig[]>({
     queryKey: ["/api/gigs"],
-    queryFn: () => fetch("/api/gigs").then(res => res.json()),
+    retry: 1,
   });
 
   const updateGoalMutation = useMutation({
@@ -84,10 +84,10 @@ export default function Dashboard() {
 
   // Calculate tax breakdown per gig for current period
   const getTaxBreakdownData = () => {
-    if (!gigs) return [];
+    if (!gigs || gigs.length === 0) return [];
     
     // Filter gigs to current period first
-    const currentPeriodGigs = (gigs as any[]).filter(gig => {
+    const currentPeriodGigs = gigs.filter(gig => {
       const gigDate = new Date(gig.date);
       
       switch (selectedPeriod) {
@@ -128,14 +128,14 @@ export default function Dashboard() {
 
   // Calculate expense breakdown per gig
   const getExpenseBreakdownData = () => {
-    if (!gigs) return [];
+    if (!gigs || gigs.length === 0) return [];
     
-    return (gigs as any[])
+    return gigs
       .filter(gig => gig.status === "completed")
       .map(gig => {
-        const mileage = parseInt(gig.mileage || "0");
-        const parking = parseFloat(gig.parkingExpense || "0");
-        const other = parseFloat(gig.otherExpenses || "0");
+        const mileage = parseInt(String(gig.mileage || "0"));
+        const parking = parseFloat(String(gig.parkingExpense || "0"));
+        const other = parseFloat(String(gig.otherExpenses || "0"));
         const mileageExpense = mileage * 0.655; // 2024 IRS standard mileage rate
         const totalExpenses = mileageExpense + parking + other;
         
@@ -573,7 +573,7 @@ export default function Dashboard() {
       '',
       'GOAL PROGRESS',
       currentGoal ? 
-        `Goal: $${parseFloat(currentGoal.goalAmount).toFixed(2)} | Progress: ${((projectedData.projectedEarnings / parseFloat(currentGoal.goalAmount)) * 100).toFixed(1)}%` :
+        `Goal: $${parseFloat((currentGoal as any).goalAmount).toFixed(2)} | Progress: ${((projectedData.projectedEarnings / parseFloat((currentGoal as any).goalAmount)) * 100).toFixed(1)}%` :
         'No goal set for this period',
     ].join('\n');
 
