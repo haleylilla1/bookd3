@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -70,6 +70,19 @@ export default function BulkGigImport({ onClose }: BulkGigImportProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
+  // Fetch existing gigs to determine available gig types
+  const { data: existingGigs } = useQuery({
+    queryKey: ["/api/gigs"],
+  });
+
+  // Get unique gig types from existing gigs
+  const defaultTypes = ["Brand Ambassador", "Catering", "Bartending", "Event Staff", "Promotional", "Other"];
+  const existingTypes = Array.isArray(existingGigs) 
+    ? existingGigs.map((gig: any) => gig.gigType).filter(Boolean)
+    : [];
+  const allTypes = [...existingTypes, ...defaultTypes];
+  const availableGigTypes = allTypes.filter((type, index) => allTypes.indexOf(type) === index);
+
   const form = useForm<ImportFormData>({
     resolver: zodResolver(importFormSchema),
     defaultValues: {
@@ -135,12 +148,23 @@ May 5th promotional event at Mall, $180`;
     },
     onSuccess: (data: any) => {
       setImportResults(data);
+      
+      // Invalidate all related queries to refresh calendar and dashboard
       queryClient.invalidateQueries({ queryKey: ["/api/gigs"] });
       queryClient.invalidateQueries({ queryKey: ["/api/dashboard/stats"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/goals"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/allocations"] });
+      
+      // Force refresh any monthly goals that might be affected
+      const currentDate = new Date().toISOString();
+      queryClient.invalidateQueries({ 
+        queryKey: ["/api/goals/period/monthly", currentDate] 
+      });
+      
       setStep('complete');
       toast({
         title: "Import Complete!",
-        description: `Successfully imported ${data.imported} gigs.`,
+        description: `Successfully imported ${data.imported} gigs. Check your calendar and dashboard for updates.`,
       });
     },
     onError: (error) => {
@@ -461,12 +485,9 @@ May 5th promotional event at Mall, $180`;
                                     <SelectValue placeholder="Select gig type..." />
                                   </SelectTrigger>
                                   <SelectContent>
-                                    <SelectItem value="Brand Ambassador">Brand Ambassador</SelectItem>
-                                    <SelectItem value="Catering">Catering</SelectItem>
-                                    <SelectItem value="Bartending">Bartending</SelectItem>
-                                    <SelectItem value="Event Staff">Event Staff</SelectItem>
-                                    <SelectItem value="Promotional">Promotional</SelectItem>
-                                    <SelectItem value="Other">Other</SelectItem>
+                                    {availableGigTypes.map((type: string) => (
+                                      <SelectItem key={type} value={type}>{type}</SelectItem>
+                                    ))}
                                   </SelectContent>
                                 </Select>
                               </div>
