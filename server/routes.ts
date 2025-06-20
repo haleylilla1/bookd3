@@ -574,10 +574,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const { amount } = req.body;
-      console.log("Update allocation - received amount:", amount, "type:", typeof amount);
       
       if (!amount || isNaN(parseFloat(amount)) || parseFloat(amount) <= 0) {
-        console.log("Validation failed for amount:", amount);
         return res.status(400).json({ message: "Valid positive amount is required" });
       }
 
