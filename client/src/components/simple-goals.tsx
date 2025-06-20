@@ -12,7 +12,7 @@ import { Plus, Target, DollarSign, Calendar, Edit2, Trash2 } from "lucide-react"
 import { formatCurrency } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
-import type { Goal, Gig, Allocation } from "@shared/schema";
+import type { Goal, Gig, Allocation, User } from "@shared/schema";
 
 export default function SimpleGoals() {
   const [newGoalName, setNewGoalName] = useState("");
@@ -39,6 +39,10 @@ export default function SimpleGoals() {
   const { data: allocations = [] } = useQuery<Allocation[]>({
     queryKey: ["/api/allocations"],
     retry: false,
+  });
+
+  const { data: user } = useQuery<User>({
+    queryKey: ["/api/user"],
   });
 
   // Create goal mutation
@@ -200,8 +204,8 @@ export default function SimpleGoals() {
     })
     .reduce((sum, allocation) => sum + parseFloat(allocation.amount), 0);
 
-  // Calculate after-tax amount (using 23% default tax rate)
-  const taxRate = 0.23;
+  // Calculate after-tax amount using user's tax percentage
+  const taxRate = (user?.defaultTaxPercentage || 23) / 100;
   const afterTaxEarnings = totalMonthlyEarnings * (1 - taxRate);
   const availableToAllocate = afterTaxEarnings - totalAllocatedThisMonth;
 
@@ -222,7 +226,7 @@ export default function SimpleGoals() {
               <p className="text-xl font-semibold text-gray-900">{formatCurrency(totalMonthlyEarnings)}</p>
             </div>
             <div className="space-y-1">
-              <p className="text-sm text-gray-600">After Tax (23%)</p>
+              <p className="text-sm text-gray-600">After Tax ({user?.defaultTaxPercentage || 23}%)</p>
               <p className="text-xl font-semibold text-green-600">{formatCurrency(afterTaxEarnings)}</p>
             </div>
             <div className="space-y-1">
