@@ -196,11 +196,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Get user's custom gig types from profile
       const user = await storage.getUser(userId);
-      console.log("User profile:", JSON.stringify(user, null, 2));
       const userGigTypes = user?.customGigTypes || [];
-      console.log("User gig types:", userGigTypes);
       const availableTypes = userGigTypes.length > 0 ? userGigTypes : ["Other"];
-      console.log("Available types for AI:", availableTypes);
 
       const systemPrompt = `You are a data extraction specialist for gig worker records. Parse messy gig notes and extract structured data.
 

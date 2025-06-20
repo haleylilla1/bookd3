@@ -76,7 +76,7 @@ export default function BulkGigImport({ onClose }: BulkGigImportProps) {
   });
 
   // Get user's custom gig types from profile
-  const availableGigTypes = user?.customGigTypes || ["Other"];
+  const availableGigTypes = (user as any)?.customGigTypes || ["Other"];
 
   const form = useForm<ImportFormData>({
     resolver: zodResolver(importFormSchema),
