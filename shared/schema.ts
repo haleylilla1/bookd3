@@ -103,13 +103,51 @@ export const goals = pgTable("goals", {
   goalDuration: text("goal_duration").notNull().default("monthly"), // "monthly" or "yearly"
 });
 
+// Enhanced expense tracking and budget management
+export const expenseCategories = pgTable("expense_categories", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull().references(() => users.id),
+  name: text("name").notNull(), // Bills, Expenses, Savings, Income, Debt
+  subcategories: text("subcategories").array(), // ["Rent", "Insurance", "Groceries"]
+  isDefault: boolean("is_default").default(false),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const expenses = pgTable("expenses", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull().references(() => users.id),
+  date: date("date").notNull(),
+  amount: decimal("amount", { precision: 10, scale: 2 }).notNull(),
+  category: text("category").notNull(), // Bills, Expenses, Savings, Income, Debt
+  subcategory: text("subcategory"), // Rent, Insurance, etc.
+  description: text("description"),
+  isIncome: boolean("is_income").default(false),
+  gigId: integer("gig_id"), // Link to gig if it's gig income
+  allocations: jsonb("allocations"), // [{goalId: 1, amount: 100}, {type: "emergency", amount: 50}]
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const budgets = pgTable("budgets", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull().references(() => users.id),
+  month: integer("month").notNull(), // 1-12
+  year: integer("year").notNull(),
+  category: text("category").notNull(),
+  subcategory: text("subcategory"),
+  budgetAmount: decimal("budget_amount", { precision: 10, scale: 2 }).notNull(),
+  actualAmount: decimal("actual_amount", { precision: 10, scale: 2 }).default("0"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 export const allocations = pgTable("allocations", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").notNull().references(() => users.id),
-  gigId: integer("gig_id").notNull(),
-  goalId: integer("goal_id"), // nullable for piggy bank allocations
+  expenseId: integer("expense_id"), // Link to expense
+  gigId: integer("gig_id"), // Link to gig income
+  goalId: integer("goal_id"), // Link to savings goal
   amount: decimal("amount", { precision: 10, scale: 2 }).notNull(),
-  allocationType: text("allocation_type").notNull().default("goal"), // "goal" or "piggy_bank"
+  allocationType: text("allocation_type").notNull(), // "savings", "bills", "debt", "emergency"
+  description: text("description"),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -259,3 +297,27 @@ export const insertInvoiceSchema = createInsertSchema(invoices).omit({
 
 export type InsertInvoice = z.infer<typeof insertInvoiceSchema>;
 export type Invoice = typeof invoices.$inferSelect;
+
+export const insertExpenseCategorySchema = createInsertSchema(expenseCategories).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertExpenseSchema = createInsertSchema(expenses).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertBudgetSchema = createInsertSchema(budgets).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type InsertExpenseCategory = z.infer<typeof insertExpenseCategorySchema>;
+export type ExpenseCategory = typeof expenseCategories.$inferSelect;
+
+export type InsertExpense = z.infer<typeof insertExpenseSchema>;
+export type Expense = typeof expenses.$inferSelect;
+
+export type InsertBudget = z.infer<typeof insertBudgetSchema>;
+export type Budget = typeof budgets.$inferSelect;
