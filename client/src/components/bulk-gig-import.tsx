@@ -75,13 +75,16 @@ export default function BulkGigImport({ onClose }: BulkGigImportProps) {
     queryKey: ["/api/gigs"],
   });
 
-  // Get unique gig types from existing gigs
-  const defaultTypes = ["Brand Ambassador", "Catering", "Bartending", "Event Staff", "Promotional", "Other"];
+  // Get unique gig types from existing gigs (only user's actual types)
   const existingTypes = Array.isArray(existingGigs) 
     ? existingGigs.map((gig: any) => gig.gigType).filter(Boolean)
     : [];
-  const allTypes = [...existingTypes, ...defaultTypes];
-  const availableGigTypes = allTypes.filter((type, index) => allTypes.indexOf(type) === index);
+  const availableGigTypes = existingTypes.filter((type, index) => existingTypes.indexOf(type) === index);
+  
+  // Add "Other" option if user doesn't have it, in case they need to categorize something new
+  if (!availableGigTypes.includes("Other")) {
+    availableGigTypes.push("Other");
+  }
 
   const form = useForm<ImportFormData>({
     resolver: zodResolver(importFormSchema),
