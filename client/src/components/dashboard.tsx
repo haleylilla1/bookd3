@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Input } from "@/components/ui/input";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from "@/components/ui/dialog";
 import { Receipt, Car, Download, TrendingUp, Edit2, Target, ChevronLeft, ChevronRight, Banknote, Calendar } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
@@ -936,6 +936,9 @@ export default function Dashboard() {
         <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>Tax Breakdown by Gig</DialogTitle>
+            <DialogDescription>
+              Detailed tax calculations for each completed gig in the current period
+            </DialogDescription>
           </DialogHeader>
           <div className="max-h-96 overflow-y-auto">
             {getTaxBreakdownData().length > 0 ? (
@@ -985,6 +988,9 @@ export default function Dashboard() {
         <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>Expense Breakdown by Gig</DialogTitle>
+            <DialogDescription>
+              Mileage, parking, and other expenses for each completed gig
+            </DialogDescription>
           </DialogHeader>
           <div className="max-h-96 overflow-y-auto">
             {getExpenseBreakdownData().length > 0 ? (
