@@ -719,6 +719,7 @@ function GigEditForm({ gig, onSave, onCancel, isLoading }: GigEditFormProps) {
     startingAddress: "",
     endingAddress: "",
     isCalculating: false,
+    roundTrip: true,
   });
 
   // Get user's home address for starting point default
@@ -756,7 +757,8 @@ function GigEditForm({ gig, onSave, onCancel, isLoading }: GigEditFormProps) {
 
       if (response.ok) {
         const { distanceMiles } = await response.json();
-        setFormData(prev => ({ ...prev, mileage: Math.round(distanceMiles) }));
+        const finalMileage = mileageTracking.roundTrip ? distanceMiles * 2 : distanceMiles;
+        setFormData(prev => ({ ...prev, mileage: Math.round(finalMileage) }));
       }
     } catch (error) {
       console.error('Failed to calculate mileage:', error);
@@ -911,6 +913,19 @@ function GigEditForm({ gig, onSave, onCancel, isLoading }: GigEditFormProps) {
               onChange={(e) => setMileageTracking(prev => ({ ...prev, endingAddress: e.target.value }))}
               placeholder="Enter destination address"
             />
+          </div>
+          
+          <div className="flex items-center gap-2 mb-2">
+            <input
+              type="checkbox"
+              id="roundTrip"
+              checked={mileageTracking.roundTrip}
+              onChange={(e) => setMileageTracking(prev => ({ ...prev, roundTrip: e.target.checked }))}
+              className="w-4 h-4"
+            />
+            <label htmlFor="roundTrip" className="text-xs font-medium">
+              Round trip (double the distance)
+            </label>
           </div>
           
           <div className="flex gap-2 items-end">
