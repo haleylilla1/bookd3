@@ -173,6 +173,15 @@ export default function GigForm({ onClose }: GigFormProps) {
       gigDates.push(date.toISOString().split('T')[0]);
     }
 
+    // Calculate daily amounts for multi-day gigs
+    const totalDays = gigDates.length;
+    const dailyExpectedPay = data.expectedPay ? (parseFloat(data.expectedPay) / totalDays).toFixed(2) : null;
+    const dailyActualPay = data.actualPay ? (parseFloat(data.actualPay) / totalDays).toFixed(2) : null;
+    const dailyTips = data.tips ? (parseFloat(data.tips) / totalDays).toFixed(2) : null;
+    const dailyParkingExpense = (trackExpenses && data.parkingExpense) ? (parseFloat(data.parkingExpense) / totalDays).toFixed(2) : null;
+    const dailyOtherExpenses = (trackExpenses && data.otherExpenses) ? (parseFloat(data.otherExpenses) / totalDays).toFixed(2) : null;
+    const dailyMileage = data.mileage ? Math.round(parseInt(data.mileage) / totalDays) : null;
+
     // Create a gig entry for each date
     for (const gigDate of gigDates) {
       const gigData: InsertGig = {
@@ -184,18 +193,18 @@ export default function GigForm({ onClose }: GigFormProps) {
         gigAddress: data.gigAddress || null,
         distanceMiles,
         travelTimeMinutes,
-        expectedPay: data.expectedPay || null,
-        actualPay: data.actualPay || null,
-        tips: data.tips || null,
+        expectedPay: dailyExpectedPay,
+        actualPay: dailyActualPay,
+        tips: dailyTips,
         paymentMethod: data.paymentMethod || null,
         status: data.status,
         duties: data.duties || null,
         taxPercentage: data.taxPercentage,
-        mileage: data.mileage ? parseInt(data.mileage) : null,
+        mileage: dailyMileage,
         notes: data.notes || null,
-        parkingExpense: trackExpenses && data.parkingExpense ? data.parkingExpense : null,
+        parkingExpense: dailyParkingExpense,
         parkingReceipts: trackExpenses ? data.parkingReceipts : [],
-        otherExpenses: trackExpenses && data.otherExpenses ? data.otherExpenses : null,
+        otherExpenses: dailyOtherExpenses,
         otherExpenseReceipts: trackExpenses ? data.otherExpenseReceipts : [],
         includeInResume: true,
       };
@@ -374,28 +383,58 @@ export default function GigForm({ onClose }: GigFormProps) {
                 <FormField
                   control={form.control}
                   name="expectedPay"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Expected Pay</FormLabel>
-                      <FormControl>
-                        <Input type="number" placeholder="250" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
+                  render={({ field }) => {
+                    const startDate = form.watch("startDate");
+                    const endDate = form.watch("endDate");
+                    const isMultiDay = startDate && endDate && startDate !== endDate;
+                    const dayCount = isMultiDay ? Math.ceil((new Date(endDate).getTime() - new Date(startDate).getTime()) / (1000 * 60 * 60 * 24)) + 1 : 1;
+                    const dailyAmount = field.value ? (parseFloat(field.value) / dayCount).toFixed(2) : "0.00";
+
+                    return (
+                      <FormItem>
+                        <FormLabel>
+                          Expected Pay {isMultiDay ? "(Total for all days)" : ""}
+                        </FormLabel>
+                        <FormControl>
+                          <Input type="number" placeholder="250" {...field} />
+                        </FormControl>
+                        {isMultiDay && field.value && (
+                          <p className="text-xs text-gray-500 mt-1">
+                            ${dailyAmount} per day across {dayCount} days
+                          </p>
+                        )}
+                        <FormMessage />
+                      </FormItem>
+                    );
+                  }}
                 />
                 <FormField
                   control={form.control}
                   name="actualPay"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Actual Pay</FormLabel>
-                      <FormControl>
-                        <Input type="number" placeholder="285" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
+                  render={({ field }) => {
+                    const startDate = form.watch("startDate");
+                    const endDate = form.watch("endDate");
+                    const isMultiDay = startDate && endDate && startDate !== endDate;
+                    const dayCount = isMultiDay ? Math.ceil((new Date(endDate).getTime() - new Date(startDate).getTime()) / (1000 * 60 * 60 * 24)) + 1 : 1;
+                    const dailyAmount = field.value ? (parseFloat(field.value) / dayCount).toFixed(2) : "0.00";
+
+                    return (
+                      <FormItem>
+                        <FormLabel>
+                          Actual Pay {isMultiDay ? "(Total for all days)" : ""}
+                        </FormLabel>
+                        <FormControl>
+                          <Input type="number" placeholder="285" {...field} />
+                        </FormControl>
+                        {isMultiDay && field.value && (
+                          <p className="text-xs text-gray-500 mt-1">
+                            ${dailyAmount} per day across {dayCount} days
+                          </p>
+                        )}
+                        <FormMessage />
+                      </FormItem>
+                    );
+                  }}
                 />
               </div>
 
@@ -403,15 +442,30 @@ export default function GigForm({ onClose }: GigFormProps) {
               <FormField
                 control={form.control}
                 name="tips"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Tips Earned</FormLabel>
-                    <FormControl>
-                      <Input type="number" placeholder="25" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
+                render={({ field }) => {
+                  const startDate = form.watch("startDate");
+                  const endDate = form.watch("endDate");
+                  const isMultiDay = startDate && endDate && startDate !== endDate;
+                  const dayCount = isMultiDay ? Math.ceil((new Date(endDate).getTime() - new Date(startDate).getTime()) / (1000 * 60 * 60 * 24)) + 1 : 1;
+                  const dailyAmount = field.value ? (parseFloat(field.value) / dayCount).toFixed(2) : "0.00";
+
+                  return (
+                    <FormItem>
+                      <FormLabel>
+                        Tips Earned {isMultiDay ? "(Total for all days)" : ""}
+                      </FormLabel>
+                      <FormControl>
+                        <Input type="number" placeholder="25" {...field} />
+                      </FormControl>
+                      {isMultiDay && field.value && (
+                        <p className="text-xs text-gray-500 mt-1">
+                          ${dailyAmount} per day across {dayCount} days
+                        </p>
+                      )}
+                      <FormMessage />
+                    </FormItem>
+                  );
+                }}
               />
 
               {/* Payment Method */}
@@ -464,6 +518,32 @@ export default function GigForm({ onClose }: GigFormProps) {
                   </FormItem>
                 )}
               />
+
+              {/* Multi-day Gig Summary */}
+              {(() => {
+                const startDate = form.watch("startDate");
+                const endDate = form.watch("endDate");
+                const isMultiDay = startDate && endDate && startDate !== endDate;
+                const dayCount = isMultiDay ? Math.ceil((new Date(endDate).getTime() - new Date(startDate).getTime()) / (1000 * 60 * 60 * 24)) + 1 : 1;
+                
+                if (!isMultiDay) return null;
+                
+                return (
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                    <div className="flex items-center gap-2 mb-2">
+                      <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
+                      <h4 className="font-medium text-blue-900">Multi-Day Gig Summary</h4>
+                    </div>
+                    <p className="text-sm text-blue-700 mb-2">
+                      This gig spans {dayCount} days. Enter the TOTAL amounts above, and they will be automatically distributed across each day.
+                    </p>
+                    <div className="text-xs text-blue-600 space-y-1">
+                      <p>• Each day will show: Pay ÷ {dayCount} days</p>
+                      <p>• Dashboard totals will reflect the correct combined amount</p>
+                    </div>
+                  </div>
+                );
+              })()}
 
               {/* Expenses Toggle */}
               <div className="border border-gray-200 rounded-lg p-4">
