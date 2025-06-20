@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
@@ -29,6 +30,7 @@ interface AppHeaderProps {
 
 export default function AppHeader({ currentScreen, onScreenChange }: AppHeaderProps) {
   const { user, logout, exportData, isLoggingOut, isExporting } = useAuth();
+  const [, setLocation] = useLocation();
 
   if (!user) return null;
 
