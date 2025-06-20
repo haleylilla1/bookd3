@@ -971,6 +971,50 @@ Be VERY generous in extracting gigs:
     }
   });
 
+  // Distance calculation endpoint using Google Maps API
+  app.post("/api/calculate-distance", async (req, res) => {
+    try {
+      const { origin, destination } = req.body;
+
+      if (!origin || !destination) {
+        return res.status(400).json({ error: "Origin and destination are required" });
+      }
+
+      const apiKey = process.env.VITE_GOOGLE_MAPS_API_KEY;
+      if (!apiKey) {
+        return res.status(500).json({ error: "Google Maps API key not configured" });
+      }
+
+      const url = `https://maps.googleapis.com/maps/api/distancematrix/json?origins=${encodeURIComponent(origin)}&destinations=${encodeURIComponent(destination)}&units=imperial&key=${apiKey}`;
+
+      const response = await fetch(url);
+      const data = await response.json();
+
+      if (data.status !== 'OK') {
+        return res.status(400).json({ error: "Failed to calculate distance" });
+      }
+
+      const element = data.rows[0]?.elements[0];
+      if (element?.status !== 'OK') {
+        return res.status(400).json({ error: "Could not find route between addresses" });
+      }
+
+      // Extract distance in miles
+      const distanceText = element.distance.text;
+      const distanceValue = parseFloat(distanceText.replace(/[^\d.]/g, ''));
+
+      res.json({
+        distance: distanceValue,
+        duration: element.duration.text,
+        distanceText: element.distance.text
+      });
+
+    } catch (error) {
+      console.error("Distance calculation error:", error);
+      res.status(500).json({ error: "Failed to calculate distance" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
