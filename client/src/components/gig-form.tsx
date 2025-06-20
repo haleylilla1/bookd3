@@ -33,6 +33,12 @@ const gigFormSchema = z.object({
   duties: z.string().optional(),
   taxPercentage: z.number().min(0).max(50).default(23),
   mileage: z.string().optional(),
+  // Enhanced mileage tracking
+  startingAddress: z.string().optional(),
+  endingAddress: z.string().optional(),
+  stops: z.array(z.string()).default([]),
+  includeRoundtrip: z.boolean().default(true),
+  calculatedMileage: z.string().optional(),
   notes: z.string().optional(),
   status: z.enum(["upcoming", "completed", "pending_payment"]).default("upcoming"),
   parkingExpense: z.string().optional(),
@@ -50,6 +56,7 @@ interface GigFormProps {
 export default function GigForm({ onClose }: GigFormProps) {
   const [trackExpenses, setTrackExpenses] = useState(false);
   const [isCalculatingDistance, setIsCalculatingDistance] = useState(false);
+  const [trackMileage, setTrackMileage] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -72,6 +79,11 @@ export default function GigForm({ onClose }: GigFormProps) {
       duties: "",
       taxPercentage: user?.defaultTaxPercentage || 23,
       mileage: "",
+      startingAddress: user?.homeAddress || "",
+      endingAddress: "",
+      stops: [],
+      includeRoundtrip: true,
+      calculatedMileage: "",
       notes: "",
       status: "upcoming",
       parkingExpense: "",
@@ -150,6 +162,71 @@ export default function GigForm({ onClose }: GigFormProps) {
     }
   };
 
+  const handleCalculateMileage = async () => {
+    const startingAddress = form.getValues("startingAddress");
+    const endingAddress = form.getValues("endingAddress");
+    const stops = form.getValues("stops").filter(stop => stop.trim());
+    const includeRoundtrip = form.getValues("includeRoundtrip");
+
+    if (!startingAddress || !endingAddress) {
+      toast({
+        title: "Missing Addresses",
+        description: "Both starting and ending addresses are required for mileage calculation.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsCalculatingDistance(true);
+    
+    try {
+      let totalDistance = 0;
+      let totalTime = 0;
+      
+      // Create the complete route: start -> stops -> end
+      const waypoints = [startingAddress, ...stops, endingAddress];
+      
+      // Calculate distance between each consecutive pair of waypoints
+      for (let i = 0; i < waypoints.length - 1; i++) {
+        const result = await calculateDistance(waypoints[i], waypoints[i + 1]);
+        
+        if (result.status === 'success') {
+          totalDistance += result.distanceMiles;
+          totalTime += result.travelTimeMinutes;
+        } else {
+          throw new Error(`Failed to calculate distance between ${waypoints[i]} and ${waypoints[i + 1]}`);
+        }
+      }
+      
+      // Double the distance if round trip is included
+      if (includeRoundtrip) {
+        totalDistance *= 2;
+        totalTime *= 2;
+      }
+      
+      // Round to 1 decimal place
+      const roundedDistance = Math.round(totalDistance * 10) / 10;
+      
+      // Set the calculated mileage
+      form.setValue("calculatedMileage", roundedDistance.toString());
+      
+      toast({
+        title: "Mileage Calculated",
+        description: `${roundedDistance} miles total (${Math.round(totalTime)} min travel time)${includeRoundtrip ? ' including round trip' : ''}.`,
+      });
+      
+    } catch (error) {
+      console.error("Mileage calculation error:", error);
+      toast({
+        title: "Calculation Failed",
+        description: error instanceof Error ? error.message : "Failed to calculate mileage. Please check your addresses.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsCalculatingDistance(false);
+    }
+  };
+
   const onSubmit = async (data: GigFormData) => {
     let distanceMiles = null;
     let travelTimeMinutes = null;
@@ -180,7 +257,10 @@ export default function GigForm({ onClose }: GigFormProps) {
     const dailyTips = data.tips ? (parseFloat(data.tips) / totalDays).toFixed(2) : null;
     const dailyParkingExpense = (trackExpenses && data.parkingExpense) ? (parseFloat(data.parkingExpense) / totalDays).toFixed(2) : null;
     const dailyOtherExpenses = (trackExpenses && data.otherExpenses) ? (parseFloat(data.otherExpenses) / totalDays).toFixed(2) : null;
-    const dailyMileage = data.mileage ? Math.round(parseInt(data.mileage) / totalDays) : null;
+    
+    // Use calculated mileage if available, otherwise use manual override
+    const totalMileage = data.calculatedMileage || data.mileage;
+    const dailyMileage = totalMileage ? Math.round(parseFloat(totalMileage) / totalDays) : null;
 
     // Create a gig entry for each date
     for (const gigDate of gigDates) {
@@ -651,20 +731,167 @@ export default function GigForm({ onClose }: GigFormProps) {
                 />
               </div>
 
-              {/* Mileage */}
-              <FormField
-                control={form.control}
-                name="mileage"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Mileage</FormLabel>
-                    <FormControl>
-                      <Input type="number" placeholder="Round trip miles..." {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
+              {/* Enhanced Mileage Tracking */}
+              <div className="border border-gray-200 rounded-lg p-4">
+                <div className="flex items-center justify-between mb-3">
+                  <Label>Track Mileage</Label>
+                  <Switch checked={trackMileage} onCheckedChange={setTrackMileage} />
+                </div>
+                {trackMileage && (
+                  <div className="space-y-4">
+                    {/* Starting Address */}
+                    <FormField
+                      control={form.control}
+                      name="startingAddress"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Starting Address</FormLabel>
+                          <FormControl>
+                            <Input 
+                              placeholder="Your home or starting location..."
+                              {...field} 
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    {/* Ending Address */}
+                    <FormField
+                      control={form.control}
+                      name="endingAddress"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Ending Address</FormLabel>
+                          <FormControl>
+                            <Input 
+                              placeholder="Gig location or final destination..."
+                              {...field} 
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    {/* Stops */}
+                    <div>
+                      <Label className="text-sm font-medium">Additional Stops (Optional)</Label>
+                      <div className="space-y-2 mt-2">
+                        {form.watch("stops").map((stop, index) => (
+                          <div key={index} className="flex gap-2">
+                            <Input
+                              value={stop}
+                              onChange={(e) => {
+                                const stops = [...form.watch("stops")];
+                                stops[index] = e.target.value;
+                                form.setValue("stops", stops);
+                              }}
+                              placeholder={`Stop ${index + 1} address...`}
+                              className="flex-1"
+                            />
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                const stops = form.watch("stops").filter((_, i) => i !== index);
+                                form.setValue("stops", stops);
+                              }}
+                            >
+                              Remove
+                            </Button>
+                          </div>
+                        ))}
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            const stops = [...form.watch("stops"), ""];
+                            form.setValue("stops", stops);
+                          }}
+                        >
+                          Add Stop
+                        </Button>
+                      </div>
+                    </div>
+
+                    {/* Round Trip Toggle */}
+                    <FormField
+                      control={form.control}
+                      name="includeRoundtrip"
+                      render={({ field }) => (
+                        <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3">
+                          <div className="space-y-0.5">
+                            <FormLabel className="text-base">
+                              Include Round Trip
+                            </FormLabel>
+                            <div className="text-sm text-gray-500">
+                              Double the calculated distance for return journey
+                            </div>
+                          </div>
+                          <FormControl>
+                            <Switch
+                              checked={field.value}
+                              onCheckedChange={field.onChange}
+                            />
+                          </FormControl>
+                        </FormItem>
+                      )}
+                    />
+
+                    {/* Calculate Distance Button */}
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={handleCalculateMileage}
+                      disabled={isCalculatingDistance || !form.watch("startingAddress") || !form.watch("endingAddress")}
+                      className="w-full"
+                    >
+                      {isCalculatingDistance ? "Calculating..." : "Calculate Mileage"}
+                    </Button>
+
+                    {/* Calculated Mileage Display */}
+                    {form.watch("calculatedMileage") && (
+                      <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm font-medium text-green-800">Calculated Mileage:</span>
+                          <span className="text-lg font-bold text-green-900">
+                            {form.watch("calculatedMileage")} miles
+                          </span>
+                        </div>
+                        {form.watch("includeRoundtrip") && (
+                          <p className="text-xs text-green-600 mt-1">Includes round trip</p>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Manual Override */}
+                    <FormField
+                      control={form.control}
+                      name="mileage"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Manual Mileage Override</FormLabel>
+                          <FormControl>
+                            <Input 
+                              type="number" 
+                              placeholder="Enter miles manually if needed..."
+                              {...field} 
+                            />
+                          </FormControl>
+                          <div className="text-xs text-gray-500">
+                            Leave empty to use calculated mileage
+                          </div>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
                 )}
-              />
+              </div>
 
               {/* Notes */}
               <FormField
