@@ -266,6 +266,7 @@ export default function SimpleGoals() {
           <DialogContent className="max-w-md">
             <DialogHeader>
               <DialogTitle>Create New Goal</DialogTitle>
+              <DialogDescription>Set up a new financial goal to allocate your gig earnings toward.</DialogDescription>
             </DialogHeader>
             <div className="space-y-4">
               <div>
@@ -534,6 +535,7 @@ export default function SimpleGoals() {
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>Edit Allocation</DialogTitle>
+            <DialogDescription>Modify the amount allocated from this gig to your goal.</DialogDescription>
           </DialogHeader>
           {editingAllocation && (
             <div className="space-y-4">
