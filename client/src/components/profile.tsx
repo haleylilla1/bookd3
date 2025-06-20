@@ -6,10 +6,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { User, Plus, X, Percent, Save, Edit2 } from "lucide-react";
+import { User, Plus, X, Percent, Save, Edit2, Tags, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
-import type { User as UserType } from "@shared/schema";
+import type { User as UserType, ExpenseCategory } from "@shared/schema";
 
 export default function Profile() {
   const [isEditing, setIsEditing] = useState(false);
@@ -22,11 +22,23 @@ export default function Profile() {
   const [editedBusinessEmail, setEditedBusinessEmail] = useState("");
   const [newGigType, setNewGigType] = useState("");
   const [isAddingGigType, setIsAddingGigType] = useState(false);
+  
+  // Category management state
+  const [newCategoryName, setNewCategoryName] = useState("");
+  const [newSubcategory, setNewSubcategory] = useState("");
+  const [selectedCategoryForSub, setSelectedCategoryForSub] = useState<number | null>(null);
+  const [isAddingCategory, setIsAddingCategory] = useState(false);
+  const [isAddingSubcategory, setIsAddingSubcategory] = useState(false);
+  
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
   const { data: user } = useQuery<UserType>({
     queryKey: ["/api/user"],
+  });
+
+  const { data: categories = [] } = useQuery<ExpenseCategory[]>({
+    queryKey: ["/api/expense-categories"],
   });
 
   const updateUserMutation = useMutation({
@@ -103,6 +115,127 @@ export default function Profile() {
     
     setNewGigType("");
     setIsAddingGigType(false);
+  };
+
+  // Category management mutations
+  const addCategoryMutation = useMutation({
+    mutationFn: async (categoryData: { name: string; subcategories: string[] }) => {
+      return await apiRequest("/api/expense-categories", "POST", categoryData);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/expense-categories"] });
+      toast({
+        title: "Category Added",
+        description: "New expense category has been created.",
+      });
+      setNewCategoryName("");
+      setIsAddingCategory(false);
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to add category. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const updateCategoryMutation = useMutation({
+    mutationFn: async ({ id, subcategories }: { id: number; subcategories: string[] }) => {
+      return await apiRequest(`/api/expense-categories/${id}`, "PATCH", { subcategories });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/expense-categories"] });
+      toast({
+        title: "Category Updated",
+        description: "Subcategories have been updated.",
+      });
+      setNewSubcategory("");
+      setSelectedCategoryForSub(null);
+      setIsAddingSubcategory(false);
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to update category. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const deleteCategoryMutation = useMutation({
+    mutationFn: async (id: number) => {
+      return await apiRequest(`/api/expense-categories/${id}`, "DELETE");
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/expense-categories"] });
+      toast({
+        title: "Category Deleted",
+        description: "Expense category has been removed.",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to delete category. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleAddCategory = () => {
+    if (!newCategoryName.trim()) return;
+    
+    const categoryExists = categories.some(cat => 
+      cat.name.toLowerCase() === newCategoryName.trim().toLowerCase()
+    );
+    
+    if (categoryExists) {
+      toast({
+        title: "Duplicate Category",
+        description: "This category already exists.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    addCategoryMutation.mutate({
+      name: newCategoryName.trim(),
+      subcategories: []
+    });
+  };
+
+  const handleAddSubcategory = () => {
+    if (!newSubcategory.trim() || !selectedCategoryForSub) return;
+    
+    const category = categories.find(cat => cat.id === selectedCategoryForSub);
+    if (!category) return;
+
+    const currentSubs = category.subcategories || [];
+    if (currentSubs.includes(newSubcategory.trim())) {
+      toast({
+        title: "Duplicate Subcategory",
+        description: "This subcategory already exists.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    updateCategoryMutation.mutate({
+      id: selectedCategoryForSub,
+      subcategories: [...currentSubs, newSubcategory.trim()]
+    });
+  };
+
+  const handleRemoveSubcategory = (categoryId: number, subcategoryToRemove: string) => {
+    const category = categories.find(cat => cat.id === categoryId);
+    if (!category) return;
+
+    const updatedSubs = (category.subcategories || []).filter(sub => sub !== subcategoryToRemove);
+    updateCategoryMutation.mutate({
+      id: categoryId,
+      subcategories: updatedSubs
+    });
   };
 
   const handleRemoveGigType = (gigTypeToRemove: string) => {
@@ -403,6 +536,179 @@ export default function Profile() {
               <Button onClick={() => setIsAddingGigType(true)}>
                 <Plus className="w-4 h-4 mr-2" />
                 Add Your First Gig Type
+              </Button>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Budget Categories */}
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+          <div>
+            <CardTitle className="text-lg">Budget Categories</CardTitle>
+            <p className="text-sm text-gray-600 mt-1">
+              Customize expense categories and subcategories for budget tracking
+            </p>
+          </div>
+          <Dialog open={isAddingCategory} onOpenChange={setIsAddingCategory}>
+            <DialogTrigger asChild>
+              <Button variant="outline" size="sm">
+                <Plus className="w-4 h-4 mr-2" />
+                Add Category
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-sm">
+              <DialogHeader>
+                <DialogTitle>Add Budget Category</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="categoryName">Category Name</Label>
+                  <Input
+                    id="categoryName"
+                    value={newCategoryName}
+                    onChange={(e) => setNewCategoryName(e.target.value)}
+                    placeholder="e.g., Housing, Transportation"
+                    onKeyPress={(e) => e.key === 'Enter' && handleAddCategory()}
+                  />
+                </div>
+                <div className="flex gap-2">
+                  <Button 
+                    onClick={handleAddCategory} 
+                    disabled={!newCategoryName.trim() || addCategoryMutation.isPending}
+                    className="flex-1"
+                  >
+                    {addCategoryMutation.isPending ? "Adding..." : "Add Category"}
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    onClick={() => {
+                      setNewCategoryName("");
+                      setIsAddingCategory(false);
+                    }}
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
+        </CardHeader>
+        <CardContent>
+          {categories.length > 0 ? (
+            <div className="space-y-4">
+              {categories.map((category) => (
+                <div
+                  key={category.id}
+                  className="p-4 border border-gray-200 rounded-lg"
+                >
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                      <Tags className="w-4 h-4 text-gray-500" />
+                      <span className="font-medium text-gray-900">{category.name}</span>
+                      <Badge variant="secondary" className="text-xs">
+                        {(category.subcategories || []).length} subcategories
+                      </Badge>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Dialog 
+                        open={isAddingSubcategory && selectedCategoryForSub === category.id} 
+                        onOpenChange={(open) => {
+                          setIsAddingSubcategory(open);
+                          if (open) setSelectedCategoryForSub(category.id);
+                          else setSelectedCategoryForSub(null);
+                        }}
+                      >
+                        <DialogTrigger asChild>
+                          <Button variant="ghost" size="sm">
+                            <Plus className="w-3 h-3 mr-1" />
+                            Add Sub
+                          </Button>
+                        </DialogTrigger>
+                        <DialogContent className="max-w-sm">
+                          <DialogHeader>
+                            <DialogTitle>Add Subcategory to {category.name}</DialogTitle>
+                          </DialogHeader>
+                          <div className="space-y-4">
+                            <div className="space-y-2">
+                              <Label htmlFor="subcategoryName">Subcategory Name</Label>
+                              <Input
+                                id="subcategoryName"
+                                value={newSubcategory}
+                                onChange={(e) => setNewSubcategory(e.target.value)}
+                                placeholder="e.g., Rent, Utilities"
+                                onKeyPress={(e) => e.key === 'Enter' && handleAddSubcategory()}
+                              />
+                            </div>
+                            <div className="flex gap-2">
+                              <Button 
+                                onClick={handleAddSubcategory} 
+                                disabled={!newSubcategory.trim() || updateCategoryMutation.isPending}
+                                className="flex-1"
+                              >
+                                {updateCategoryMutation.isPending ? "Adding..." : "Add"}
+                              </Button>
+                              <Button 
+                                variant="outline" 
+                                onClick={() => {
+                                  setNewSubcategory("");
+                                  setSelectedCategoryForSub(null);
+                                  setIsAddingSubcategory(false);
+                                }}
+                              >
+                                Cancel
+                              </Button>
+                            </div>
+                          </div>
+                        </DialogContent>
+                      </Dialog>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => deleteCategoryMutation.mutate(category.id)}
+                        className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                      >
+                        <Trash2 className="w-3 h-3" />
+                      </Button>
+                    </div>
+                  </div>
+                  
+                  {category.subcategories && category.subcategories.length > 0 && (
+                    <div className="flex flex-wrap gap-2">
+                      {category.subcategories.map((subcategory, index) => (
+                        <div
+                          key={index}
+                          className="flex items-center gap-1 px-2 py-1 bg-gray-100 rounded text-sm"
+                        >
+                          <span>{subcategory}</span>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleRemoveSubcategory(category.id, subcategory)}
+                            className="h-4 w-4 p-0 text-gray-500 hover:text-red-600"
+                          >
+                            <X className="w-3 h-3" />
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-8 text-gray-500">
+              <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Tags className="w-6 h-6 text-gray-400" />
+              </div>
+              <h4 className="text-lg font-semibold text-gray-900 mb-2">No Categories Added</h4>
+              <p className="text-gray-600 mb-4">
+                Create custom categories to organize your expenses and budgets.
+              </p>
+              <Button onClick={() => setIsAddingCategory(true)}>
+                <Plus className="w-4 h-4 mr-2" />
+                Add Your First Category
               </Button>
             </div>
           )}
