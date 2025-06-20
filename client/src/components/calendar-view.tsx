@@ -700,6 +700,9 @@ interface GigEditFormProps {
 }
 
 function GigEditForm({ gig, onSave, onCancel, isLoading }: GigEditFormProps) {
+  const { toast } = useToast();
+  const { data: user } = useQuery({ queryKey: ["/api/user"] });
+
   const [formData, setFormData] = useState({
     eventName: gig.eventName,
     clientName: gig.clientName,
@@ -719,60 +722,47 @@ function GigEditForm({ gig, onSave, onCancel, isLoading }: GigEditFormProps) {
     otherExpenseReceipts: (gig as any).otherExpenseReceipts || [],
   });
 
-  const [mileageTracking, setMileageTracking] = useState({
-    startingAddress: "",
-    endingAddress: "",
-    isCalculating: false,
-    roundTrip: true,
-  });
-
-  // Auto-populate starting address with user's home address
-  useEffect(() => {
-    if (user?.homeAddress && !mileageTracking.startingAddress) {
-      setMileageTracking(prev => ({ 
-        ...prev, 
-        startingAddress: user.homeAddress 
-      }));
-    }
-  }, [user?.homeAddress]);
-
-  // Auto-populate addresses when component mounts
-  useEffect(() => {
-    if (user && (user as any).homeAddress) {
-      setMileageTracking(prev => ({
-        ...prev,
-        startingAddress: prev.startingAddress || (user as any).homeAddress,
-        endingAddress: prev.endingAddress || formData.gigAddress
-      }));
-    }
-  }, [user, formData.gigAddress]);
+  const [isCalculatingMileage, setIsCalculatingMileage] = useState(false);
 
   const calculateMileage = async () => {
-    if (!mileageTracking.startingAddress || !mileageTracking.endingAddress) {
+    const homeAddress = (user as any)?.homeAddress;
+    if (!homeAddress || !formData.gigAddress) {
+      toast({
+        title: "Missing Information",
+        description: "Home address and gig address are required.",
+        variant: "destructive",
+      });
       return;
     }
 
-    setMileageTracking(prev => ({ ...prev, isCalculating: true }));
-
+    setIsCalculatingMileage(true);
     try {
       const response = await fetch('/api/calculate-distance', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          origin: mileageTracking.startingAddress,
-          destination: mileageTracking.endingAddress,
+          origin: homeAddress,
+          destination: formData.gigAddress,
         }),
       });
 
       if (response.ok) {
         const { distanceMiles } = await response.json();
-        const finalMileage = mileageTracking.roundTrip ? distanceMiles * 2 : distanceMiles;
-        setFormData(prev => ({ ...prev, mileage: Math.round(finalMileage) }));
+        const roundTripMiles = Math.round(distanceMiles * 2);
+        setFormData(prev => ({ ...prev, mileage: roundTripMiles }));
+        toast({
+          title: "Mileage Calculated",
+          description: `${roundTripMiles} miles (round trip)`,
+        });
       }
     } catch (error) {
-      console.error('Failed to calculate mileage:', error);
+      toast({
+        title: "Calculation Failed",
+        description: "Please enter mileage manually.",
+        variant: "destructive",
+      });
     } finally {
-      setMileageTracking(prev => ({ ...prev, isCalculating: false }));
+      setIsCalculatingMileage(false);
     }
   };
 
@@ -884,77 +874,31 @@ function GigEditForm({ gig, onSave, onCancel, isLoading }: GigEditFormProps) {
         />
       </div>
 
-      <div>
-        <label className="block text-sm font-medium mb-1">Gig Address</label>
-        <Input
-          value={formData.gigAddress}
-          onChange={(e) => {
-            const newAddress = e.target.value;
-            setFormData({ ...formData, gigAddress: newAddress });
-            // Auto-update ending address for mileage calculation
-            setMileageTracking(prev => ({ ...prev, endingAddress: newAddress }));
-          }}
-          placeholder="123 Event Venue St, City, State"
-        />
-      </div>
-
-      {/* Mileage Tracking Section */}
-      <div className="border-t pt-3 space-y-3">
-        <h4 className="font-medium text-sm flex items-center gap-2">
-          <Car className="h-4 w-4" />
-          Mileage Tracking
-        </h4>
-        
-        <div className="grid grid-cols-1 gap-3">
-          <div>
-            <label className="block text-xs font-medium mb-1">Starting Address</label>
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <label className="block text-sm font-medium mb-1">Gig Address</label>
+          <Input
+            value={formData.gigAddress}
+            onChange={(e) => setFormData({ ...formData, gigAddress: e.target.value })}
+            placeholder="123 Event Venue St, City, State"
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium mb-1">Mileage</label>
+          <div className="flex gap-2">
             <Input
-              value={mileageTracking.startingAddress}
-              onChange={(e) => setMileageTracking(prev => ({ ...prev, startingAddress: e.target.value }))}
-              placeholder={(user as any)?.homeAddress || "Enter starting address"}
+              type="number"
+              value={formData.mileage}
+              onChange={(e) => setFormData({ ...formData, mileage: parseInt(e.target.value) || 0 })}
+              placeholder="0"
             />
-          </div>
-          
-          <div>
-            <label className="block text-xs font-medium mb-1">Ending Address</label>
-            <Input
-              value={mileageTracking.endingAddress}
-              onChange={(e) => setMileageTracking(prev => ({ ...prev, endingAddress: e.target.value }))}
-              placeholder="Enter destination address"
-            />
-          </div>
-          
-          <div className="flex items-center gap-2 mb-2">
-            <input
-              type="checkbox"
-              id="roundTrip"
-              checked={mileageTracking.roundTrip}
-              onChange={(e) => setMileageTracking(prev => ({ ...prev, roundTrip: e.target.checked }))}
-              className="w-4 h-4"
-            />
-            <label htmlFor="roundTrip" className="text-xs font-medium">
-              Round trip (double the distance)
-            </label>
-          </div>
-          
-          <div className="flex gap-2 items-end">
-            <div className="flex-1">
-              <label className="block text-xs font-medium mb-1">Calculated Mileage</label>
-              <Input
-                type="number"
-                value={formData.mileage}
-                onChange={(e) => setFormData({ ...formData, mileage: parseInt(e.target.value) || 0 })}
-                placeholder="0"
-                disabled={mileageTracking.isCalculating}
-              />
-            </div>
             <Button
               type="button"
               onClick={calculateMileage}
-              disabled={!mileageTracking.startingAddress || !mileageTracking.endingAddress || mileageTracking.isCalculating}
-              className="h-10"
+              disabled={!formData.gigAddress || isCalculatingMileage}
+              size="sm"
             >
-              {mileageTracking.isCalculating ? "Calculating..." : "Calculate"}
+              {isCalculatingMileage ? "..." : "Calculate"}
             </Button>
           </div>
         </div>
