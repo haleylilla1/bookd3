@@ -123,7 +123,8 @@ export default function Profile() {
   // Category management mutations
   const addCategoryMutation = useMutation({
     mutationFn: async (categoryData: { name: string; subcategories: string[] }) => {
-      return await apiRequest("/api/expense-categories", "POST", categoryData);
+      const response = await apiRequest("POST", "/api/expense-categories", categoryData);
+      return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/expense-categories"] });
@@ -134,7 +135,8 @@ export default function Profile() {
       setNewCategoryName("");
       setIsAddingCategory(false);
     },
-    onError: () => {
+    onError: (error) => {
+      console.error("Add category error:", error);
       toast({
         title: "Error",
         description: "Failed to add category. Please try again.",
@@ -145,7 +147,8 @@ export default function Profile() {
 
   const updateCategoryMutation = useMutation({
     mutationFn: async ({ id, ...updateData }: { id: number; subcategories?: string[]; subcategoryDefaults?: Record<string, { amount: string; type: "constant" | "variable" }> }) => {
-      return await apiRequest(`/api/expense-categories/${id}`, "PATCH", updateData);
+      const response = await apiRequest("PATCH", `/api/expense-categories/${id}`, updateData);
+      return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/expense-categories"] });
@@ -157,7 +160,8 @@ export default function Profile() {
       setSelectedCategoryForSub(null);
       setIsAddingSubcategory(false);
     },
-    onError: () => {
+    onError: (error) => {
+      console.error("Update category error:", error);
       toast({
         title: "Error",
         description: "Failed to update category. Please try again.",
@@ -168,7 +172,8 @@ export default function Profile() {
 
   const deleteCategoryMutation = useMutation({
     mutationFn: async (id: number) => {
-      return await apiRequest(`/api/expense-categories/${id}`, "DELETE");
+      const response = await apiRequest("DELETE", `/api/expense-categories/${id}`);
+      return response;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/expense-categories"] });
@@ -177,7 +182,8 @@ export default function Profile() {
         description: "Expense category has been removed.",
       });
     },
-    onError: () => {
+    onError: (error) => {
+      console.error("Delete category error:", error);
       toast({
         title: "Error",
         description: "Failed to delete category. Please try again.",
