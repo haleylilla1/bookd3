@@ -152,12 +152,15 @@ export default function SimpleGoals() {
   });
 
   const handleEditAllocation = (allocation: Allocation) => {
+    console.log("Editing allocation:", allocation);
     setEditingAllocation(allocation);
     setEditAllocationAmount(allocation.amount);
+    console.log("Set edit amount to:", allocation.amount);
   };
 
   const handleUpdateAllocation = () => {
     if (!editingAllocation || !editAllocationAmount) return;
+    console.log("Updating allocation with:", { id: editingAllocation.id, amount: editAllocationAmount });
     updateAllocationMutation.mutate({
       id: editingAllocation.id,
       amount: editAllocationAmount
