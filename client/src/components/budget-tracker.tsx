@@ -85,6 +85,10 @@ export default function BudgetTracker() {
     queryKey: ["/api/goals"],
   });
 
+  const { data: customCategories = [] } = useQuery<ExpenseCategory[]>({
+    queryKey: ["/api/expense-categories"],
+  });
+
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
