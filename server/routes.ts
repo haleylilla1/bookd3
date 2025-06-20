@@ -204,7 +204,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 Extract individual gigs from the text and return a JSON array. For each gig, extract these fields when available:
 - eventName: Name of the event or brief description
 - clientName: Company, person, or organization that hired them
-- startDate: Date in YYYY-MM-DD format (infer year if missing, assume current/recent year)
+- startDate: Date in YYYY-MM-DD format (infer year if missing, assume 2025 as current year)
 - endDate: End date if different from start date
 - expectedPay: Expected payment amount (numbers only, no currency symbols)
 - actualPay: Actual payment received (numbers only, no currency symbols) 
