@@ -169,6 +169,164 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // AI-powered gig parsing endpoint
+  app.post("/api/gigs/parse-bulk", async (req, res) => {
+    try {
+      const { text } = req.body;
+      
+      if (!text || typeof text !== 'string') {
+        return res.status(400).json({ error: "Text input is required" });
+      }
+
+      const apiKey = process.env.OPENAI_API_KEY;
+      
+      if (!apiKey) {
+        return res.status(500).json({ error: "OpenAI API key not configured" });
+      }
+
+      const systemPrompt = `You are a data extraction specialist for gig worker records. Parse messy gig notes and extract structured data.
+
+Extract individual gigs from the text and return a JSON array. For each gig, extract these fields when available:
+- eventName: Name of the event or brief description
+- clientName: Company, person, or organization that hired them
+- startDate: Date in YYYY-MM-DD format (infer year if missing, assume current/recent year)
+- endDate: End date if different from start date
+- expectedPay: Expected payment amount (numbers only, no currency symbols)
+- actualPay: Actual payment received (numbers only, no currency symbols) 
+- gigType: One of: "Brand Ambassador", "Catering", "Bartending", "Event Staff", "Promotional", "Other"
+- location: Venue, address, or general location
+- duties: What they did at the gig
+- notes: Any additional details
+
+Also assign a confidence level:
+- "high": Clear, unambiguous data extraction
+- "medium": Some interpretation required but reasonably confident
+- "low": Significant ambiguity or missing critical information
+
+Return JSON in this exact format:
+{
+  "parsedGigs": [
+    {
+      "originalText": "original text segment",
+      "confidence": "high|medium|low",
+      "extractedData": {
+        "eventName": "string or null",
+        "clientName": "string or null",
+        "startDate": "YYYY-MM-DD or null",
+        "endDate": "YYYY-MM-DD or null",
+        "expectedPay": "number as string or null",
+        "actualPay": "number as string or null", 
+        "gigType": "string or null",
+        "location": "string or null",
+        "duties": "string or null",
+        "notes": "string or null"
+      }
+    }
+  ]
+}
+
+Be generous in extracting gigs - if there's any indication of separate work events, create separate entries.`;
+
+      const response = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${apiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: 'gpt-4o',
+          messages: [
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: text }
+          ],
+          response_format: { type: 'json_object' },
+          temperature: 0.1,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`OpenAI API error: ${response.status}`);
+      }
+
+      const aiResponse = await response.json();
+      const parsedResult = JSON.parse(aiResponse.choices[0].message.content);
+
+      res.json(parsedResult);
+    } catch (error) {
+      console.error("Gig parsing error:", error);
+      res.status(500).json({ error: "Failed to parse gig data" });
+    }
+  });
+
+  // Bulk gig import endpoint
+  app.post("/api/gigs/bulk-import", async (req, res) => {
+    try {
+      const userId = getCurrentUserId(req);
+      const { gigs } = req.body;
+
+      if (!Array.isArray(gigs)) {
+        return res.status(400).json({ error: "Gigs array is required" });
+      }
+
+      let imported = 0;
+      let skipped = 0;
+      const errors: string[] = [];
+
+      for (const gigData of gigs) {
+        try {
+          const { extractedData } = gigData;
+          
+          // Validate required fields
+          if (!extractedData.startDate || !extractedData.clientName) {
+            errors.push(`Skipped gig: Missing required date or client name`);
+            skipped++;
+            continue;
+          }
+
+          // Create gig object matching the required schema
+          const gigToCreate = {
+            userId,
+            date: extractedData.startDate,
+            gigType: extractedData.gigType || "Other",
+            eventName: extractedData.eventName || "Imported Gig",
+            clientName: extractedData.clientName,
+            gigAddress: extractedData.location || "",
+            expectedPay: extractedData.expectedPay || extractedData.actualPay || "0",
+            actualPay: extractedData.actualPay || extractedData.expectedPay || "0",
+            paymentMethod: "Cash",
+            duties: extractedData.duties || "",
+            taxPercentage: 23,
+            mileage: 0, // Integer field, not string
+            notes: extractedData.notes || `Imported from bulk upload: ${gigData.originalText}`,
+            status: "completed" as const,
+            tips: "0",
+            parkingExpense: "0",
+            parkingReceipts: [],
+            otherExpenses: "0",
+            otherExpenseReceipts: [],
+          };
+
+          await storage.createGig(gigToCreate);
+          imported++;
+        } catch (error) {
+          console.error("Error importing individual gig:", error);
+          const { extractedData } = gigData;
+          errors.push(`Failed to import gig for ${extractedData.clientName || 'unknown client'}`);
+          skipped++;
+        }
+      }
+
+      res.json({
+        imported,
+        skipped,
+        errors,
+      });
+    } catch (error) {
+      console.error("Bulk import error:", error);
+      res.status(500).json({ error: "Failed to import gigs" });
+    }
+  });
+
   app.post("/api/gigs", async (req, res) => {
     try {
       const userId = getCurrentUserId(req);
