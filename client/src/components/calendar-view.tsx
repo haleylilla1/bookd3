@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -95,8 +95,8 @@ export default function CalendarView() {
     },
   });
 
-  // Generate calendar days for the current month
-  const generateCalendarDays = () => {
+  // Memoize calendar days generation
+  const calendarDays = useMemo(() => {
     const year = currentDate.getFullYear();
     const month = currentDate.getMonth();
     const firstDay = new Date(year, month, 1);
@@ -112,13 +112,28 @@ export default function CalendarView() {
     }
     
     return days;
-  };
+  }, [currentDate]);
+
+  // Memoize gigs by date for better performance
+  const gigsByDate = useMemo(() => {
+    if (!gigs) return new Map();
+    const gigMap = new Map<string, Gig[]>();
+    
+    gigs.forEach(gig => {
+      const dateString = gig.date;
+      if (!gigMap.has(dateString)) {
+        gigMap.set(dateString, []);
+      }
+      gigMap.get(dateString)!.push(gig);
+    });
+    
+    return gigMap;
+  }, [gigs]);
 
   // Get gigs for a specific date
   const getGigsForDate = (date: Date) => {
-    if (!gigs) return [];
     const dateString = date.toISOString().split('T')[0];
-    return gigs.filter(gig => gig.date === dateString);
+    return gigsByDate.get(dateString) || [];
   };
 
   // Handle day click
@@ -137,40 +152,43 @@ export default function CalendarView() {
     });
   };
 
-  // Group consecutive gigs with same details into multi-day entries
-  const groupMultiDayGigs = (gigs: Gig[]) => {
-    if (gigs.length === 0) return [];
+  // Optimize multi-day grouping with memoization
+  const groupedGigs = useMemo(() => {
+    if (!gigs || gigs.length === 0) return [];
     
     const sortedGigs = [...gigs].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
     const grouped: (Gig & { isMultiDay?: boolean; startDate?: string; endDate?: string; gigIds?: number[] })[] = [];
+    const processed = new Set<number>();
     
     for (let i = 0; i < sortedGigs.length; i++) {
+      if (processed.has(sortedGigs[i].id)) continue;
+      
       const currentGig = sortedGigs[i];
-      
-      // Check if this gig can be grouped with subsequent gigs
       const similarGigs = [currentGig];
-      let j = i + 1;
+      processed.add(currentGig.id);
       
-      while (j < sortedGigs.length) {
+      // Look for consecutive similar gigs
+      for (let j = i + 1; j < sortedGigs.length; j++) {
         const nextGig = sortedGigs[j];
+        if (processed.has(nextGig.id)) continue;
+        
         const currentDate = new Date(currentGig.date);
         const nextDate = new Date(nextGig.date);
-        const dayDiff = (nextDate.getTime() - currentDate.getTime()) / (1000 * 60 * 60 * 24);
+        const dayDiff = Math.abs((nextDate.getTime() - currentDate.getTime()) / (1000 * 60 * 60 * 24));
         
-        // Group if same event, client, type and consecutive days
+        // Group if same event, client, type and within reasonable range
         if (nextGig.eventName === currentGig.eventName &&
             nextGig.clientName === currentGig.clientName &&
             nextGig.gigType === currentGig.gigType &&
-            dayDiff <= similarGigs.length) {
+            dayDiff <= 7) { // Within a week
           similarGigs.push(nextGig);
-          j++;
-        } else {
-          break;
+          processed.add(nextGig.id);
         }
       }
       
       if (similarGigs.length > 1) {
-        // Create multi-day gig entry
+        // Sort similar gigs by date
+        similarGigs.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
         const multiDayGig = {
           ...currentGig,
           isMultiDay: true,
@@ -179,26 +197,73 @@ export default function CalendarView() {
           gigIds: similarGigs.map(g => g.id)
         };
         grouped.push(multiDayGig);
-        i = j - 1; // Skip the grouped gigs
       } else {
         grouped.push(currentGig);
       }
     }
     
     return grouped;
-  };
+  }, [gigs]);
 
-  // Filter and search gigs
-  const filteredIndividualGigs = gigs
-    .filter(gig => {
+  // Memoize filtered gigs for better performance
+  const filteredGigs = useMemo(() => {
+    if (!gigs) return [];
+    
+    const filtered = gigs.filter(gig => {
       if (filterStatus !== "all" && gig.status !== filterStatus) return false;
-      if (searchQuery && !gig.eventName.toLowerCase().includes(searchQuery.toLowerCase()) &&
+      if (searchQuery && 
+          !gig.eventName.toLowerCase().includes(searchQuery.toLowerCase()) &&
           !gig.clientName.toLowerCase().includes(searchQuery.toLowerCase())) return false;
       return true;
     });
 
-  const filteredGigs = groupMultiDayGigs(filteredIndividualGigs)
-    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    // Apply grouping to filtered gigs
+    const sortedGigs = [...filtered].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+    const grouped: (Gig & { isMultiDay?: boolean; startDate?: string; endDate?: string; gigIds?: number[] })[] = [];
+    const processed = new Set<number>();
+    
+    for (let i = 0; i < sortedGigs.length; i++) {
+      if (processed.has(sortedGigs[i].id)) continue;
+      
+      const currentGig = sortedGigs[i];
+      const similarGigs = [currentGig];
+      processed.add(currentGig.id);
+      
+      // Look for consecutive similar gigs
+      for (let j = i + 1; j < sortedGigs.length; j++) {
+        const nextGig = sortedGigs[j];
+        if (processed.has(nextGig.id)) continue;
+        
+        const currentDate = new Date(currentGig.date);
+        const nextDate = new Date(nextGig.date);
+        const dayDiff = Math.abs((nextDate.getTime() - currentDate.getTime()) / (1000 * 60 * 60 * 24));
+        
+        if (nextGig.eventName === currentGig.eventName &&
+            nextGig.clientName === currentGig.clientName &&
+            nextGig.gigType === currentGig.gigType &&
+            dayDiff <= 7) {
+          similarGigs.push(nextGig);
+          processed.add(nextGig.id);
+        }
+      }
+      
+      if (similarGigs.length > 1) {
+        similarGigs.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+        const multiDayGig = {
+          ...currentGig,
+          isMultiDay: true,
+          startDate: similarGigs[0].date,
+          endDate: similarGigs[similarGigs.length - 1].date,
+          gigIds: similarGigs.map(g => g.id)
+        };
+        grouped.push(multiDayGig);
+      } else {
+        grouped.push(currentGig);
+      }
+    }
+    
+    return grouped.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  }, [gigs, filterStatus, searchQuery]);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -320,7 +385,7 @@ export default function CalendarView() {
           
           {/* Calendar Days */}
           <div className="grid grid-cols-7 gap-1">
-            {generateCalendarDays().map((date, index) => {
+            {calendarDays.map((date: Date, index: number) => {
               const isCurrentMonth = date.getMonth() === currentDate.getMonth();
               const isToday = date.toDateString() === new Date().toDateString();
               const dayGigs = getGigsForDate(date);
@@ -367,7 +432,7 @@ export default function CalendarView() {
                           </div>
                         ) : (
                           <div className="flex flex-wrap gap-0.5 justify-center items-center">
-                            {dayGigs.slice(0, 3).map((gig, gigIndex) => (
+                            {dayGigs.slice(0, 3).map((gig: Gig, gigIndex: number) => (
                               <div 
                                 key={gigIndex}
                                 className={`w-4 h-4 rounded-full ${getGigStatusColor(gig.status)} opacity-30`}
