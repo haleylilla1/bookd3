@@ -353,9 +353,9 @@ May 5th promotional event at Mall, $180`;
                   )}
                 />
 
-                <div className="bg-blue-50 rounded-lg p-4">
-                  <h4 className="font-medium text-blue-900 mb-2">Tips for Best Results:</h4>
-                  <ul className="text-sm text-blue-800 space-y-1">
+                <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4">
+                  <h4 className="font-medium text-blue-900 dark:text-blue-100 mb-2">Tips for Best Results:</h4>
+                  <ul className="text-sm text-blue-800 dark:text-blue-200 space-y-1">
                     <li>• Include dates, client names, and payment amounts when possible</li>
                     <li>• Separate different gigs with line breaks</li>
                     <li>• Don't worry about formatting - our AI handles messy notes</li>
@@ -364,8 +364,8 @@ May 5th promotional event at Mall, $180`;
                   </ul>
                 </div>
 
-                <div className="bg-amber-50 rounded-lg p-3 mt-4">
-                  <p className="text-sm text-amber-800">
+                <div className="bg-amber-50 dark:bg-amber-900/20 rounded-lg p-3 mt-4">
+                  <p className="text-sm text-amber-800 dark:text-amber-200">
                     <strong>Having trouble?</strong> Try breaking your notes into smaller sections or simplifying the text format.
                   </p>
                 </div>
@@ -493,9 +493,9 @@ May 5th promotional event at Mall, $180`;
                         </div>
 
                         {/* Key Information - Always Visible */}
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4 p-4 bg-gray-50 rounded-lg">
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
                           <div>
-                            <label className="text-xs font-medium text-gray-700 flex items-center gap-1 mb-1">
+                            <label className="text-xs font-medium text-gray-700 dark:text-gray-300 flex items-center gap-1 mb-1">
                               <Building className="w-3 h-3" />
                               Client Name *
                             </label>
@@ -503,12 +503,14 @@ May 5th promotional event at Mall, $180`;
                               value={gig.extractedData.clientName || ''}
                               onChange={(e) => handleGigEdit(gig.id, 'clientName', e.target.value)}
                               placeholder="Required - Client or company name"
-                              className={`${!gig.extractedData.clientName ? 'border-red-300 focus:border-red-500' : ''}`}
+                              className={`${!gig.extractedData.clientName ? 'border-red-300 focus:border-red-500 dark:border-red-700' : ''}`}
+                              aria-required="true"
+                              aria-invalid={!gig.extractedData.clientName}
                             />
                           </div>
 
                           <div>
-                            <label className="text-xs font-medium text-gray-700 flex items-center gap-1 mb-1">
+                            <label className="text-xs font-medium text-gray-700 dark:text-gray-300 flex items-center gap-1 mb-1">
                               <Calendar className="w-3 h-3" />
                               Date *
                             </label>
@@ -516,12 +518,14 @@ May 5th promotional event at Mall, $180`;
                               type="date"
                               value={gig.extractedData.startDate || ''}
                               onChange={(e) => handleGigEdit(gig.id, 'startDate', e.target.value)}
-                              className={`${!gig.extractedData.startDate ? 'border-red-300 focus:border-red-500' : ''}`}
+                              className={`${!gig.extractedData.startDate ? 'border-red-300 focus:border-red-500 dark:border-red-700' : ''}`}
+                              aria-required="true"
+                              aria-invalid={!gig.extractedData.startDate}
                             />
                           </div>
 
                           <div>
-                            <label className="text-xs font-medium text-gray-700 flex items-center gap-1 mb-1">
+                            <label className="text-xs font-medium text-gray-700 dark:text-gray-300 flex items-center gap-1 mb-1">
                               <DollarSign className="w-3 h-3" />
                               Payment Amount
                             </label>
@@ -529,6 +533,9 @@ May 5th promotional event at Mall, $180`;
                               value={gig.extractedData.actualPay || ''}
                               onChange={(e) => handleGigEdit(gig.id, 'actualPay', e.target.value)}
                               placeholder="Amount earned"
+                              type="number"
+                              min="0"
+                              step="0.01"
                             />
                           </div>
                         </div>
@@ -540,10 +547,10 @@ May 5th promotional event at Mall, $180`;
                             <span className="text-xs text-gray-500 group-open:hidden">(click to expand)</span>
                           </summary>
                           
-                          <div className="space-y-4 mt-4 p-4 bg-blue-50 rounded-lg">
+                          <div className="space-y-4 mt-4 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                               <div>
-                                <label className="text-xs font-medium text-gray-700 flex items-center gap-1 mb-1">
+                                <label className="text-xs font-medium text-gray-700 dark:text-gray-300 flex items-center gap-1 mb-1">
                                   <FileText className="w-3 h-3" />
                                   Event Name
                                 </label>
@@ -555,7 +562,7 @@ May 5th promotional event at Mall, $180`;
                               </div>
 
                               <div>
-                                <label className="text-xs font-medium text-gray-700 mb-1">Gig Type</label>
+                                <label className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Gig Type</label>
                                 <Select
                                   value={gig.extractedData.gigType || ''}
                                   onValueChange={(value) => handleGigEdit(gig.id, 'gigType', value)}
@@ -572,7 +579,7 @@ May 5th promotional event at Mall, $180`;
                               </div>
 
                               <div className="md:col-span-2">
-                                <label className="text-xs font-medium text-gray-700 mb-1">Location</label>
+                                <label className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Location</label>
                                 <Input
                                   value={gig.extractedData.location || ''}
                                   onChange={(e) => handleGigEdit(gig.id, 'location', e.target.value)}
@@ -582,7 +589,7 @@ May 5th promotional event at Mall, $180`;
                             </div>
 
                             <div>
-                              <label className="text-xs font-medium text-gray-700 mb-1">Job Duties</label>
+                              <label className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Job Duties</label>
                               <Textarea
                                 value={gig.extractedData.duties || ''}
                                 onChange={(e) => handleGigEdit(gig.id, 'duties', e.target.value)}
@@ -592,7 +599,7 @@ May 5th promotional event at Mall, $180`;
                             </div>
 
                             <div>
-                              <label className="text-xs font-medium text-gray-700 mb-1">Additional Notes</label>
+                              <label className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Additional Notes</label>
                               <Textarea
                                 value={gig.extractedData.notes || ''}
                                 onChange={(e) => handleGigEdit(gig.id, 'notes', e.target.value)}
@@ -646,23 +653,23 @@ May 5th promotional event at Mall, $180`;
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="bg-green-50 rounded-lg p-4">
+            <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-4">
               <div className="grid grid-cols-2 gap-4 text-center">
                 <div>
-                  <div className="text-2xl font-bold text-green-700">{importResults.imported}</div>
-                  <div className="text-sm text-green-600">Gigs Imported</div>
+                  <div className="text-2xl font-bold text-green-700 dark:text-green-400">{importResults.imported}</div>
+                  <div className="text-sm text-green-600 dark:text-green-300">Gigs Imported</div>
                 </div>
                 <div>
-                  <div className="text-2xl font-bold text-gray-600">{importResults.skipped}</div>
-                  <div className="text-sm text-gray-500">Skipped</div>
+                  <div className="text-2xl font-bold text-gray-600 dark:text-gray-400">{importResults.skipped}</div>
+                  <div className="text-sm text-gray-500 dark:text-gray-400">Skipped</div>
                 </div>
               </div>
             </div>
 
             {importResults.errors.length > 0 && (
-              <div className="bg-red-50 rounded-lg p-4">
-                <h4 className="font-medium text-red-800 mb-2">Issues:</h4>
-                <ul className="text-sm text-red-700 space-y-1">
+              <div className="bg-red-50 dark:bg-red-900/20 rounded-lg p-4">
+                <h4 className="font-medium text-red-800 dark:text-red-300 mb-2">Issues:</h4>
+                <ul className="text-sm text-red-700 dark:text-red-300 space-y-1">
                   {importResults.errors.map((error, i) => (
                     <li key={i}>• {error}</li>
                   ))}
@@ -671,10 +678,12 @@ May 5th promotional event at Mall, $180`;
             )}
 
             <div className="flex gap-3 justify-center">
-              <Button onClick={onClose}>
+              <Button onClick={onClose} className="flex items-center gap-2">
+                <CheckCircle className="w-4 h-4" />
                 View Dashboard
               </Button>
-              <Button variant="outline" onClick={() => setStep('input')}>
+              <Button variant="outline" onClick={() => setStep('input')} className="flex items-center gap-2">
+                <Upload className="w-4 h-4" />
                 Import More Gigs
               </Button>
             </div>
