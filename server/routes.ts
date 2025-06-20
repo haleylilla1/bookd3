@@ -1107,6 +1107,61 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.post("/api/expense-categories", async (req, res) => {
+    try {
+      const categoryData = insertExpenseCategorySchema.parse({ ...req.body, userId: currentUserId });
+      const category = await storage.createExpenseCategory(categoryData);
+      res.status(201).json(category);
+    } catch (error) {
+      console.error("Create expense category error:", error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid category data", errors: error.errors });
+      }
+      res.status(500).json({ message: "Failed to create expense category" });
+    }
+  });
+
+  app.patch("/api/expense-categories/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid category ID" });
+      }
+
+      const updateData = req.body;
+      const category = await storage.updateExpenseCategory(id, updateData);
+      
+      if (!category) {
+        return res.status(404).json({ message: "Category not found" });
+      }
+      
+      res.json(category);
+    } catch (error) {
+      console.error("Update expense category error:", error);
+      res.status(500).json({ message: "Failed to update expense category" });
+    }
+  });
+
+  app.delete("/api/expense-categories/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid category ID" });
+      }
+
+      const deleted = await storage.deleteExpenseCategory(id);
+      
+      if (!deleted) {
+        return res.status(404).json({ message: "Category not found" });
+      }
+      
+      res.status(204).send();
+    } catch (error) {
+      console.error("Delete expense category error:", error);
+      res.status(500).json({ message: "Failed to delete expense category" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
