@@ -4,13 +4,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { User, Plus, X, Percent, Save, Edit2, Tags, Trash2, DollarSign, Settings } from "lucide-react";
+import { User, Plus, X, Percent, Edit2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
-import type { User as UserType, ExpenseCategory } from "@shared/schema";
+import type { User as UserType } from "@shared/schema";
 
 export default function Profile() {
   const [isEditing, setIsEditing] = useState(false);
@@ -24,24 +22,11 @@ export default function Profile() {
   const [newGigType, setNewGigType] = useState("");
   const [isAddingGigType, setIsAddingGigType] = useState(false);
   
-  // Category management state
-  const [newCategoryName, setNewCategoryName] = useState("");
-  const [newSubcategory, setNewSubcategory] = useState("");
-  const [selectedCategoryForSub, setSelectedCategoryForSub] = useState<number | null>(null);
-  const [isAddingCategory, setIsAddingCategory] = useState(false);
-  const [isAddingSubcategory, setIsAddingSubcategory] = useState(false);
-  const [editingDefaults, setEditingDefaults] = useState<number | null>(null);
-  const [defaultAmounts, setDefaultAmounts] = useState<Record<string, { amount: string; type: "constant" | "variable" }>>({});
-  
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
   const { data: user } = useQuery<UserType>({
     queryKey: ["/api/user"],
-  });
-
-  const { data: categories = [] } = useQuery<ExpenseCategory[]>({
-    queryKey: ["/api/expense-categories"],
   });
 
   const updateUserMutation = useMutation({
@@ -118,148 +103,6 @@ export default function Profile() {
     
     setNewGigType("");
     setIsAddingGigType(false);
-  };
-
-  // Category management mutations
-  const addCategoryMutation = useMutation({
-    mutationFn: async (categoryData: { name: string; subcategories: string[] }) => {
-      const response = await apiRequest("POST", "/api/expense-categories", categoryData);
-      return response.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/expense-categories"] });
-      toast({
-        title: "Category Added",
-        description: "New expense category has been created.",
-      });
-      setNewCategoryName("");
-      setIsAddingCategory(false);
-    },
-    onError: (error) => {
-      console.error("Add category error:", error);
-      toast({
-        title: "Error",
-        description: "Failed to add category. Please try again.",
-        variant: "destructive",
-      });
-    },
-  });
-
-  const updateCategoryMutation = useMutation({
-    mutationFn: async ({ id, ...updateData }: { id: number; subcategories?: string[]; subcategoryDefaults?: Record<string, { amount: string; type: "constant" | "variable" }> }) => {
-      const response = await apiRequest("PATCH", `/api/expense-categories/${id}`, updateData);
-      return response.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/expense-categories"] });
-      toast({
-        title: "Category Updated",
-        description: "Subcategories have been updated.",
-      });
-      setNewSubcategory("");
-      setSelectedCategoryForSub(null);
-      setIsAddingSubcategory(false);
-    },
-    onError: (error) => {
-      console.error("Update category error:", error);
-      toast({
-        title: "Error",
-        description: "Failed to update category. Please try again.",
-        variant: "destructive",
-      });
-    },
-  });
-
-  const deleteCategoryMutation = useMutation({
-    mutationFn: async (id: number) => {
-      const response = await apiRequest("DELETE", `/api/expense-categories/${id}`);
-      return response;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/expense-categories"] });
-      toast({
-        title: "Category Deleted",
-        description: "Expense category has been removed.",
-      });
-    },
-    onError: (error) => {
-      console.error("Delete category error:", error);
-      toast({
-        title: "Error",
-        description: "Failed to delete category. Please try again.",
-        variant: "destructive",
-      });
-    },
-  });
-
-  const handleAddCategory = () => {
-    if (!newCategoryName.trim()) return;
-    
-    const categoryExists = categories.some(cat => 
-      cat.name.toLowerCase() === newCategoryName.trim().toLowerCase()
-    );
-    
-    if (categoryExists) {
-      toast({
-        title: "Duplicate Category",
-        description: "This category already exists.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    addCategoryMutation.mutate({
-      name: newCategoryName.trim(),
-      subcategories: []
-    });
-  };
-
-  const handleAddSubcategory = () => {
-    if (!newSubcategory.trim() || !selectedCategoryForSub) return;
-    
-    const category = categories.find(cat => cat.id === selectedCategoryForSub);
-    if (!category) return;
-
-    const currentSubs = category.subcategories || [];
-    if (currentSubs.includes(newSubcategory.trim())) {
-      toast({
-        title: "Duplicate Subcategory",
-        description: "This subcategory already exists.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    updateCategoryMutation.mutate({
-      id: selectedCategoryForSub,
-      subcategories: [...currentSubs, newSubcategory.trim()]
-    });
-  };
-
-  const handleUpdateDefaults = (categoryId: number) => {
-    updateCategoryMutation.mutate({
-      id: categoryId,
-      subcategoryDefaults: defaultAmounts
-    } as any);
-    setEditingDefaults(null);
-    setDefaultAmounts({});
-  };
-
-  const startEditingDefaults = (category: ExpenseCategory) => {
-    setEditingDefaults(category.id);
-    const defaults = category.subcategoryDefaults as Record<string, { amount: string; type: "constant" | "variable" }> || {};
-    setDefaultAmounts(defaults);
-  };
-
-  const handleRemoveSubcategory = (categoryId: number, subcategoryToRemove: string) => {
-    const category = categories.find(cat => cat.id === categoryId);
-    if (!category) return;
-
-    const updatedSubs = (category.subcategories || []).filter(sub => sub !== subcategoryToRemove);
-    updateCategoryMutation.mutate({
-      id: categoryId,
-      subcategories: updatedSubs
-    });
   };
 
   const handleRemoveGigType = (gigTypeToRemove: string) => {
@@ -364,7 +207,7 @@ export default function Profile() {
                       id="businessName"
                       value={editedBusinessName}
                       onChange={(e) => setEditedBusinessName(e.target.value)}
-                      placeholder="Your Business or Professional Name"
+                      placeholder="Your business or freelance name"
                     />
                   </div>
                   
@@ -374,7 +217,7 @@ export default function Profile() {
                       id="businessAddress"
                       value={editedBusinessAddress}
                       onChange={(e) => setEditedBusinessAddress(e.target.value)}
-                      placeholder="123 Business St, City, State 12345"
+                      placeholder="Business address for invoices"
                     />
                   </div>
                   
@@ -396,17 +239,16 @@ export default function Profile() {
                         type="email"
                         value={editedBusinessEmail}
                         onChange={(e) => setEditedBusinessEmail(e.target.value)}
-                        placeholder="hello@yourbusiness.com"
+                        placeholder="business@example.com"
                       />
                     </div>
                   </div>
                 </div>
               </div>
-              
-              <div className="flex gap-2 pt-2">
+
+              <div className="flex gap-2 pt-4">
                 <Button onClick={handleSave} disabled={updateUserMutation.isPending}>
-                  <Save className="w-4 h-4 mr-2" />
-                  Save Changes
+                  {updateUserMutation.isPending ? "Saving..." : "Save Changes"}
                 </Button>
                 <Button variant="outline" onClick={() => setIsEditing(false)}>
                   Cancel
@@ -415,41 +257,34 @@ export default function Profile() {
             </>
           ) : (
             <>
-              <div className="space-y-3">
-                <div>
-                  <Label className="text-sm text-gray-600">Name</Label>
-                  <p className="text-lg font-medium text-gray-900">{user.name}</p>
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label className="text-xs text-gray-500">Name</Label>
+                    <p className="text-gray-900 font-medium">{user.name || "Not set"}</p>
+                  </div>
+                  <div>
+                    <Label className="text-xs text-gray-500">Default Tax Rate</Label>
+                    <p className="text-gray-900 font-medium">{user.defaultTaxPercentage || 23}%</p>
+                  </div>
                 </div>
                 
                 <div>
-                  <Label className="text-sm text-gray-600">Email</Label>
-                  <p className="text-gray-900">{user.email}</p>
-                </div>
-                
-                <div>
-                  <Label className="text-sm text-gray-600">Home Address</Label>
+                  <Label className="text-xs text-gray-500">Home Address</Label>
                   <p className="text-gray-900">{user.homeAddress || "Not set"}</p>
                   {user.homeAddress && (
                     <p className="text-xs text-gray-500 mt-1">
-                      Used for distance calculations to gig locations
+                      Used for mileage calculations
                     </p>
                   )}
-                </div>
-                
-                <div>
-                  <Label className="text-sm text-gray-600">Default Tax Percentage</Label>
-                  <div className="flex items-center gap-2">
-                    <p className="text-gray-900">{user.defaultTaxPercentage || 23}%</p>
-                    <Badge variant="secondary" className="text-xs">
-                      Applied to new gigs & invoices
-                    </Badge>
-                  </div>
                 </div>
 
                 {/* Business Information Display */}
                 <div className="pt-4 border-t">
-                  <Label className="text-sm text-gray-600 font-medium">Business Information</Label>
-                  <div className="mt-2 space-y-2">
+                  <div className="flex items-center justify-between mb-3">
+                    <h4 className="text-sm font-semibold text-gray-900">Business Information</h4>
+                  </div>
+                  <div className="space-y-3">
                     <div>
                       <Label className="text-xs text-gray-500">Business Name</Label>
                       <p className="text-gray-900">{user.businessName || "Not set"}</p>
@@ -563,300 +398,6 @@ export default function Profile() {
               </Button>
             </div>
           )}
-        </CardContent>
-      </Card>
-
-      {/* Budget Categories */}
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
-          <div>
-            <CardTitle className="text-lg">Budget Categories</CardTitle>
-            <p className="text-sm text-gray-600 mt-1">
-              Customize expense categories and subcategories for budget tracking
-            </p>
-          </div>
-          <Dialog open={isAddingCategory} onOpenChange={setIsAddingCategory}>
-            <DialogTrigger asChild>
-              <Button variant="outline" size="sm">
-                <Plus className="w-4 h-4 mr-2" />
-                Add Category
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-sm">
-              <DialogHeader>
-                <DialogTitle>Add Budget Category</DialogTitle>
-              </DialogHeader>
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="categoryName">Category Name</Label>
-                  <Input
-                    id="categoryName"
-                    value={newCategoryName}
-                    onChange={(e) => setNewCategoryName(e.target.value)}
-                    placeholder="e.g., Housing, Transportation"
-                    onKeyPress={(e) => e.key === 'Enter' && handleAddCategory()}
-                  />
-                </div>
-                <div className="flex gap-2">
-                  <Button 
-                    onClick={handleAddCategory} 
-                    disabled={!newCategoryName.trim() || addCategoryMutation.isPending}
-                    className="flex-1"
-                  >
-                    {addCategoryMutation.isPending ? "Adding..." : "Add Category"}
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    onClick={() => {
-                      setNewCategoryName("");
-                      setIsAddingCategory(false);
-                    }}
-                  >
-                    Cancel
-                  </Button>
-                </div>
-              </div>
-            </DialogContent>
-          </Dialog>
-        </CardHeader>
-        <CardContent>
-          {categories.length > 0 ? (
-            <div className="space-y-4">
-              {categories.map((category) => (
-                <div
-                  key={category.id}
-                  className="p-4 border border-gray-200 rounded-lg"
-                >
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="flex items-center gap-2">
-                      <Tags className="w-4 h-4 text-gray-500" />
-                      <span className="font-medium text-gray-900">{category.name}</span>
-                      <Badge variant="secondary" className="text-xs">
-                        {(category.subcategories || []).length} subcategories
-                      </Badge>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Dialog 
-                        open={isAddingSubcategory && selectedCategoryForSub === category.id} 
-                        onOpenChange={(open) => {
-                          setIsAddingSubcategory(open);
-                          if (open) setSelectedCategoryForSub(category.id);
-                          else setSelectedCategoryForSub(null);
-                        }}
-                      >
-                        <DialogTrigger asChild>
-                          <Button variant="ghost" size="sm">
-                            <Plus className="w-3 h-3 mr-1" />
-                            Add Sub
-                          </Button>
-                        </DialogTrigger>
-                        <DialogContent className="max-w-sm">
-                          <DialogHeader>
-                            <DialogTitle>Add Subcategory to {category.name}</DialogTitle>
-                          </DialogHeader>
-                          <div className="space-y-4">
-                            <div className="space-y-2">
-                              <Label htmlFor="subcategoryName">Subcategory Name</Label>
-                              <Input
-                                id="subcategoryName"
-                                value={newSubcategory}
-                                onChange={(e) => setNewSubcategory(e.target.value)}
-                                placeholder="e.g., Rent, Utilities"
-                                onKeyPress={(e) => e.key === 'Enter' && handleAddSubcategory()}
-                              />
-                            </div>
-                            <div className="flex gap-2">
-                              <Button 
-                                onClick={handleAddSubcategory} 
-                                disabled={!newSubcategory.trim() || updateCategoryMutation.isPending}
-                                className="flex-1"
-                              >
-                                {updateCategoryMutation.isPending ? "Adding..." : "Add"}
-                              </Button>
-                              <Button 
-                                variant="outline" 
-                                onClick={() => {
-                                  setNewSubcategory("");
-                                  setSelectedCategoryForSub(null);
-                                  setIsAddingSubcategory(false);
-                                }}
-                              >
-                                Cancel
-                              </Button>
-                            </div>
-                          </div>
-                        </DialogContent>
-                      </Dialog>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => startEditingDefaults(category)}
-                        className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
-                      >
-                        <DollarSign className="w-3 h-3 mr-1" />
-                        Set Budgets
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => deleteCategoryMutation.mutate(category.id)}
-                        className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                      >
-                        <Trash2 className="w-3 h-3" />
-                      </Button>
-                    </div>
-                  </div>
-                  
-                  {category.subcategories && category.subcategories.length > 0 && (
-                    <div className="space-y-2">
-                      <div className="flex flex-wrap gap-2">
-                        {category.subcategories.map((subcategory, index) => {
-                          const defaults = category.subcategoryDefaults as Record<string, { amount: string; type: "constant" | "variable" }> || {};
-                          const subcategoryDefault = defaults[subcategory];
-                          
-                          return (
-                            <div
-                              key={index}
-                              className="flex items-center gap-1 px-2 py-1 bg-gray-100 rounded text-sm"
-                            >
-                              <span>{subcategory}</span>
-                              {subcategoryDefault && (
-                                <Badge variant="outline" className="text-xs ml-1">
-                                  ${subcategoryDefault.amount} ({subcategoryDefault.type})
-                                </Badge>
-                              )}
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => handleRemoveSubcategory(category.id, subcategory)}
-                                className="h-4 w-4 p-0 text-gray-500 hover:text-red-600"
-                              >
-                                <X className="w-3 h-3" />
-                              </Button>
-                            </div>
-                          );
-                        })}
-                      </div>
-                      
-                      {/* Simplified budget defaults interface */}
-                      {editingDefaults === category.id && (
-                        <div className="mt-4 p-3 border rounded-lg bg-blue-50">
-                          <div className="flex items-center justify-between mb-3">
-                            <h5 className="font-medium text-gray-900">Budget Defaults</h5>
-                            <div className="flex gap-2">
-                              <Button 
-                                onClick={() => handleUpdateDefaults(category.id)}
-                                disabled={updateCategoryMutation.isPending}
-                                size="sm"
-                              >
-                                Save
-                              </Button>
-                              <Button 
-                                variant="outline"
-                                onClick={() => {
-                                  setEditingDefaults(null);
-                                  setDefaultAmounts({});
-                                }}
-                                size="sm"
-                              >
-                                Cancel
-                              </Button>
-                            </div>
-                          </div>
-                          <div className="space-y-2">
-                            {category.subcategories.map((subcategory, index) => {
-                              const currentDefault = defaultAmounts[subcategory] || { amount: "", type: "variable" };
-                              return (
-                                <div key={index} className="flex items-center gap-3 p-2 bg-white rounded border">
-                                  <div className="flex-1 text-sm font-medium">{subcategory}</div>
-                                  <div className="flex items-center gap-2">
-                                    <span className="text-sm text-gray-500">$</span>
-                                    <Input
-                                      type="number"
-                                      placeholder="0"
-                                      value={currentDefault.amount}
-                                      onChange={(e) => setDefaultAmounts({
-                                        ...defaultAmounts,
-                                        [subcategory]: {
-                                          ...defaultAmounts[subcategory],
-                                          amount: e.target.value,
-                                          type: defaultAmounts[subcategory]?.type || "variable"
-                                        }
-                                      })}
-                                      className="w-20 h-8 text-sm"
-                                    />
-                                    <Select
-                                      value={currentDefault.type}
-                                      onValueChange={(value: "constant" | "variable") => setDefaultAmounts({
-                                        ...defaultAmounts,
-                                        [subcategory]: {
-                                          ...defaultAmounts[subcategory],
-                                          amount: defaultAmounts[subcategory]?.amount || "",
-                                          type: value
-                                        }
-                                      })}
-                                    >
-                                      <SelectTrigger className="w-24 h-8 text-sm">
-                                        <SelectValue />
-                                      </SelectTrigger>
-                                      <SelectContent>
-                                        <SelectItem value="constant">Fixed</SelectItem>
-                                        <SelectItem value="variable">Variable</SelectItem>
-                                      </SelectContent>
-                                    </Select>
-                                  </div>
-                                </div>
-                              );
-                            })}
-                          </div>
-                          <p className="text-xs text-gray-500 mt-2">
-                            Fixed amounts (like rent) stay the same monthly. Variable amounts can be adjusted each month.
-                          </p>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="text-center py-8 text-gray-500">
-              <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Tags className="w-6 h-6 text-gray-400" />
-              </div>
-              <h4 className="text-lg font-semibold text-gray-900 mb-2">No Categories Added</h4>
-              <p className="text-gray-600 mb-4">
-                Create custom categories to organize your expenses and budgets.
-              </p>
-              <Button onClick={() => setIsAddingCategory(true)}>
-                <Plus className="w-4 h-4 mr-2" />
-                Add Your First Category
-              </Button>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Stats Summary */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">Account Summary</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-2 gap-4 text-center">
-            <div className="p-4 bg-primary/5 rounded-lg">
-              <p className="text-2xl font-bold text-primary">
-                {user.customGigTypes?.length || 0}
-              </p>
-              <p className="text-sm text-gray-600">Gig Types</p>
-            </div>
-            <div className="p-4 bg-secondary/5 rounded-lg">
-              <p className="text-2xl font-bold text-secondary">
-                {user.defaultTaxPercentage || 23}%
-              </p>
-              <p className="text-sm text-gray-600">Default Tax Rate</p>
-            </div>
-          </div>
         </CardContent>
       </Card>
     </div>
