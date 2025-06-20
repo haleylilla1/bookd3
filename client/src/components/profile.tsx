@@ -6,7 +6,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { User, Plus, X, Percent, Save, Edit2, Tags, Trash2 } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { User, Plus, X, Percent, Save, Edit2, Tags, Trash2, DollarSign, Settings } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import type { User as UserType, ExpenseCategory } from "@shared/schema";
@@ -29,6 +30,8 @@ export default function Profile() {
   const [selectedCategoryForSub, setSelectedCategoryForSub] = useState<number | null>(null);
   const [isAddingCategory, setIsAddingCategory] = useState(false);
   const [isAddingSubcategory, setIsAddingSubcategory] = useState(false);
+  const [editingDefaults, setEditingDefaults] = useState<number | null>(null);
+  const [defaultAmounts, setDefaultAmounts] = useState<Record<string, { amount: string; type: "constant" | "variable" }>>({});
   
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -141,8 +144,8 @@ export default function Profile() {
   });
 
   const updateCategoryMutation = useMutation({
-    mutationFn: async ({ id, subcategories }: { id: number; subcategories: string[] }) => {
-      return await apiRequest(`/api/expense-categories/${id}`, "PATCH", { subcategories });
+    mutationFn: async ({ id, ...updateData }: { id: number; subcategories?: string[]; subcategoryDefaults?: Record<string, { amount: string; type: "constant" | "variable" }> }) => {
+      return await apiRequest(`/api/expense-categories/${id}`, "PATCH", updateData);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/expense-categories"] });
@@ -225,6 +228,21 @@ export default function Profile() {
       id: selectedCategoryForSub,
       subcategories: [...currentSubs, newSubcategory.trim()]
     });
+  };
+
+  const handleUpdateDefaults = (categoryId: number) => {
+    updateCategoryMutation.mutate({
+      id: categoryId,
+      subcategoryDefaults: defaultAmounts
+    } as any);
+    setEditingDefaults(null);
+    setDefaultAmounts({});
+  };
+
+  const startEditingDefaults = (category: ExpenseCategory) => {
+    setEditingDefaults(category.id);
+    const defaults = category.subcategoryDefaults as Record<string, { amount: string; type: "constant" | "variable" }> || {};
+    setDefaultAmounts(defaults);
   };
 
   const handleRemoveSubcategory = (categoryId: number, subcategoryToRemove: string) => {

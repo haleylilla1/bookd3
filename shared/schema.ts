@@ -109,6 +109,7 @@ export const expenseCategories = pgTable("expense_categories", {
   userId: integer("user_id").notNull().references(() => users.id),
   name: text("name").notNull(), // Bills, Expenses, Savings, Income, Debt
   subcategories: text("subcategories").array(), // ["Rent", "Insurance", "Groceries"]
+  subcategoryDefaults: jsonb("subcategory_defaults"), // {Rent: {amount: 1200, type: "constant"}, Groceries: {amount: 400, type: "variable"}}
   isDefault: boolean("is_default").default(false),
   createdAt: timestamp("created_at").defaultNow(),
 });
