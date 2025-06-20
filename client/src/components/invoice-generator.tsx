@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -40,23 +40,46 @@ interface InvoiceData {
 }
 
 export default function InvoiceGenerator() {
-  const { data: gigs = [] } = useQuery<Gig[]>({
+  const { data: gigs = [], isLoading: gigsLoading, error: gigsError } = useQuery<Gig[]>({
     queryKey: ["/api/gigs"],
+    staleTime: 5 * 60 * 1000,
+    retry: 2,
   });
 
-  const { data: user } = useQuery<User>({
+  const { data: user, isLoading: userLoading } = useQuery<User>({
     queryKey: ["/api/user"],
+    staleTime: 10 * 60 * 1000,
+    retry: 1,
   });
 
-  const { data: savedInvoices = [] } = useQuery<Invoice[]>({
+  const { data: savedInvoices = [], isLoading: invoicesLoading, error: invoicesError } = useQuery<Invoice[]>({
     queryKey: ["/api/invoices"],
+    staleTime: 2 * 60 * 1000,
+    retry: 2,
   });
 
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
   const saveInvoiceMutation = useMutation({
-    mutationFn: async (invoiceData: any) => {
+    mutationFn: async (invoiceData: {
+      invoiceNumber: string;
+      invoiceDate: string;
+      dueDate: string;
+      businessName: string;
+      businessAddress: string;
+      businessEmail: string;
+      businessPhone: string;
+      clientName: string;
+      clientAddress: string;
+      clientEmail: string;
+      items: InvoiceItem[];
+      notes: string;
+      taxRate: number;
+      subtotal: number;
+      taxAmount: number;
+      total: number;
+    }) => {
       const response = await apiRequest("POST", "/api/invoices", invoiceData);
       return response.json();
     },
@@ -77,10 +100,10 @@ export default function InvoiceGenerator() {
         notes: "Thank you for your business!"
       }));
     },
-    onError: () => {
+    onError: (error: any) => {
       toast({
-        title: "Error",
-        description: "Failed to save invoice. Please try again.",
+        title: "Error saving invoice",
+        description: error.message || "Failed to save invoice. Please try again.",
         variant: "destructive"
       });
     }
@@ -150,41 +173,53 @@ export default function InvoiceGenerator() {
     }));
   };
 
-  const updateItem = (index: number, field: keyof InvoiceItem, value: string | number) => {
+  const updateItem = useCallback((index: number, field: keyof InvoiceItem, value: string | number) => {
     setInvoice(prev => ({
       ...prev,
       items: prev.items.map((item, i) => {
         if (i === index) {
           const updatedItem = { ...item, [field]: value };
           if (field === 'quantity' || field === 'rate') {
-            updatedItem.amount = updatedItem.quantity * updatedItem.rate;
+            updatedItem.amount = Number(updatedItem.quantity) * Number(updatedItem.rate);
           }
           return updatedItem;
         }
         return item;
       })
     }));
-  };
+  }, []);
 
-  const populateFromGig = (gigId: string) => {
+  const populateFromGig = useCallback((gigId: string) => {
     const gig = gigs.find(g => g.id.toString() === gigId);
     if (gig) {
+      const rate = parseFloat(gig.expectedPay || gig.actualPay || "0");
       setInvoice(prev => ({
         ...prev,
         clientName: gig.clientName || "",
         items: [{
           description: `${gig.gigType} - ${gig.eventName || 'Service'}`,
           quantity: 1,
-          rate: parseFloat(gig.expectedPay || gig.actualPay || "0"),
-          amount: parseFloat(gig.expectedPay || gig.actualPay || "0")
+          rate,
+          amount: rate
         }]
       }));
     }
-  };
+  }, [gigs]);
 
-  const subtotal = invoice.items.reduce((sum, item) => sum + item.amount, 0);
-  const taxAmount = subtotal * (invoice.taxRate / 100);
-  const total = subtotal + taxAmount;
+  // Memoize expensive calculations
+  const invoiceCalculations = useMemo(() => {
+    const subtotal = invoice.items.reduce((sum, item) => sum + Number(item.amount || 0), 0);
+    const taxAmount = subtotal * (Number(invoice.taxRate) / 100);
+    const total = subtotal + taxAmount;
+    
+    return { subtotal, taxAmount, total };
+  }, [invoice.items, invoice.taxRate]);
+
+  // Memoize completed gigs for dropdown
+  const completedGigs = useMemo(() => 
+    gigs.filter(gig => gig.status === "completed" && (gig.actualPay || gig.expectedPay)),
+    [gigs]
+  );
 
   const saveInvoice = () => {
     const invoiceToSave = {
@@ -199,12 +234,11 @@ export default function InvoiceGenerator() {
       invoiceDate: invoice.date,
       dueDate: invoice.dueDate,
       items: invoice.items,
-      subtotal: subtotal.toString(),
-      taxRate: invoice.taxRate.toString(),
-      taxAmount: taxAmount.toString(),
-      total: total.toString(),
-      notes: invoice.notes,
-      status: "draft"
+      subtotal: invoiceCalculations.subtotal,
+      taxRate: Number(invoice.taxRate),
+      taxAmount: invoiceCalculations.taxAmount,
+      total: invoiceCalculations.total,
+      notes: invoice.notes
     };
     
     saveInvoiceMutation.mutate(invoiceToSave);
@@ -290,12 +324,12 @@ export default function InvoiceGenerator() {
     
     // Totals
     const finalY = doc.internal.pageSize.height - 80;
-    doc.text(`Subtotal: ${formatCurrency(subtotal)}`, 150, finalY);
+    doc.text(`Subtotal: ${formatCurrency(invoiceCalculations.subtotal)}`, 150, finalY);
     if (invoice.taxRate > 0) {
-      doc.text(`Tax (${invoice.taxRate}%): ${formatCurrency(taxAmount)}`, 150, finalY + 5);
+      doc.text(`Tax (${invoice.taxRate}%): ${formatCurrency(invoiceCalculations.taxAmount)}`, 150, finalY + 5);
     }
     doc.setFont('helvetica', 'bold');
-    doc.text(`Total: ${formatCurrency(total)}`, 150, finalY + (invoice.taxRate > 0 ? 10 : 5));
+    doc.text(`Total: ${formatCurrency(invoiceCalculations.total)}`, 150, finalY + (invoice.taxRate > 0 ? 10 : 5));
     
     // Notes
     if (invoice.notes) {
@@ -542,7 +576,7 @@ export default function InvoiceGenerator() {
             <CardContent className="space-y-4">
               <div className="flex justify-between">
                 <span>Subtotal:</span>
-                <span>{formatCurrency(subtotal)}</span>
+                <span>{formatCurrency(invoiceCalculations.subtotal)}</span>
               </div>
               <div>
                 <Label htmlFor="taxRate">Tax Rate (%)</Label>
@@ -557,13 +591,13 @@ export default function InvoiceGenerator() {
               {invoice.taxRate > 0 && (
                 <div className="flex justify-between">
                   <span>Tax ({invoice.taxRate}%):</span>
-                  <span>{formatCurrency(taxAmount)}</span>
+                  <span>{formatCurrency(invoiceCalculations.taxAmount)}</span>
                 </div>
               )}
               <Separator />
               <div className="flex justify-between font-bold text-lg">
                 <span>Total:</span>
-                <span>{formatCurrency(total)}</span>
+                <span>{formatCurrency(invoiceCalculations.total)}</span>
               </div>
               <div>
                 <Label htmlFor="notes">Notes</Label>
