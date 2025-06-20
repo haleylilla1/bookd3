@@ -7,6 +7,7 @@ import ErrorBoundary from "@/components/error-boundary";
 import { useState, useEffect } from "react";
 import Home from "@/pages/home";
 import Profile from "@/pages/profile";
+import Import from "@/pages/import";
 import LandingPage from "@/components/landing-page";
 import NotFound from "@/pages/not-found";
 
@@ -74,6 +75,7 @@ function Router() {
         <>
           <Route path="/" component={Home} />
           <Route path="/profile" component={Profile} />
+          <Route path="/import" component={Import} />
         </>
       ) : (
         <Route path="/" component={LandingPage} />
