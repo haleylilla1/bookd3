@@ -30,10 +30,10 @@ type TimePeriod = "monthly" | "yearly";
 
 import BudgetTracker from "./budget-tracker";
 
-import ModernGoals from "./modern-goals";
+import SimpleGoals from "./simple-goals";
 
 export default function GoalTracker() {
-  return <ModernGoals />;
+  return <SimpleGoals />;
   const [newGoalName, setNewGoalName] = useState("");
   const [newGoalAmount, setNewGoalAmount] = useState("");
   const [newGoalCategory, setNewGoalCategory] = useState("savings");

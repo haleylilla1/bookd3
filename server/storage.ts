@@ -255,9 +255,14 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getAllocationsByUser(userId: number): Promise<Allocation[]> {
-    return await db.select().from(allocations)
-      .where(eq(allocations.userId, userId))
-      .orderBy(desc(allocations.createdAt));
+    try {
+      return await db.select().from(allocations)
+        .where(eq(allocations.userId, userId))
+        .orderBy(desc(allocations.createdAt));
+    } catch (error) {
+      console.error("Error fetching allocations:", error);
+      return [];
+    }
   }
 
   async getAllocationsByGig(gigId: number): Promise<Allocation[]> {
