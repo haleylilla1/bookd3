@@ -62,10 +62,10 @@ export default function Home() {
       {currentScreen !== "gig-form" && (
         <Button
           onClick={() => setCurrentScreen("gig-form")}
-          className="fixed bottom-20 right-4 w-14 h-14 rounded-full shadow-lg hover:scale-105 transition-all duration-200"
-          size="icon"
+          className="fixed bottom-20 right-4 px-4 py-3 rounded-full shadow-lg hover:scale-105 transition-all duration-200 bg-primary hover:bg-primary/90 text-white font-medium"
         >
-          <Plus className="w-6 h-6" />
+          <Plus className="w-4 h-4 mr-2" />
+          Add Gig
         </Button>
       )}
 
