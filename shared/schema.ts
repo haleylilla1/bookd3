@@ -143,11 +143,10 @@ export const budgets = pgTable("budgets", {
 export const allocations = pgTable("allocations", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").notNull().references(() => users.id),
-  expenseId: integer("expense_id"), // Link to expense
   gigId: integer("gig_id"), // Link to gig income
   goalId: integer("goal_id"), // Link to savings goal
   amount: decimal("amount", { precision: 10, scale: 2 }).notNull(),
-  allocationType: text("allocation_type").notNull(), // "savings", "bills", "debt", "emergency"
+  allocationType: text("allocation_type").notNull(), // "goal", "savings", "emergency"
   description: text("description"),
   createdAt: timestamp("created_at").defaultNow(),
 });

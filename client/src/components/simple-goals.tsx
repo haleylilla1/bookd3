@@ -235,6 +235,29 @@ export default function SimpleGoals() {
                       <span>Remaining: <span className="font-medium">{formatCurrency(remaining)}</span></span>
                     </div>
 
+                    {/* Show recent allocations for this goal */}
+                    {allocations.filter(a => a.goalId === goal.id).length > 0 && (
+                      <div className="mt-4 pt-3 border-t border-gray-100">
+                        <div className="text-xs font-medium text-gray-700 mb-2">Recent allocations:</div>
+                        <div className="space-y-1">
+                          {allocations
+                            .filter(a => a.goalId === goal.id)
+                            .slice(-3)
+                            .map((allocation) => {
+                              const gig = gigs.find(g => g.id === allocation.gigId);
+                              return (
+                                <div key={allocation.id} className="flex justify-between text-xs bg-gray-50 p-2 rounded">
+                                  <span>
+                                    {gig ? `${gig.clientName}` : 'Unknown gig'}
+                                  </span>
+                                  <span className="font-medium">{formatCurrency(parseFloat(allocation.amount))}</span>
+                                </div>
+                              );
+                            })}
+                        </div>
+                      </div>
+                    )}
+
                     {isCompleted && (
                       <div className="mt-3 p-3 bg-green-50 rounded-lg">
                         <p className="text-sm text-green-700 font-medium text-center">
@@ -342,6 +365,16 @@ export default function SimpleGoals() {
             >
               {createAllocationMutation.isPending ? "Allocating..." : "Allocate Funds"}
             </Button>
+            
+            {/* Show gig payment info */}
+            {selectedGig && (
+              <div className="text-sm text-gray-600 text-center">
+                Total available: {formatCurrency(
+                  parseFloat(selectedGig.actualPay || selectedGig.expectedPay || "0") + 
+                  parseFloat(selectedGig.tips || "0")
+                )}
+              </div>
+            )}
           </CardContent>
         </Card>
       )}
