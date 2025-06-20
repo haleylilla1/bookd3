@@ -93,6 +93,16 @@ export default function GigForm({ onClose }: GigFormProps) {
     },
   });
 
+  // Update form when user data changes
+  useState(() => {
+    if (user?.homeAddress && !form.getValues("startingAddress")) {
+      form.setValue("startingAddress", user.homeAddress);
+    }
+    if (user?.defaultTaxPercentage !== undefined) {
+      form.setValue("taxPercentage", user.defaultTaxPercentage);
+    }
+  });
+
   const createGigMutation = useMutation({
     mutationFn: async (data: InsertGig) => {
       const response = await apiRequest("POST", "/api/gigs", data);
