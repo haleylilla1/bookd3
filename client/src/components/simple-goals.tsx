@@ -456,12 +456,11 @@ export default function SimpleGoals() {
                     </div>
 
                     {/* Show recent allocations for this goal */}
-                    {allocations.filter(a => a.goalId === goal.id).length > 0 && (
+                    {(allocationsByGoal.get(goal.id) || []).length > 0 && (
                       <div className="mt-4 pt-3 border-t border-gray-100">
                         <div className="text-xs font-medium text-gray-700 mb-2">Recent allocations:</div>
                         <div className="space-y-1">
-                          {allocations
-                            .filter(a => a.goalId === goal.id)
+                          {(allocationsByGoal.get(goal.id) || [])
                             .slice(-3)
                             .map((allocation) => {
                               const gig = gigs.find(g => g.id === allocation.gigId);
