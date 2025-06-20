@@ -106,11 +106,11 @@ export default function ModernGoals() {
 
   const getGoalIcon = (category: string) => {
     switch (category) {
-      case "savings": return <PiggyBank className="w-5 h-5 text-green-600" />;
-      case "emergency": return <Target className="w-5 h-5 text-red-600" />;
-      case "vacation": return <Calendar className="w-5 h-5 text-blue-600" />;
-      case "purchase": return <Wallet className="w-5 h-5 text-purple-600" />;
-      default: return <Target className="w-5 h-5 text-gray-600" />;
+      case "savings": return <PiggyBank className="w-5 h-5 text-white" />;
+      case "emergency": return <Target className="w-5 h-5 text-white" />;
+      case "vacation": return <Calendar className="w-5 h-5 text-white" />;
+      case "purchase": return <Wallet className="w-5 h-5 text-white" />;
+      default: return <Target className="w-5 h-5 text-white" />;
     }
   };
 
@@ -254,115 +254,137 @@ export default function ModernGoals() {
         </Card>
       </div>
 
-      {/* Goals Grid */}
+      {/* Goals List - Inspired Design */}
       {goals.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {goals.map((goal) => {
+        <div className="space-y-4">
+          {goals.map((goal, index) => {
             const { totalAllocated, progress } = getGoalProgress(goal);
             const targetAmount = parseFloat(goal.targetAmount);
             const isCompleted = progress >= 100;
             const isEditing = editingGoal?.id === goal.id;
 
+            // Color palette for different goals
+            const colors = [
+              { bg: "bg-purple-100", icon: "bg-purple-500", progress: "bg-purple-400" },
+              { bg: "bg-blue-100", icon: "bg-blue-500", progress: "bg-blue-400" },
+              { bg: "bg-pink-100", icon: "bg-pink-500", progress: "bg-pink-400" },
+              { bg: "bg-amber-100", icon: "bg-amber-500", progress: "bg-amber-400" },
+              { bg: "bg-emerald-100", icon: "bg-emerald-500", progress: "bg-emerald-400" },
+              { bg: "bg-cyan-100", icon: "bg-cyan-500", progress: "bg-cyan-400" },
+            ];
+            const color = colors[index % colors.length];
+
             return (
-              <Card key={goal.id} className="border-0 shadow-sm hover:shadow-md transition-shadow">
+              <Card key={goal.id} className="border-0 shadow-sm bg-white">
                 <CardContent className="p-6">
-                  <div className="flex items-start justify-between mb-4">
-                    <div className="flex items-center gap-3">
-                      {getGoalIcon(goal.category)}
-                      <div>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-4 flex-1">
+                      <div className={`w-12 h-12 ${color.bg} rounded-2xl flex items-center justify-center`}>
+                        <div className={`w-8 h-8 ${color.icon} rounded-xl flex items-center justify-center`}>
+                          {getGoalIcon(goal.category)}
+                        </div>
+                      </div>
+                      
+                      <div className="flex-1">
                         {isEditing ? (
-                          <Input
-                            value={editGoalName}
-                            onChange={(e) => setEditGoalName(e.target.value)}
-                            className="font-semibold text-lg mb-2"
-                          />
+                          <div className="space-y-2">
+                            <Input
+                              value={editGoalName}
+                              onChange={(e) => setEditGoalName(e.target.value)}
+                              className="text-xl font-semibold border-0 bg-gray-50 rounded-lg"
+                            />
+                            <Input
+                              type="number"
+                              value={editGoalAmount}
+                              onChange={(e) => setEditGoalAmount(e.target.value)}
+                              placeholder="Target amount"
+                              className="text-sm border-0 bg-gray-50 rounded-lg"
+                            />
+                          </div>
                         ) : (
-                          <h3 className="font-semibold text-lg text-gray-900">{goal.name}</h3>
-                        )}
-                        {isEditing ? (
-                          <Input
-                            type="number"
-                            value={editGoalAmount}
-                            onChange={(e) => setEditGoalAmount(e.target.value)}
-                            placeholder="Target amount"
-                          />
-                        ) : (
-                          <p className="text-sm text-gray-600">Target: {formatCurrency(targetAmount)}</p>
+                          <>
+                            <h3 className="text-xl font-semibold text-gray-900 mb-1">{goal.name}</h3>
+                            <p className="text-gray-500 text-sm mb-3">Goal Target</p>
+                            
+                            {/* Progress Bar */}
+                            <div className="w-full bg-gray-200 rounded-full h-2 mb-3">
+                              <div 
+                                className={`${color.progress} h-2 rounded-full transition-all duration-300`}
+                                style={{ width: `${Math.min(progress, 100)}%` }}
+                              ></div>
+                            </div>
+                          </>
                         )}
                       </div>
                     </div>
-                    <div className="flex items-center gap-1">
-                      {isEditing ? (
+
+                    <div className="text-right flex flex-col items-end gap-2">
+                      {!isEditing && (
                         <>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={saveGoalEdit}
-                            disabled={updateGoalMutation.isPending}
-                            className="h-8 w-8 p-0"
-                          >
-                            ✓
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => setEditingGoal(null)}
-                            className="h-8 w-8 p-0"
-                          >
-                            ✕
-                          </Button>
-                        </>
-                      ) : (
-                        <>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => startEditingGoal(goal)}
-                            className="h-8 w-8 p-0 text-gray-500 hover:text-blue-600"
-                          >
-                            <Edit2 className="w-4 h-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => deleteGoalMutation.mutate(goal.id)}
-                            className="h-8 w-8 p-0 text-gray-500 hover:text-red-600"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
+                          <div className="text-2xl font-bold text-gray-900">
+                            {formatCurrency(totalAllocated)}
+                          </div>
+                          <div className="text-sm text-gray-500">
+                            of {formatCurrency(targetAmount)}
+                          </div>
+                          <div className="text-xs text-gray-400">
+                            {Math.round(progress)}% complete
+                          </div>
                         </>
                       )}
-                    </div>
-                  </div>
-
-                  <div className="space-y-3">
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm font-medium text-gray-900">
-                        {formatCurrency(totalAllocated)}
-                      </span>
-                      <span className="text-sm text-gray-600">
-                        {progress.toFixed(1)}%
-                      </span>
-                    </div>
-                    
-                    <Progress 
-                      value={progress} 
-                      className="h-3"
-                    />
-                    
-                    <div className="flex justify-between text-xs text-gray-500">
-                      <span>Saved</span>
-                      <span>{formatCurrency(targetAmount - totalAllocated)} remaining</span>
-                    </div>
-
-                    {isCompleted && (
-                      <div className="mt-3 p-2 bg-green-50 rounded-lg">
-                        <p className="text-sm text-green-700 font-medium text-center">
-                          🎉 Goal Completed!
-                        </p>
+                      
+                      <div className="flex items-center gap-1 mt-2">
+                        {isEditing ? (
+                          <>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={saveGoalEdit}
+                              disabled={updateGoalMutation.isPending}
+                              className="h-8 w-8 p-0 text-green-600 hover:bg-green-50"
+                            >
+                              ✓
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => setEditingGoal(null)}
+                              className="h-8 w-8 p-0 text-gray-500 hover:bg-gray-50"
+                            >
+                              ✕
+                            </Button>
+                          </>
+                        ) : (
+                          <>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => startEditingGoal(goal)}
+                              className="h-8 w-8 p-0 text-gray-400 hover:text-blue-600 hover:bg-blue-50"
+                            >
+                              <Edit2 className="w-4 h-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => deleteGoalMutation.mutate(goal.id)}
+                              className="h-8 w-8 p-0 text-gray-400 hover:text-red-600 hover:bg-red-50"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </>
+                        )}
                       </div>
-                    )}
+                    </div>
                   </div>
+
+                  {isCompleted && !isEditing && (
+                    <div className="mt-4 p-3 bg-green-50 rounded-xl border border-green-200">
+                      <p className="text-sm text-green-700 font-medium text-center">
+                        🎉 Congratulations! Goal completed!
+                      </p>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             );
