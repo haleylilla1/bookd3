@@ -1,5 +1,8 @@
+import { useLocation } from "wouter";
 import BulkGigImport from "@/components/bulk-gig-import";
 
 export default function Import() {
-  return <BulkGigImport onClose={() => window.history.back()} />;
+  const [, setLocation] = useLocation();
+  
+  return <BulkGigImport onClose={() => setLocation('/')} />;
 }
