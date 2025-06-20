@@ -178,6 +178,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Text input is required" });
       }
 
+      // Basic validation
+      if (text.length < 10) {
+        return res.status(400).json({ error: "Please provide more detailed gig notes (at least 10 characters)" });
+      }
+
+      if (text.length > 10000) {
+        return res.status(400).json({ error: "Text too long. Please break it into smaller chunks (max 10,000 characters)" });
+      }
+
       const apiKey = process.env.OPENAI_API_KEY;
       
       if (!apiKey) {
@@ -245,16 +254,38 @@ Be generous in extracting gigs - if there's any indication of separate work even
       });
 
       if (!response.ok) {
-        throw new Error(`OpenAI API error: ${response.status}`);
+        const errorText = await response.text();
+        console.error(`OpenAI API error ${response.status}:`, errorText);
+        throw new Error(`OpenAI API error: ${response.status} - ${errorText}`);
       }
 
       const aiResponse = await response.json();
-      const parsedResult = JSON.parse(aiResponse.choices[0].message.content);
+      console.log("OpenAI response:", JSON.stringify(aiResponse, null, 2));
+      
+      if (!aiResponse.choices || !aiResponse.choices[0] || !aiResponse.choices[0].message) {
+        throw new Error("Invalid OpenAI response structure");
+      }
 
+      const content = aiResponse.choices[0].message.content;
+      if (!content) {
+        throw new Error("Empty response from OpenAI");
+      }
+
+      const parsedResult = JSON.parse(content);
       res.json(parsedResult);
     } catch (error) {
       console.error("Gig parsing error:", error);
-      res.status(500).json({ error: "Failed to parse gig data" });
+      
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      
+      // More specific error messages
+      if (errorMessage.includes('OpenAI API error')) {
+        res.status(500).json({ error: "OpenAI service error. Please try again." });
+      } else if (errorMessage.includes('JSON')) {
+        res.status(500).json({ error: "AI response format error. Please try again." });
+      } else {
+        res.status(500).json({ error: "Failed to parse gig data. Please try again." });
+      }
     }
   });
 
