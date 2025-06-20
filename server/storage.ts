@@ -7,6 +7,8 @@ import {
   weeklyGoals,
   yearlyGoals,
   invoices,
+  auditLogs,
+  dataExportRequests,
   type User,
   type UpsertUser,
   type InsertUser, 
@@ -32,8 +34,13 @@ import {
   type Budget,
   type InsertBudget,
   type ExpenseCategory,
-  type InsertExpenseCategory
+  type InsertExpenseCategory,
+  type AuditLog,
+  type InsertAuditLog,
+  type DataExportRequest,
+  type InsertDataExportRequest
 } from "@shared/schema";
+import bcrypt from "bcryptjs";
 import { db } from "./db";
 import { eq, and, gte, lte, desc } from "drizzle-orm";
 
@@ -41,10 +48,21 @@ export interface IStorage {
   // User operations
   getUser(id: number): Promise<User | undefined>;
   getUserByReplitId(replitId: string): Promise<User | undefined>;
+  getUserByGoogleId(googleId: string): Promise<User | undefined>;
   getUserByEmail(email: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
   updateUser(id: number, user: Partial<InsertUser>): Promise<User | undefined>;
   upsertUserByReplitId(replitId: string, userData: Partial<User>): Promise<User>;
+  upsertUserByGoogleId(googleId: string, userData: Partial<User>): Promise<User>;
+  createUserWithPassword(email: string, password: string, name: string): Promise<User>;
+  validatePassword(email: string, password: string): Promise<User | null>;
+  
+  // Audit logging
+  logAudit(userId: number | null, action: string, tableName?: string, recordId?: number, oldValues?: any, newValues?: any, ipAddress?: string, userAgent?: string): Promise<void>;
+  
+  // Data export
+  requestDataExport(userId: number, requestType: string): Promise<void>;
+  getUserExportData(userId: number): Promise<any>;
 
   // Gigs
   getGig(id: number): Promise<Gig | undefined>;
@@ -141,6 +159,11 @@ export class DatabaseStorage implements IStorage {
     return user;
   }
 
+  async getUserByGoogleId(googleId: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.googleId, googleId));
+    return user;
+  }
+
   async upsertUserByReplitId(replitId: string, userData: Partial<User>): Promise<User> {
     const existingUser = await this.getUserByReplitId(replitId);
     
@@ -169,6 +192,115 @@ export class DatabaseStorage implements IStorage {
         .returning();
       return newUser;
     }
+  }
+
+  async upsertUserByGoogleId(googleId: string, userData: Partial<User>): Promise<User> {
+    const existingUser = await this.getUserByGoogleId(googleId);
+    
+    if (existingUser) {
+      const [updatedUser] = await db
+        .update(users)
+        .set({
+          ...userData,
+          updatedAt: new Date(),
+        })
+        .where(eq(users.googleId, googleId))
+        .returning();
+      return updatedUser;
+    } else {
+      const [newUser] = await db
+        .insert(users)
+        .values({
+          googleId,
+          name: userData.name || 'New User',
+          email: userData.email || 'user@example.com',
+          firstName: userData.firstName,
+          lastName: userData.lastName,
+          profileImageUrl: userData.profileImageUrl,
+          trialStartDate: new Date(),
+          trialEndDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days
+          ...userData,
+        })
+        .returning();
+      return newUser;
+    }
+  }
+
+  async createUserWithPassword(email: string, password: string, name: string): Promise<User> {
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const [user] = await db
+      .insert(users)
+      .values({
+        email,
+        passwordHash: hashedPassword,
+        name,
+        trialStartDate: new Date(),
+        trialEndDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days
+      })
+      .returning();
+    return user;
+  }
+
+  async validatePassword(email: string, password: string): Promise<User | null> {
+    const user = await this.getUserByEmail(email);
+    if (!user || !user.passwordHash) {
+      return null;
+    }
+    
+    const isValid = await bcrypt.compare(password, user.passwordHash);
+    return isValid ? user : null;
+  }
+
+  async logAudit(
+    userId: number | null, 
+    action: string, 
+    tableName?: string, 
+    recordId?: number, 
+    oldValues?: any, 
+    newValues?: any, 
+    ipAddress?: string, 
+    userAgent?: string
+  ): Promise<void> {
+    await db.insert(auditLogs).values({
+      userId,
+      action,
+      tableName,
+      recordId,
+      oldValues,
+      newValues,
+      ipAddress,
+      userAgent,
+    });
+  }
+
+  async requestDataExport(userId: number, requestType: string): Promise<void> {
+    await db.insert(dataExportRequests).values({
+      userId,
+      requestType,
+      status: 'pending',
+      expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
+    });
+  }
+
+  async getUserExportData(userId: number): Promise<any> {
+    const user = await this.getUser(userId);
+    const userGigs = await this.getGigsByUser(userId);
+    const userGoals = await this.getGoalsByUser(userId);
+    const userAllocations = await this.getAllocationsByUser(userId);
+    const userInvoices = await this.getInvoicesByUser(userId);
+    const userExpenses = await this.getExpensesByUser(userId);
+    const userBudgets = await this.getBudgetsByUser(userId);
+
+    return {
+      user,
+      gigs: userGigs,
+      goals: userGoals,
+      allocations: userAllocations,
+      invoices: userInvoices,
+      expenses: userExpenses,
+      budgets: userBudgets,
+      exportedAt: new Date().toISOString(),
+    };
   }
 
   async getGig(id: number): Promise<Gig | undefined> {
