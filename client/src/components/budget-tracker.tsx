@@ -89,6 +89,16 @@ export default function BudgetTracker() {
     queryKey: ["/api/expense-categories"],
   });
 
+  // Merge custom categories with defaults, prioritizing custom categories
+  const availableCategories = customCategories.length > 0 
+    ? customCategories.map(cat => ({
+        name: cat.name,
+        subcategories: cat.subcategories || [],
+        icon: DEFAULT_CATEGORIES.find(def => def.name.toLowerCase() === cat.name.toLowerCase())?.icon || DollarSign,
+        color: DEFAULT_CATEGORIES.find(def => def.name.toLowerCase() === cat.name.toLowerCase())?.color || "bg-gray-500"
+      }))
+    : DEFAULT_CATEGORIES;
+
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
@@ -146,7 +156,7 @@ export default function BudgetTracker() {
   const leftToBudget = currentMonthIncome - totalBudget;
 
   // Calculate category breakdowns
-  const categoryBreakdown = DEFAULT_CATEGORIES.map(category => {
+  const categoryBreakdown = availableCategories.map(category => {
     const categoryExpenses = currentMonthExpenses.filter(expense => 
       expense.category === category.name
     );
@@ -230,7 +240,7 @@ export default function BudgetTracker() {
                 <SelectValue placeholder="Select category" />
               </SelectTrigger>
               <SelectContent>
-                {DEFAULT_CATEGORIES.map(cat => (
+                {availableCategories.map(cat => (
                   <SelectItem key={cat.name} value={cat.name}>
                     {cat.name}
                   </SelectItem>
@@ -248,7 +258,7 @@ export default function BudgetTracker() {
                 <SelectValue placeholder="Select subcategory" />
               </SelectTrigger>
               <SelectContent>
-                {formData.category && DEFAULT_CATEGORIES
+                {formData.category && availableCategories
                   .find(cat => cat.name === formData.category)?.subcategories
                   .map(sub => (
                     <SelectItem key={sub} value={sub}>
