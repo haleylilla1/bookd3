@@ -368,101 +368,119 @@ May 5th promotional event at Mall, $180`;
                           </div>
                         </div>
 
-                        {/* Extracted fields in a grid */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {/* Key Information - Always Visible */}
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4 p-4 bg-gray-50 rounded-lg">
                           <div>
-                            <label className="text-xs font-medium text-gray-500 flex items-center gap-1">
-                              <FileText className="w-3 h-3" />
-                              Event Name
-                            </label>
-                            <Input
-                              value={gig.extractedData.eventName || ''}
-                              onChange={(e) => handleGigEdit(gig.id, 'eventName', e.target.value)}
-                              placeholder="Event name..."
-                              className="mt-1"
-                            />
-                          </div>
-
-                          <div>
-                            <label className="text-xs font-medium text-gray-500 flex items-center gap-1">
+                            <label className="text-xs font-medium text-gray-700 flex items-center gap-1 mb-1">
                               <Building className="w-3 h-3" />
-                              Client Name
+                              Client Name *
                             </label>
                             <Input
                               value={gig.extractedData.clientName || ''}
                               onChange={(e) => handleGigEdit(gig.id, 'clientName', e.target.value)}
-                              placeholder="Client name..."
-                              className="mt-1"
+                              placeholder="Required - Client or company name"
+                              className={`${!gig.extractedData.clientName ? 'border-red-300 focus:border-red-500' : ''}`}
                             />
                           </div>
 
                           <div>
-                            <label className="text-xs font-medium text-gray-500 flex items-center gap-1">
+                            <label className="text-xs font-medium text-gray-700 flex items-center gap-1 mb-1">
                               <Calendar className="w-3 h-3" />
-                              Start Date
+                              Date *
                             </label>
                             <Input
                               type="date"
                               value={gig.extractedData.startDate || ''}
                               onChange={(e) => handleGigEdit(gig.id, 'startDate', e.target.value)}
-                              className="mt-1"
+                              className={`${!gig.extractedData.startDate ? 'border-red-300 focus:border-red-500' : ''}`}
                             />
                           </div>
 
                           <div>
-                            <label className="text-xs font-medium text-gray-500 flex items-center gap-1">
+                            <label className="text-xs font-medium text-gray-700 flex items-center gap-1 mb-1">
                               <DollarSign className="w-3 h-3" />
-                              Payment
+                              Payment Amount
                             </label>
                             <Input
                               value={gig.extractedData.actualPay || ''}
                               onChange={(e) => handleGigEdit(gig.id, 'actualPay', e.target.value)}
-                              placeholder="Payment amount..."
-                              className="mt-1"
-                            />
-                          </div>
-
-                          <div>
-                            <label className="text-xs font-medium text-gray-500">Gig Type</label>
-                            <Select
-                              value={gig.extractedData.gigType || ''}
-                              onValueChange={(value) => handleGigEdit(gig.id, 'gigType', value)}
-                            >
-                              <SelectTrigger className="mt-1">
-                                <SelectValue placeholder="Select type..." />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="Brand Ambassador">Brand Ambassador</SelectItem>
-                                <SelectItem value="Catering">Catering</SelectItem>
-                                <SelectItem value="Bartending">Bartending</SelectItem>
-                                <SelectItem value="Event Staff">Event Staff</SelectItem>
-                                <SelectItem value="Promotional">Promotional</SelectItem>
-                                <SelectItem value="Other">Other</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </div>
-
-                          <div>
-                            <label className="text-xs font-medium text-gray-500">Location</label>
-                            <Input
-                              value={gig.extractedData.location || ''}
-                              onChange={(e) => handleGigEdit(gig.id, 'location', e.target.value)}
-                              placeholder="Event location..."
-                              className="mt-1"
+                              placeholder="Amount earned"
                             />
                           </div>
                         </div>
 
-                        {/* Duties field (full width) */}
-                        <div>
-                          <label className="text-xs font-medium text-gray-500">Duties</label>
-                          <Textarea
-                            value={gig.extractedData.duties || ''}
-                            onChange={(e) => handleGigEdit(gig.id, 'duties', e.target.value)}
-                            placeholder="What did you do at this gig?"
-                            className="mt-1 h-20"
-                          />
-                        </div>
+                        {/* Additional Details - Expandable */}
+                        <details className="group">
+                          <summary className="cursor-pointer text-sm font-medium text-gray-700 mb-3 flex items-center gap-2">
+                            <span>Additional Details</span>
+                            <span className="text-xs text-gray-500 group-open:hidden">(click to expand)</span>
+                          </summary>
+                          
+                          <div className="space-y-4 mt-4 p-4 bg-blue-50 rounded-lg">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              <div>
+                                <label className="text-xs font-medium text-gray-700 flex items-center gap-1 mb-1">
+                                  <FileText className="w-3 h-3" />
+                                  Event Name
+                                </label>
+                                <Input
+                                  value={gig.extractedData.eventName || ''}
+                                  onChange={(e) => handleGigEdit(gig.id, 'eventName', e.target.value)}
+                                  placeholder="Name or description of the event"
+                                />
+                              </div>
+
+                              <div>
+                                <label className="text-xs font-medium text-gray-700 mb-1">Gig Type</label>
+                                <Select
+                                  value={gig.extractedData.gigType || ''}
+                                  onValueChange={(value) => handleGigEdit(gig.id, 'gigType', value)}
+                                >
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Select gig type..." />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="Brand Ambassador">Brand Ambassador</SelectItem>
+                                    <SelectItem value="Catering">Catering</SelectItem>
+                                    <SelectItem value="Bartending">Bartending</SelectItem>
+                                    <SelectItem value="Event Staff">Event Staff</SelectItem>
+                                    <SelectItem value="Promotional">Promotional</SelectItem>
+                                    <SelectItem value="Other">Other</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </div>
+
+                              <div className="md:col-span-2">
+                                <label className="text-xs font-medium text-gray-700 mb-1">Location</label>
+                                <Input
+                                  value={gig.extractedData.location || ''}
+                                  onChange={(e) => handleGigEdit(gig.id, 'location', e.target.value)}
+                                  placeholder="Event venue or address"
+                                />
+                              </div>
+                            </div>
+
+                            <div>
+                              <label className="text-xs font-medium text-gray-700 mb-1">Job Duties</label>
+                              <Textarea
+                                value={gig.extractedData.duties || ''}
+                                onChange={(e) => handleGigEdit(gig.id, 'duties', e.target.value)}
+                                placeholder="What did you do at this gig? (serving, greeting customers, setup, etc.)"
+                                className="h-24"
+                              />
+                            </div>
+
+                            <div>
+                              <label className="text-xs font-medium text-gray-700 mb-1">Additional Notes</label>
+                              <Textarea
+                                value={gig.extractedData.notes || ''}
+                                onChange={(e) => handleGigEdit(gig.id, 'notes', e.target.value)}
+                                placeholder="Any other details about this gig"
+                                className="h-20"
+                              />
+                            </div>
+                          </div>
+                        </details>
                       </div>
                     </div>
                   </CardContent>
