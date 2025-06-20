@@ -33,9 +33,17 @@ Giggy lets gig workers:
 
 ## Key Features
 
+### 👤 User Profile & Smart Defaults (NEW)
+- **Default Home Address** - Automatically populates mileage tracking starting point
+- **Custom Tax Percentage** - Personalized tax rate (0-50%) for all new gigs
+- **Profile Settings Page** - Centralized user preference management
+- **Auto-population Logic** - Smart form defaults while maintaining editability
+- **Seamless Navigation** - Easy access via user menu with back navigation
+
 ### 📱 Calendar View
 - Monthly calendar grid showing all scheduled gigs
 - Color-coded gig status indicators
+- Enhanced "Add Gig" button (improved from circle icon)
 - Quick gig entry from any date
 - Visual overview of work schedule
 
@@ -44,7 +52,12 @@ Giggy lets gig workers:
 - Auto-complete for recurring clients
 - Expected vs. actual payment tracking
 - Expense categorization (parking, clothing, travel)
-- Mileage and travel expense tracking
+- **Advanced Mileage Tracking** with Google Maps integration
+  - Starting and ending address fields
+  - Multiple stops support with waypoint management
+  - Real-time distance and travel time calculation
+  - Round-trip toggle for return journey calculation
+  - Manual override option when needed
 - Professional duty descriptions for resume building
 
 ### 📊 Smart Dashboard
@@ -77,6 +90,7 @@ Giggy lets gig workers:
 - **UI Framework:** Tailwind CSS with Shadcn/ui components
 - **Authentication:** Multi-provider (Google OAuth + email/password)
 - **Session Management:** Secure cookie-based sessions
+- **External APIs:** Google Maps Distance Matrix API for mileage calculation
 
 ### Security & Compliance
 - Bcrypt password hashing
@@ -84,6 +98,8 @@ Giggy lets gig workers:
 - GDPR-compliant data export
 - Secure session management
 - PostgreSQL data integrity
+- CORS-compliant API design
+- Server-side external API calls for security
 
 ## Business Model
 
@@ -111,9 +127,24 @@ Giggy lets gig workers:
 ## Getting Started
 
 1. Sign up for a free 30-day trial
-2. Set up your profile and tax preferences
-3. Start logging gigs with the quick-entry form
-4. Track your progress toward financial goals
-5. Export professional resumes and tax documents
+2. **Set up your profile with default home address and tax percentage**
+3. Start logging gigs with the enhanced quick-entry form
+4. **Use advanced mileage tracking for accurate tax deductions**
+5. Track your progress toward financial goals
+6. Export professional resumes and tax documents
 
-Giggy transforms chaotic gig work into organized, profitable career management.
+## Latest Updates (June 2025)
+
+### Enhanced Mileage Tracking System
+- **Real-world accuracy**: Google Maps integration calculates actual driving distances
+- **Multi-stop routes**: Add waypoints for complex delivery or event routes
+- **Round-trip calculation**: Automatically double distance for return journeys
+- **Tax-ready logs**: Professional mileage records for tax deduction purposes
+
+### Profile-Based Automation
+- **Smart defaults**: Set home address once, auto-populate all future gigs
+- **Custom tax rates**: Personalize tax percentage (0-50%) based on your situation
+- **Editable flexibility**: Override defaults when starting from different locations
+- **Time-saving workflow**: Maintains sub-1-minute gig entry with enhanced features
+
+Giggy transforms chaotic gig work into organized, profitable career management with industry-leading mileage tracking capabilities.
