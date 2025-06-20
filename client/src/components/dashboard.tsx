@@ -805,15 +805,20 @@ export default function Dashboard() {
       </div>
 
       {/* Key Metrics Grid */}
+      <div className="mb-2">
+        <p className="text-sm text-gray-600 text-center">
+          💡 Click on each card below for detailed breakdowns
+        </p>
+      </div>
       <div className="grid grid-cols-3 gap-4 mb-6">
         <Card 
-          className="cursor-pointer hover:shadow-md transition-shadow"
+          className="cursor-pointer hover:shadow-md hover:border-blue-200 transition-all duration-200 border-2 border-transparent"
           onClick={() => setShowTaxBreakdown(true)}
         >
           <CardContent className="p-4">
             <div className="flex items-center justify-between mb-2">
               <span className="text-sm font-medium text-gray-600">Tax Estimate</span>
-              <Receipt className="w-5 h-5 text-orange-500" />
+              <Receipt className="w-5 h-5 text-orange-500 hover:text-orange-600" />
             </div>
             <p className="text-xl font-bold text-gray-900">
               {formatCurrency(getTaxBreakdownData().reduce((sum, item) => sum + item.taxAmount, 0))}
@@ -822,13 +827,13 @@ export default function Dashboard() {
           </CardContent>
         </Card>
         <Card 
-          className="cursor-pointer hover:shadow-md transition-shadow"
+          className="cursor-pointer hover:shadow-md hover:border-blue-200 transition-all duration-200 border-2 border-transparent"
           onClick={() => setShowTipsBreakdown(true)}
         >
           <CardContent className="p-4">
             <div className="flex items-center justify-between mb-2">
               <span className="text-sm font-medium text-gray-600">Tips Earned</span>
-              <Banknote className="w-5 h-5 text-green-500" />
+              <Banknote className="w-5 h-5 text-green-500 hover:text-green-600" />
             </div>
             <p className="text-xl font-bold text-gray-900">
               {formatCurrency(getTipsBreakdownData().reduce((sum, item) => sum + item.tips, 0))}
@@ -837,13 +842,13 @@ export default function Dashboard() {
           </CardContent>
         </Card>
         <Card 
-          className="cursor-pointer hover:shadow-md transition-shadow"
+          className="cursor-pointer hover:shadow-md hover:border-blue-200 transition-all duration-200 border-2 border-transparent"
           onClick={() => setShowExpenseBreakdown(true)}
         >
           <CardContent className="p-4">
             <div className="flex items-center justify-between mb-2">
               <span className="text-sm font-medium text-gray-600">Expenses</span>
-              <Car className="w-5 h-5 text-gray-500" />
+              <Car className="w-5 h-5 text-gray-500 hover:text-gray-600" />
             </div>
             <p className="text-xl font-bold text-gray-900">
               {formatCurrency(getExpenseBreakdownData().reduce((sum, item) => sum + item.totalExpenses, 0))}
