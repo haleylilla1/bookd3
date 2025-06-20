@@ -250,7 +250,13 @@ Return JSON in this exact format:
   ]
 }
 
-Be generous in extracting gigs - if there's any indication of separate work events, create separate entries.`;
+Be VERY generous in extracting gigs:
+- Extract ANY date you can find, even if approximate
+- Save ANY payment amount mentioned, even if uncertain
+- Use ANY client/company name mentioned, even if unclear
+- Create entries even with minimal information - better to save incomplete data than skip it
+- If there's any indication of separate work events, create separate entries
+- When in doubt, include the gig rather than skip it`;
 
       const response = await fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
@@ -323,9 +329,9 @@ Be generous in extracting gigs - if there's any indication of separate work even
         try {
           const { extractedData } = gigData;
           
-          // Validate required fields
-          if (!extractedData.startDate || !extractedData.clientName) {
-            errors.push(`Skipped gig: Missing required date or client name`);
+          // Only require a date - everything else can be empty/placeholder
+          if (!extractedData.startDate) {
+            errors.push(`Skipped gig: Missing date information`);
             skipped++;
             continue;
           }
@@ -336,7 +342,7 @@ Be generous in extracting gigs - if there's any indication of separate work even
             date: extractedData.startDate,
             gigType: extractedData.gigType || "Other",
             eventName: extractedData.eventName || "Imported Gig",
-            clientName: extractedData.clientName,
+            clientName: extractedData.clientName || "Unknown Client",
             gigAddress: extractedData.location || "",
             expectedPay: extractedData.expectedPay || extractedData.actualPay || "0",
             actualPay: extractedData.actualPay || extractedData.expectedPay || "0",
@@ -358,7 +364,7 @@ Be generous in extracting gigs - if there's any indication of separate work even
         } catch (error) {
           console.error("Error importing individual gig:", error);
           const { extractedData } = gigData;
-          errors.push(`Failed to import gig for ${extractedData.clientName || 'unknown client'}`);
+          errors.push(`Failed to import gig from: ${gigData.originalText.substring(0, 50)}...`);
           skipped++;
         }
       }
