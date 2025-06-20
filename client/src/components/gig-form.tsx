@@ -31,7 +31,7 @@ const gigFormSchema = z.object({
   tips: z.string().optional(),
   paymentMethod: z.string().optional(),
   duties: z.string().optional(),
-  taxPercentage: z.number().min(0).max(35).default(23),
+  taxPercentage: z.number().min(0).max(50).default(23),
   mileage: z.string().optional(),
   notes: z.string().optional(),
   status: z.enum(["upcoming", "completed", "pending_payment"]).default("upcoming"),
@@ -635,7 +635,7 @@ export default function GigForm({ onClose }: GigFormProps) {
                       <FormControl>
                         <Slider
                           min={0}
-                          max={35}
+                          max={50}
                           step={1}
                           value={[field.value]}
                           onValueChange={(value) => field.onChange(value[0])}
@@ -643,8 +643,8 @@ export default function GigForm({ onClose }: GigFormProps) {
                         />
                       </FormControl>
                       <div className="flex justify-between text-xs text-gray-500 mt-1">
-                        <span>0% (Under the table)</span>
-                        <span>35%</span>
+                        <span>0%</span>
+                        <span>50%</span>
                       </div>
                     </FormItem>
                   )}
