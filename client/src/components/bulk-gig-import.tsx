@@ -91,7 +91,8 @@ May 5th promotional event at Mall, $180`;
 
   const parseTextMutation = useMutation({
     mutationFn: async (text: string) => {
-      return apiRequest("POST", "/api/gigs/parse-bulk", { text });
+      const response = await apiRequest("POST", "/api/gigs/parse-bulk", { text });
+      return await response.json();
     },
     onSuccess: (data: any) => {
       const parsed = data.parsedGigs.map((gig: any, index: number) => ({
@@ -129,7 +130,8 @@ May 5th promotional event at Mall, $180`;
   const importGigsMutation = useMutation({
     mutationFn: async (gigs: ParsedGig[]) => {
       const selectedGigs = gigs.filter(g => g.selected);
-      return apiRequest("POST", "/api/gigs/bulk-import", { gigs: selectedGigs });
+      const response = await apiRequest("POST", "/api/gigs/bulk-import", { gigs: selectedGigs });
+      return await response.json();
     },
     onSuccess: (data: any) => {
       setImportResults(data);
