@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -28,51 +28,84 @@ export default function SimpleGoals() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const { data: goals = [] } = useQuery<Goal[]>({
+  const { data: goals = [], isLoading: goalsLoading, error: goalsError } = useQuery<Goal[]>({
     queryKey: ["/api/goals"],
+    staleTime: 5 * 60 * 1000,
+    retry: 2,
   });
 
-  const { data: gigs = [] } = useQuery<Gig[]>({
+  const { data: gigs = [], isLoading: gigsLoading } = useQuery<Gig[]>({
     queryKey: ["/api/gigs"],
+    staleTime: 5 * 60 * 1000,
+    retry: 2,
   });
 
-  const { data: allocations = [] } = useQuery<Allocation[]>({
+  const { data: allocations = [], isLoading: allocationsLoading, error: allocationsError } = useQuery<Allocation[]>({
     queryKey: ["/api/allocations"],
-    retry: false,
+    staleTime: 2 * 60 * 1000,
+    retry: 1,
   });
 
   const { data: user } = useQuery<User>({
     queryKey: ["/api/user"],
+    staleTime: 10 * 60 * 1000,
+    retry: 1,
   });
 
   // Create goal mutation
   const createGoalMutation = useMutation({
-    mutationFn: async (goalData: any) => {
+    mutationFn: async (goalData: {
+      name: string;
+      targetAmount: string;
+      category: string;
+      goalDuration: string;
+    }) => {
       const response = await apiRequest("POST", "/api/goals", goalData);
       return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/goals"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/dashboard/stats"] });
       toast({ title: "Goal created successfully" });
       setNewGoalName("");
       setNewGoalAmount("");
       setIsNewGoalOpen(false);
     },
+    onError: (error: any) => {
+      toast({
+        title: "Error creating goal",
+        description: error.message || "Failed to create goal",
+        variant: "destructive",
+      });
+    },
   });
 
   // Create allocation mutation
   const createAllocationMutation = useMutation({
-    mutationFn: async (allocationData: any) => {
+    mutationFn: async (allocationData: {
+      gigId: number;
+      goalId: number;
+      amount: string;
+      allocationType: string;
+    }) => {
       const response = await apiRequest("POST", "/api/allocations", allocationData);
       return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/allocations"] });
       queryClient.invalidateQueries({ queryKey: ["/api/goals"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/dashboard/stats"] });
       toast({ title: "Funds allocated successfully" });
       setSelectedGig(null);
       setSelectedGoal(null);
       setAllocationAmount("");
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error allocating funds",
+        description: error.message || "Failed to allocate funds",
+        variant: "destructive",
+      });
     },
   });
 
@@ -164,50 +197,104 @@ export default function SimpleGoals() {
     });
   };
 
+  // Memoize allocations by goal for performance
+  const allocationsByGoal = useMemo(() => {
+    const map = new Map<number, Allocation[]>();
+    allocations.forEach(allocation => {
+      const goalId = allocation.goalId;
+      if (goalId !== null && goalId !== undefined) {
+        if (!map.has(goalId)) {
+          map.set(goalId, []);
+        }
+        map.get(goalId)!.push(allocation);
+      }
+    });
+    return map;
+  }, [allocations]);
+
   const getGoalProgress = (goal: Goal) => {
-    const goalAllocations = allocations.filter(a => a.goalId === goal.id);
+    const goalAllocations = allocationsByGoal.get(goal.id) || [];
     const totalAllocated = goalAllocations.reduce((sum, a) => sum + parseFloat(a.amount), 0);
     const targetAmount = parseFloat(goal.targetAmount);
     const progress = targetAmount > 0 ? (totalAllocated / targetAmount) * 100 : 0;
     return { totalAllocated, progress: Math.min(progress, 100) };
   };
 
-  // Get available gigs (completed with pay)
-  const availableGigs = gigs.filter(gig => 
-    gig.status === "completed" && (gig.actualPay || gig.expectedPay)
-  );
-
-  // Calculate monthly earnings and available after tax
-  const currentMonth = new Date().getMonth() + 1;
-  const currentYear = new Date().getFullYear();
-  
-  const currentMonthGigs = gigs.filter(gig => {
-    const gigDate = new Date(gig.date);
-    return gigDate.getMonth() + 1 === currentMonth && 
-           gigDate.getFullYear() === currentYear &&
-           gig.status === "completed";
-  });
-
-  const totalMonthlyEarnings = currentMonthGigs.reduce((sum, gig) => {
-    const pay = parseFloat(gig.actualPay || gig.expectedPay || "0");
-    const tips = parseFloat(gig.tips || "0");
-    return sum + pay + tips;
-  }, 0);
-
-  const totalAllocatedThisMonth = allocations
-    .filter(allocation => {
-      const gig = gigs.find(g => g.id === allocation.gigId);
-      if (!gig) return false;
+  // Memoize current month calculations
+  const currentMonthData = useMemo(() => {
+    const currentMonth = new Date().getMonth() + 1;
+    const currentYear = new Date().getFullYear();
+    
+    const currentMonthGigs = gigs.filter(gig => {
       const gigDate = new Date(gig.date);
       return gigDate.getMonth() + 1 === currentMonth && 
-             gigDate.getFullYear() === currentYear;
-    })
-    .reduce((sum, allocation) => sum + parseFloat(allocation.amount), 0);
+             gigDate.getFullYear() === currentYear &&
+             gig.status === "completed";
+    });
 
-  // Calculate after-tax amount using user's tax percentage
-  const taxRate = (user?.defaultTaxPercentage || 23) / 100;
-  const afterTaxEarnings = totalMonthlyEarnings * (1 - taxRate);
-  const availableToAllocate = afterTaxEarnings - totalAllocatedThisMonth;
+    const totalMonthlyEarnings = currentMonthGigs.reduce((sum, gig) => {
+      const pay = parseFloat(gig.actualPay || gig.expectedPay || "0");
+      const tips = parseFloat(gig.tips || "0");
+      return sum + pay + tips;
+    }, 0);
+
+    const totalAllocatedThisMonth = allocations
+      .filter(allocation => {
+        const gig = gigs.find(g => g.id === allocation.gigId);
+        if (!gig) return false;
+        const gigDate = new Date(gig.date);
+        return gigDate.getMonth() + 1 === currentMonth && 
+               gigDate.getFullYear() === currentYear;
+      })
+      .reduce((sum, allocation) => sum + parseFloat(allocation.amount), 0);
+
+    const taxRate = (user?.defaultTaxPercentage || 23) / 100;
+    const afterTaxEarnings = totalMonthlyEarnings * (1 - taxRate);
+    const availableToAllocate = afterTaxEarnings - totalAllocatedThisMonth;
+
+    return {
+      totalMonthlyEarnings,
+      afterTaxEarnings,
+      totalAllocatedThisMonth,
+      availableToAllocate,
+    };
+  }, [gigs, allocations, user?.defaultTaxPercentage]);
+
+  // Memoize available gigs
+  const availableGigs = useMemo(() => 
+    gigs.filter(gig => 
+      gig.status === "completed" && (gig.actualPay || gig.expectedPay)
+    ), [gigs]
+  );
+
+  // Loading state
+  if (goalsLoading || gigsLoading || allocationsLoading) {
+    return (
+      <div className="max-w-5xl mx-auto p-6 space-y-6">
+        <div className="space-y-4">
+          {[...Array(4)].map((_, i) => (
+            <div key={i} className="bg-gray-200 animate-pulse h-32 rounded-xl" />
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  // Error state
+  if (goalsError || allocationsError) {
+    return (
+      <div className="max-w-5xl mx-auto p-6">
+        <Card>
+          <CardContent className="text-center py-12">
+            <div className="text-red-600 mb-4">Error loading goals data</div>
+            <Button onClick={() => window.location.reload()}>
+              Retry
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-5xl mx-auto p-6 space-y-6">
@@ -223,24 +310,24 @@ export default function SimpleGoals() {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div className="space-y-1">
               <p className="text-sm text-gray-600">Total Earned</p>
-              <p className="text-xl font-semibold text-gray-900">{formatCurrency(totalMonthlyEarnings)}</p>
+              <p className="text-xl font-semibold text-gray-900">{formatCurrency(currentMonthData.totalMonthlyEarnings)}</p>
             </div>
             <div className="space-y-1">
               <p className="text-sm text-gray-600">After Tax ({user?.defaultTaxPercentage || 23}%)</p>
-              <p className="text-xl font-semibold text-green-600">{formatCurrency(afterTaxEarnings)}</p>
+              <p className="text-xl font-semibold text-green-600">{formatCurrency(currentMonthData.afterTaxEarnings)}</p>
             </div>
             <div className="space-y-1">
               <p className="text-sm text-gray-600">Allocated</p>
-              <p className="text-xl font-semibold text-blue-600">{formatCurrency(totalAllocatedThisMonth)}</p>
+              <p className="text-xl font-semibold text-blue-600">{formatCurrency(currentMonthData.totalAllocatedThisMonth)}</p>
             </div>
             <div className="space-y-1">
               <p className="text-sm text-gray-600">Available</p>
-              <p className={`text-xl font-semibold ${availableToAllocate >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                {formatCurrency(availableToAllocate)}
+              <p className={`text-xl font-semibold ${currentMonthData.availableToAllocate >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                {formatCurrency(currentMonthData.availableToAllocate)}
               </p>
             </div>
           </div>
-          {availableToAllocate < 0 && (
+          {currentMonthData.availableToAllocate < 0 && (
             <div className="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
               <p className="text-sm text-yellow-800">
                 You've allocated more than your after-tax earnings this month.
