@@ -173,6 +173,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/gigs/parse-bulk", async (req, res) => {
     try {
       const { text } = req.body;
+      const userId = getCurrentUserId(req);
       
       if (!text || typeof text !== 'string') {
         return res.status(400).json({ error: "Text input is required" });
@@ -192,6 +193,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!apiKey) {
         return res.status(500).json({ error: "OpenAI API key not configured" });
       }
+
+      // Get user's existing gig types
+      const existingGigs = await storage.getGigsByUser(userId);
+      const userGigTypes = [...new Set(existingGigs.map(gig => gig.gigType).filter(Boolean))];
+      const availableTypes = userGigTypes.length > 0 ? userGigTypes : ["Other"];
 
       const systemPrompt = `You are a data extraction specialist for gig worker records. Parse messy gig notes and extract structured data.
 
