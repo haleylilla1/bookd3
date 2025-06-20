@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
-import { Calendar, PieChart, FileText, Target, User, Receipt } from "lucide-react";
+import { Calendar, PieChart, FileText, Target, User, Receipt, Upload } from "lucide-react";
 import type { Screen } from "@/pages/home";
+import { useLocation } from "wouter";
 
 interface BottomNavigationProps {
   currentScreen: Screen;
@@ -8,16 +9,18 @@ interface BottomNavigationProps {
 }
 
 export default function BottomNavigation({ currentScreen, onScreenChange }: BottomNavigationProps) {
+  const [, setLocation] = useLocation();
+  
   const navItems = [
-    { id: "calendar" as const, label: "Calendar", icon: Calendar },
     { id: "dashboard" as const, label: "Dashboard", icon: PieChart },
+    { id: "calendar" as const, label: "Calendar", icon: Calendar },
     { id: "goals" as const, label: "Goals", icon: Target },
     { id: "invoices" as const, label: "Invoices", icon: Receipt },
     { id: "profile" as const, label: "Profile", icon: User },
   ];
 
   return (
-    <nav className="fixed bottom-0 left-1/2 transform -translate-x-1/2 w-full max-w-md bg-white border-t border-gray-200 px-4 py-2">
+    <nav className="fixed bottom-0 left-1/2 transform -translate-x-1/2 w-full max-w-md bg-white border-t border-gray-200 px-2 py-2">
       <div className="flex items-center justify-around">
         {navItems.map((item) => {
           const isActive = currentScreen === item.id;
@@ -29,15 +32,26 @@ export default function BottomNavigation({ currentScreen, onScreenChange }: Bott
               variant="ghost"
               size="sm"
               onClick={() => onScreenChange(item.id)}
-              className={`flex flex-col items-center space-y-1 p-2 ${
+              className={`flex flex-col items-center space-y-1 p-1 ${
                 isActive ? "text-primary" : "text-gray-400"
               }`}
             >
-              <Icon className="w-5 h-5" />
+              <Icon className="w-4 h-4" />
               <span className="text-xs font-medium">{item.label}</span>
             </Button>
           );
         })}
+        
+        {/* Import Button */}
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => setLocation('/import')}
+          className="flex flex-col items-center space-y-1 p-1 text-blue-600"
+        >
+          <Upload className="w-4 h-4" />
+          <span className="text-xs font-medium">Import</span>
+        </Button>
       </div>
     </nav>
   );
