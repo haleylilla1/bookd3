@@ -47,6 +47,10 @@ export default function CalendarView() {
     queryKey: ["/api/gigs"],
   });
 
+  const { data: user } = useQuery({
+    queryKey: ["/api/user"],
+  });
+
   const updateGigMutation = useMutation({
     mutationFn: async (gigData: { id: number; data: Partial<Gig> }) => {
       const response = await apiRequest("PUT", `/api/gigs/${gigData.id}`, gigData.data);
@@ -722,10 +726,15 @@ function GigEditForm({ gig, onSave, onCancel, isLoading }: GigEditFormProps) {
     roundTrip: true,
   });
 
-  // Get user's home address for starting point default
-  const { data: user } = useQuery({
-    queryKey: ["/api/user"],
-  });
+  // Auto-populate starting address with user's home address
+  useEffect(() => {
+    if (user?.homeAddress && !mileageTracking.startingAddress) {
+      setMileageTracking(prev => ({ 
+        ...prev, 
+        startingAddress: user.homeAddress 
+      }));
+    }
+  }, [user?.homeAddress]);
 
   // Auto-populate addresses when component mounts
   useEffect(() => {
