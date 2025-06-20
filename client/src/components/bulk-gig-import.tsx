@@ -70,21 +70,13 @@ export default function BulkGigImport({ onClose }: BulkGigImportProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  // Fetch existing gigs to determine available gig types
-  const { data: existingGigs } = useQuery({
-    queryKey: ["/api/gigs"],
+  // Fetch user profile to get custom gig types
+  const { data: user } = useQuery({
+    queryKey: ["/api/user"],
   });
 
-  // Get unique gig types from existing gigs (only user's actual types)
-  const existingTypes = Array.isArray(existingGigs) 
-    ? existingGigs.map((gig: any) => gig.gigType).filter(Boolean)
-    : [];
-  const availableGigTypes = existingTypes.filter((type, index) => existingTypes.indexOf(type) === index);
-  
-  // Add "Other" option if user doesn't have it, in case they need to categorize something new
-  if (!availableGigTypes.includes("Other")) {
-    availableGigTypes.push("Other");
-  }
+  // Get user's custom gig types from profile
+  const availableGigTypes = user?.customGigTypes || ["Other"];
 
   const form = useForm<ImportFormData>({
     resolver: zodResolver(importFormSchema),
