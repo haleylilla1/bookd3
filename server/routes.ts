@@ -1097,6 +1097,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.patch("/api/budgets/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid budget ID" });
+      }
+
+      const updateData = req.body;
+      const budget = await storage.updateBudget(id, updateData);
+      
+      if (!budget) {
+        return res.status(404).json({ message: "Budget not found" });
+      }
+      
+      res.json(budget);
+    } catch (error) {
+      console.error("Update budget error:", error);
+      res.status(500).json({ message: "Failed to update budget" });
+    }
+  });
+
   app.get("/api/expense-categories", async (req, res) => {
     try {
       const categories = await storage.getExpenseCategoriesByUser(currentUserId);
