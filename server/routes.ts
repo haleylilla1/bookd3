@@ -14,398 +14,101 @@ import { z } from "zod";
 import { setupAuthRoutes } from "./auth-routes";
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // Initialize passport strategies
-  setupGoogleAuth();
-  setupLocalAuth();
-  setupPassportSerialization();
+  // Setup authentication routes first
+  const requireAuth = setupAuthRoutes(app);
   
-  app.use(passport.initialize());
-  app.use(passport.session());
-  
-  // Helper function to get current authenticated user
-  const getCurrentUser = async (req: any) => {
-    if (req.isAuthenticated && req.isAuthenticated()) {
-      return req.user;
-    }
-    // Fallback for development - remove in production
-    return await storage.getUser(1);
-  };
-  
-  // Helper function to get current user ID
+  // Simple session-based user switching for existing functionality
+  let currentUserId = 1; // Default user
+
+  // Helper function to get current user ID from session or auth
   const getCurrentUserId = (req: any) => {
     if (req.isAuthenticated && req.isAuthenticated()) {
       return req.user.id;
     }
-    // Fallback for development - remove in production
-    return 1;
+    return currentUserId;
+  };
+
+  // Helper function to get current user
+  const getCurrentUser = async (req?: any) => {
+    const userId = req ? getCurrentUserId(req) : currentUserId;
+    return await storage.getUser(userId);
   };
 
   // User switching endpoint for testing
   app.post("/api/switch-user", async (req, res) => {
     try {
       const { userId } = req.body;
-      const user = await storage.getUser(userId);
-      if (user) {
-        currentUserId = userId;
-        res.json({ message: "User switched successfully", user });
-      } else {
-        res.status(404).json({ message: "User not found" });
+      if (!userId || typeof userId !== "number") {
+        return res.status(400).json({ message: "Invalid user ID" });
       }
+      
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      currentUserId = userId;
+      res.json({ message: "User switched successfully", user });
     } catch (error) {
+      console.error("Switch user error:", error);
       res.status(500).json({ message: "Failed to switch user" });
     }
   });
 
-  // Create new user endpoint
-  app.post("/api/create-user", async (req, res) => {
+  // Get current user (fallback for existing functionality)
+  app.get("/api/user", async (req, res) => {
     try {
-      const { name, email } = req.body;
-      const newUser = await storage.createUser({
-        name: name || "New User",
-        email: email || `user${Date.now()}@example.com`,
-      });
-      currentUserId = newUser.id;
-      res.json({ message: "User created successfully", user: newUser });
-    } catch (error) {
-      console.error("Failed to create user:", error);
-      res.status(500).json({ message: "Failed to create user" });
-    }
-  });
-
-  // Add authentication routes
-  app.get('/api/auth/user', async (req: any, res) => {
-    try {
-      const user = await getCurrentUser();
+      const userId = getCurrentUserId(req);
+      const user = await getCurrentUser(req);
       if (!user) {
         return res.status(404).json({ message: "User not found" });
       }
       res.json(user);
     } catch (error) {
-      console.error("Error fetching user:", error);
+      console.error("Get user error:", error);
       res.status(500).json({ message: "Failed to fetch user" });
     }
   });
 
-  // Annual report export routes (register early to avoid conflicts)
-  app.get("/api/reports/annual/excel", async (req, res) => {
-    try {
-      const { year } = req.query;
-      const targetYear = year ? parseInt(year as string) : new Date().getFullYear();
-      
-      const user = await getCurrentUser();
-      if (!user) {
-        return res.status(401).json({ message: "User not authenticated" });
-      }
-      
-      // Get annual data
-      const startDate = new Date(targetYear, 0, 1).toISOString().split('T')[0];
-      const endDate = new Date(targetYear, 11, 31).toISOString().split('T')[0];
-      const gigs = await storage.getGigsByDateRange(user.id, startDate, endDate);
-      
-      // Calculate totals
-      const totalEarnings = gigs.reduce((sum, gig) => sum + parseFloat(gig.actualPay || '0'), 0);
-      const totalTips = gigs.reduce((sum, gig) => sum + parseFloat(gig.tips || '0'), 0);
-      const totalMileage = gigs.reduce((sum, gig) => sum + (gig.mileage || 0), 0);
-      const totalExpenses = gigs.reduce((sum, gig) => sum + parseFloat(gig.parkingExpense || '0') + parseFloat(gig.otherExpenses || '0'), 0);
-      
-      // Group gigs by month for breakdown
-      const monthlyBreakdown = Array.from({length: 12}, (_, i) => {
-        const monthGigs = gigs.filter(gig => new Date(gig.date).getMonth() === i);
-        const monthEarnings = monthGigs.reduce((sum, gig) => sum + parseFloat(gig.actualPay || '0'), 0);
-        return {
-          month: new Date(targetYear, i, 1).toLocaleDateString('en-US', { month: 'long' }),
-          gigs: monthGigs.length,
-          earnings: monthEarnings
-        };
-      });
-      
-      // Create Excel workbook
-      const XLSX = await import('xlsx');
-      const workbook = XLSX.utils.book_new();
-      
-      // Annual Summary sheet
-      const summaryData = [
-        ['Annual Report Summary'],
-        ['Year', targetYear.toString()],
-        [''],
-        ['Total Earnings', `$${totalEarnings.toFixed(2)}`],
-        ['Total Tips', `$${totalTips.toFixed(2)}`],
-        ['Total Mileage', `${totalMileage} miles`],
-        ['Total Expenses', `$${totalExpenses.toFixed(2)}`],
-        ['Net Income', `$${(totalEarnings - totalExpenses).toFixed(2)}`],
-        ['Total Gigs', gigs.length.toString()],
-        ['Average per Gig', `$${gigs.length > 0 ? (totalEarnings / gigs.length).toFixed(2) : '0.00'}`],
-      ];
-      
-      const summarySheet = XLSX.utils.aoa_to_sheet(summaryData);
-      XLSX.utils.book_append_sheet(workbook, summarySheet, 'Annual Summary');
-      
-      // Monthly Breakdown sheet
-      const monthlyData = [
-        ['Month', 'Gigs', 'Earnings']
-      ];
-      
-      monthlyBreakdown.forEach(month => {
-        monthlyData.push([
-          month.month,
-          month.gigs.toString(),
-          `$${month.earnings.toFixed(2)}`
-        ]);
-      });
-      
-      const monthlySheet = XLSX.utils.aoa_to_sheet(monthlyData);
-      XLSX.utils.book_append_sheet(workbook, monthlySheet, 'Monthly Breakdown');
-      
-      // Detailed gigs sheet
-      const gigsData = [
-        ['Date', 'Client', 'Gig Type', 'Location', 'Earnings', 'Tips', 'Mileage', 'Expenses', 'Receipt Photos']
-      ];
-      
-      gigs.forEach(gig => {
-        const earnings = parseFloat(gig.actualPay || '0');
-        const expenses = parseFloat(gig.parkingExpense || '0') + parseFloat(gig.otherExpenses || '0');
-        const receiptCount = (gig.parkingReceipts?.length || 0) + (gig.otherExpenseReceipts?.length || 0);
-        
-        gigsData.push([
-          gig.date,
-          gig.clientName,
-          gig.gigType,
-          gig.gigAddress || '',
-          `$${earnings.toFixed(2)}`,
-          `$${parseFloat(gig.tips || '0').toFixed(2)}`,
-          (gig.mileage || 0).toString(),
-          `$${expenses.toFixed(2)}`,
-          receiptCount > 0 ? `${receiptCount} photos` : 'None'
-        ]);
-      });
-      
-      const gigsSheet = XLSX.utils.aoa_to_sheet(gigsData);
-      XLSX.utils.book_append_sheet(workbook, gigsSheet, 'All Gigs Detail');
-      
-      // Expense Photos Index sheet
-      const expensePhotosData = [
-        ['Date', 'Client', 'Expense Type', 'Amount', 'Photo Files']
-      ];
-      
-      gigs.forEach(gig => {
-        if (gig.parkingReceipts && gig.parkingReceipts.length > 0) {
-          expensePhotosData.push([
-            gig.date,
-            gig.clientName,
-            'Parking',
-            `$${parseFloat(gig.parkingExpense || '0').toFixed(2)}`,
-            gig.parkingReceipts.join(', ')
-          ]);
-        }
-        if (gig.otherExpenseReceipts && gig.otherExpenseReceipts.length > 0) {
-          expensePhotosData.push([
-            gig.date,
-            gig.clientName,
-            'Other Expenses',
-            `$${parseFloat(gig.otherExpenses || '0').toFixed(2)}`,
-            gig.otherExpenseReceipts.join(', ')
-          ]);
-        }
-      });
-      
-      if (expensePhotosData.length > 1) {
-        const expensePhotosSheet = XLSX.utils.aoa_to_sheet(expensePhotosData);
-        XLSX.utils.book_append_sheet(workbook, expensePhotosSheet, 'Expense Photos Index');
-      }
-      
-      // Generate Excel buffer
-      const excelBuffer = XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' });
-      
-      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-      res.setHeader('Content-Disposition', `attachment; filename="annual-report-${targetYear}.xlsx"`);
-      res.send(excelBuffer);
-      
-    } catch (error) {
-      console.error("Failed to generate annual Excel report:", error);
-      res.status(500).json({ message: "Failed to generate annual Excel report" });
-    }
-  });
-
-  app.get("/api/reports/annual/pdf", async (req, res) => {
-    try {
-      console.log("Annual PDF route hit with query:", req.query);
-      const { year } = req.query;
-      const targetYear = year ? parseInt(year as string) : new Date().getFullYear();
-      
-      // Get annual data
-      const startDate = new Date(targetYear, 0, 1).toISOString().split('T')[0];
-      const endDate = new Date(targetYear, 11, 31).toISOString().split('T')[0];
-      const gigs = await storage.getGigsByDateRange(currentUserId, startDate, endDate);
-      const user = await storage.getUser(currentUserId);
-      
-      // Calculate totals
-      const totalEarnings = gigs.reduce((sum, gig) => sum + parseFloat(gig.actualPay || '0'), 0);
-      const totalTips = gigs.reduce((sum, gig) => sum + parseFloat(gig.tips || '0'), 0);
-      const totalMileage = gigs.reduce((sum, gig) => sum + (gig.mileage || 0), 0);
-      const totalExpenses = gigs.reduce((sum, gig) => sum + parseFloat(gig.parkingExpense || '0') + parseFloat(gig.otherExpenses || '0'), 0);
-      
-      // Group gigs by month for breakdown
-      const monthlyBreakdown = Array.from({length: 12}, (_, i) => {
-        const monthGigs = gigs.filter(gig => new Date(gig.date).getMonth() === i);
-        const monthEarnings = monthGigs.reduce((sum, gig) => sum + parseFloat(gig.actualPay || '0'), 0);
-        return {
-          month: new Date(targetYear, i, 1).toLocaleDateString('en-US', { month: 'short' }),
-          gigs: monthGigs.length,
-          earnings: monthEarnings
-        };
-      }).filter(month => month.gigs > 0);
-      
-      // Create PDF
-      const { jsPDF } = await import('jspdf');
-      const autoTable = (await import('jspdf-autotable')).default;
-      
-      const doc = new jsPDF();
-      
-      // Title
-      doc.setFontSize(24);
-      doc.text('Annual Gig Report', 20, 25);
-      
-      // Report details
-      doc.setFontSize(14);
-      doc.text(`Year: ${targetYear}`, 20, 40);
-      doc.text(`Worker: ${user?.name || 'N/A'}`, 20, 50);
-      doc.text(`Generated: ${new Date().toLocaleDateString()}`, 20, 60);
-      
-      // Annual Summary section
-      doc.setFontSize(16);
-      doc.text('Annual Summary', 20, 80);
-      
-      const summaryData = [
-        ['Total Earnings', `$${totalEarnings.toFixed(2)}`],
-        ['Total Tips', `$${totalTips.toFixed(2)}`],
-        ['Total Mileage', `${totalMileage} miles`],
-        ['Total Expenses', `$${totalExpenses.toFixed(2)}`],
-        ['Net Income', `$${(totalEarnings - totalExpenses).toFixed(2)}`],
-        ['Total Gigs', gigs.length.toString()],
-        ['Average per Gig', `$${gigs.length > 0 ? (totalEarnings / gigs.length).toFixed(2) : '0.00'}`]
-      ];
-      
-      autoTable(doc, {
-        startY: 90,
-        head: [['Metric', 'Amount']],
-        body: summaryData,
-        theme: 'grid',
-        headStyles: { fillColor: [66, 139, 202] }
-      });
-      
-      // Monthly breakdown
-      if (monthlyBreakdown.length > 0) {
-        doc.addPage();
-        doc.setFontSize(16);
-        doc.text('Monthly Breakdown', 20, 20);
-        
-        const monthlyTableData = monthlyBreakdown.map(month => [
-          month.month,
-          month.gigs.toString(),
-          `$${month.earnings.toFixed(2)}`
-        ]);
-        
-        autoTable(doc, {
-          startY: 30,
-          head: [['Month', 'Gigs', 'Earnings']],
-          body: monthlyTableData,
-          theme: 'grid',
-          headStyles: { fillColor: [66, 139, 202] }
-        });
-      }
-      
-      // Expense Photos Index
-      const gigsWithReceipts = gigs.filter(gig => 
-        (gig.parkingReceipts && gig.parkingReceipts.length > 0) || 
-        (gig.otherExpenseReceipts && gig.otherExpenseReceipts.length > 0)
-      );
-      
-      if (gigsWithReceipts.length > 0) {
-        doc.addPage();
-        doc.setFontSize(16);
-        doc.text('Expense Photos Index', 20, 20);
-        
-        const expenseData: any[] = [];
-        gigsWithReceipts.forEach(gig => {
-          if (gig.parkingReceipts && gig.parkingReceipts.length > 0) {
-            expenseData.push([
-              gig.date,
-              gig.clientName,
-              'Parking',
-              `$${parseFloat(gig.parkingExpense || '0').toFixed(2)}`,
-              `${gig.parkingReceipts.length} photos`
-            ]);
-          }
-          if (gig.otherExpenseReceipts && gig.otherExpenseReceipts.length > 0) {
-            expenseData.push([
-              gig.date,
-              gig.clientName,
-              'Other',
-              `$${parseFloat(gig.otherExpenses || '0').toFixed(2)}`,
-              `${gig.otherExpenseReceipts.length} photos`
-            ]);
-          }
-        });
-        
-        autoTable(doc, {
-          startY: 30,
-          head: [['Date', 'Client', 'Type', 'Amount', 'Photos']],
-          body: expenseData,
-          theme: 'grid',
-          headStyles: { fillColor: [66, 139, 202] },
-          styles: { fontSize: 10 }
-        });
-      }
-      
-      const pdfBuffer = Buffer.from(doc.output('arraybuffer'));
-      
-      res.setHeader('Content-Type', 'application/pdf');
-      res.setHeader('Content-Disposition', `attachment; filename="annual-report-${targetYear}.pdf"`);
-      res.send(pdfBuffer);
-      
-    } catch (error) {
-      console.error("Failed to generate annual PDF report:", error);
-      res.status(500).json({ message: "Failed to generate annual PDF report" });
-    }
-  });
-
-  // Gigs routes
+  // Gig routes
   app.get("/api/gigs", async (req, res) => {
     try {
-      const gigs = await storage.getGigsByUser(currentUserId);
+      const userId = getCurrentUserId(req);
+      const gigs = await storage.getGigsByUser(userId);
       res.json(gigs);
     } catch (error) {
-      console.error("Failed to fetch gigs:", error);
+      console.error("Get gigs error:", error);
       res.status(500).json({ message: "Failed to fetch gigs" });
     }
   });
 
   app.get("/api/gigs/date-range", async (req, res) => {
     try {
+      const userId = getCurrentUserId(req);
       const { startDate, endDate } = req.query;
       if (!startDate || !endDate) {
         return res.status(400).json({ message: "Start date and end date are required" });
       }
       
-      const gigs = await storage.getGigsByDateRange(currentUserId, startDate as string, endDate as string);
+      const gigs = await storage.getGigsByDateRange(userId, startDate as string, endDate as string);
       res.json(gigs);
     } catch (error) {
-      console.error("Failed to fetch gigs by date range:", error);
+      console.error("Get gigs by date range error:", error);
       res.status(500).json({ message: "Failed to fetch gigs by date range" });
     }
   });
 
   app.post("/api/gigs", async (req, res) => {
     try {
-      const gigData = insertGigSchema.parse({ ...req.body, userId: currentUserId });
+      const userId = getCurrentUserId(req);
+      const gigData = insertGigSchema.parse({ ...req.body, userId });
       const gig = await storage.createGig(gigData);
-      res.status(201).json(gig);
+      res.json(gig);
     } catch (error) {
       if (error instanceof z.ZodError) {
-        console.error("Validation error creating gig:", error.errors);
         return res.status(400).json({ message: "Invalid gig data", errors: error.errors });
       }
-      console.error("Failed to create gig:", error);
+      console.error("Create gig error:", error);
       res.status(500).json({ message: "Failed to create gig" });
     }
   });
@@ -413,44 +116,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.put("/api/gigs/:id", async (req, res) => {
     try {
       const id = parseInt(req.params.id);
-      if (isNaN(id)) {
-        return res.status(400).json({ message: "Invalid gig ID" });
-      }
-
-      const updateData = { ...req.body };
-      
-      // Convert empty strings to null for numeric/decimal fields
-      const numericFields = ['expectedPay', 'actualPay', 'tips', 'parkingExpense', 'otherExpenses', 'distanceMiles'];
-      const integerFields = ['taxPercentage', 'mileage', 'travelTimeMinutes'];
-      const arrayFields = ['parkingReceipts', 'otherExpenseReceipts'];
-      
-      numericFields.forEach(field => {
-        if (updateData[field] === "") {
-          updateData[field] = null;
-        }
-      });
-      
-      integerFields.forEach(field => {
-        if (updateData[field] === "") {
-          updateData[field] = null;
-        }
-      });
-      
-      // Ensure array fields are properly formatted
-      arrayFields.forEach(field => {
-        if (!updateData[field]) {
-          updateData[field] = [];
-        }
-      });
-
-      const gig = await storage.updateGig(id, updateData);
-      
+      const gigData = insertGigSchema.partial().parse(req.body);
+      const gig = await storage.updateGig(id, gigData);
       if (!gig) {
         return res.status(404).json({ message: "Gig not found" });
       }
-      
       res.json(gig);
     } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid gig data", errors: error.errors });
+      }
       console.error("Update gig error:", error);
       res.status(500).json({ message: "Failed to update gig" });
     }
@@ -459,17 +134,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.delete("/api/gigs/:id", async (req, res) => {
     try {
       const id = parseInt(req.params.id);
-      if (isNaN(id)) {
-        return res.status(400).json({ message: "Invalid gig ID" });
-      }
-
-      const deleted = await storage.deleteGig(id);
-      
-      if (!deleted) {
+      const success = await storage.deleteGig(id);
+      if (!success) {
         return res.status(404).json({ message: "Gig not found" });
       }
-      
-      res.status(204).send();
+      res.json({ message: "Gig deleted successfully" });
     } catch (error) {
       console.error("Delete gig error:", error);
       res.status(500).json({ message: "Failed to delete gig" });
@@ -479,22 +148,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Goals routes
   app.get("/api/goals", async (req, res) => {
     try {
-      const goals = await storage.getGoalsByUser(currentUserId);
+      const userId = getCurrentUserId(req);
+      const goals = await storage.getGoalsByUser(userId);
       res.json(goals);
     } catch (error) {
+      console.error("Get goals error:", error);
       res.status(500).json({ message: "Failed to fetch goals" });
     }
   });
 
   app.post("/api/goals", async (req, res) => {
     try {
-      const goalData = insertGoalSchema.parse({ ...req.body, userId: currentUserId });
+      const userId = getCurrentUserId(req);
+      const goalData = insertGoalSchema.parse({ ...req.body, userId });
       const goal = await storage.createGoal(goalData);
-      res.status(201).json(goal);
+      res.json(goal);
     } catch (error) {
       if (error instanceof z.ZodError) {
         return res.status(400).json({ message: "Invalid goal data", errors: error.errors });
       }
+      console.error("Create goal error:", error);
       res.status(500).json({ message: "Failed to create goal" });
     }
   });
@@ -502,19 +175,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.put("/api/goals/:id", async (req, res) => {
     try {
       const id = parseInt(req.params.id);
-      if (isNaN(id)) {
-        return res.status(400).json({ message: "Invalid goal ID" });
-      }
-
-      const updateData = req.body;
-      const goal = await storage.updateGoal(id, updateData);
-      
+      const goalData = insertGoalSchema.partial().parse(req.body);
+      const goal = await storage.updateGoal(id, goalData);
       if (!goal) {
         return res.status(404).json({ message: "Goal not found" });
       }
-      
       res.json(goal);
     } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid goal data", errors: error.errors });
+      }
       console.error("Update goal error:", error);
       res.status(500).json({ message: "Failed to update goal" });
     }
@@ -523,17 +193,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.delete("/api/goals/:id", async (req, res) => {
     try {
       const id = parseInt(req.params.id);
-      if (isNaN(id)) {
-        return res.status(400).json({ message: "Invalid goal ID" });
-      }
-
-      const deleted = await storage.deleteGoal(id);
-      
-      if (!deleted) {
+      const success = await storage.deleteGoal(id);
+      if (!success) {
         return res.status(404).json({ message: "Goal not found" });
       }
-      
-      res.status(204).send();
+      res.json({ message: "Goal deleted successfully" });
     } catch (error) {
       console.error("Delete goal error:", error);
       res.status(500).json({ message: "Failed to delete goal" });
@@ -543,44 +207,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Allocations routes
   app.get("/api/allocations", async (req, res) => {
     try {
-      const allocations = await storage.getAllocationsByUser(currentUserId);
+      const userId = getCurrentUserId(req);
+      const allocations = await storage.getAllocationsByUser(userId);
       res.json(allocations);
     } catch (error) {
+      console.error("Get allocations error:", error);
       res.status(500).json({ message: "Failed to fetch allocations" });
     }
   });
 
-  app.get("/api/piggy-bank-total", async (req, res) => {
+  app.get("/api/allocations/gig/:gigId", async (req, res) => {
     try {
-      const allocations = await storage.getAllocationsByUser(currentUserId);
-      const piggyBankTotal = allocations
-        .filter(a => a.allocationType === "piggy_bank")
-        .reduce((sum, a) => sum + parseFloat(a.amount), 0);
-      res.json(piggyBankTotal);
+      const gigId = parseInt(req.params.gigId);
+      const allocations = await storage.getAllocationsByGig(gigId);
+      res.json(allocations);
     } catch (error) {
-      res.status(500).json({ message: "Failed to fetch piggy bank total" });
+      console.error("Get allocations by gig error:", error);
+      res.status(500).json({ message: "Failed to fetch allocations by gig" });
+    }
+  });
+
+  app.get("/api/allocations/goal/:goalId", async (req, res) => {
+    try {
+      const goalId = parseInt(req.params.goalId);
+      const allocations = await storage.getAllocationsByGoal(goalId);
+      res.json(allocations);
+    } catch (error) {
+      console.error("Get allocations by goal error:", error);
+      res.status(500).json({ message: "Failed to fetch allocations by goal" });
     }
   });
 
   app.post("/api/allocations", async (req, res) => {
     try {
-      const allocationData = insertAllocationSchema.parse({ ...req.body, userId: currentUserId });
+      const userId = getCurrentUserId(req);
+      const allocationData = insertAllocationSchema.parse({ ...req.body, userId });
       const allocation = await storage.createAllocation(allocationData);
-      
-      // Update goal current amount if allocating to a goal
-      if (allocation.goalId && allocation.allocationType === "goal") {
-        const goal = await storage.getGoal(allocation.goalId);
-        if (goal) {
-          const newCurrentAmount = (parseFloat(goal.currentAmount || "0") + parseFloat(allocation.amount)).toString();
-          await storage.updateGoal(allocation.goalId, { currentAmount: newCurrentAmount });
-        }
-      }
-      
-      res.status(201).json(allocation);
+      res.json(allocation);
     } catch (error) {
       if (error instanceof z.ZodError) {
         return res.status(400).json({ message: "Invalid allocation data", errors: error.errors });
       }
+      console.error("Create allocation error:", error);
       res.status(500).json({ message: "Failed to create allocation" });
     }
   });
@@ -588,24 +256,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.put("/api/allocations/:id", async (req, res) => {
     try {
       const id = parseInt(req.params.id);
-      if (isNaN(id)) {
-        return res.status(400).json({ message: "Invalid allocation ID" });
-      }
-
-      const { amount } = req.body;
-      
-      if (!amount || isNaN(parseFloat(amount)) || parseFloat(amount) <= 0) {
-        return res.status(400).json({ message: "Valid positive amount is required" });
-      }
-
-      const allocation = await storage.updateAllocation(id, { amount });
-      
+      const allocationData = insertAllocationSchema.partial().parse(req.body);
+      const allocation = await storage.updateAllocation(id, allocationData);
       if (!allocation) {
         return res.status(404).json({ message: "Allocation not found" });
       }
-      
       res.json(allocation);
     } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid allocation data", errors: error.errors });
+      }
       console.error("Update allocation error:", error);
       res.status(500).json({ message: "Failed to update allocation" });
     }
@@ -614,27 +274,149 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.delete("/api/allocations/:id", async (req, res) => {
     try {
       const id = parseInt(req.params.id);
-      if (isNaN(id)) {
-        return res.status(400).json({ message: "Invalid allocation ID" });
-      }
-
-      const deleted = await storage.deleteAllocation(id);
-      
-      if (!deleted) {
+      const success = await storage.deleteAllocation(id);
+      if (!success) {
         return res.status(404).json({ message: "Allocation not found" });
       }
-      
-      res.status(204).send();
+      res.json({ message: "Allocation deleted successfully" });
     } catch (error) {
       console.error("Delete allocation error:", error);
       res.status(500).json({ message: "Failed to delete allocation" });
     }
   });
 
-  // Invoice routes
+  // Period Goals routes
+  app.get("/api/goals/period/monthly/:date", async (req, res) => {
+    try {
+      const userId = getCurrentUserId(req);
+      const date = new Date(req.params.date);
+      const month = date.getMonth() + 1;
+      const year = date.getFullYear();
+      
+      const goal = await storage.getMonthlyGoal(userId, month, year);
+      res.json(goal || null);
+    } catch (error) {
+      console.error("Get monthly goal error:", error);
+      res.status(500).json({ message: "Failed to fetch monthly goal" });
+    }
+  });
+
+  app.post("/api/goals/period/monthly", async (req, res) => {
+    try {
+      const userId = getCurrentUserId(req);
+      const { month, year, goalAmount } = req.body;
+      
+      if (!month || !year || !goalAmount) {
+        return res.status(400).json({ message: "Month, year, and goal amount are required" });
+      }
+      
+      const goal = await storage.setMonthlyGoal(userId, month, year, goalAmount);
+      res.json(goal);
+    } catch (error) {
+      console.error("Set monthly goal error:", error);
+      res.status(500).json({ message: "Failed to set monthly goal" });
+    }
+  });
+
+  app.get("/api/goals/period/weekly/:weekStartDate", async (req, res) => {
+    try {
+      const userId = getCurrentUserId(req);
+      const weekStartDate = req.params.weekStartDate;
+      
+      const goal = await storage.getWeeklyGoal(userId, weekStartDate);
+      res.json(goal || null);
+    } catch (error) {
+      console.error("Get weekly goal error:", error);
+      res.status(500).json({ message: "Failed to fetch weekly goal" });
+    }
+  });
+
+  app.post("/api/goals/period/weekly", async (req, res) => {
+    try {
+      const userId = getCurrentUserId(req);
+      const { weekStartDate, goalAmount } = req.body;
+      
+      if (!weekStartDate || !goalAmount) {
+        return res.status(400).json({ message: "Week start date and goal amount are required" });
+      }
+      
+      const goal = await storage.setWeeklyGoal(userId, weekStartDate, goalAmount);
+      res.json(goal);
+    } catch (error) {
+      console.error("Set weekly goal error:", error);
+      res.status(500).json({ message: "Failed to set weekly goal" });
+    }
+  });
+
+  app.get("/api/goals/period/yearly/:year", async (req, res) => {
+    try {
+      const userId = getCurrentUserId(req);
+      const year = parseInt(req.params.year);
+      
+      const goal = await storage.getYearlyGoal(userId, year);
+      res.json(goal || null);
+    } catch (error) {
+      console.error("Get yearly goal error:", error);
+      res.status(500).json({ message: "Failed to fetch yearly goal" });
+    }
+  });
+
+  app.post("/api/goals/period/yearly", async (req, res) => {
+    try {
+      const userId = getCurrentUserId(req);
+      const { year, goalAmount } = req.body;
+      
+      if (!year || !goalAmount) {
+        return res.status(400).json({ message: "Year and goal amount are required" });
+      }
+      
+      const goal = await storage.setYearlyGoal(userId, year, goalAmount);
+      res.json(goal);
+    } catch (error) {
+      console.error("Set yearly goal error:", error);
+      res.status(500).json({ message: "Failed to set yearly goal" });
+    }
+  });
+
+  // Dashboard stats
+  app.get("/api/dashboard/stats", async (req, res) => {
+    try {
+      const userId = getCurrentUserId(req);
+      const gigs = await storage.getGigsByUser(userId);
+      
+      const monthlyEarnings = gigs
+        .filter(gig => {
+          const gigDate = new Date(gig.date);
+          const now = new Date();
+          return gigDate.getMonth() === now.getMonth() && 
+                 gigDate.getFullYear() === now.getFullYear();
+        })
+        .reduce((sum, gig) => sum + parseFloat(gig.basePay), 0);
+
+      const totalTips = gigs.reduce((sum, gig) => sum + parseFloat(gig.tips || "0"), 0);
+      const totalEarnings = gigs.reduce((sum, gig) => sum + parseFloat(gig.basePay) + parseFloat(gig.tips || "0"), 0);
+      const totalGigs = gigs.length;
+      
+      const averageEarningsPerGig = totalGigs > 0 ? totalEarnings / totalGigs : 0;
+
+      res.json({
+        monthlyEarnings,
+        totalTips,
+        totalEarnings,
+        totalGigs,
+        averageEarningsPerGig
+      });
+    } catch (error) {
+      console.error("Get dashboard stats error:", error);
+      res.status(500).json({ message: "Failed to fetch dashboard statistics" });
+    }
+  });
+
+  // Invoices routes
   app.get("/api/invoices", async (req, res) => {
     try {
-      const invoices = await storage.getInvoicesByUser(currentUserId);
+      const userId = getCurrentUserId(req);
+      const invoices = await storage.getInvoicesByUser(userId);
       res.json(invoices);
     } catch (error) {
       console.error("Get invoices error:", error);
@@ -644,13 +426,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/invoices", async (req, res) => {
     try {
-      const validatedData = insertInvoiceSchema.parse({
-        ...req.body,
-        userId: currentUserId
-      });
-      
-      const invoice = await storage.createInvoice(validatedData);
-      res.status(201).json(invoice);
+      const userId = getCurrentUserId(req);
+      const invoiceData = insertInvoiceSchema.parse({ ...req.body, userId });
+      const invoice = await storage.createInvoice(invoiceData);
+      res.json(invoice);
     } catch (error) {
       if (error instanceof z.ZodError) {
         return res.status(400).json({ message: "Invalid invoice data", errors: error.errors });
@@ -660,388 +439,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/invoices/:id", async (req, res) => {
+  app.put("/api/invoices/:id", async (req, res) => {
     try {
       const id = parseInt(req.params.id);
-      if (isNaN(id)) {
-        return res.status(400).json({ message: "Invalid invoice ID" });
-      }
-
-      const invoice = await storage.getInvoice(id);
-      
-      if (!invoice || invoice.userId !== currentUserId) {
+      const invoiceData = insertInvoiceSchema.partial().parse(req.body);
+      const invoice = await storage.updateInvoice(id, invoiceData);
+      if (!invoice) {
         return res.status(404).json({ message: "Invoice not found" });
       }
-      
       res.json(invoice);
     } catch (error) {
-      console.error("Get invoice error:", error);
-      res.status(500).json({ message: "Failed to fetch invoice" });
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid invoice data", errors: error.errors });
+      }
+      console.error("Update invoice error:", error);
+      res.status(500).json({ message: "Failed to update invoice" });
     }
   });
 
   app.delete("/api/invoices/:id", async (req, res) => {
     try {
       const id = parseInt(req.params.id);
-      if (isNaN(id)) {
-        return res.status(400).json({ message: "Invalid invoice ID" });
-      }
-
-      const existingInvoice = await storage.getInvoice(id);
-      if (!existingInvoice || existingInvoice.userId !== currentUserId) {
+      const success = await storage.deleteInvoice(id);
+      if (!success) {
         return res.status(404).json({ message: "Invoice not found" });
       }
-
-      const deleted = await storage.deleteInvoice(id);
-      
-      if (!deleted) {
-        return res.status(404).json({ message: "Invoice not found" });
-      }
-      
-      res.status(204).send();
+      res.json({ message: "Invoice deleted successfully" });
     } catch (error) {
       console.error("Delete invoice error:", error);
       res.status(500).json({ message: "Failed to delete invoice" });
     }
   });
 
-  // Dashboard stats
-  app.get("/api/dashboard/stats", async (req, res) => {
-    try {
-      const gigs = await storage.getGigsByUser(currentUserId);
-      const currentMonth = new Date().toISOString().slice(0, 7); // YYYY-MM format
-      
-      const monthlyGigs = gigs.filter(gig => gig.date.startsWith(currentMonth));
-      const completedGigs = monthlyGigs.filter(gig => gig.status === "completed");
-      const upcomingGigs = gigs.filter(gig => gig.status === "upcoming");
-      
-      const totalEarnings = completedGigs.reduce((sum, gig) => 
-        sum + parseFloat(gig.actualPay || "0"), 0);
-      const totalTips = completedGigs.reduce((sum, gig) => 
-        sum + parseFloat(gig.tips || "0"), 0);
-      const totalExpenses = completedGigs.reduce((sum, gig) => 
-        sum + parseFloat(gig.parkingExpense || "0") + 
-             parseFloat(gig.otherExpenses || "0"), 0);
-      
-      // Client leaderboard
-      const clientStats = new Map<string, { gigs: number, total: number }>();
-      completedGigs.forEach(gig => {
-        const client = gig.clientName;
-        const current = clientStats.get(client) || { gigs: 0, total: 0 };
-        clientStats.set(client, {
-          gigs: current.gigs + 1,
-          total: current.total + parseFloat(gig.actualPay || "0") + parseFloat(gig.tips || "0")
-        });
-      });
-      
-      const topClients = Array.from(clientStats.entries())
-        .map(([name, stats]) => ({ name, ...stats }))
-        .sort((a, b) => b.total - a.total)
-        .slice(0, 5);
-
-      const totalEarningsWithTips = totalEarnings + totalTips;
-      const avgPerGig = completedGigs.length > 0 ? totalEarningsWithTips / completedGigs.length : 0;
-      
-      // Use user's default tax percentage or fallback to 23%
-      const user = await storage.getUser(currentUserId);
-      const taxPercentage = (user?.defaultTaxPercentage || 23) / 100;
-      const taxEstimate = totalEarnings * taxPercentage; // Only on actual pay, not tips
-
-      // Calculate projected earnings from expected pay
-      const projectedEarnings = upcomingGigs.reduce((total, gig) => {
-        return total + parseFloat(gig.expectedPay || "0");
-      }, 0);
-
-      res.json({
-        monthlyEarnings: Math.round(totalEarningsWithTips * 100) / 100,
-        totalTips: Math.round(totalTips * 100) / 100,
-        projectedEarnings: Math.round(projectedEarnings * 100) / 100,
-        completedGigs: completedGigs.length,
-        upcomingGigs: upcomingGigs.length,
-        avgPerGig: Math.round(avgPerGig * 100) / 100,
-        taxEstimate: Math.round(taxEstimate * 100) / 100,
-        totalExpenses: Math.round(totalExpenses * 100) / 100,
-        topClients,
-        recentGigs: completedGigs.slice(-5).reverse()
-      });
-    } catch (error) {
-      console.error("Dashboard stats error:", error);
-      res.status(500).json({ message: "Failed to fetch dashboard stats" });
-    }
-  });
-
-  // User profile
-  app.get("/api/user", async (req, res) => {
-    try {
-      const user = await storage.getUser(currentUserId);
-      if (!user) {
-        return res.status(404).json({ message: "User not found" });
-      }
-      res.json(user);
-    } catch (error) {
-      res.status(500).json({ message: "Failed to fetch user" });
-    }
-  });
-
-  app.put("/api/user", async (req, res) => {
-    try {
-      const updateData = req.body;
-      const user = await storage.updateUser(currentUserId, updateData);
-      
-      if (!user) {
-        return res.status(404).json({ message: "User not found" });
-      }
-      
-      res.json(user);
-    } catch (error) {
-      res.status(500).json({ message: "Failed to update user" });
-    }
-  });
-
-  // Period-specific goals
-  app.get("/api/goals/period/:period/:date", async (req, res) => {
-    try {
-      const { period, date } = req.params;
-      const targetDate = new Date(date);
-      
-      let goal;
-      if (period === "weekly") {
-        const startOfWeek = new Date(targetDate);
-        const day = startOfWeek.getDay();
-        const diff = startOfWeek.getDate() - day + (day === 0 ? -6 : 1); // Monday
-        startOfWeek.setDate(diff);
-        const weekStartDate = startOfWeek.toISOString().split('T')[0];
-        goal = await storage.getWeeklyGoal(currentUserId, weekStartDate);
-      } else if (period === "monthly") {
-        const month = targetDate.getMonth() + 1;
-        const year = targetDate.getFullYear();
-        goal = await storage.getMonthlyGoal(currentUserId, month, year);
-      } else if (period === "annual") {
-        const year = targetDate.getFullYear();
-        goal = await storage.getYearlyGoal(currentUserId, year);
-      }
-      
-      res.json(goal || null);
-    } catch (error) {
-      res.status(500).json({ message: "Failed to fetch goal" });
-    }
-  });
-
-  app.post("/api/goals/period/:period/:date", async (req, res) => {
-    try {
-      const { period, date } = req.params;
-      const { goalAmount } = req.body;
-      const targetDate = new Date(date);
-      
-      let goal;
-      if (period === "weekly") {
-        const startOfWeek = new Date(targetDate);
-        const day = startOfWeek.getDay();
-        const diff = startOfWeek.getDate() - day + (day === 0 ? -6 : 1); // Monday
-        startOfWeek.setDate(diff);
-        const weekStartDate = startOfWeek.toISOString().split('T')[0];
-        goal = await storage.setWeeklyGoal(currentUserId, weekStartDate, goalAmount);
-      } else if (period === "monthly") {
-        const month = targetDate.getMonth() + 1;
-        const year = targetDate.getFullYear();
-        goal = await storage.setMonthlyGoal(currentUserId, month, year, goalAmount);
-      } else if (period === "annual") {
-        const year = targetDate.getFullYear();
-        goal = await storage.setYearlyGoal(currentUserId, year, goalAmount);
-      }
-      
-      res.json(goal);
-    } catch (error) {
-      res.status(500).json({ message: "Failed to set goal" });
-    }
-  });
-
-  // Monthly report export routes
-  app.get("/api/reports/monthly/excel", async (req, res) => {
-    try {
-      const { month, year } = req.query;
-      const targetMonth = month ? parseInt(month as string) : new Date().getMonth() + 1;
-      const targetYear = year ? parseInt(year as string) : new Date().getFullYear();
-      
-      // Get monthly data
-      const startDate = new Date(targetYear, targetMonth - 1, 1).toISOString().split('T')[0];
-      const endDate = new Date(targetYear, targetMonth, 0).toISOString().split('T')[0];
-      const gigs = await storage.getGigsByDateRange(currentUserId, startDate, endDate);
-      const user = await storage.getUser(currentUserId);
-      
-      // Calculate totals
-      const totalEarnings = gigs.reduce((sum, gig) => sum + parseFloat(gig.actualPay || '0'), 0);
-      const totalTips = gigs.reduce((sum, gig) => sum + parseFloat(gig.tips || '0'), 0);
-      const totalMileage = gigs.reduce((sum, gig) => sum + (gig.mileage || 0), 0);
-      const totalExpenses = gigs.reduce((sum, gig) => sum + parseFloat(gig.parkingExpense || '0') + parseFloat(gig.otherExpenses || '0'), 0);
-      
-      // Create Excel workbook
-      const XLSX = await import('xlsx');
-      const workbook = XLSX.utils.book_new();
-      
-      // Summary sheet
-      const summaryData = [
-        ['Monthly Report Summary'],
-        ['Month/Year', `${targetMonth}/${targetYear}`],
-        [''],
-        ['Total Earnings', `$${totalEarnings.toFixed(2)}`],
-        ['Total Tips', `$${totalTips.toFixed(2)}`],
-        ['Total Mileage', `${totalMileage} miles`],
-        ['Total Expenses', `$${totalExpenses.toFixed(2)}`],
-        ['Net Income', `$${(totalEarnings - totalExpenses).toFixed(2)}`],
-      ];
-      
-      const summarySheet = XLSX.utils.aoa_to_sheet(summaryData);
-      XLSX.utils.book_append_sheet(workbook, summarySheet, 'Summary');
-      
-      // Detailed gigs sheet
-      const gigsData = [
-        ['Date', 'Client', 'Gig Type', 'Location', 'Earnings', 'Tips', 'Mileage', 'Expenses']
-      ];
-      
-      gigs.forEach(gig => {
-        const earnings = parseFloat(gig.actualPay || '0');
-        const expenses = parseFloat(gig.parkingExpense || '0') + parseFloat(gig.otherExpenses || '0');
-        
-        gigsData.push([
-          gig.date,
-          gig.clientName,
-          gig.gigType,
-          gig.gigAddress || '',
-          `$${earnings.toFixed(2)}`,
-          `$${parseFloat(gig.tips || '0').toFixed(2)}`,
-          (gig.mileage || 0).toString(),
-          `$${expenses.toFixed(2)}`
-        ]);
-      });
-      
-      const gigsSheet = XLSX.utils.aoa_to_sheet(gigsData);
-      XLSX.utils.book_append_sheet(workbook, gigsSheet, 'Gigs Detail');
-      
-      // Generate Excel buffer
-      const excelBuffer = XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' });
-      
-      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-      res.setHeader('Content-Disposition', `attachment; filename="monthly-report-${targetMonth}-${targetYear}.xlsx"`);
-      res.send(excelBuffer);
-      
-    } catch (error) {
-      console.error("Failed to generate Excel report:", error);
-      res.status(500).json({ message: "Failed to generate Excel report" });
-    }
-  });
-
-  app.get("/api/reports/monthly/pdf", async (req, res) => {
-    try {
-      const { month, year } = req.query;
-      const targetMonth = month ? parseInt(month as string) : new Date().getMonth() + 1;
-      const targetYear = year ? parseInt(year as string) : new Date().getFullYear();
-      
-      // Get monthly data
-      const startDate = new Date(targetYear, targetMonth - 1, 1).toISOString().split('T')[0];
-      const endDate = new Date(targetYear, targetMonth, 0).toISOString().split('T')[0];
-      const gigs = await storage.getGigsByDateRange(currentUserId, startDate, endDate);
-      const user = await storage.getUser(currentUserId);
-      
-      // Calculate totals
-      const totalEarnings = gigs.reduce((sum, gig) => sum + parseFloat(gig.actualPay || '0'), 0);
-      const totalTips = gigs.reduce((sum, gig) => sum + parseFloat(gig.tips || '0'), 0);
-      const totalMileage = gigs.reduce((sum, gig) => sum + (gig.mileage || 0), 0);
-      const totalExpenses = gigs.reduce((sum, gig) => sum + parseFloat(gig.parkingExpense || '0') + parseFloat(gig.otherExpenses || '0'), 0);
-      
-      // Create PDF
-      const { jsPDF } = await import('jspdf');
-      const autoTable = (await import('jspdf-autotable')).default;
-      
-      const doc = new jsPDF();
-      
-      // Title
-      doc.setFontSize(20);
-      doc.text('Monthly Gig Report', 20, 20);
-      
-      // Report details
-      doc.setFontSize(12);
-      doc.text(`Month: ${new Date(targetYear, targetMonth - 1).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}`, 20, 35);
-      doc.text(`Worker: ${user?.name || 'N/A'}`, 20, 45);
-      
-      // Summary section
-      doc.setFontSize(14);
-      doc.text('Summary', 20, 65);
-      
-      const summaryData = [
-        ['Total Earnings', `$${totalEarnings.toFixed(2)}`],
-        ['Total Tips', `$${totalTips.toFixed(2)}`],
-        ['Total Mileage', `${totalMileage} miles`],
-        ['Total Expenses', `$${totalExpenses.toFixed(2)}`],
-        ['Net Income', `$${(totalEarnings - totalExpenses).toFixed(2)}`],
-      ];
-      
-      autoTable(doc, {
-        startY: 75,
-        head: [['Category', 'Amount']],
-        body: summaryData,
-        theme: 'grid',
-        headStyles: { fillColor: [66, 139, 202] }
-      });
-      
-      // Gigs detail section
-      if (gigs.length > 0) {
-        doc.addPage();
-        doc.setFontSize(14);
-        doc.text('Gig Details', 20, 20);
-        
-        const gigsTableData = gigs.map(gig => {
-          const earnings = parseFloat(gig.actualPay || '0');
-          const expenses = parseFloat(gig.parkingExpense || '0') + parseFloat(gig.otherExpenses || '0');
-          
-          return [
-            gig.date,
-            gig.clientName,
-            gig.gigType,
-            gig.gigAddress || '',
-            `$${earnings.toFixed(2)}`,
-            `$${parseFloat(gig.tips || '0').toFixed(2)}`,
-            (gig.mileage || 0).toString(),
-            `$${expenses.toFixed(2)}`
-          ];
-        });
-        
-        autoTable(doc, {
-          startY: 30,
-          head: [['Date', 'Client', 'Type', 'Location', 'Earnings', 'Tips', 'Miles', 'Expenses']],
-          body: gigsTableData,
-          theme: 'grid',
-          headStyles: { fillColor: [66, 139, 202] },
-          styles: { fontSize: 8 },
-          columnStyles: {
-            0: { cellWidth: 20 },
-            1: { cellWidth: 25 },
-            2: { cellWidth: 20 },
-            3: { cellWidth: 25 },
-            4: { cellWidth: 20 },
-            5: { cellWidth: 15 },
-            6: { cellWidth: 15 },
-            7: { cellWidth: 20 }
-          }
-        });
-      }
-      
-      const pdfBuffer = Buffer.from(doc.output('arraybuffer'));
-      
-      res.setHeader('Content-Type', 'application/pdf');
-      res.setHeader('Content-Disposition', `attachment; filename="monthly-report-${targetMonth}-${targetYear}.pdf"`);
-      res.send(pdfBuffer);
-      
-    } catch (error) {
-      console.error("Failed to generate PDF report:", error);
-      res.status(500).json({ message: "Failed to generate PDF report" });
-    }
-  });
-
-  // Expense routes
+  // Expenses routes
   app.get("/api/expenses", async (req, res) => {
     try {
-      const expenses = await storage.getExpensesByUser(currentUserId);
+      const userId = getCurrentUserId(req);
+      const expenses = await storage.getExpensesByUser(userId);
       res.json(expenses);
     } catch (error) {
       console.error("Get expenses error:", error);
@@ -1049,15 +483,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get("/api/expenses/date-range", async (req, res) => {
+    try {
+      const userId = getCurrentUserId(req);
+      const { startDate, endDate } = req.query;
+      if (!startDate || !endDate) {
+        return res.status(400).json({ message: "Start date and end date are required" });
+      }
+      
+      const expenses = await storage.getExpensesByDateRange(userId, startDate as string, endDate as string);
+      res.json(expenses);
+    } catch (error) {
+      console.error("Get expenses by date range error:", error);
+      res.status(500).json({ message: "Failed to fetch expenses by date range" });
+    }
+  });
+
   app.post("/api/expenses", async (req, res) => {
     try {
-      const validatedData = insertExpenseSchema.parse({
-        ...req.body,
-        userId: currentUserId
-      });
-      
-      const expense = await storage.createExpense(validatedData);
-      res.status(201).json(expense);
+      const userId = getCurrentUserId(req);
+      const expenseData = insertExpenseSchema.parse({ ...req.body, userId });
+      const expense = await storage.createExpense(expenseData);
+      res.json(expense);
     } catch (error) {
       if (error instanceof z.ZodError) {
         return res.status(400).json({ message: "Invalid expense data", errors: error.errors });
@@ -1067,30 +514,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.put("/api/expenses/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const expenseData = insertExpenseSchema.partial().parse(req.body);
+      const expense = await storage.updateExpense(id, expenseData);
+      if (!expense) {
+        return res.status(404).json({ message: "Expense not found" });
+      }
+      res.json(expense);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid expense data", errors: error.errors });
+      }
+      console.error("Update expense error:", error);
+      res.status(500).json({ message: "Failed to update expense" });
+    }
+  });
+
   app.delete("/api/expenses/:id", async (req, res) => {
     try {
       const id = parseInt(req.params.id);
-      if (isNaN(id)) {
-        return res.status(400).json({ message: "Invalid expense ID" });
-      }
-
-      const deleted = await storage.deleteExpense(id);
-      
-      if (!deleted) {
+      const success = await storage.deleteExpense(id);
+      if (!success) {
         return res.status(404).json({ message: "Expense not found" });
       }
-      
-      res.status(204).send();
+      res.json({ message: "Expense deleted successfully" });
     } catch (error) {
       console.error("Delete expense error:", error);
       res.status(500).json({ message: "Failed to delete expense" });
     }
   });
 
-  // Budget routes
+  // Budgets routes
   app.get("/api/budgets", async (req, res) => {
     try {
-      const budgets = await storage.getBudgetsByUser(currentUserId);
+      const userId = getCurrentUserId(req);
+      const budgets = await storage.getBudgetsByUser(userId);
       res.json(budgets);
     } catch (error) {
       console.error("Get budgets error:", error);
@@ -1098,15 +558,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get("/api/budgets/month/:month/:year", async (req, res) => {
+    try {
+      const userId = getCurrentUserId(req);
+      const month = parseInt(req.params.month);
+      const year = parseInt(req.params.year);
+      
+      const budgets = await storage.getBudgetsByMonth(userId, month, year);
+      res.json(budgets);
+    } catch (error) {
+      console.error("Get budgets by month error:", error);
+      res.status(500).json({ message: "Failed to fetch budgets by month" });
+    }
+  });
+
   app.post("/api/budgets", async (req, res) => {
     try {
-      const validatedData = insertBudgetSchema.parse({
-        ...req.body,
-        userId: currentUserId
-      });
-      
-      const budget = await storage.createBudget(validatedData);
-      res.status(201).json(budget);
+      const userId = getCurrentUserId(req);
+      const budgetData = insertBudgetSchema.parse({ ...req.body, userId });
+      const budget = await storage.createBudget(budgetData);
+      res.json(budget);
     } catch (error) {
       if (error instanceof z.ZodError) {
         return res.status(400).json({ message: "Invalid budget data", errors: error.errors });
@@ -1116,30 +587,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch("/api/budgets/:id", async (req, res) => {
+  app.put("/api/budgets/:id", async (req, res) => {
     try {
       const id = parseInt(req.params.id);
-      if (isNaN(id)) {
-        return res.status(400).json({ message: "Invalid budget ID" });
-      }
-
-      const updateData = req.body;
-      const budget = await storage.updateBudget(id, updateData);
-      
+      const budgetData = insertBudgetSchema.partial().parse(req.body);
+      const budget = await storage.updateBudget(id, budgetData);
       if (!budget) {
         return res.status(404).json({ message: "Budget not found" });
       }
-      
       res.json(budget);
     } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid budget data", errors: error.errors });
+      }
       console.error("Update budget error:", error);
       res.status(500).json({ message: "Failed to update budget" });
     }
   });
 
+  app.delete("/api/budgets/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const success = await storage.deleteBudget(id);
+      if (!success) {
+        return res.status(404).json({ message: "Budget not found" });
+      }
+      res.json({ message: "Budget deleted successfully" });
+    } catch (error) {
+      console.error("Delete budget error:", error);
+      res.status(500).json({ message: "Failed to delete budget" });
+    }
+  });
+
+  // Expense Categories routes
   app.get("/api/expense-categories", async (req, res) => {
     try {
-      const categories = await storage.getExpenseCategoriesByUser(currentUserId);
+      const userId = getCurrentUserId(req);
+      const categories = await storage.getExpenseCategoriesByUser(userId);
       res.json(categories);
     } catch (error) {
       console.error("Get expense categories error:", error);
@@ -1149,34 +633,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/expense-categories", async (req, res) => {
     try {
-      const categoryData = insertExpenseCategorySchema.parse({ ...req.body, userId: currentUserId });
+      const userId = getCurrentUserId(req);
+      const categoryData = insertExpenseCategorySchema.parse({ ...req.body, userId });
       const category = await storage.createExpenseCategory(categoryData);
-      res.status(201).json(category);
+      res.json(category);
     } catch (error) {
-      console.error("Create expense category error:", error);
       if (error instanceof z.ZodError) {
         return res.status(400).json({ message: "Invalid category data", errors: error.errors });
       }
+      console.error("Create expense category error:", error);
       res.status(500).json({ message: "Failed to create expense category" });
     }
   });
 
-  app.patch("/api/expense-categories/:id", async (req, res) => {
+  app.put("/api/expense-categories/:id", async (req, res) => {
     try {
       const id = parseInt(req.params.id);
-      if (isNaN(id)) {
-        return res.status(400).json({ message: "Invalid category ID" });
-      }
-
-      const updateData = req.body;
-      const category = await storage.updateExpenseCategory(id, updateData);
-      
+      const categoryData = insertExpenseCategorySchema.partial().parse(req.body);
+      const category = await storage.updateExpenseCategory(id, categoryData);
       if (!category) {
-        return res.status(404).json({ message: "Category not found" });
+        return res.status(404).json({ message: "Expense category not found" });
       }
-      
       res.json(category);
     } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid category data", errors: error.errors });
+      }
       console.error("Update expense category error:", error);
       res.status(500).json({ message: "Failed to update expense category" });
     }
@@ -1185,141 +667,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.delete("/api/expense-categories/:id", async (req, res) => {
     try {
       const id = parseInt(req.params.id);
-      if (isNaN(id)) {
-        return res.status(400).json({ message: "Invalid category ID" });
+      const success = await storage.deleteExpenseCategory(id);
+      if (!success) {
+        return res.status(404).json({ message: "Expense category not found" });
       }
-
-      const deleted = await storage.deleteExpenseCategory(id);
-      
-      if (!deleted) {
-        return res.status(404).json({ message: "Category not found" });
-      }
-      
-      res.status(204).send();
+      res.json({ message: "Expense category deleted successfully" });
     } catch (error) {
       console.error("Delete expense category error:", error);
       res.status(500).json({ message: "Failed to delete expense category" });
-    }
-  });
-
-  // Enhanced Authentication Routes
-  
-  // Google OAuth routes
-  app.get('/api/auth/google', 
-    passport.authenticate('google', { scope: ['profile', 'email'] })
-  );
-
-  app.get('/api/auth/google/callback',
-    passport.authenticate('google', { failureRedirect: '/login' }),
-    (req, res) => {
-      res.redirect('/'); // Redirect to home page after successful login
-    }
-  );
-
-  // Local authentication routes
-  app.post('/api/auth/register', async (req, res) => {
-    try {
-      const { email, password, name } = req.body;
-      
-      if (!email || !password || !name) {
-        return res.status(400).json({ message: 'Email, password, and name are required' });
-      }
-
-      // Check if user already exists
-      const existingUser = await storage.getUserByEmail(email);
-      if (existingUser) {
-        return res.status(400).json({ message: 'Email already registered' });
-      }
-
-      // Create new user
-      const user = await storage.createUserWithPassword(email, password, name);
-      await storage.logAudit(user.id, 'REGISTER', 'users', user.id, null, { email, name });
-
-      // Log the user in
-      req.login(user, (err) => {
-        if (err) {
-          console.error('Login after registration error:', err);
-          return res.status(500).json({ message: 'Registration successful but login failed' });
-        }
-        res.json({ message: 'Registration successful', user: { id: user.id, name: user.name, email: user.email } });
-      });
-    } catch (error) {
-      console.error('Registration error:', error);
-      res.status(500).json({ message: 'Registration failed' });
-    }
-  });
-
-  app.post('/api/auth/login',
-    passport.authenticate('local'),
-    (req, res) => {
-      res.json({ message: 'Login successful', user: req.user });
-    }
-  );
-
-  app.post('/api/auth/logout', (req, res) => {
-    const userId = (req.user as any)?.id;
-    if (userId) {
-      storage.logAudit(userId, 'LOGOUT', 'users', userId, null, null);
-    }
-    
-    req.logout((err) => {
-      if (err) {
-        return res.status(500).json({ message: 'Logout failed' });
-      }
-      
-      req.session.destroy((destroyErr) => {
-        if (destroyErr) {
-          console.error('Session destroy error:', destroyErr);
-        }
-        
-        // Clear the session cookie
-        res.clearCookie('connect.sid');
-        res.json({ message: 'Logout successful' });
-      });
-    });
-  });
-
-  // Get current authenticated user
-  app.get('/api/auth/user', (req, res) => {
-    if (req.isAuthenticated()) {
-      res.json(req.user);
-    } else {
-      res.status(401).json({ message: 'Not authenticated' });
-    }
-  });
-
-  // Data export route
-  app.post('/api/auth/export-data', async (req, res) => {
-    if (!req.isAuthenticated()) {
-      return res.status(401).json({ message: 'Not authenticated' });
-    }
-
-    try {
-      const userId = (req.user as any).id;
-      await storage.requestDataExport(userId, 'full_export');
-      res.json({ message: 'Data export requested. You will receive an email when ready.' });
-    } catch (error) {
-      console.error('Data export request error:', error);
-      res.status(500).json({ message: 'Failed to request data export' });
-    }
-  });
-
-  app.get('/api/auth/export-data', async (req, res) => {
-    if (!req.isAuthenticated()) {
-      return res.status(401).json({ message: 'Not authenticated' });
-    }
-
-    try {
-      const userId = (req.user as any).id;
-      const exportData = await storage.getUserExportData(userId);
-      await storage.logAudit(userId, 'EXPORT', 'users', userId, null, null);
-      
-      res.setHeader('Content-Type', 'application/json');
-      res.setHeader('Content-Disposition', `attachment; filename="giggy-data-export-${new Date().toISOString().split('T')[0]}.json"`);
-      res.json(exportData);
-    } catch (error) {
-      console.error('Data export error:', error);
-      res.status(500).json({ message: 'Failed to export data' });
     }
   });
 
