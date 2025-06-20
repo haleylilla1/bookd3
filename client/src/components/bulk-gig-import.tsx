@@ -91,10 +91,9 @@ May 5th promotional event at Mall, $180`;
 
   const parseTextMutation = useMutation({
     mutationFn: async (text: string) => {
-      const response = await apiRequest("POST", "/api/gigs/parse-bulk", { text });
-      return response.json();
+      return apiRequest("POST", "/api/gigs/parse-bulk", { text });
     },
-    onSuccess: (data) => {
+    onSuccess: (data: any) => {
       const parsed = data.parsedGigs.map((gig: any, index: number) => ({
         ...gig,
         id: `gig-${index}`,
@@ -102,6 +101,7 @@ May 5th promotional event at Mall, $180`;
         userEdited: false,
       }));
       setParsedGigs(parsed);
+      setProcessingProgress(100);
       setStep('review');
     },
     onError: (error) => {
@@ -117,10 +117,9 @@ May 5th promotional event at Mall, $180`;
   const importGigsMutation = useMutation({
     mutationFn: async (gigs: ParsedGig[]) => {
       const selectedGigs = gigs.filter(g => g.selected);
-      const response = await apiRequest("POST", "/api/gigs/bulk-import", { gigs: selectedGigs });
-      return response.json();
+      return apiRequest("POST", "/api/gigs/bulk-import", { gigs: selectedGigs });
     },
-    onSuccess: (data) => {
+    onSuccess: (data: any) => {
       setImportResults(data);
       queryClient.invalidateQueries({ queryKey: ["/api/gigs"] });
       queryClient.invalidateQueries({ queryKey: ["/api/dashboard/stats"] });

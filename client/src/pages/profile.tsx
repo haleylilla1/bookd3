@@ -81,6 +81,10 @@ export default function Profile() {
     updateProfileMutation.mutate(data);
   };
 
+  if (showBulkImport) {
+    return <BulkGigImport onClose={() => setShowBulkImport(false)} />;
+  }
+
   if (isLoading) {
     return (
       <div className="container mx-auto px-4 py-8">
@@ -210,6 +214,25 @@ export default function Profile() {
                 </Button>
               </form>
             </Form>
+          </CardContent>
+        </Card>
+
+        {/* Bulk Import Card */}
+        <Card className="mt-6">
+          <CardHeader>
+            <CardTitle>Import Past Gigs</CardTitle>
+            <p className="text-sm text-gray-600">
+              Upload your messy gig notes and let AI organize them into your logbook
+            </p>
+          </CardHeader>
+          <CardContent>
+            <Button 
+              onClick={() => setShowBulkImport(true)}
+              className="w-full flex items-center gap-2"
+            >
+              <Upload className="w-4 h-4" />
+              Import Gigs with AI
+            </Button>
           </CardContent>
         </Card>
       </div>
