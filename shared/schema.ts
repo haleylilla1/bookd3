@@ -13,7 +13,7 @@ export const sessions = pgTable(
   (table) => [index("IDX_session_expire").on(table.expire)],
 );
 
-// Keep existing users table structure but add auth fields
+// Enhanced users table with multi-provider auth support
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
@@ -27,11 +27,40 @@ export const users = pgTable("users", {
   businessAddress: text("business_address"),
   businessPhone: text("business_phone"),
   businessEmail: text("business_email"),
-  // Auth fields for Replit Auth integration
+  
+  // Multi-provider auth fields
   replitId: varchar("replit_id").unique(),
+  googleId: varchar("google_id").unique(),
+  passwordHash: varchar("password_hash"), // For email/password auth
   firstName: varchar("first_name"),
   lastName: varchar("last_name"),
   profileImageUrl: varchar("profile_image_url"),
+  
+  // Account status and onboarding
+  isActive: boolean("is_active").default(true),
+  isDeleted: boolean("is_deleted").default(false),
+  deletedAt: timestamp("deleted_at"),
+  emailVerified: boolean("email_verified").default(false),
+  onboardingCompleted: boolean("onboarding_completed").default(false),
+  
+  // User preferences
+  notificationPreferences: jsonb("notification_preferences").default({
+    email: true,
+    push: true,
+    reminders: true
+  }),
+  workPreferences: jsonb("work_preferences").default({
+    primaryGigTypes: [],
+    preferredClients: [],
+    workingHours: { start: "09:00", end: "17:00" }
+  }),
+  
+  // Trial and subscription tracking
+  trialStartDate: timestamp("trial_start_date"),
+  trialEndDate: timestamp("trial_end_date"),
+  subscriptionStatus: varchar("subscription_status").default("trial"), // trial, free, premium, suspended
+  subscriptionTier: varchar("subscription_tier").default("trial"), // trial, free, premium
+  
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -321,3 +350,66 @@ export type Expense = typeof expenses.$inferSelect;
 
 export type InsertBudget = z.infer<typeof insertBudgetSchema>;
 export type Budget = typeof budgets.$inferSelect;
+
+// Audit logging for data security and compliance
+export const auditLogs = pgTable("audit_logs", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id),
+  action: varchar("action").notNull(), // CREATE, UPDATE, DELETE, LOGIN, LOGOUT, EXPORT
+  tableName: varchar("table_name"), // Which table was affected
+  recordId: integer("record_id"), // ID of the affected record
+  oldValues: jsonb("old_values"), // Previous values for updates/deletes
+  newValues: jsonb("new_values"), // New values for creates/updates
+  ipAddress: varchar("ip_address"),
+  userAgent: varchar("user_agent"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Database backup tracking
+export const backupLogs = pgTable("backup_logs", {
+  id: serial("id").primaryKey(),
+  backupType: varchar("backup_type").notNull(), // daily, weekly, manual
+  status: varchar("status").notNull(), // pending, completed, failed
+  filePath: varchar("file_path"),
+  fileSize: integer("file_size"), // in bytes
+  startedAt: timestamp("started_at").defaultNow(),
+  completedAt: timestamp("completed_at"),
+  errorMessage: text("error_message"),
+});
+
+// User data export requests
+export const dataExportRequests = pgTable("data_export_requests", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull().references(() => users.id),
+  requestType: varchar("request_type").notNull(), // full_export, specific_data
+  status: varchar("status").notNull(), // pending, processing, completed, failed
+  filePath: varchar("file_path"),
+  expiresAt: timestamp("expires_at"), // Export files expire after 7 days
+  requestedAt: timestamp("requested_at").defaultNow(),
+  completedAt: timestamp("completed_at"),
+});
+
+// Type definitions for new tables
+export const insertAuditLogSchema = createInsertSchema(auditLogs).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertBackupLogSchema = createInsertSchema(backupLogs).omit({
+  id: true,
+  startedAt: true,
+});
+
+export const insertDataExportRequestSchema = createInsertSchema(dataExportRequests).omit({
+  id: true,
+  requestedAt: true,
+});
+
+export type InsertAuditLog = z.infer<typeof insertAuditLogSchema>;
+export type AuditLog = typeof auditLogs.$inferSelect;
+
+export type InsertBackupLog = z.infer<typeof insertBackupLogSchema>;
+export type BackupLog = typeof backupLogs.$inferSelect;
+
+export type InsertDataExportRequest = z.infer<typeof insertDataExportRequestSchema>;
+export type DataExportRequest = typeof dataExportRequests.$inferSelect;
