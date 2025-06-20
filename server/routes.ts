@@ -11,8 +11,18 @@ import {
   insertExpenseCategorySchema 
 } from "@shared/schema";
 import { z } from "zod";
+import passport from "passport";
+import { setupGoogleAuth, setupLocalAuth, setupPassportSerialization } from "./authStrategies";
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Initialize passport strategies
+  setupGoogleAuth();
+  setupLocalAuth();
+  setupPassportSerialization();
+  
+  app.use(passport.initialize());
+  app.use(passport.session());
+  
   // Simple session-based user switching for multi-user testing
   let currentUserId = 1; // Default user
   
