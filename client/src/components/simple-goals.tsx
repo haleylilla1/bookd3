@@ -22,6 +22,8 @@ export default function SimpleGoals() {
   const [selectedGig, setSelectedGig] = useState<Gig | null>(null);
   const [allocationAmount, setAllocationAmount] = useState("");
   const [selectedGoal, setSelectedGoal] = useState<Goal | null>(null);
+  const [editingAllocation, setEditingAllocation] = useState<Allocation | null>(null);
+  const [editAllocationAmount, setEditAllocationAmount] = useState("");
   
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -103,6 +105,61 @@ export default function SimpleGoals() {
     });
   };
 
+  // Update allocation mutation
+  const updateAllocationMutation = useMutation({
+    mutationFn: async ({ id, amount }: { id: number; amount: string }) => {
+      const response = await apiRequest("PUT", `/api/allocations/${id}`, { amount });
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/allocations"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/goals"] });
+      toast({ title: "Allocation updated successfully" });
+      setEditingAllocation(null);
+      setEditAllocationAmount("");
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error updating allocation",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Delete allocation mutation
+  const deleteAllocationMutation = useMutation({
+    mutationFn: async (id: number) => {
+      const response = await apiRequest("DELETE", `/api/allocations/${id}`);
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/allocations"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/goals"] });
+      toast({ title: "Allocation deleted successfully" });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error deleting allocation",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleEditAllocation = (allocation: Allocation) => {
+    setEditingAllocation(allocation);
+    setEditAllocationAmount(allocation.amount);
+  };
+
+  const handleUpdateAllocation = () => {
+    if (!editingAllocation || !editAllocationAmount) return;
+    updateAllocationMutation.mutate({
+      id: editingAllocation.id,
+      amount: editAllocationAmount
+    });
+  };
+
   const getGoalProgress = (goal: Goal) => {
     const goalAllocations = allocations.filter(a => a.goalId === goal.id);
     const totalAllocated = goalAllocations.reduce((sum, a) => sum + parseFloat(a.amount), 0);
@@ -116,8 +173,79 @@ export default function SimpleGoals() {
     gig.status === "completed" && (gig.actualPay || gig.expectedPay)
   );
 
+  // Calculate monthly earnings and available after tax
+  const currentMonth = new Date().getMonth() + 1;
+  const currentYear = new Date().getFullYear();
+  
+  const currentMonthGigs = gigs.filter(gig => {
+    const gigDate = new Date(gig.date);
+    return gigDate.getMonth() + 1 === currentMonth && 
+           gigDate.getFullYear() === currentYear &&
+           gig.status === "completed";
+  });
+
+  const totalMonthlyEarnings = currentMonthGigs.reduce((sum, gig) => {
+    const pay = parseFloat(gig.actualPay || gig.expectedPay || "0");
+    const tips = parseFloat(gig.tips || "0");
+    return sum + pay + tips;
+  }, 0);
+
+  const totalAllocatedThisMonth = allocations
+    .filter(allocation => {
+      const gig = gigs.find(g => g.id === allocation.gigId);
+      if (!gig) return false;
+      const gigDate = new Date(gig.date);
+      return gigDate.getMonth() + 1 === currentMonth && 
+             gigDate.getFullYear() === currentYear;
+    })
+    .reduce((sum, allocation) => sum + parseFloat(allocation.amount), 0);
+
+  // Calculate after-tax amount (using 23% default tax rate)
+  const taxRate = 0.23;
+  const afterTaxEarnings = totalMonthlyEarnings * (1 - taxRate);
+  const availableToAllocate = afterTaxEarnings - totalAllocatedThisMonth;
+
   return (
     <div className="max-w-5xl mx-auto p-6 space-y-6">
+      {/* Monthly Earnings Summary */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg flex items-center gap-2">
+            <Calendar className="w-5 h-5" />
+            This Month's Earnings
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="space-y-1">
+              <p className="text-sm text-gray-600">Total Earned</p>
+              <p className="text-xl font-semibold text-gray-900">{formatCurrency(totalMonthlyEarnings)}</p>
+            </div>
+            <div className="space-y-1">
+              <p className="text-sm text-gray-600">After Tax (23%)</p>
+              <p className="text-xl font-semibold text-green-600">{formatCurrency(afterTaxEarnings)}</p>
+            </div>
+            <div className="space-y-1">
+              <p className="text-sm text-gray-600">Allocated</p>
+              <p className="text-xl font-semibold text-blue-600">{formatCurrency(totalAllocatedThisMonth)}</p>
+            </div>
+            <div className="space-y-1">
+              <p className="text-sm text-gray-600">Available</p>
+              <p className={`text-xl font-semibold ${availableToAllocate >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                {formatCurrency(availableToAllocate)}
+              </p>
+            </div>
+          </div>
+          {availableToAllocate < 0 && (
+            <div className="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+              <p className="text-sm text-yellow-800">
+                You've allocated more than your after-tax earnings this month.
+              </p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -246,11 +374,29 @@ export default function SimpleGoals() {
                             .map((allocation) => {
                               const gig = gigs.find(g => g.id === allocation.gigId);
                               return (
-                                <div key={allocation.id} className="flex justify-between text-xs bg-gray-50 p-2 rounded">
+                                <div key={allocation.id} className="flex justify-between items-center text-xs bg-gray-50 p-2 rounded">
                                   <span>
                                     {gig ? `${gig.clientName}` : 'Unknown gig'}
                                   </span>
-                                  <span className="font-medium">{formatCurrency(parseFloat(allocation.amount))}</span>
+                                  <div className="flex items-center gap-2">
+                                    <span className="font-medium">{formatCurrency(parseFloat(allocation.amount))}</span>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => handleEditAllocation(allocation)}
+                                      className="h-6 w-6 p-0 text-gray-400 hover:text-blue-600"
+                                    >
+                                      <Edit2 className="w-3 h-3" />
+                                    </Button>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => deleteAllocationMutation.mutate(allocation.id)}
+                                      className="h-6 w-6 p-0 text-gray-400 hover:text-red-600"
+                                    >
+                                      <Trash2 className="w-3 h-3" />
+                                    </Button>
+                                  </div>
                                 </div>
                               );
                             })}
@@ -378,6 +524,51 @@ export default function SimpleGoals() {
           </CardContent>
         </Card>
       )}
+
+      {/* Edit Allocation Dialog */}
+      <Dialog open={!!editingAllocation} onOpenChange={() => setEditingAllocation(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Edit Allocation</DialogTitle>
+          </DialogHeader>
+          {editingAllocation && (
+            <div className="space-y-4">
+              <div className="text-sm text-gray-600">
+                Editing allocation from {gigs.find(g => g.id === editingAllocation.gigId)?.clientName || 'Unknown gig'} 
+                to {goals.find(g => g.id === editingAllocation.goalId)?.name || 'Unknown goal'}
+              </div>
+              
+              <div>
+                <Label>New Amount</Label>
+                <Input
+                  type="number"
+                  step="0.01"
+                  value={editAllocationAmount}
+                  onChange={(e) => setEditAllocationAmount(e.target.value)}
+                  placeholder="0.00"
+                />
+              </div>
+
+              <div className="flex gap-2">
+                <Button
+                  onClick={handleUpdateAllocation}
+                  disabled={!editAllocationAmount || updateAllocationMutation.isPending}
+                  className="flex-1"
+                >
+                  {updateAllocationMutation.isPending ? "Updating..." : "Update"}
+                </Button>
+                <Button 
+                  variant="outline" 
+                  onClick={() => setEditingAllocation(null)}
+                  className="flex-1"
+                >
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
