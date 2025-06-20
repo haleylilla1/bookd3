@@ -160,12 +160,13 @@ export default function ComprehensiveBudgetTracker() {
   const createTransactionMutation = useMutation({
     mutationFn: async (transaction: Partial<TransactionEntry>) => {
       if (transaction.type === "expense") {
-        const category = categories.find(c => c.name === transaction.category);
         const expenseData = {
           amount: transaction.amount?.toString() || "0",
           description: transaction.description || "",
           date: transaction.date || new Date().toISOString().split('T')[0],
-          categoryId: category?.id || null
+          category: transaction.category || "Other",
+          subcategory: transaction.subcategory || null,
+          isIncome: false
         };
         return await apiRequest("POST", "/api/expenses", expenseData);
       }
@@ -549,7 +550,7 @@ export default function ComprehensiveBudgetTracker() {
                   .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
                   .slice(0, 10)
                   .map((expense) => {
-                    const category = categories.find(c => c.id === expense.categoryId);
+                    const category = expense.category;
                     return (
                       <div key={expense.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
                         <div className="flex items-center gap-4">
@@ -559,7 +560,7 @@ export default function ComprehensiveBudgetTracker() {
                           <div>
                             <div className="font-medium">{expense.description || 'Expense'}</div>
                             <div className="text-sm text-gray-500">
-                              {category?.name || 'Other'} • {formatDate(expense.date)}
+                              {category || 'Other'} • {formatDate(expense.date)}
                             </div>
                           </div>
                         </div>
