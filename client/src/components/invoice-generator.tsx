@@ -262,13 +262,14 @@ export default function InvoiceGenerator() {
     });
   };
 
-  const generatePDF = () => {
-    const doc = new jsPDF();
-    
-    // Header
-    doc.setFontSize(24);
-    doc.setFont('helvetica', 'bold');
-    doc.text('INVOICE', 20, 30);
+  const generatePDF = useCallback(() => {
+    try {
+      const doc = new jsPDF();
+      
+      // Header
+      doc.setFontSize(24);
+      doc.setFont('helvetica', 'bold');
+      doc.text('INVOICE', 20, 30);
     
     // Invoice details
     doc.setFontSize(10);
@@ -338,8 +339,16 @@ export default function InvoiceGenerator() {
       doc.text(invoice.notes, 20, finalY + 25);
     }
     
-    doc.save(`Invoice-${invoice.invoiceNumber}.pdf`);
-  };
+      doc.save(`Invoice-${invoice.invoiceNumber}.pdf`);
+    } catch (error) {
+      toast({
+        title: "PDF Generation Error",
+        description: "Failed to generate PDF. Please try again.",
+        variant: "destructive"
+      });
+      console.error("PDF generation error:", error);
+    }
+  }, [invoice, invoiceCalculations, toast]);
 
   return (
     <div className="max-w-6xl mx-auto p-6 space-y-6">
