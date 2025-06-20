@@ -71,7 +71,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Update user profile
-  app.patch("/api/user", async (req, res) => {
+  app.put("/api/user", async (req, res) => {
     try {
       const userId = getCurrentUserId(req);
       const { name, email, homeAddress, defaultTaxPercentage } = req.body;
