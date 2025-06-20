@@ -55,8 +55,8 @@ interface GigFormProps {
 
 export default function GigForm({ onClose }: GigFormProps) {
   const [trackExpenses, setTrackExpenses] = useState(false);
-  const [isCalculatingDistance, setIsCalculatingDistance] = useState(false);
   const [trackMileage, setTrackMileage] = useState(false);
+  const [isCalculatingDistance, setIsCalculatingDistance] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
