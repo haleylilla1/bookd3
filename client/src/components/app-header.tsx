@@ -24,7 +24,7 @@ import {
 
 interface AppHeaderProps {
   currentScreen: string;
-  onScreenChange: (screen: string) => void;
+  onScreenChange: (screen: any) => void;
 }
 
 export default function AppHeader({ currentScreen, onScreenChange }: AppHeaderProps) {
