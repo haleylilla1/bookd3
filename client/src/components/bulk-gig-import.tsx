@@ -104,12 +104,24 @@ May 5th promotional event at Mall, $180`;
       setProcessingProgress(100);
       setStep('review');
     },
-    onError: (error) => {
+    onError: (error: any) => {
+      console.error("Parsing error:", error);
+      let errorMessage = "Could not parse your gig notes. Please try again.";
+      
+      if (error.message?.includes('OpenAI service error')) {
+        errorMessage = "AI service temporarily unavailable. Please try again in a moment.";
+      } else if (error.message?.includes('format error')) {
+        errorMessage = "AI response was malformed. Please try again with different text.";
+      } else if (error.message?.includes('Text input is required')) {
+        errorMessage = "Please enter some gig notes to parse.";
+      }
+      
       toast({
         title: "Parsing Failed",
-        description: "Could not parse your gig notes. Please try again or contact support.",
+        description: errorMessage,
         variant: "destructive",
       });
+      setProcessingProgress(0);
       setStep('input');
     },
   });
@@ -246,7 +258,14 @@ May 5th promotional event at Mall, $180`;
                     <li>• Separate different gigs with line breaks</li>
                     <li>• Don't worry about formatting - our AI handles messy notes</li>
                     <li>• Include any details you remember (location, duties, hours)</li>
+                    <li>• Try shorter text chunks if parsing fails</li>
                   </ul>
+                </div>
+
+                <div className="bg-amber-50 rounded-lg p-3 mt-4">
+                  <p className="text-sm text-amber-800">
+                    <strong>Having trouble?</strong> Try breaking your notes into smaller sections or simplifying the text format.
+                  </p>
                 </div>
 
                 <div className="flex gap-3">
