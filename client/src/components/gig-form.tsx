@@ -98,7 +98,7 @@ export default function GigForm({ onClose }: GigFormProps) {
     if (user?.homeAddress && !form.getValues("startingAddress")) {
       form.setValue("startingAddress", user.homeAddress);
     }
-    if (user?.defaultTaxPercentage !== undefined) {
+    if (user?.defaultTaxPercentage !== undefined && user.defaultTaxPercentage !== null) {
       form.setValue("taxPercentage", user.defaultTaxPercentage);
     }
   });
