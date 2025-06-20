@@ -20,7 +20,7 @@ function Router() {
   useEffect(() => {
     if (SKIP_AUTH) {
       // Skip authentication during development
-      setUser({ id: 1, name: "Dev User", email: "dev@giggy.app" });
+      setUser({ name: "Dev User", email: "dev@giggy.app" } as any);
       setIsLoading(false);
       return;
     }
