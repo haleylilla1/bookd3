@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
+import AuthTestPanel from "@/components/auth-test-panel";
 
 export default function LandingPage() {
   const [isLoading, setIsLoading] = useState(false);
@@ -446,6 +447,13 @@ export default function LandingPage() {
             Trusted by gig workers across the country. Your data is secure and private.
           </p>
         </div>
+
+        {/* Development Test Panel */}
+        {process.env.NODE_ENV === 'development' && (
+          <div className="mt-16">
+            <AuthTestPanel />
+          </div>
+        )}
       </div>
     </div>
   );
