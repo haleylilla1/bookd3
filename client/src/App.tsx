@@ -62,18 +62,10 @@ function Router() {
 
   return (
     <Switch>
-      {user ? (
-        <>
-          <Route path="/" component={Home} />
-          <Route path="/profile" component={Profile} />
-          <Route path="/import" component={Import} />
-        </>
-      ) : (
-        <>
-          <Route path="/login" component={LoginPage} />
-          <Route path="/" component={SimpleLanding} />
-        </>
-      )}
+      <Route path="/" component={Home} />
+      <Route path="/profile" component={Profile} />
+      <Route path="/import" component={Import} />
+      <Route path="/login" component={LoginPage} />
       <Route component={NotFound} />
     </Switch>
   );
