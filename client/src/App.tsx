@@ -8,24 +8,15 @@ import { useState, useEffect } from "react";
 import Home from "@/pages/home";
 import Profile from "@/pages/profile";
 import Import from "@/pages/import";
+import LoginPage from "@/pages/login";
 import LandingPage from "@/components/landing-page";
 import NotFound from "@/pages/not-found";
 
 function Router() {
-  // DEVELOPMENT MODE: Skip authentication for now
-  const SKIP_AUTH = true;
-  
   const [user, setUser] = useState(null);
-  const [isLoading, setIsLoading] = useState(!SKIP_AUTH);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    if (SKIP_AUTH) {
-      // Skip authentication during development
-      setUser({ name: "Dev User", email: "dev@giggy.app" } as any);
-      setIsLoading(false);
-      return;
-    }
-
     let mounted = true;
     
     async function checkAuth() {
@@ -78,7 +69,10 @@ function Router() {
           <Route path="/import" component={Import} />
         </>
       ) : (
-        <Route path="/" component={LandingPage} />
+        <>
+          <Route path="/login" component={LoginPage} />
+          <Route path="/" component={LandingPage} />
+        </>
       )}
       <Route component={NotFound} />
     </Switch>
