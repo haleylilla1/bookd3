@@ -42,7 +42,7 @@ import {
 } from "@shared/schema";
 import bcrypt from "bcryptjs";
 import { db } from "./db";
-import { eq, and, gte, lte, desc } from "drizzle-orm";
+import { eq, and, gte, lte, desc, count } from "drizzle-orm";
 
 export interface IStorage {
   // User operations
@@ -687,7 +687,7 @@ export class DatabaseStorage implements IStorage {
     try {
       return await db.select()
         .from(auditLogs)
-        .orderBy(desc(auditLogs.timestamp))
+        .orderBy(desc(auditLogs.createdAt))
         .limit(limit);
     } catch (error) {
       console.error('Error getting audit logs:', error);
@@ -703,7 +703,7 @@ export class DatabaseStorage implements IStorage {
       const userExpenses = await this.getExpensesByUser(userId);
       const userInvoices = await this.getInvoicesByUser(userId);
 
-      const totalEarnings = userGigs.reduce((sum, gig) => sum + parseFloat(gig.earnings || "0"), 0);
+      const totalEarnings = userGigs.reduce((sum, gig) => sum + parseFloat(gig.actualPay || "0"), 0);
 
       return {
         user,
