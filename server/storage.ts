@@ -749,7 +749,7 @@ export class DatabaseStorage implements IStorage {
       return await db.select()
         .from(auditLogs)
         .where(eq(auditLogs.userId, userId))
-        .orderBy(desc(auditLogs.timestamp))
+        .orderBy(desc(auditLogs.createdAt))
         .limit(50);
     } catch (error) {
       console.error('Error getting user activity:', error);
@@ -771,7 +771,7 @@ export class DatabaseStorage implements IStorage {
       };
     } catch (error) {
       console.error('Error recovering user data:', error);
-      return { status: "failed", error: error.message };
+      return { status: "failed", error: String(error) };
     }
   }
 }

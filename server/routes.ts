@@ -12,6 +12,7 @@ import {
 } from "@shared/schema";
 import { z } from "zod";
 import { setupAuthRoutes } from "./auth-routes";
+import { isAuthenticated } from "./replitAuth";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Setup authentication routes first
@@ -1012,6 +1013,64 @@ Be VERY generous in extracting gigs:
     } catch (error) {
       console.error("Distance calculation error:", error);
       res.status(500).json({ error: "Failed to calculate distance" });
+    }
+  });
+
+  // Admin monitoring routes
+  app.get('/api/admin/users', isAuthenticated, async (req, res) => {
+    try {
+      const currentUser = await storage.getUser(req.user.claims.sub);
+      if (!currentUser || !currentUser.email?.includes('admin')) {
+        return res.status(403).json({ message: 'Admin access required' });
+      }
+
+      const users = await storage.getAllUsers();
+      const sanitizedUsers = users.map(user => ({
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        isActive: user.isActive,
+        subscriptionStatus: user.subscriptionStatus,
+        createdAt: user.createdAt,
+        lastLogin: user.updatedAt
+      }));
+      res.json(sanitizedUsers);
+    } catch (error) {
+      console.error('Error fetching users:', error);
+      res.status(500).json({ message: 'Failed to fetch users' });
+    }
+  });
+
+  app.get('/api/admin/stats', isAuthenticated, async (req, res) => {
+    try {
+      const stats = await storage.getSystemStats();
+      res.json(stats);
+    } catch (error) {
+      console.error('Error fetching stats:', error);
+      res.status(500).json({ message: 'Failed to fetch statistics' });
+    }
+  });
+
+  app.get('/api/admin/user-data/:userId', isAuthenticated, async (req, res) => {
+    try {
+      const userId = parseInt(req.params.userId);
+      const userData = await storage.getUserCompleteData(userId);
+      res.json(userData);
+    } catch (error) {
+      console.error('Error fetching user data:', error);
+      res.status(500).json({ message: 'Failed to fetch user data' });
+    }
+  });
+
+  app.post('/api/admin/backup-all', isAuthenticated, async (req, res) => {
+    try {
+      const backupData = await storage.createFullBackup();
+      res.setHeader('Content-Type', 'application/json');
+      res.setHeader('Content-Disposition', `attachment; filename="giggy-backup-${new Date().toISOString().split('T')[0]}.json"`);
+      res.json(backupData);
+    } catch (error) {
+      console.error('Error creating backup:', error);
+      res.status(500).json({ message: 'Failed to create backup' });
     }
   });
 
