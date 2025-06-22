@@ -9,7 +9,7 @@ import Home from "@/pages/home";
 import Profile from "@/pages/profile";
 import Import from "@/pages/import";
 import LoginPage from "@/pages/login";
-import LandingPage from "@/components/landing-page";
+import SimpleLanding from "@/components/simple-landing";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -71,7 +71,7 @@ function Router() {
       ) : (
         <>
           <Route path="/login" component={LoginPage} />
-          <Route path="/" component={LandingPage} />
+          <Route path="/" component={SimpleLanding} />
         </>
       )}
       <Route component={NotFound} />
