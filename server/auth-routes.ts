@@ -26,8 +26,12 @@ export function setupAuthRoutes(app: Express) {
   );
 
   app.get('/api/auth/google/callback',
-    passport.authenticate('google', { failureRedirect: '/login' }),
+    passport.authenticate('google', { 
+      failureRedirect: '/login?error=google_auth_failed',
+      failureFlash: false 
+    }),
     (req, res) => {
+      console.log('Google auth successful for user:', req.user);
       res.redirect('/');
     }
   );
