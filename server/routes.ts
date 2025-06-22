@@ -13,6 +13,9 @@ import {
 import { z } from "zod";
 import { setupAuthRoutes } from "./auth-routes";
 import { isAuthenticated } from "./replitAuth";
+import { db } from "./db";
+import { count, gte } from "drizzle-orm";
+import { users } from "@shared/schema";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Setup authentication routes first
@@ -1016,61 +1019,70 @@ Be VERY generous in extracting gigs:
     }
   });
 
-  // Admin monitoring routes
-  app.get('/api/admin/users', isAuthenticated, async (req, res) => {
+  // Simple monitoring endpoints
+  app.get('/api/monitor/stats', async (req, res) => {
     try {
-      const currentUser = await storage.getUser(req.user.claims.sub);
-      if (!currentUser || !currentUser.email?.includes('admin')) {
-        return res.status(403).json({ message: 'Admin access required' });
-      }
-
-      const users = await storage.getAllUsers();
-      const sanitizedUsers = users.map(user => ({
-        id: user.id,
-        name: user.name,
-        email: user.email,
-        isActive: user.isActive,
-        subscriptionStatus: user.subscriptionStatus,
-        createdAt: user.createdAt,
-        lastLogin: user.updatedAt
-      }));
-      res.json(sanitizedUsers);
+      const [userCount] = await db.select({ count: count() }).from(users);
+      const [activeCount] = await db.select({ count: count() })
+        .from(users)
+        .where(gte(users.updatedAt, new Date(Date.now() - 24 * 60 * 60 * 1000)));
+      
+      res.json({
+        totalUsers: userCount.count,
+        activeToday: activeCount.count,
+        timestamp: new Date().toISOString()
+      });
     } catch (error) {
-      console.error('Error fetching users:', error);
-      res.status(500).json({ message: 'Failed to fetch users' });
+      console.error('Monitor stats error:', error);
+      res.status(500).json({ error: 'Failed to get stats' });
     }
   });
 
-  app.get('/api/admin/stats', isAuthenticated, async (req, res) => {
-    try {
-      const stats = await storage.getSystemStats();
-      res.json(stats);
-    } catch (error) {
-      console.error('Error fetching stats:', error);
-      res.status(500).json({ message: 'Failed to fetch statistics' });
-    }
-  });
-
-  app.get('/api/admin/user-data/:userId', isAuthenticated, async (req, res) => {
+  app.get('/api/monitor/export/:userId', isAuthenticated, async (req, res) => {
     try {
       const userId = parseInt(req.params.userId);
-      const userData = await storage.getUserCompleteData(userId);
-      res.json(userData);
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ error: 'User not found' });
+      }
+
+      const exportData = {
+        user: {
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          createdAt: user.createdAt,
+          isActive: user.isActive
+        },
+        exportedAt: new Date().toISOString()
+      };
+
+      res.setHeader('Content-Type', 'application/json');
+      res.setHeader('Content-Disposition', `attachment; filename="user-${userId}-export.json"`);
+      res.json(exportData);
+      
+      await storage.logAudit(userId, 'DATA_EXPORT', 'users', userId, null, { exported_by: 'system' });
+      
     } catch (error) {
-      console.error('Error fetching user data:', error);
-      res.status(500).json({ message: 'Failed to fetch user data' });
+      console.error('Export error:', error);
+      res.status(500).json({ error: 'Export failed' });
     }
   });
 
-  app.post('/api/admin/backup-all', isAuthenticated, async (req, res) => {
+  app.get('/api/monitor/health', async (req, res) => {
     try {
-      const backupData = await storage.createFullBackup();
-      res.setHeader('Content-Type', 'application/json');
-      res.setHeader('Content-Disposition', `attachment; filename="giggy-backup-${new Date().toISOString().split('T')[0]}.json"`);
-      res.json(backupData);
+      await db.select({ test: count() }).from(users).limit(1);
+      res.json({ 
+        status: 'healthy',
+        database: 'connected',
+        timestamp: new Date().toISOString()
+      });
     } catch (error) {
-      console.error('Error creating backup:', error);
-      res.status(500).json({ message: 'Failed to create backup' });
+      res.status(500).json({ 
+        status: 'unhealthy',
+        database: 'disconnected',
+        timestamp: new Date().toISOString()
+      });
     }
   });
 

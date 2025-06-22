@@ -125,14 +125,7 @@ export interface IStorage {
   updateExpenseCategory(id: number, category: Partial<InsertExpenseCategory>): Promise<ExpenseCategory | undefined>;
   deleteExpenseCategory(id: number): Promise<boolean>;
 
-  // Admin functions
-  getAllUsers(): Promise<User[]>;
-  getSystemStats(): Promise<any>;
-  getRecentAuditLogs(limit: number): Promise<any[]>;
-  getUserCompleteData(userId: number): Promise<any>;
-  createFullBackup(): Promise<any>;
-  getUserActivity(userId: number): Promise<any[]>;
-  recoverUserData(userId: number): Promise<any>;
+
 }
 
 export class DatabaseStorage implements IStorage {
@@ -658,122 +651,7 @@ export class DatabaseStorage implements IStorage {
     return result.rowCount !== null && result.rowCount > 0;
   }
 
-  // Admin functions
-  async getAllUsers(): Promise<User[]> {
-    return await db.select().from(users).orderBy(users.createdAt);
-  }
 
-  async getSystemStats(): Promise<any> {
-    try {
-      const [userStats] = await db.select({ count: count() }).from(users);
-      const [gigStats] = await db.select({ count: count() }).from(gigs);
-      const activeUsersQuery = await db.select({ count: count() })
-        .from(users)
-        .where(gte(users.updatedAt, new Date(Date.now() - 24 * 60 * 60 * 1000)));
-
-      return {
-        totalUsers: userStats.count,
-        totalGigs: gigStats.count,
-        activeToday: activeUsersQuery[0]?.count || 0,
-        dbSize: "Calculating..."
-      };
-    } catch (error) {
-      console.error('Error getting system stats:', error);
-      return { totalUsers: 0, totalGigs: 0, activeToday: 0, dbSize: "0 MB" };
-    }
-  }
-
-  async getRecentAuditLogs(limit: number): Promise<any[]> {
-    try {
-      return await db.select()
-        .from(auditLogs)
-        .orderBy(desc(auditLogs.createdAt))
-        .limit(limit);
-    } catch (error) {
-      console.error('Error getting audit logs:', error);
-      return [];
-    }
-  }
-
-  async getUserCompleteData(userId: number): Promise<any> {
-    try {
-      const user = await this.getUser(userId);
-      const userGigs = await this.getGigsByUser(userId);
-      const userGoals = await this.getGoalsByUser(userId);
-      const userExpenses = await this.getExpensesByUser(userId);
-      const userInvoices = await this.getInvoicesByUser(userId);
-
-      const totalEarnings = userGigs.reduce((sum, gig) => sum + parseFloat(gig.actualPay || "0"), 0);
-
-      return {
-        user,
-        gigs: userGigs,
-        goals: userGoals,
-        expenses: userExpenses,
-        invoices: userInvoices,
-        totalEarnings: totalEarnings.toFixed(2),
-        lastActivity: user?.updatedAt?.toISOString() || "Never"
-      };
-    } catch (error) {
-      console.error('Error getting complete user data:', error);
-      return null;
-    }
-  }
-
-  async createFullBackup(): Promise<any> {
-    try {
-      const allUsers = await this.getAllUsers();
-      const backupData: any = {
-        timestamp: new Date().toISOString(),
-        users: [],
-        metadata: {
-          version: "1.0",
-          totalUsers: allUsers.length
-        }
-      };
-
-      for (const user of allUsers) {
-        const userData = await this.getUserCompleteData(user.id);
-        backupData.users.push(userData);
-      }
-
-      return backupData;
-    } catch (error) {
-      console.error('Error creating backup:', error);
-      throw error;
-    }
-  }
-
-  async getUserActivity(userId: number): Promise<any[]> {
-    try {
-      return await db.select()
-        .from(auditLogs)
-        .where(eq(auditLogs.userId, userId))
-        .orderBy(desc(auditLogs.createdAt))
-        .limit(50);
-    } catch (error) {
-      console.error('Error getting user activity:', error);
-      return [];
-    }
-  }
-
-  async recoverUserData(userId: number): Promise<any> {
-    try {
-      const userData = await this.getUserCompleteData(userId);
-      return {
-        status: "recovered",
-        dataIntegrity: "verified",
-        recordsFound: {
-          gigs: userData?.gigs?.length || 0,
-          goals: userData?.goals?.length || 0,
-          expenses: userData?.expenses?.length || 0
-        }
-      };
-    } catch (error) {
-      console.error('Error recovering user data:', error);
-      return { status: "failed", error: String(error) };
-    }
-  }
 }
 
 export const storage = new DatabaseStorage();

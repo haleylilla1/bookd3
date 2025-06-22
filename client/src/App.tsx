@@ -10,7 +10,6 @@ import Profile from "@/pages/profile";
 import Import from "@/pages/import";
 import LoginPage from "@/pages/login";
 import SimpleLanding from "@/components/simple-landing";
-import SimpleAdminDashboard from "@/pages/simple-admin";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -68,7 +67,6 @@ function Router() {
           <Route path="/" component={Home} />
           <Route path="/profile" component={Profile} />
           <Route path="/import" component={Import} />
-          <Route path="/admin" component={SimpleAdminDashboard} />
         </>
       ) : (
         <>
