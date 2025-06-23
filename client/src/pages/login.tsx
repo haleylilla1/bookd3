@@ -214,6 +214,8 @@ export default function LoginPage() {
                         <FormControl>
                           <Input 
                             placeholder="Enter your full name" 
+                            type="text"
+                            autoComplete="name"
                             {...field} 
                             disabled={isLoading}
                           />
@@ -232,6 +234,8 @@ export default function LoginPage() {
                           <Input 
                             type="email" 
                             placeholder="Enter your email" 
+                            autoComplete="email"
+                            inputMode="email"
                             {...field} 
                             disabled={isLoading}
                           />
@@ -251,6 +255,7 @@ export default function LoginPage() {
                             <Input 
                               type={showPassword ? "text" : "password"}
                               placeholder="Create a password" 
+                              autoComplete="new-password"
                               {...field} 
                               disabled={isLoading}
                             />
@@ -285,6 +290,7 @@ export default function LoginPage() {
                             <Input 
                               type={showConfirmPassword ? "text" : "password"}
                               placeholder="Confirm your password" 
+                              autoComplete="new-password"
                               {...field} 
                               disabled={isLoading}
                             />
