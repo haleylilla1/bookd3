@@ -1153,18 +1153,17 @@ Be VERY generous in extracting gigs:
 
   app.get('/api/admin/users', async (req, res) => {
     try {
-      const [allUsers] = await db.select().from(users);
-      const usersList = await db.select().from(users).orderBy(desc(users.createdAt));
+      const usersList = await db.select({
+        id: users.id,
+        name: users.name,
+        email: users.email,
+        createdAt: users.createdAt,
+        isActive: users.isActive,
+        onboardingCompleted: users.onboardingCompleted
+      }).from(users);
       
       res.json({
-        users: usersList.map((user: any) => ({
-          id: user.id,
-          name: user.name,
-          email: user.email,
-          createdAt: user.createdAt,
-          isActive: user.isActive,
-          onboardingCompleted: user.onboardingCompleted
-        })),
+        users: usersList,
         total: usersList.length,
         timestamp: new Date().toISOString()
       });
