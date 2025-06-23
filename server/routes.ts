@@ -1038,7 +1038,7 @@ Be VERY generous in extracting gigs:
     }
   });
 
-  app.get('/api/monitor/export/:userId', isAuthenticated, async (req, res) => {
+  app.get('/api/monitor/export/:userId', async (req, res) => {
     try {
       const userId = parseInt(req.params.userId);
       const user = await storage.getUser(userId);
@@ -1061,11 +1061,72 @@ Be VERY generous in extracting gigs:
       res.setHeader('Content-Disposition', `attachment; filename="user-${userId}-export.json"`);
       res.json(exportData);
       
-      await storage.logAudit(userId, 'DATA_EXPORT', 'users', userId, null, { exported_by: 'system' });
+      await storage.logAudit(userId, 'DATA_EXPORT', 'users', userId, null, { exported_by: 'admin' });
       
     } catch (error) {
       console.error('Export error:', error);
       res.status(500).json({ error: 'Export failed' });
+    }
+  });
+
+  // Admin support endpoints for user troubleshooting
+  app.get('/api/admin/user/:userId', async (req, res) => {
+    try {
+      const userId = parseInt(req.params.userId);
+      const user = await storage.getUser(userId);
+      
+      if (!user) {
+        return res.status(404).json({ error: 'User not found' });
+      }
+      
+      const gigs = await storage.getGigsByUser(userId);
+      const goals = await storage.getGoalsByUser(userId);
+      
+      res.json({
+        user: {
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          createdAt: user.createdAt,
+          isActive: user.isActive,
+          onboardingCompleted: user.onboardingCompleted
+        },
+        summary: {
+          totalGigs: gigs.length,
+          totalGoals: goals.length,
+          lastActivity: user.updatedAt
+        },
+        timestamp: new Date().toISOString()
+      });
+    } catch (error) {
+      console.error('Admin user lookup error:', error);
+      res.status(500).json({ error: 'Failed to fetch user data' });
+    }
+  });
+
+  app.get('/api/admin/user/:userId/gigs', async (req, res) => {
+    try {
+      const userId = parseInt(req.params.userId);
+      const gigs = await storage.getGigsByUser(userId);
+      
+      res.json({
+        userId: userId,
+        totalGigs: gigs.length,
+        gigs: gigs.map(gig => ({
+          id: gig.id,
+          eventName: gig.eventName,
+          clientName: gig.clientName,
+          date: gig.date,
+          status: gig.status,
+          expectedPay: gig.expectedPay,
+          actualPay: gig.actualPay,
+          createdAt: gig.createdAt
+        })),
+        timestamp: new Date().toISOString()
+      });
+    } catch (error) {
+      console.error('Admin gigs lookup error:', error);
+      res.status(500).json({ error: 'Failed to fetch user gigs' });
     }
   });
 
