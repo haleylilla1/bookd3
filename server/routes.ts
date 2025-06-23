@@ -1151,6 +1151,29 @@ Be VERY generous in extracting gigs:
     }
   });
 
+  app.get('/api/admin/users', async (req, res) => {
+    try {
+      const [allUsers] = await db.select().from(users);
+      const usersList = await db.select().from(users).orderBy(desc(users.createdAt));
+      
+      res.json({
+        users: usersList.map((user: any) => ({
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          createdAt: user.createdAt,
+          isActive: user.isActive,
+          onboardingCompleted: user.onboardingCompleted
+        })),
+        total: usersList.length,
+        timestamp: new Date().toISOString()
+      });
+    } catch (error) {
+      console.error('Admin users list error:', error);
+      res.status(500).json({ error: 'Failed to fetch users' });
+    }
+  });
+
   app.get('/api/monitor/health', async (req, res) => {
     try {
       await db.select({ test: count() }).from(users).limit(1);
