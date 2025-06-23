@@ -86,8 +86,7 @@ export function setupAuthRoutes(app: Express) {
           user: { 
             id: user.id, 
             name: user.name, 
-            email: user.email,
-            trialExpiresAt: user.trialExpiresAt 
+            email: user.email
           } 
         });
       });

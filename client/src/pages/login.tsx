@@ -185,10 +185,12 @@ export default function LoginPage() {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            {/* Note about Google Authentication */}
-            <div className="text-center text-sm text-gray-500 bg-gray-50 dark:bg-gray-800 p-3 rounded-md">
-              Google sign-in requires domain configuration. Use email/password below for testing.
-            </div>
+            {/* Registration Success Notice */}
+            {isRegisterMode && (
+              <div className="text-center text-sm text-blue-600 bg-blue-50 dark:bg-blue-900/20 dark:text-blue-300 p-3 rounded-md">
+                Create your free Giggy account to start tracking gigs and earnings!
+              </div>
+            )}
 
             <div className="relative">
               <div className="absolute inset-0 flex items-center">
