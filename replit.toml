@@ -1,0 +1,7 @@
+[deployment]
+build = "npm run build"
+run = "npm start"
+deploymentTarget = "autoscale"
+
+[nix]
+channel = "stable-23_11"
