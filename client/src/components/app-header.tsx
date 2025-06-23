@@ -48,20 +48,8 @@ export default function AppHeader({ currentScreen, onScreenChange }: AppHeaderPr
         </Badge>
       );
     }
-    if (user.subscriptionTier === 'trial') {
-      const trialEnd = user.trialEndDate ? new Date(user.trialEndDate) : null;
-      const daysLeft = trialEnd ? Math.ceil((trialEnd.getTime() - Date.now()) / (1000 * 60 * 60 * 24)) : 0;
-      return (
-        <Badge variant="outline" className="border-orange-300 text-orange-700">
-          Trial ({daysLeft} days left)
-        </Badge>
-      );
-    }
-    return (
-      <Badge variant="secondary">
-        Free
-      </Badge>
-    );
+    // Removed trial badge - no subscription tiers for now
+    return null;
   };
 
   return (
