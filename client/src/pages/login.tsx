@@ -201,125 +201,146 @@ export default function LoginPage() {
               </div>
             </div>
 
-            {/* Login/Register Form */}
+            {/* Native Mobile Registration Form */}
             {isRegisterMode ? (
-              <Form {...registerForm}>
-                <form onSubmit={registerForm.handleSubmit(handleRegister)} className="space-y-4">
-                  <FormField
-                    control={registerForm.control}
-                    name="name"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Full Name</FormLabel>
-                        <FormControl>
-                          <Input 
-                            placeholder="Enter your full name" 
-                            type="text"
-                            autoComplete="name"
-                            {...field} 
-                            disabled={isLoading}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Full Name</label>
+                  <input
+                    type="text"
+                    placeholder="Enter your full name"
+                    value={registerForm.watch('name') || ''}
+                    onChange={(e) => registerForm.setValue('name', e.target.value)}
+                    disabled={isLoading}
+                    style={{
+                      width: '100%',
+                      height: '48px',
+                      fontSize: '16px',
+                      padding: '12px 16px',
+                      border: '2px solid #d1d5db',
+                      borderRadius: '6px',
+                      backgroundColor: '#ffffff',
+                      color: '#000000',
+                      outline: 'none',
+                      boxSizing: 'border-box'
+                    }}
                   />
-                  <FormField
-                    control={registerForm.control}
-                    name="email"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Email</FormLabel>
-                        <FormControl>
-                          <Input 
-                            type="email" 
-                            placeholder="Enter your email" 
-                            autoComplete="email"
-                            inputMode="email"
-                            {...field} 
-                            disabled={isLoading}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
+                  {registerForm.formState.errors.name && (
+                    <p className="text-red-500 text-sm mt-1">{registerForm.formState.errors.name.message}</p>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
+                  <input
+                    type="email"
+                    placeholder="Enter your email"
+                    value={registerForm.watch('email') || ''}
+                    onChange={(e) => registerForm.setValue('email', e.target.value)}
+                    disabled={isLoading}
+                    style={{
+                      width: '100%',
+                      height: '48px',
+                      fontSize: '16px',
+                      padding: '12px 16px',
+                      border: '2px solid #d1d5db',
+                      borderRadius: '6px',
+                      backgroundColor: '#ffffff',
+                      color: '#000000',
+                      outline: 'none',
+                      boxSizing: 'border-box'
+                    }}
                   />
-                  <FormField
-                    control={registerForm.control}
-                    name="password"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Password</FormLabel>
-                        <FormControl>
-                          <div className="relative">
-                            <Input 
-                              type={showPassword ? "text" : "password"}
-                              placeholder="Create a password" 
-                              autoComplete="new-password"
-                              {...field} 
-                              disabled={isLoading}
-                            />
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="sm"
-                              className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
-                              onClick={() => setShowPassword(!showPassword)}
-                              disabled={isLoading}
-                            >
-                              {showPassword ? (
-                                <EyeOff className="h-4 w-4" />
-                              ) : (
-                                <Eye className="h-4 w-4" />
-                              )}
-                            </Button>
-                          </div>
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={registerForm.control}
-                    name="confirmPassword"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Confirm Password</FormLabel>
-                        <FormControl>
-                          <div className="relative">
-                            <Input 
-                              type={showConfirmPassword ? "text" : "password"}
-                              placeholder="Confirm your password" 
-                              autoComplete="new-password"
-                              {...field} 
-                              disabled={isLoading}
-                            />
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="sm"
-                              className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
-                              onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                              disabled={isLoading}
-                            >
-                              {showConfirmPassword ? (
-                                <EyeOff className="h-4 w-4" />
-                              ) : (
-                                <Eye className="h-4 w-4" />
-                              )}
-                            </Button>
-                          </div>
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <Button type="submit" className="w-full" disabled={isLoading}>
-                    {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    Create Account
-                  </Button>
-                </form>
-              </Form>
+                  {registerForm.formState.errors.email && (
+                    <p className="text-red-500 text-sm mt-1">{registerForm.formState.errors.email.message}</p>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Password</label>
+                  <div className="relative">
+                    <input
+                      type={showPassword ? "text" : "password"}
+                      placeholder="Create a password"
+                      value={registerForm.watch('password') || ''}
+                      onChange={(e) => registerForm.setValue('password', e.target.value)}
+                      disabled={isLoading}
+                      style={{
+                        width: '100%',
+                        height: '48px',
+                        fontSize: '16px',
+                        padding: '12px 50px 12px 16px',
+                        border: '2px solid #d1d5db',
+                        borderRadius: '6px',
+                        backgroundColor: '#ffffff',
+                        color: '#000000',
+                        outline: 'none',
+                        boxSizing: 'border-box'
+                      }}
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                      onClick={() => setShowPassword(!showPassword)}
+                      disabled={isLoading}
+                    >
+                      {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </Button>
+                  </div>
+                  {registerForm.formState.errors.password && (
+                    <p className="text-red-500 text-sm mt-1">{registerForm.formState.errors.password.message}</p>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Confirm Password</label>
+                  <div className="relative">
+                    <input
+                      type={showConfirmPassword ? "text" : "password"}
+                      placeholder="Confirm your password"
+                      value={registerForm.watch('confirmPassword') || ''}
+                      onChange={(e) => registerForm.setValue('confirmPassword', e.target.value)}
+                      disabled={isLoading}
+                      style={{
+                        width: '100%',
+                        height: '48px',
+                        fontSize: '16px',
+                        padding: '12px 50px 12px 16px',
+                        border: '2px solid #d1d5db',
+                        borderRadius: '6px',
+                        backgroundColor: '#ffffff',
+                        color: '#000000',
+                        outline: 'none',
+                        boxSizing: 'border-box'
+                      }}
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                      disabled={isLoading}
+                    >
+                      {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </Button>
+                  </div>
+                  {registerForm.formState.errors.confirmPassword && (
+                    <p className="text-red-500 text-sm mt-1">{registerForm.formState.errors.confirmPassword.message}</p>
+                  )}
+                </div>
+
+                <Button 
+                  onClick={registerForm.handleSubmit(handleRegister)} 
+                  className="w-full" 
+                  disabled={isLoading}
+                >
+                  {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  Create Account
+                </Button>
+              </div>
             ) : (
               <Form {...loginForm}>
                 <form onSubmit={loginForm.handleSubmit(handleLogin)} className="space-y-4">
