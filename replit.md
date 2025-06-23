@@ -14,9 +14,11 @@ Giggy is a comprehensive gig worker companion app with advanced features includi
 - Maintain simple, clean interface design
 
 ## Recent Changes
+- 2025-06-23: Created professional admin dashboard (admin-dashboard.html) for user management
+- 2025-06-23: Added admin API endpoints for user lookup, data export, and support troubleshooting
+- 2025-06-23: Removed trial/subscription system messaging per user request
+- 2025-06-23: Fixed login redirection to properly refresh authentication state
 - 2025-06-23: RESOLVED mobile account creation - replaced complex form system with native HTML inputs
-- 2025-06-23: Fixed mobile input text visibility with enhanced contrast and iOS Safari compatibility
-- 2025-06-23: Successfully tested account creation flow (user: haleylilla@gmail.com)
 - 2025-06-23: Authentication system fully operational for mobile users
 
 ## Technical Architecture
