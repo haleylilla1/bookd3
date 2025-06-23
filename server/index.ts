@@ -1,11 +1,11 @@
 import express, { type Request, Response, NextFunction } from "express";
-import session from "express-session";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
+import { setupAuth } from "./auth";
 
 const app = express();
 
-// CRITICAL: Admin routes must be FIRST before any middleware
+// Admin routes - highest priority, before ALL middleware
 app.get('/admin', (req, res) => {
   res.redirect(301, '/api/admin/dashboard');
 });
@@ -398,19 +398,8 @@ app.use((req, res, next) => {
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
-// Session configuration for authentication
-app.use(session({
-  secret: process.env.SESSION_SECRET || 'giggy-dev-secret-key',
-  resave: false,
-  saveUninitialized: false,
-  cookie: {
-    secure: false, // Temporarily disable for debugging
-    httpOnly: true,
-    maxAge: 24 * 60 * 60 * 1000, // 24 hours
-    sameSite: 'lax'
-  },
-  name: 'giggy.session'
-}));
+// Authentication system
+setupAuth(app);
 
 app.use((req, res, next) => {
   const start = Date.now();
