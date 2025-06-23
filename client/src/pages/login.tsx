@@ -17,9 +17,9 @@ const loginSchema = z.object({
 });
 
 const registerSchema = z.object({
-  name: z.string().min(2, "Name must be at least 2 characters"),
-  email: z.string().email("Please enter a valid email address"),
-  password: z.string().min(6, "Password must be at least 6 characters"),
+  name: z.string().min(2, "Name must be at least 2 characters").max(50, "Name must be less than 50 characters"),
+  email: z.string().email("Please enter a valid email address").max(100, "Email must be less than 100 characters"),
+  password: z.string().min(6, "Password must be at least 6 characters").max(100, "Password must be less than 100 characters"),
   confirmPassword: z.string().min(6, "Please confirm your password"),
 }).refine((data) => data.password === data.confirmPassword, {
   message: "Passwords don't match",
@@ -96,7 +96,21 @@ export default function LoginPage() {
 
   const handleRegister = async (data: RegisterFormData) => {
     setIsLoading(true);
+    
+    // Enhanced validation for mobile
+    if (!data.name.trim() || !data.email.trim() || !data.password.trim()) {
+      toast({
+        title: "Missing Information",
+        description: "Please fill in all fields to create your account.",
+        variant: "destructive",
+      });
+      setIsLoading(false);
+      return;
+    }
+
     try {
+      console.log("Attempting registration with:", { name: data.name, email: data.email });
+      
       const response = await fetch("/api/auth/register", {
         method: "POST",
         headers: {
@@ -104,22 +118,29 @@ export default function LoginPage() {
         },
         credentials: "include",
         body: JSON.stringify({
-          name: data.name,
-          email: data.email,
+          name: data.name.trim(),
+          email: data.email.trim().toLowerCase(),
           password: data.password,
         }),
       });
 
+      console.log("Registration response status:", response.status);
+      
       if (response.ok) {
         const result = await response.json();
+        console.log("Registration successful:", result);
+        
         toast({
-          title: "Account Created!",
-          description: "Welcome to Giggy! Your account has been created successfully.",
+          title: "Welcome to Giggy!",
+          description: "Your account has been created successfully. You can now start tracking your gigs!",
         });
-        // Redirect to dashboard
-        setLocation("/");
+        
+        // Force refresh auth state and redirect
+        window.location.href = "/";
       } else {
         const error = await response.json();
+        console.error("Registration failed:", error);
+        
         toast({
           title: "Registration Failed",
           description: error.message || "Unable to create account. Please try again.",
@@ -127,9 +148,10 @@ export default function LoginPage() {
         });
       }
     } catch (error) {
+      console.error("Registration error:", error);
       toast({
-        title: "Registration Error",
-        description: "Unable to connect to the server. Please try again.",
+        title: "Connection Error",
+        description: "Unable to connect to the server. Please check your internet connection and try again.",
         variant: "destructive",
       });
     } finally {

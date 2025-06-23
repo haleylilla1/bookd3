@@ -41,28 +41,59 @@ export function setupAuthRoutes(app: Express) {
     try {
       const { email, password, name } = req.body;
       
+      console.log('Registration attempt:', { email, name, hasPassword: !!password });
+      
+      // Enhanced validation
       if (!email || !password || !name) {
+        console.log('Missing required fields');
         return res.status(400).json({ message: 'Email, password, and name are required' });
       }
 
-      const existingUser = await storage.getUserByEmail(email);
-      if (existingUser) {
-        return res.status(400).json({ message: 'Email already registered' });
+      // Trim and normalize inputs
+      const normalizedEmail = email.trim().toLowerCase();
+      const normalizedName = name.trim();
+
+      // Validate email format
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(normalizedEmail)) {
+        return res.status(400).json({ message: 'Please enter a valid email address' });
       }
 
-      const user = await storage.createUserWithPassword(email, password, name);
-      await storage.logAudit(user.id, 'REGISTER', 'users', user.id, null, { email, name });
+      // Validate password strength
+      if (password.length < 6) {
+        return res.status(400).json({ message: 'Password must be at least 6 characters long' });
+      }
+
+      const existingUser = await storage.getUserByEmail(normalizedEmail);
+      if (existingUser) {
+        console.log('Email already exists:', normalizedEmail);
+        return res.status(400).json({ message: 'An account with this email already exists. Please try logging in instead.' });
+      }
+
+      const user = await storage.createUserWithPassword(normalizedEmail, password, normalizedName);
+      console.log('User created successfully:', { id: user.id, email: user.email });
+      
+      await storage.logAudit(user.id, 'REGISTER', 'users', user.id, null, { email: normalizedEmail, name: normalizedName });
 
       req.login(user, (err) => {
         if (err) {
           console.error('Login after registration error:', err);
-          return res.status(500).json({ message: 'Registration successful but login failed' });
+          return res.status(500).json({ message: 'Account created successfully, but automatic login failed. Please try logging in manually.' });
         }
-        res.json({ message: 'Registration successful', user: { id: user.id, name: user.name, email: user.email } });
+        console.log('Registration and login successful for:', user.email);
+        res.json({ 
+          message: 'Registration successful', 
+          user: { 
+            id: user.id, 
+            name: user.name, 
+            email: user.email,
+            trialExpiresAt: user.trialExpiresAt 
+          } 
+        });
       });
     } catch (error) {
       console.error('Registration error:', error);
-      res.status(500).json({ message: 'Registration failed' });
+      res.status(500).json({ message: 'Registration failed. Please try again.' });
     }
   });
 
