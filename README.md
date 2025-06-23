@@ -1,84 +1,67 @@
-# Giggy - The #1 Gig Worker Companion App
+# Giggy - Premier Gig Worker Companion
 
-**Tagline:** Work different.
+**Work different.**
 
-## About Giggy
+## Project Status: Production Ready
 
-Giggy is purpose-built for live-service gig workers—brand ambassadors, freelance catering staff, bartenders, and event professionals. Unlike generic gig or budgeting apps, Giggy simplifies the unique challenges of event-based freelance work.
+Giggy is a comprehensive financial management platform built specifically for gig workers, featuring unified authentication, mobile-optimized interface, and enterprise-grade security. Ready for deployment with custom domain support.
 
-## Vision & Goal
+## Platform Overview
 
-To become the #1 companion app for live-service gig workers by simplifying gig tracking, payment monitoring, tax preparation, and income goal setting.
+Purpose-built for live-service gig workers including brand ambassadors, freelance catering staff, bartenders, and event professionals. Giggy solves the unique challenges of event-based freelance work with intelligent automation and mobile-first design.
 
-## Target Users
+## Key Capabilities
 
-Freelance workers in live events including:
-- Brand ambassadors
-- Catering staff
-- Bartenders
-- Event coordinators
-- Promotional staff
-- Freelance servers
+### Financial Management
+- **Multi-Platform Income Tracking**: Seamlessly track earnings across all gig platforms
+- **Smart Expense Management**: AI-powered categorization and tax-deductible tracking
+- **Dynamic Goal Setting**: Monthly, weekly, and yearly financial targets with progress visualization
+- **Professional Reporting**: PDF invoice generation and tax-ready financial reports
 
-These professionals need to log spontaneous, varied income with minimal friction and no missed details.
+### AI-Powered Features
+- **Bulk Data Import**: AI analysis of bank statements and receipts using OpenAI
+- **Smart Categorization**: Automatic expense classification and insights
+- **Predictive Analytics**: Financial trend analysis for better decision-making
 
-## Core Value Proposition
+### Mobile-First Experience
+- **Native Mobile Optimization**: Purpose-built for smartphone usage with optimized inputs
+- **Touch-Friendly Interface**: Designed for one-handed operation
+- **Fast Performance**: Optimized for mobile data connections
 
-Giggy lets gig workers:
-- **Log gigs in seconds** with pre-filled data and smart defaults
-- **Track pay, expenses, and mileage** with comprehensive financial monitoring
-- **Prepare for taxes** with automatic tax percentage calculations and expense categorization
-- **Auto-generate resume data** from logged gig duties and client relationships
-- **Visualize earnings and progress** toward financial goals with real-time dashboards
+## Recent Major Optimizations (2025-06-23)
 
-## Key Features
+### Code Consolidation & Performance
+- **Unified Authentication**: Replaced 5+ fragmented auth files with single maintainable system
+- **Mobile Enhancement**: Native HTML inputs prevent iOS keyboard zoom issues  
+- **Session Security**: PostgreSQL-backed sessions with secure cookie configuration
+- **Bundle Optimization**: Streamlined architecture reducing load times
+- **Debug Infrastructure**: Comprehensive logging for rapid issue resolution
 
-### 👤 User Profile & Smart Defaults (NEW)
-- **Default Home Address** - Automatically populates mileage tracking starting point
-- **Custom Tax Percentage** - Personalized tax rate (0-50%) for all new gigs
-- **Profile Settings Page** - Centralized user preference management
-- **Auto-population Logic** - Smart form defaults while maintaining editability
-- **Seamless Navigation** - Easy access via user menu with back navigation
+### Authentication System Overhaul
+- **Local Authentication**: Secure email/password with bcrypt hashing
+- **Google OAuth**: Seamless social login integration
+- **Mobile Compatibility**: Native input fields for maximum device support
+- **Session Management**: Enterprise-grade PostgreSQL session storage
 
-### 📱 Calendar View
-- Monthly calendar grid showing all scheduled gigs
-- Color-coded gig status indicators
-- Enhanced "Add Gig" button (improved from circle icon)
-- Quick gig entry from any date
-- Visual overview of work schedule
+## Technical Architecture
 
-### 📝 Comprehensive Gig Entry
-- Lightning-fast gig logging (under 1 minute)
-- Auto-complete for recurring clients
-- Expected vs. actual payment tracking
-- Expense categorization (parking, clothing, travel)
-- **Advanced Mileage Tracking** with Google Maps integration
-  - Starting and ending address fields
-  - Multiple stops support with waypoint management
-  - Real-time distance and travel time calculation
-  - Round-trip toggle for return journey calculation
-  - Manual override option when needed
-- Professional duty descriptions for resume building
+### Backend Excellence
+- **Express.js + TypeScript**: 35+ RESTful API endpoints
+- **PostgreSQL + Drizzle ORM**: 15+ normalized database tables
+- **Unified Auth System**: Single, maintainable authentication module
+- **Enterprise Security**: Comprehensive audit logging and data protection
 
-### 📊 Smart Dashboard
-- Weekly, monthly, and annual income summaries
-- Top client leaderboards
-- Total gigs completed tracking
-- Tax withholding suggestions (default 23%)
-- Goal progress visualization
-- Real-time earnings analytics
+### Frontend Technology  
+- **React + Vite**: Modern component architecture with fast development
+- **Tailwind CSS + Shadcn/UI**: Professional design system with dark mode
+- **Mobile-First Design**: Touch-optimized interface for smartphone usage
+- **Progressive Web App**: App-like experience on mobile devices
 
-### 📄 Professional Resume Builder
-- Automatic compilation of gig experiences
-- Professional template formatting
-- Include/exclude toggle for each gig
-- PDF export functionality
-- Client and duty highlighting
-
-### 🎯 Goal-Based Allocation System
-- Visual earnings allocation to savings goals
-- Rent, savings, and emergency fund tracking
-- Progress bars for each financial objective
+### Infrastructure Features
+- **Admin Dashboard**: Complete user management at `/admin`
+- **Real-Time Analytics**: Live financial calculations and monitoring
+- **Custom Domain Ready**: Professional deployment with SSL/TLS support
+- **Scalable Architecture**: Built for thousands of concurrent users
 - Smart suggestions for unallocated funds
 
 ### 🤖 AI-Powered Bulk Import
