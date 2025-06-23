@@ -1,5 +1,6 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
+import path from "path";
 import { storage } from "./storage";
 import { 
   insertGigSchema, 
@@ -1188,6 +1189,11 @@ Be VERY generous in extracting gigs:
         timestamp: new Date().toISOString()
       });
     }
+  });
+
+  // Serve admin dashboard at /admin
+  app.get('/admin', (req, res) => {
+    res.sendFile('admin-dashboard.html', { root: process.cwd() });
   });
 
   const httpServer = createServer(app);
