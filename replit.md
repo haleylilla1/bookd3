@@ -20,7 +20,8 @@ Giggy is a comprehensive gig worker companion app with advanced features includi
 - 2025-06-23: Fixed login redirection to properly refresh authentication state
 - 2025-06-23: RESOLVED mobile account creation - replaced complex form system with native HTML inputs
 - 2025-06-23: Authentication system fully operational for mobile users
-- 2025-06-23: RESOLVED admin dashboard access - created inline dashboard at /api/admin/dashboard bypassing Vite routing
+- 2025-06-23: RESOLVED admin dashboard access - fixed routing conflicts by loading admin routes before middleware
+- 2025-06-23: Admin dashboard now accessible at both /admin and /api/admin/dashboard with full functionality
 
 ## Technical Architecture
 - React frontend with TypeScript
