@@ -96,12 +96,40 @@ export function setupAuthRoutes(app: Express) {
     }
   });
 
-  app.post('/api/auth/login',
-    passport.authenticate('local'),
-    (req, res) => {
-      res.json({ message: 'Login successful', user: req.user });
-    }
-  );
+  app.post('/api/auth/login', (req, res, next) => {
+    console.log('Login attempt for email:', req.body.email);
+    
+    passport.authenticate('local', (err: any, user: any, info: any) => {
+      if (err) {
+        console.error('Login authentication error:', err);
+        return res.status(500).json({ message: 'Authentication server error' });
+      }
+      
+      if (!user) {
+        console.log('Login failed for email:', req.body.email, 'Info:', info);
+        return res.status(401).json({ 
+          message: info?.message || 'Invalid email or password' 
+        });
+      }
+      
+      req.logIn(user, (loginErr) => {
+        if (loginErr) {
+          console.error('Login session error:', loginErr);
+          return res.status(500).json({ message: 'Session creation failed' });
+        }
+        
+        console.log('Login successful for user:', user.email);
+        res.json({ 
+          message: 'Login successful', 
+          user: { 
+            id: user.id, 
+            name: user.name, 
+            email: user.email 
+          } 
+        });
+      });
+    })(req, res, next);
+  });
 
   app.post('/api/auth/logout', (req, res) => {
     const userId = (req.user as any)?.id;
@@ -122,6 +150,21 @@ export function setupAuthRoutes(app: Express) {
         res.clearCookie('connect.sid');
         res.json({ message: 'Logout successful' });
       });
+    });
+  });
+
+  // Test endpoint for debugging authentication
+  app.get('/api/auth/test', (req, res) => {
+    console.log('Auth test - Session ID:', req.sessionID);
+    console.log('Auth test - Is authenticated:', req.isAuthenticated());
+    console.log('Auth test - User:', req.user);
+    console.log('Auth test - Session:', req.session);
+    
+    res.json({
+      isAuthenticated: req.isAuthenticated(),
+      sessionID: req.sessionID,
+      user: req.user || null,
+      sessionData: req.session
     });
   });
 
