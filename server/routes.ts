@@ -12,15 +12,14 @@ import {
   insertExpenseCategorySchema 
 } from "@shared/schema";
 import { z } from "zod";
-import { setupAuthRoutes } from "./auth-routes";
+import { requireAuth } from "./auth";
 import { isAuthenticated } from "./replitAuth";
 import { db } from "./db";
 import { count, gte } from "drizzle-orm";
 import { users } from "@shared/schema";
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // Setup authentication routes first
-  const requireAuth = setupAuthRoutes(app);
+  // Authentication is now handled in server/auth.ts
   
   // Simple session-based user switching for existing functionality
   let currentUserId = 1; // Default user
