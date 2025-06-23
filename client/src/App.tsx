@@ -8,7 +8,7 @@ import { useState, useEffect } from "react";
 import Home from "@/pages/home";
 import Profile from "@/pages/profile";
 import Import from "@/pages/import";
-import LoginPage from "@/pages/login";
+import AuthPage from "@/pages/auth";
 import SimpleLanding from "@/components/simple-landing";
 import NotFound from "@/pages/not-found";
 
@@ -70,8 +70,8 @@ function Router() {
         </>
       ) : (
         <>
-          <Route path="/login" component={LoginPage} />
-          <Route path="/" component={LoginPage} />
+          <Route path="/login" component={AuthPage} />
+          <Route path="/" component={AuthPage} />
         </>
       )}
       <Route component={NotFound} />
