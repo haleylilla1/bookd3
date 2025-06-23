@@ -5,13 +5,16 @@ import { setupVite, serveStatic, log } from "./vite";
 
 const app = express();
 
-// Add admin routes FIRST, before any middleware
-app.get('/admin', (req, res) => {
-  res.redirect('/api/admin/dashboard');
-});
 
-app.get('/api/admin/dashboard', async (req, res) => {
-  const adminHtml = `
+
+// Admin route middleware (must be before body parsing for priority)
+app.use((req, res, next) => {
+  if (req.path === '/admin') {
+    return res.redirect('/api/admin/dashboard');
+  }
+  
+  if (req.path === '/api/admin/dashboard') {
+    const adminHtml = `
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -188,10 +191,13 @@ app.get('/api/admin/dashboard', async (req, res) => {
     </script>
 </body>
 </html>
-  `;
+    `;
+    
+    res.setHeader('Content-Type', 'text/html');
+    return res.send(adminHtml);
+  }
   
-  res.setHeader('Content-Type', 'text/html');
-  res.send(adminHtml);
+  next();
 });
 
 app.use(express.json());
