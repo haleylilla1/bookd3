@@ -73,8 +73,8 @@ export default function LoginPage() {
           title: "Welcome back!",
           description: "You've been successfully logged in.",
         });
-        // Redirect to dashboard
-        setLocation("/");
+        // Force page reload to refresh auth state
+        window.location.href = "/";
       } else {
         const error = await response.json();
         toast({
