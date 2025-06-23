@@ -426,9 +426,7 @@ export default function LoginPage() {
         </Card>
 
         {/* Footer */}
-        <div className="text-center text-sm text-gray-500 dark:text-gray-400">
-          © 2025 Giggy. Built for gig workers who work different.
-        </div>
+        <div className="text-center text-sm text-gray-500 dark:text-gray-400">© 2025 Giggy. Built for gig workers by gig workers.</div>
       </div>
     </div>
   );
