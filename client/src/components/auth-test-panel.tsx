@@ -112,15 +112,8 @@ export default function AuthTestPanel() {
         </Badge>
       );
     }
-    if (user.subscriptionTier === 'trial') {
-      const daysLeft = getTrialDaysLeft();
-      return (
-        <Badge variant="outline" className="border-orange-300 text-orange-700">
-          Free Trial ({daysLeft} days left)
-        </Badge>
-      );
-    }
-    return <Badge variant="secondary">Free User</Badge>;
+    // Removed trial system - keep simple for now
+    return <Badge variant="secondary">User</Badge>;
   };
 
   return (
@@ -198,17 +191,7 @@ export default function AuthTestPanel() {
           </div>
         </div>
 
-        {/* Trial Information */}
-        {user.subscriptionTier === 'trial' && (
-          <div className="p-4 bg-orange-50 border border-orange-200 rounded-lg">
-            <h4 className="font-medium text-orange-800 mb-2">Free Trial Status</h4>
-            <div className="space-y-1 text-sm text-orange-700">
-              <p>Trial started: {user.trialStartDate ? new Date(user.trialStartDate).toLocaleDateString() : 'Unknown'}</p>
-              <p>Trial ends: {user.trialEndDate ? new Date(user.trialEndDate).toLocaleDateString() : 'Unknown'}</p>
-              <p className="font-medium">Days remaining: {getTrialDaysLeft()}</p>
-            </div>
-          </div>
-        )}
+
 
         {/* Test Results Log */}
         <div className="p-4 bg-gray-50 rounded-lg">
