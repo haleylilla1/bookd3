@@ -9,11 +9,13 @@ const app = express();
 
 // Admin route middleware (must be before body parsing for priority)
 app.use((req, res, next) => {
-  if (req.path === '/admin') {
-    return res.redirect('/api/admin/dashboard');
+  const path = req.path || req.url;
+  
+  if (path === '/admin' || path.endsWith('/admin')) {
+    return res.redirect(301, '/api/admin/dashboard');
   }
   
-  if (req.path === '/api/admin/dashboard') {
+  if (path === '/api/admin/dashboard' || path.endsWith('/api/admin/dashboard')) {
     const adminHtml = `
 <!DOCTYPE html>
 <html lang="en">
