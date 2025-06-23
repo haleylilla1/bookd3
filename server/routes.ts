@@ -1070,6 +1070,27 @@ Be VERY generous in extracting gigs:
   });
 
   // Admin support endpoints for user troubleshooting
+  app.get('/api/admin/lookup/:email', async (req, res) => {
+    try {
+      const email = req.params.email;
+      const user = await storage.getUserByEmail(email);
+      
+      if (!user) {
+        return res.status(404).json({ error: 'User not found' });
+      }
+      
+      res.json({
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        message: `User found - ID: ${user.id}`
+      });
+    } catch (error) {
+      console.error('Email lookup error:', error);
+      res.status(500).json({ error: 'Failed to lookup user by email' });
+    }
+  });
+
   app.get('/api/admin/user/:userId', async (req, res) => {
     try {
       const userId = parseInt(req.params.userId);
