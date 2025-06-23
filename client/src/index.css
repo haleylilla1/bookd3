@@ -72,23 +72,14 @@
     @apply font-sans antialiased bg-background text-foreground;
   }
 
-  /* Mobile input optimizations */
+  /* Critical mobile input fix */
   input {
-    -webkit-appearance: none;
-    -moz-appearance: none;
-    appearance: none;
-    background-clip: padding-box;
-  }
-
-  /* Ensure inputs are not blocked on mobile */
-  input[type="text"],
-  input[type="email"],
-  input[type="password"] {
-    -webkit-user-select: text;
-    -moz-user-select: text;
-    user-select: text;
-    -webkit-touch-callout: default;
-    touch-action: manipulation;
+    -webkit-appearance: none !important;
+    appearance: none !important;
+    -webkit-user-select: text !important;
+    user-select: text !important;
+    pointer-events: auto !important;
+    touch-action: manipulation !important;
   }
 }
 
