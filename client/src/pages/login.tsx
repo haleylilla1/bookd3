@@ -57,6 +57,8 @@ export default function LoginPage() {
 
   const handleLogin = async (data: LoginFormData) => {
     setIsLoading(true);
+    console.log("Starting login process for:", data.email);
+    
     try {
       const response = await fetch("/api/auth/login", {
         method: "POST",
@@ -67,16 +69,27 @@ export default function LoginPage() {
         body: JSON.stringify(data),
       });
 
+      console.log("Login response status:", response.status);
+      console.log("Login response headers:", Object.fromEntries(response.headers.entries()));
+
       if (response.ok) {
         const result = await response.json();
+        console.log("Login successful, result:", result);
+        
         toast({
           title: "Welcome back!",
           description: "You've been successfully logged in.",
         });
-        // Force page reload to refresh auth state
-        window.location.href = "/";
+        
+        // Small delay to ensure session is established
+        setTimeout(() => {
+          console.log("Redirecting to home page");
+          window.location.href = "/";
+        }, 500);
       } else {
         const error = await response.json();
+        console.log("Login failed, error:", error);
+        
         toast({
           title: "Login Failed",
           description: error.message || "Invalid email or password.",
@@ -84,6 +97,8 @@ export default function LoginPage() {
         });
       }
     } catch (error) {
+      console.error("Login request failed:", error);
+      
       toast({
         title: "Login Error",
         description: "Unable to connect to the server. Please try again.",
