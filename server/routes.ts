@@ -424,36 +424,32 @@ Be VERY generous in extracting gigs:
     try {
       const userId = getCurrentUserId(req);
       
-      // Ensure userId is valid
       if (!userId || userId <= 0) {
         return res.status(401).json({ message: "Authentication required" });
       }
       
-      const gigData = insertGigSchema.parse({ ...req.body, userId });
+      // Add userId to request data
+      const requestData = { ...req.body, userId };
       
-      // Sanitize numeric fields - convert empty strings to null
-      const sanitizedData = {
-        ...gigData,
-        expectedPay: gigData.expectedPay === "" ? null : gigData.expectedPay,
-        actualPay: gigData.actualPay === "" ? null : gigData.actualPay,
-        tips: gigData.tips === "" ? null : gigData.tips,
-        mileage: gigData.mileage === "" ? null : gigData.mileage,
-        taxPercentage: gigData.taxPercentage === "" ? null : gigData.taxPercentage,
-        parkingExpense: gigData.parkingExpense === "" ? null : gigData.parkingExpense,
-        otherExpenses: gigData.otherExpenses === "" ? null : gigData.otherExpenses
-      };
+      // Validate with schema
+      const gigData = insertGigSchema.parse(requestData);
       
-      const gig = await storage.createGig(sanitizedData);
+      // Create the gig
+      const gig = await storage.createGig(gigData);
       res.json(gig);
     } catch (error) {
       if (error instanceof z.ZodError) {
-        return res.status(400).json({ message: "Invalid gig data", errors: error.errors });
+        console.error("Validation error:", error.errors);
+        return res.status(400).json({ 
+          message: "Invalid gig data: " + error.errors.map(e => `${e.path.join('.')}: ${e.message}`).join(', '),
+          errors: error.errors 
+        });
       }
       if (error instanceof Error && error.message === 'User not authenticated') {
         return res.status(401).json({ message: "Authentication required" });
       }
       console.error("Create gig error:", error);
-      res.status(500).json({ message: "Failed to create gig" });
+      res.status(500).json({ message: "Failed to create gig: " + (error instanceof Error ? error.message : "Unknown error") });
     }
   });
 
