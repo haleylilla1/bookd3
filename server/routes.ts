@@ -428,28 +428,15 @@ Be VERY generous in extracting gigs:
         return res.status(401).json({ message: "Authentication required" });
       }
       
-      // Add userId to request data
-      const requestData = { ...req.body, userId };
-      
-      // Validate with schema
-      const gigData = insertGigSchema.parse(requestData);
-      
-      // Create the gig
+      const gigData = insertGigSchema.parse({ ...req.body, userId });
       const gig = await storage.createGig(gigData);
       res.json(gig);
     } catch (error) {
       if (error instanceof z.ZodError) {
-        console.error("Validation error:", error.errors);
-        return res.status(400).json({ 
-          message: "Invalid gig data: " + error.errors.map(e => `${e.path.join('.')}: ${e.message}`).join(', '),
-          errors: error.errors 
-        });
-      }
-      if (error instanceof Error && error.message === 'User not authenticated') {
-        return res.status(401).json({ message: "Authentication required" });
+        return res.status(400).json({ message: "Invalid data", errors: error.errors });
       }
       console.error("Create gig error:", error);
-      res.status(500).json({ message: "Failed to create gig: " + (error instanceof Error ? error.message : "Unknown error") });
+      res.status(500).json({ message: "Failed to create gig" });
     }
   });
 
