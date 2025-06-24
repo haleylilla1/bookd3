@@ -470,7 +470,19 @@ Be VERY generous in extracting gigs:
 
   app.put("/api/gigs/:id", async (req, res) => {
     try {
+      const userId = getCurrentUserId(req);
+      if (!userId || userId <= 0) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+      
       const id = parseInt(req.params.id);
+      
+      // Verify the gig belongs to the authenticated user
+      const existingGig = await storage.getGig(id);
+      if (!existingGig || existingGig.userId !== userId) {
+        return res.status(404).json({ message: "Gig not found" });
+      }
+      
       const gigData = insertGigSchema.partial().parse(req.body);
       const gig = await storage.updateGig(id, gigData);
       if (!gig) {
@@ -481,6 +493,9 @@ Be VERY generous in extracting gigs:
       if (error instanceof z.ZodError) {
         return res.status(400).json({ message: "Invalid gig data", errors: error.errors });
       }
+      if (error instanceof Error && error.message === 'User not authenticated') {
+        return res.status(401).json({ message: "Authentication required" });
+      }
       console.error("Update gig error:", error);
       res.status(500).json({ message: "Failed to update gig" });
     }
@@ -488,13 +503,28 @@ Be VERY generous in extracting gigs:
 
   app.delete("/api/gigs/:id", async (req, res) => {
     try {
+      const userId = getCurrentUserId(req);
+      if (!userId || userId <= 0) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+      
       const id = parseInt(req.params.id);
+      
+      // Verify the gig belongs to the authenticated user
+      const existingGig = await storage.getGig(id);
+      if (!existingGig || existingGig.userId !== userId) {
+        return res.status(404).json({ message: "Gig not found" });
+      }
+      
       const success = await storage.deleteGig(id);
       if (!success) {
         return res.status(404).json({ message: "Gig not found" });
       }
       res.json({ message: "Gig deleted successfully" });
     } catch (error) {
+      if (error instanceof Error && error.message === 'User not authenticated') {
+        return res.status(401).json({ message: "Authentication required" });
+      }
       console.error("Delete gig error:", error);
       res.status(500).json({ message: "Failed to delete gig" });
     }
@@ -538,7 +568,19 @@ Be VERY generous in extracting gigs:
 
   app.put("/api/goals/:id", async (req, res) => {
     try {
+      const userId = getCurrentUserId(req);
+      if (!userId || userId <= 0) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+      
       const id = parseInt(req.params.id);
+      
+      // Verify the goal belongs to the authenticated user
+      const existingGoal = await storage.getGoal(id);
+      if (!existingGoal || existingGoal.userId !== userId) {
+        return res.status(404).json({ message: "Goal not found" });
+      }
+      
       const goalData = insertGoalSchema.partial().parse(req.body);
       const goal = await storage.updateGoal(id, goalData);
       if (!goal) {
@@ -549,6 +591,9 @@ Be VERY generous in extracting gigs:
       if (error instanceof z.ZodError) {
         return res.status(400).json({ message: "Invalid goal data", errors: error.errors });
       }
+      if (error instanceof Error && error.message === 'User not authenticated') {
+        return res.status(401).json({ message: "Authentication required" });
+      }
       console.error("Update goal error:", error);
       res.status(500).json({ message: "Failed to update goal" });
     }
@@ -556,13 +601,28 @@ Be VERY generous in extracting gigs:
 
   app.delete("/api/goals/:id", async (req, res) => {
     try {
+      const userId = getCurrentUserId(req);
+      if (!userId || userId <= 0) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+      
       const id = parseInt(req.params.id);
+      
+      // Verify the goal belongs to the authenticated user
+      const existingGoal = await storage.getGoal(id);
+      if (!existingGoal || existingGoal.userId !== userId) {
+        return res.status(404).json({ message: "Goal not found" });
+      }
+      
       const success = await storage.deleteGoal(id);
       if (!success) {
         return res.status(404).json({ message: "Goal not found" });
       }
       res.json({ message: "Goal deleted successfully" });
     } catch (error) {
+      if (error instanceof Error && error.message === 'User not authenticated') {
+        return res.status(401).json({ message: "Authentication required" });
+      }
       console.error("Delete goal error:", error);
       res.status(500).json({ message: "Failed to delete goal" });
     }
@@ -628,7 +688,19 @@ Be VERY generous in extracting gigs:
 
   app.put("/api/allocations/:id", async (req, res) => {
     try {
+      const userId = getCurrentUserId(req);
+      if (!userId || userId <= 0) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+      
       const id = parseInt(req.params.id);
+      
+      // Verify the allocation belongs to the authenticated user
+      const existingAllocation = await storage.getAllocation(id);
+      if (!existingAllocation || existingAllocation.userId !== userId) {
+        return res.status(404).json({ message: "Allocation not found" });
+      }
+      
       const allocationData = insertAllocationSchema.partial().parse(req.body);
       const allocation = await storage.updateAllocation(id, allocationData);
       if (!allocation) {
@@ -639,6 +711,9 @@ Be VERY generous in extracting gigs:
       if (error instanceof z.ZodError) {
         return res.status(400).json({ message: "Invalid allocation data", errors: error.errors });
       }
+      if (error instanceof Error && error.message === 'User not authenticated') {
+        return res.status(401).json({ message: "Authentication required" });
+      }
       console.error("Update allocation error:", error);
       res.status(500).json({ message: "Failed to update allocation" });
     }
@@ -646,13 +721,28 @@ Be VERY generous in extracting gigs:
 
   app.delete("/api/allocations/:id", async (req, res) => {
     try {
+      const userId = getCurrentUserId(req);
+      if (!userId || userId <= 0) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+      
       const id = parseInt(req.params.id);
+      
+      // Verify the allocation belongs to the authenticated user
+      const existingAllocation = await storage.getAllocation(id);
+      if (!existingAllocation || existingAllocation.userId !== userId) {
+        return res.status(404).json({ message: "Allocation not found" });
+      }
+      
       const success = await storage.deleteAllocation(id);
       if (!success) {
         return res.status(404).json({ message: "Allocation not found" });
       }
       res.json({ message: "Allocation deleted successfully" });
     } catch (error) {
+      if (error instanceof Error && error.message === 'User not authenticated') {
+        return res.status(401).json({ message: "Authentication required" });
+      }
       console.error("Delete allocation error:", error);
       res.status(500).json({ message: "Failed to delete allocation" });
     }
@@ -864,7 +954,19 @@ Be VERY generous in extracting gigs:
 
   app.put("/api/invoices/:id", async (req, res) => {
     try {
+      const userId = getCurrentUserId(req);
+      if (!userId || userId <= 0) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+      
       const id = parseInt(req.params.id);
+      
+      // Verify the invoice belongs to the authenticated user
+      const existingInvoice = await storage.getInvoice(id);
+      if (!existingInvoice || existingInvoice.userId !== userId) {
+        return res.status(404).json({ message: "Invoice not found" });
+      }
+      
       const invoiceData = insertInvoiceSchema.partial().parse(req.body);
       const invoice = await storage.updateInvoice(id, invoiceData);
       if (!invoice) {
@@ -875,6 +977,9 @@ Be VERY generous in extracting gigs:
       if (error instanceof z.ZodError) {
         return res.status(400).json({ message: "Invalid invoice data", errors: error.errors });
       }
+      if (error instanceof Error && error.message === 'User not authenticated') {
+        return res.status(401).json({ message: "Authentication required" });
+      }
       console.error("Update invoice error:", error);
       res.status(500).json({ message: "Failed to update invoice" });
     }
@@ -882,13 +987,28 @@ Be VERY generous in extracting gigs:
 
   app.delete("/api/invoices/:id", async (req, res) => {
     try {
+      const userId = getCurrentUserId(req);
+      if (!userId || userId <= 0) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+      
       const id = parseInt(req.params.id);
+      
+      // Verify the invoice belongs to the authenticated user
+      const existingInvoice = await storage.getInvoice(id);
+      if (!existingInvoice || existingInvoice.userId !== userId) {
+        return res.status(404).json({ message: "Invoice not found" });
+      }
+      
       const success = await storage.deleteInvoice(id);
       if (!success) {
         return res.status(404).json({ message: "Invoice not found" });
       }
       res.json({ message: "Invoice deleted successfully" });
     } catch (error) {
+      if (error instanceof Error && error.message === 'User not authenticated') {
+        return res.status(401).json({ message: "Authentication required" });
+      }
       console.error("Delete invoice error:", error);
       res.status(500).json({ message: "Failed to delete invoice" });
     }
