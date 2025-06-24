@@ -250,7 +250,16 @@ export const insertUserSchema = createInsertSchema(users).omit({
 export const insertGigSchema = createInsertSchema(gigs).omit({
   id: true,
   createdAt: true,
-});
+}).extend({
+  // Make all fields optional with safe defaults
+  gigType: z.string().default("Other"),
+  eventName: z.string().default("Event"),
+  clientName: z.string().default("Client"),
+  date: z.string().default(() => new Date().toISOString().split('T')[0]),
+  status: z.string().default("upcoming"),
+  taxPercentage: z.number().default(23),
+  mileage: z.number().default(0),
+}).passthrough(); // Allow extra fields without validation errors
 
 export const insertGoalSchema = createInsertSchema(goals).omit({
   id: true,
