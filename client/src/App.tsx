@@ -21,8 +21,11 @@ function Router() {
     
     async function checkAuth() {
       try {
-        const response = await fetch("/api/auth/user", {
+        const response = await fetch("/api/user", {
           credentials: "include",
+          headers: {
+            'Cache-Control': 'no-cache',
+          },
         });
         
         if (mounted) {

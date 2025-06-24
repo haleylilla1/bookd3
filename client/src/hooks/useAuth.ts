@@ -8,11 +8,14 @@ export function useAuth() {
   const { toast } = useToast();
 
   const { data: user, isLoading, error } = useQuery<User>({
-    queryKey: ["/api/auth/user"],
+    queryKey: ["/api/user"],
     queryFn: async () => {
       try {
-        const response = await fetch("/api/auth/user", {
+        const response = await fetch("/api/user", {
           credentials: "include",
+          headers: {
+            'Cache-Control': 'no-cache',
+          },
         });
         
         if (response.status === 401) {
@@ -46,7 +49,7 @@ export function useAuth() {
       // Clear all cached data
       queryClient.clear();
       // Invalidate the user query specifically
-      queryClient.setQueryData(["/api/auth/user"], null);
+      queryClient.setQueryData(["/api/user"], null);
       // Force reload to clear any remaining state
       window.location.reload();
     },
