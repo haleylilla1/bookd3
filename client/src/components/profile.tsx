@@ -31,18 +31,23 @@ export default function Profile() {
 
   const updateUserMutation = useMutation({
     mutationFn: async (userData: Partial<UserType>) => {
+      console.log("Updating user with data:", userData);
       const response = await apiRequest("PUT", "/api/user", userData);
       return response.json();
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      console.log("User update successful:", data);
       queryClient.invalidateQueries({ queryKey: ["/api/user"] });
       toast({
         title: "Success",
         description: "Profile updated successfully!",
       });
       setIsEditing(false);
+      setNewGigType("");
+      setIsAddingGigType(false);
     },
-    onError: () => {
+    onError: (error) => {
+      console.error("User update error:", error);
       toast({
         title: "Error",
         description: "Failed to update profile. Please try again.",
@@ -85,10 +90,19 @@ export default function Profile() {
   };
 
   const handleAddGigType = () => {
-    if (!newGigType.trim()) return;
+    if (!newGigType.trim()) {
+      toast({
+        title: "Missing Gig Type",
+        description: "Please enter a gig type name.",
+        variant: "destructive",
+      });
+      return;
+    }
     
     const currentTypes = user?.customGigTypes || [];
-    if (currentTypes.includes(newGigType.trim())) {
+    const trimmedType = newGigType.trim();
+    
+    if (currentTypes.includes(trimmedType)) {
       toast({
         title: "Duplicate Gig Type",
         description: "This gig type already exists.",
@@ -97,12 +111,12 @@ export default function Profile() {
       return;
     }
 
-    updateUserMutation.mutate({
-      customGigTypes: [...currentTypes, newGigType.trim()],
-    });
+    console.log("Adding gig type:", trimmedType);
+    console.log("Current types:", currentTypes);
     
-    setNewGigType("");
-    setIsAddingGigType(false);
+    updateUserMutation.mutate({
+      customGigTypes: [...currentTypes, trimmedType],
+    });
   };
 
   const handleRemoveGigType = (gigTypeToRemove: string) => {
@@ -332,15 +346,15 @@ export default function Profile() {
                 Add Type
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-sm">
+            <DialogContent className="max-w-sm mx-4">
               <DialogHeader>
                 <DialogTitle>Add Gig Type</DialogTitle>
               </DialogHeader>
               <div className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="gigType">Gig Type Name</Label>
-                  <Input
-                    id="gigType"
+                  <label className="block text-sm font-medium text-gray-700">Gig Type Name</label>
+                  <input
+                    type="text"
                     value={newGigType}
                     onChange={(e) => setNewGigType(e.target.value)}
                     placeholder="e.g., Brand Ambassador, Event Staff..."
@@ -349,13 +363,38 @@ export default function Profile() {
                         handleAddGigType();
                       }
                     }}
+                    disabled={updateUserMutation.isPending}
+                    style={{
+                      width: '100%',
+                      height: '48px',
+                      fontSize: '16px',
+                      padding: '12px 16px',
+                      border: '2px solid #d1d5db',
+                      borderRadius: '6px',
+                      backgroundColor: '#ffffff',
+                      color: '#000000',
+                      outline: 'none',
+                      boxSizing: 'border-box'
+                    }}
                   />
                 </div>
                 <div className="flex gap-2">
-                  <Button onClick={handleAddGigType} disabled={!newGigType.trim()}>
-                    Add Type
+                  <Button 
+                    onClick={handleAddGigType} 
+                    disabled={!newGigType.trim() || updateUserMutation.isPending}
+                    className="flex-1"
+                  >
+                    {updateUserMutation.isPending ? "Adding..." : "Add Type"}
                   </Button>
-                  <Button variant="outline" onClick={() => setIsAddingGigType(false)}>
+                  <Button 
+                    variant="outline" 
+                    onClick={() => {
+                      setIsAddingGigType(false);
+                      setNewGigType("");
+                    }}
+                    disabled={updateUserMutation.isPending}
+                    className="flex-1"
+                  >
                     Cancel
                   </Button>
                 </div>

@@ -354,11 +354,14 @@ export default function GigForm({ onClose }: GigFormProps) {
                       </FormControl>
                       <SelectContent>
                         {user?.customGigTypes && user.customGigTypes.length > 0 ? (
-                          user.customGigTypes.map((gigType) => (
-                            <SelectItem key={gigType} value={gigType}>
-                              {gigType}
-                            </SelectItem>
-                          ))
+                          <>
+                            {user.customGigTypes.map((gigType) => (
+                              <SelectItem key={gigType} value={gigType}>
+                                {gigType}
+                              </SelectItem>
+                            ))}
+                            <SelectItem value="other">Other</SelectItem>
+                          </>
                         ) : (
                           <>
                             <SelectItem value="brand-ambassador">Brand Ambassador</SelectItem>
