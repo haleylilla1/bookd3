@@ -247,8 +247,11 @@ function setupAuthRoutes(app: Express) {
     }
   });
 
-  // Debug endpoint
+  // Debug endpoint - SECURITY: Block in production
   app.get('/api/auth/debug', (req, res) => {
+    // SECURITY: Debug endpoint exposes sensitive session data - block unauthorized access
+    return res.status(403).json({ error: 'Debug endpoint disabled for security' });
+    
     res.json({
       isAuthenticated: req.isAuthenticated(),
       sessionID: req.sessionID,
