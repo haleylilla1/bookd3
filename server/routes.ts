@@ -161,6 +161,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Distance calculation endpoint
   app.post("/api/calculate-distance", async (req, res) => {
     try {
+      // SECURITY: Require authentication for API usage
+      const userId = getCurrentUserId(req);
+      if (!userId || userId <= 0) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+
       const { origin, destination } = req.body;
       
       if (!origin || !destination) {
@@ -1330,6 +1336,12 @@ Be VERY generous in extracting gigs:
   // Distance calculation endpoint using Google Maps API
   app.post("/api/calculate-distance", async (req, res) => {
     try {
+      // SECURITY: Require authentication for API usage
+      const userId = getCurrentUserId(req);
+      if (!userId || userId <= 0) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+
       const { origin, destination } = req.body;
 
       if (!origin || !destination) {
