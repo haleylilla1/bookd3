@@ -336,7 +336,7 @@ export default function GigForm({ onClose }: GigFormProps) {
 
   // Simplified and optimized submit handler
   const onSubmit = async (data: GigFormData) => {
-    // Comprehensive validation before submission
+    // Authentication check
     if (!user?.id) {
       toast({
         title: "Authentication Required",
@@ -360,11 +360,11 @@ export default function GigForm({ onClose }: GigFormProps) {
       const gigDates = generateDateRange(data.startDate, data.endDate);
       const totalDays = gigDates.length;
       
-      // Robust numeric parsing with NaN checks
-      const parseNumericField = (value: string | undefined): number | null => {
+      // Simple numeric parsing
+      const parseNumeric = (value: string | undefined): string | null => {
         if (!value || value.trim() === '') return null;
         const parsed = parseFloat(value.trim());
-        return isNaN(parsed) ? null : parsed;
+        return isNaN(parsed) ? null : parsed.toString();
       };
 
       // Pre-calculate daily amounts with error handling
