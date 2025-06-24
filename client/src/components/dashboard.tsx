@@ -111,6 +111,7 @@ export default function Dashboard() {
   const getTaxBreakdownData = () => {
     if (!currentPeriodGigs || currentPeriodGigs.length === 0) return [];
     
+    // Only include completed gigs for tax data
     return currentPeriodGigs
       .filter((gig: any) => gig.status === "completed" && gig.actualPay)
       .map((gig: any) => {
@@ -539,7 +540,7 @@ export default function Dashboard() {
 
     toast({
       title: "Tax Data Exported",
-      description: `Downloaded ${taxData.length} tax records for ${getCurrentPeriodLabel()}`,
+      description: `Downloaded ${taxData.length} completed gig tax records for ${getCurrentPeriodLabel()}`,
     });
   };
 
@@ -613,7 +614,7 @@ export default function Dashboard() {
 
     toast({
       title: "Excel Report Downloaded",
-      description: `Downloaded Excel report for ${getCurrentPeriodLabel()}`,
+      description: `Downloaded Excel report for ${getCurrentPeriodLabel()} (completed gigs only)`,
     });
   };
 
@@ -630,7 +631,7 @@ export default function Dashboard() {
 
     toast({
       title: "PDF Report Downloaded",
-      description: `Downloaded PDF report for ${getCurrentPeriodLabel()}`,
+      description: `Downloaded PDF report for ${getCurrentPeriodLabel()} (completed gigs only)`,
     });
   };
 
