@@ -662,6 +662,9 @@ Be VERY generous in extracting gigs:
   app.get("/api/goals/period/monthly/:date", async (req, res) => {
     try {
       const userId = getCurrentUserId(req);
+      if (!userId || userId <= 0) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
       const date = new Date(req.params.date);
       const month = date.getMonth() + 1;
       const year = date.getFullYear();
@@ -669,6 +672,9 @@ Be VERY generous in extracting gigs:
       const goal = await storage.getMonthlyGoal(userId, month, year);
       res.json(goal || null);
     } catch (error) {
+      if (error instanceof Error && error.message === 'User not authenticated') {
+        return res.status(401).json({ message: "Authentication required" });
+      }
       console.error("Get monthly goal error:", error);
       res.status(500).json({ message: "Failed to fetch monthly goal" });
     }
@@ -677,6 +683,9 @@ Be VERY generous in extracting gigs:
   app.post("/api/goals/period/monthly", async (req, res) => {
     try {
       const userId = getCurrentUserId(req);
+      if (!userId || userId <= 0) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
       const { month, year, goalAmount } = req.body;
       
       if (!month || !year || !goalAmount) {
@@ -694,11 +703,17 @@ Be VERY generous in extracting gigs:
   app.get("/api/goals/period/weekly/:weekStartDate", async (req, res) => {
     try {
       const userId = getCurrentUserId(req);
+      if (!userId || userId <= 0) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
       const weekStartDate = req.params.weekStartDate;
       
       const goal = await storage.getWeeklyGoal(userId, weekStartDate);
       res.json(goal || null);
     } catch (error) {
+      if (error instanceof Error && error.message === 'User not authenticated') {
+        return res.status(401).json({ message: "Authentication required" });
+      }
       console.error("Get weekly goal error:", error);
       res.status(500).json({ message: "Failed to fetch weekly goal" });
     }
@@ -707,6 +722,9 @@ Be VERY generous in extracting gigs:
   app.post("/api/goals/period/weekly", async (req, res) => {
     try {
       const userId = getCurrentUserId(req);
+      if (!userId || userId <= 0) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
       const { weekStartDate, goalAmount } = req.body;
       
       if (!weekStartDate || !goalAmount) {
@@ -724,11 +742,17 @@ Be VERY generous in extracting gigs:
   app.get("/api/goals/period/yearly/:year", async (req, res) => {
     try {
       const userId = getCurrentUserId(req);
+      if (!userId || userId <= 0) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
       const year = parseInt(req.params.year);
       
       const goal = await storage.getYearlyGoal(userId, year);
       res.json(goal || null);
     } catch (error) {
+      if (error instanceof Error && error.message === 'User not authenticated') {
+        return res.status(401).json({ message: "Authentication required" });
+      }
       console.error("Get yearly goal error:", error);
       res.status(500).json({ message: "Failed to fetch yearly goal" });
     }
@@ -737,6 +761,9 @@ Be VERY generous in extracting gigs:
   app.post("/api/goals/period/yearly", async (req, res) => {
     try {
       const userId = getCurrentUserId(req);
+      if (!userId || userId <= 0) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
       const { year, goalAmount } = req.body;
       
       if (!year || !goalAmount) {
@@ -1049,9 +1076,15 @@ Be VERY generous in extracting gigs:
   app.get("/api/expense-categories", async (req, res) => {
     try {
       const userId = getCurrentUserId(req);
+      if (!userId || userId <= 0) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
       const categories = await storage.getExpenseCategoriesByUser(userId);
       res.json(categories);
     } catch (error) {
+      if (error instanceof Error && error.message === 'User not authenticated') {
+        return res.status(401).json({ message: "Authentication required" });
+      }
       console.error("Get expense categories error:", error);
       res.status(500).json({ message: "Failed to fetch expense categories" });
     }
@@ -1060,6 +1093,9 @@ Be VERY generous in extracting gigs:
   app.post("/api/expense-categories", async (req, res) => {
     try {
       const userId = getCurrentUserId(req);
+      if (!userId || userId <= 0) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
       const categoryData = insertExpenseCategorySchema.parse({ ...req.body, userId });
       const category = await storage.createExpenseCategory(categoryData);
       res.json(category);
