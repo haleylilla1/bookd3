@@ -47,21 +47,11 @@ const gigFormSchema = z.object({
 
 type GigFormData = z.infer<typeof gigFormSchema>;
 
-// Helper function to sanitize numeric fields - robust error handling
-function sanitizeNumericField(value: string | number | undefined): string | null {
-  if (value === undefined || value === null || value === "") return null;
-  
-  let numValue: number;
-  if (typeof value === "string") {
-    const trimmed = value.trim();
-    if (trimmed === "") return null;
-    numValue = parseFloat(trimmed);
-  } else {
-    numValue = value;
-  }
-  
-  // Return null for invalid numbers instead of causing errors
-  return (isNaN(numValue) || !isFinite(numValue)) ? null : Math.max(0, numValue).toString();
+// Simple helper functions
+function parseNumeric(value: string | undefined): string | null {
+  if (!value || value.trim() === '') return null;
+  const parsed = parseFloat(value.trim());
+  return isNaN(parsed) ? null : parsed.toString();
 }
 
 // Robust date range generator with validation
@@ -154,58 +144,14 @@ export default function GigForm({ onClose }: GigFormProps) {
     }
   }, [user, userLoading, form]);
 
-  // Optimized mutation with better error handling
+  // Simple, reliable gig creation
   const createGigMutation = useMutation({
     mutationFn: async (data: InsertGig) => {
-      // Comprehensive data sanitization and validation
-      const sanitizedData = {
-        ...data,
-        // Ensure required fields are properly trimmed and validated
-        gigType: data.gigType?.trim() || '',
-        eventName: data.eventName?.trim() || '',
-        clientName: data.clientName?.trim() || '',
-        date: data.date?.trim() || '',
-        
-        // Sanitize all numeric fields with robust error handling
-        expectedPay: sanitizeNumericField(data.expectedPay),
-        actualPay: sanitizeNumericField(data.actualPay),
-        tips: sanitizeNumericField(data.tips),
-        taxPercentage: Math.max(0, Math.min(50, data.taxPercentage || 23)), // Clamp tax percentage
-        mileage: data.mileage ? Math.max(0, parseInt(data.mileage.toString()) || 0) : null,
-        parkingExpense: sanitizeNumericField(data.parkingExpense),
-        otherExpenses: sanitizeNumericField(data.otherExpenses),
-        
-        // Ensure arrays are valid
-        parkingReceipts: Array.isArray(data.parkingReceipts) ? data.parkingReceipts.filter(r => r?.trim()) : [],
-        otherExpenseReceipts: Array.isArray(data.otherExpenseReceipts) ? data.otherExpenseReceipts.filter(r => r?.trim()) : [],
-        
-        // Sanitize optional text fields
-        duties: data.duties?.trim() || null,
-        notes: data.notes?.trim() || null,
-        paymentMethod: data.paymentMethod?.trim() || null,
-      };
-      
-      // Final validation before API call
-      if (!sanitizedData.gigType || !sanitizedData.eventName || !sanitizedData.clientName || !sanitizedData.date) {
-        throw new Error("Missing required fields");
-      }
-      
-      return await apiRequest(`/api/gigs`, {
-        method: "POST",
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(sanitizedData),
-      });
+      return apiRequest("POST", "/api/gigs", data);
     },
     onSuccess: () => {
-      // Efficient cache invalidation
-      Promise.all([
-        queryClient.invalidateQueries({ queryKey: ["/api/gigs"] }),
-        queryClient.invalidateQueries({ queryKey: ["/api/dashboard/stats"] }),
-        queryClient.invalidateQueries({ queryKey: ["/api/goals"] })
-      ]).catch(console.error);
-      
+      queryClient.invalidateQueries({ queryKey: ["/api/gigs"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/dashboard/stats"] });
       toast({
         title: "Success",
         description: "Gig saved successfully!",
@@ -213,11 +159,10 @@ export default function GigForm({ onClose }: GigFormProps) {
       onClose();
     },
     onError: (error) => {
-      console.error("Failed to create gig:", error);
-      const errorMessage = error instanceof Error ? error.message : "Failed to save gig. Please check your data and try again.";
+      console.error("Gig creation failed:", error);
       toast({
         title: "Error",
-        description: errorMessage,
+        description: error instanceof Error ? error.message : "Failed to save gig",
         variant: "destructive",
       });
     },
@@ -335,71 +280,46 @@ export default function GigForm({ onClose }: GigFormProps) {
       const gigDates = generateDateRange(data.startDate, data.endDate);
       const totalDays = gigDates.length;
       
-      // Simple numeric parsing
-      const parseNumeric = (value: string | undefined): string | null => {
-        if (!value || value.trim() === '') return null;
-        const parsed = parseFloat(value.trim());
-        return isNaN(parsed) ? null : parsed.toString();
-      };
+      // Already defined above - removed duplicate
 
-      // Pre-calculate daily amounts with error handling
-      const expectedPayNum = parseNumericField(data.expectedPay);
-      const actualPayNum = parseNumericField(data.actualPay);
-      const tipsNum = parseNumericField(data.tips);
-      const parkingExpenseNum = trackExpenses ? parseNumericField(data.parkingExpense) : null;
-      const otherExpensesNum = trackExpenses ? parseNumericField(data.otherExpenses) : null;
-      const mileageNum = parseNumericField(data.calculatedMileage || data.mileage);
-
-      const dailyAmounts = {
-        expectedPay: expectedPayNum ? (expectedPayNum / totalDays).toFixed(2) : null,
-        actualPay: actualPayNum ? (actualPayNum / totalDays).toFixed(2) : null,
-        tips: tipsNum ? (tipsNum / totalDays).toFixed(2) : null,
-        parkingExpense: parkingExpenseNum ? (parkingExpenseNum / totalDays).toFixed(2) : null,
-        otherExpenses: otherExpensesNum ? (otherExpensesNum / totalDays).toFixed(2) : null,
-        mileage: mileageNum ? Math.max(0, Math.round(mileageNum / totalDays)) : null,
-      };
-
-      // Create gigs sequentially to prevent database race conditions
-      const createdGigs = [];
+      // Create gigs for each date
       for (const gigDate of gigDates) {
         const gigData: InsertGig = {
           userId: user.id,
+          date: gigDate,
           gigType: data.gigType.trim(),
           eventName: data.eventName.trim(),
           clientName: data.clientName.trim(),
-          date: gigDate,
-          expectedPay: dailyAmounts.expectedPay,
-          actualPay: dailyAmounts.actualPay,
-          tips: dailyAmounts.tips,
-          paymentMethod: data.paymentMethod?.trim() || null,
+          expectedPay: data.expectedPay || null,
+          actualPay: data.actualPay || null,
+          tips: data.tips || null,
+          paymentMethod: data.paymentMethod || "Cash",
           status: data.status,
-          duties: data.duties?.trim() || null,
-          taxPercentage: Math.max(0, Math.min(50, data.taxPercentage)), // Clamp between 0-50
-          mileage: dailyAmounts.mileage,
-          notes: data.notes?.trim() || null,
-          parkingExpense: dailyAmounts.parkingExpense,
-          parkingReceipts: trackExpenses ? (data.parkingReceipts || []) : [],
-          otherExpenses: dailyAmounts.otherExpenses,
-          otherExpenseReceipts: trackExpenses ? (data.otherExpenseReceipts || []) : [],
-          includeInResume: true,
+          duties: data.duties || null,
+          taxPercentage: data.taxPercentage || 23,
+          mileage: data.calculatedMileage ? parseInt(data.calculatedMileage) : 0,
+          notes: data.notes || null,
+          parkingExpense: data.parkingExpense || null,
+          parkingReceipts: data.parkingReceipts || [],
+          otherExpenses: data.otherExpenses || null,
+          otherExpenseReceipts: data.otherExpenseReceipts || [],
         };
         
-        const createdGig = await createGigMutation.mutateAsync(gigData);
-        createdGigs.push(createdGig);
+        await createGigMutation.mutateAsync(gigData);
       }
 
       if (gigDates.length > 1) {
         toast({
           title: "Success",
-          description: `Created ${gigDates.length} gig entries for ${data.startDate} to ${data.endDate}`,
+          description: `Created ${gigDates.length} gigs`,
         });
       }
       
-      onClose();
     } catch (error) {
+      console.error("Form submission error:", error);
       toast({
         title: "Error",
-        description: "Failed to create one or more gigs. Please try again.",
+        description: "Failed to save gig. Please try again.",
         variant: "destructive",
       });
     }

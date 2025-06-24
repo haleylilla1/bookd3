@@ -250,19 +250,6 @@ export const insertUserSchema = createInsertSchema(users).omit({
 export const insertGigSchema = createInsertSchema(gigs).omit({
   id: true,
   createdAt: true,
-}).extend({
-  // Make optional fields truly optional for form submission
-  expectedPay: z.string().nullable().optional(),
-  actualPay: z.string().nullable().optional(),
-  tips: z.string().nullable().optional(),
-  parkingExpense: z.string().nullable().optional(),
-  otherExpenses: z.string().nullable().optional(),
-  paymentMethod: z.string().nullable().optional(),
-  duties: z.string().nullable().optional(),
-  notes: z.string().nullable().optional(),
-  gigAddress: z.string().nullable().optional(),
-  distanceMiles: z.string().nullable().optional(),
-  travelTimeMinutes: z.number().nullable().optional(),
 });
 
 export const insertGoalSchema = createInsertSchema(goals).omit({
