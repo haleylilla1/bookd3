@@ -304,10 +304,16 @@ export default function GigForm({ onClose }: GigFormProps) {
   const startDate = form.watch("startDate");
   const endDate = form.watch("endDate");
   
-  // Memoize tax calculation properly
+  // Memoize calculations to prevent redundant computations
   const taxCalculation = useMemo(() => {
     return expectedPay ? (parseFloat(expectedPay) * taxPercentage / 100).toFixed(2) : "0.00";
   }, [expectedPay, taxPercentage]);
+
+  const multiDayInfo = useMemo(() => {
+    const isMultiDay = startDate && endDate && startDate !== endDate;
+    const dayCount = isMultiDay ? Math.ceil((new Date(endDate).getTime() - new Date(startDate).getTime()) / (1000 * 60 * 60 * 24)) + 1 : 1;
+    return { isMultiDay, dayCount };
+  }, [startDate, endDate]);
 
   return (
     <div className="p-4">
@@ -435,10 +441,7 @@ export default function GigForm({ onClose }: GigFormProps) {
                   control={form.control}
                   name="expectedPay"
                   render={({ field }) => {
-                    const startDate = form.watch("startDate");
-                    const endDate = form.watch("endDate");
-                    const isMultiDay = startDate && endDate && startDate !== endDate;
-                    const dayCount = isMultiDay ? Math.ceil((new Date(endDate).getTime() - new Date(startDate).getTime()) / (1000 * 60 * 60 * 24)) + 1 : 1;
+                    const { isMultiDay, dayCount } = multiDayInfo;
                     const dailyAmount = field.value ? (parseFloat(field.value) / dayCount).toFixed(2) : "0.00";
 
                     return (
@@ -463,10 +466,7 @@ export default function GigForm({ onClose }: GigFormProps) {
                   control={form.control}
                   name="actualPay"
                   render={({ field }) => {
-                    const startDate = form.watch("startDate");
-                    const endDate = form.watch("endDate");
-                    const isMultiDay = startDate && endDate && startDate !== endDate;
-                    const dayCount = isMultiDay ? Math.ceil((new Date(endDate).getTime() - new Date(startDate).getTime()) / (1000 * 60 * 60 * 24)) + 1 : 1;
+                    const { isMultiDay, dayCount } = multiDayInfo;
                     const dailyAmount = field.value ? (parseFloat(field.value) / dayCount).toFixed(2) : "0.00";
 
                     return (
@@ -494,10 +494,7 @@ export default function GigForm({ onClose }: GigFormProps) {
                 control={form.control}
                 name="tips"
                 render={({ field }) => {
-                  const startDate = form.watch("startDate");
-                  const endDate = form.watch("endDate");
-                  const isMultiDay = startDate && endDate && startDate !== endDate;
-                  const dayCount = isMultiDay ? Math.ceil((new Date(endDate).getTime() - new Date(startDate).getTime()) / (1000 * 60 * 60 * 24)) + 1 : 1;
+                  const { isMultiDay, dayCount } = multiDayInfo;
                   const dailyAmount = field.value ? (parseFloat(field.value) / dayCount).toFixed(2) : "0.00";
 
                   return (
@@ -572,10 +569,7 @@ export default function GigForm({ onClose }: GigFormProps) {
 
               {/* Multi-day Gig Summary */}
               {(() => {
-                const startDate = form.watch("startDate");
-                const endDate = form.watch("endDate");
-                const isMultiDay = startDate && endDate && startDate !== endDate;
-                const dayCount = isMultiDay ? Math.ceil((new Date(endDate).getTime() - new Date(startDate).getTime()) / (1000 * 60 * 60 * 24)) + 1 : 1;
+                const { isMultiDay, dayCount } = multiDayInfo;
                 
                 if (!isMultiDay) return null;
                 
@@ -825,15 +819,15 @@ export default function GigForm({ onClose }: GigFormProps) {
                     </Button>
 
                     {/* Calculated Mileage Display */}
-                    {form.watch("calculatedMileage") && (
+                    {calculatedMileage && (
                       <div className="bg-green-50 border border-green-200 rounded-lg p-3">
                         <div className="flex justify-between items-center">
                           <span className="text-sm font-medium text-green-800">Calculated Mileage:</span>
                           <span className="text-lg font-bold text-green-900">
-                            {form.watch("calculatedMileage")} miles
+                            {calculatedMileage} miles
                           </span>
                         </div>
-                        {form.watch("includeRoundtrip") && (
+                        {includeRoundtrip && (
                           <p className="text-xs text-green-600 mt-1">Includes round trip</p>
                         )}
                       </div>
