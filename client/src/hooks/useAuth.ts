@@ -14,7 +14,7 @@ export function useAuth() {
         const response = await fetch("/api/user", {
           credentials: "include",
           headers: {
-            'Cache-Control': 'no-cache',
+            'Accept': 'application/json',
           },
         });
         
@@ -33,10 +33,10 @@ export function useAuth() {
       }
     },
     retry: false,
-    staleTime: 5 * 60 * 1000, // 5 minutes
-    refetchOnMount: false,
-    refetchOnWindowFocus: false,
-    refetchOnReconnect: false,
+    staleTime: 10 * 60 * 1000, // 10 minutes
+    refetchOnMount: true,
+    refetchOnWindowFocus: true,
+    refetchOnReconnect: true,
     throwOnError: false,
   });
 

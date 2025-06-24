@@ -8,7 +8,7 @@ import { useState, useEffect } from "react";
 import Home from "@/pages/home";
 import Profile from "@/pages/profile";
 import Import from "@/pages/import";
-import AuthPage from "@/pages/auth";
+import MobileAuthPage from "@/pages/mobile-auth";
 import SimpleLanding from "@/components/simple-landing";
 import NotFound from "@/pages/not-found";
 
@@ -24,7 +24,7 @@ function Router() {
         const response = await fetch("/api/user", {
           credentials: "include",
           headers: {
-            'Cache-Control': 'no-cache',
+            'Accept': 'application/json',
           },
         });
         
@@ -38,6 +38,7 @@ function Router() {
           setIsLoading(false);
         }
       } catch (error) {
+        console.log("Auth check failed (normal for logged out users):", error);
         if (mounted) {
           setUser(null);
           setIsLoading(false);
@@ -73,8 +74,8 @@ function Router() {
         </>
       ) : (
         <>
-          <Route path="/login" component={AuthPage} />
-          <Route path="/" component={AuthPage} />
+          <Route path="/login" component={MobileAuthPage} />
+          <Route path="/" component={MobileAuthPage} />
         </>
       )}
       <Route component={NotFound} />
