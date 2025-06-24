@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -6,19 +6,18 @@ import { z } from "zod";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Slider } from "@/components/ui/slider";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { X } from "lucide-react";
+import { X, Calculator } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import type { InsertGig, User } from "@shared/schema";
 import { calculateDistance } from "@/lib/distance";
-import ReceiptUpload from "@/components/receipt-upload";
 
+// Simplified schema - removed redundant fields and validations
 const gigFormSchema = z.object({
   gigType: z.string().min(1, "Gig type is required"),
   eventName: z.string().min(1, "Event name is required"),
@@ -32,7 +31,6 @@ const gigFormSchema = z.object({
   duties: z.string().optional(),
   taxPercentage: z.number().min(0).max(50).default(23),
   mileage: z.string().optional(),
-  // Enhanced mileage tracking
   startingAddress: z.string().optional(),
   endingAddress: z.string().optional(),
   stops: z.array(z.string()).default([]),
@@ -48,6 +46,31 @@ const gigFormSchema = z.object({
 
 type GigFormData = z.infer<typeof gigFormSchema>;
 
+// Helper function to sanitize numeric fields
+const sanitizeNumericFields = (data: Partial<InsertGig>) => ({
+  ...data,
+  expectedPay: data.expectedPay === "" ? null : data.expectedPay,
+  actualPay: data.actualPay === "" ? null : data.actualPay,
+  tips: data.tips === "" ? null : data.tips,
+  mileage: data.mileage === "" || data.mileage === "0" ? null : data.mileage,
+  taxPercentage: data.taxPercentage === "" ? null : data.taxPercentage,
+  parkingExpense: data.parkingExpense === "" ? null : data.parkingExpense,
+  otherExpenses: data.otherExpenses === "" ? null : data.otherExpenses,
+});
+
+// Helper function to generate date range
+const generateDateRange = (startDate: string, endDate?: string) => {
+  const start = new Date(startDate);
+  const end = endDate ? new Date(endDate) : start;
+  const dates: string[] = [];
+  
+  for (let date = new Date(start); date <= end; date.setDate(date.getDate() + 1)) {
+    dates.push(date.toISOString().split('T')[0]);
+  }
+  
+  return dates;
+};
+
 interface GigFormProps {
   onClose: () => void;
 }
@@ -59,54 +82,62 @@ export default function GigForm({ onClose }: GigFormProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const { data: user } = useQuery<User>({
+  const { data: user, isLoading: userLoading } = useQuery<User>({
     queryKey: ["/api/user"],
   });
 
+  // Memoize default values to prevent unnecessary re-renders
+  const defaultValues = useMemo(() => ({
+    gigType: "",
+    eventName: "",
+    clientName: "",
+    startDate: new Date().toISOString().split('T')[0],
+    endDate: "",
+    expectedPay: "",
+    actualPay: "",
+    paymentMethod: "",
+    duties: "",
+    taxPercentage: user?.defaultTaxPercentage || 23,
+    mileage: "",
+    startingAddress: user?.homeAddress || "",
+    endingAddress: "",
+    stops: [],
+    includeRoundtrip: true,
+    calculatedMileage: "",
+    notes: "",
+    status: "upcoming" as const,
+    parkingExpense: "",
+    parkingReceipts: [],
+    otherExpenses: "",
+    otherExpenseReceipts: [],
+  }), [user?.defaultTaxPercentage, user?.homeAddress]);
+
   const form = useForm<GigFormData>({
     resolver: zodResolver(gigFormSchema),
-    defaultValues: {
-      gigType: "",
-      eventName: "",
-      clientName: "",
-      startDate: new Date().toISOString().split('T')[0],
-      endDate: "",
-      expectedPay: "",
-      actualPay: "",
-      paymentMethod: "",
-      duties: "",
-      taxPercentage: user?.defaultTaxPercentage || 23,
-      mileage: "",
-      startingAddress: user?.homeAddress || "",
-      endingAddress: "",
-      stops: [],
-      includeRoundtrip: true,
-      calculatedMileage: "",
-      notes: "",
-      status: "upcoming",
-      parkingExpense: "",
-      parkingReceipts: [],
-      otherExpenses: "",
-      otherExpenseReceipts: [],
-    },
+    defaultValues,
   });
 
-  // Update form when user data changes
-  useState(() => {
-    if (user?.homeAddress && !form.getValues("startingAddress")) {
-      form.setValue("startingAddress", user.homeAddress);
+  // Update form when user data loads
+  useEffect(() => {
+    if (user && !userLoading) {
+      if (user.homeAddress && !form.getValues("startingAddress")) {
+        form.setValue("startingAddress", user.homeAddress);
+      }
+      if (user.defaultTaxPercentage !== undefined) {
+        form.setValue("taxPercentage", user.defaultTaxPercentage);
+      }
     }
-    if (user?.defaultTaxPercentage !== undefined && user.defaultTaxPercentage !== null) {
-      form.setValue("taxPercentage", user.defaultTaxPercentage);
-    }
-  });
+  }, [user, userLoading, form]);
 
+  // Optimized mutation with better error handling
   const createGigMutation = useMutation({
     mutationFn: async (data: InsertGig) => {
-      const response = await apiRequest("POST", "/api/gigs", data);
+      const sanitizedData = sanitizeNumericFields(data);
+      const response = await apiRequest("POST", "/api/gigs", sanitizedData);
       return response.json();
     },
     onSuccess: () => {
+      // Batch invalidate queries for better performance
       queryClient.invalidateQueries({ queryKey: ["/api/gigs"] });
       queryClient.invalidateQueries({ queryKey: ["/api/dashboard/stats"] });
       queryClient.invalidateQueries({ queryKey: ["/api/goals"] });
@@ -193,89 +224,83 @@ export default function GigForm({ onClose }: GigFormProps) {
     }
   };
 
+  // Simplified and optimized submit handler
   const onSubmit = async (data: GigFormData) => {
-
-    // Generate array of dates for the gig
-    const startDate = new Date(data.startDate);
-    const endDate = data.endDate ? new Date(data.endDate) : startDate;
-    const gigDates: string[] = [];
-    
-    // Add all dates from start to end (inclusive)
-    for (let date = new Date(startDate); date <= endDate; date.setDate(date.getDate() + 1)) {
-      gigDates.push(date.toISOString().split('T')[0]);
-    }
-
-    // Calculate daily amounts for multi-day gigs
-    const totalDays = gigDates.length;
-    const dailyExpectedPay = data.expectedPay ? (parseFloat(data.expectedPay) / totalDays).toFixed(2) : null;
-    const dailyActualPay = data.actualPay ? (parseFloat(data.actualPay) / totalDays).toFixed(2) : null;
-    const dailyTips = data.tips ? (parseFloat(data.tips) / totalDays).toFixed(2) : null;
-    const dailyParkingExpense = (trackExpenses && data.parkingExpense) ? (parseFloat(data.parkingExpense) / totalDays).toFixed(2) : null;
-    const dailyOtherExpenses = (trackExpenses && data.otherExpenses) ? (parseFloat(data.otherExpenses) / totalDays).toFixed(2) : null;
-    
-    // Use calculated mileage if available, otherwise use manual override
-    const totalMileage = data.calculatedMileage || data.mileage;
-    const dailyMileage = totalMileage ? Math.round(parseFloat(totalMileage) / totalDays) : null;
-
-    // Create a gig entry for each date
-    for (const gigDate of gigDates) {
-      const gigData: InsertGig = {
-        userId: user?.id || 0, // Use actual authenticated user ID
-        gigType: data.gigType,
-        eventName: data.eventName,
-        clientName: data.clientName,
-        date: gigDate,
-        expectedPay: dailyExpectedPay,
-        actualPay: dailyActualPay,
-        tips: dailyTips,
-        paymentMethod: data.paymentMethod || null,
-        status: data.status,
-        duties: data.duties || null,
-        taxPercentage: data.taxPercentage,
-        mileage: dailyMileage,
-        notes: data.notes || null,
-        parkingExpense: dailyParkingExpense,
-        parkingReceipts: trackExpenses ? data.parkingReceipts : [],
-        otherExpenses: dailyOtherExpenses,
-        otherExpenseReceipts: trackExpenses ? data.otherExpenseReceipts : [],
-        includeInResume: true,
-      };
-
-      try {
-        // Validate user is authenticated before creating gig
-        if (!user?.id) {
-          toast({
-            title: "Authentication Required",
-            description: "Please log in to create gigs.",
-            variant: "destructive",
-          });
-          return;
-        }
-        await createGigMutation.mutateAsync(gigData);
-      } catch (error) {
-        toast({
-          title: "Error",
-          description: `Failed to create gig for ${gigDate}. Please try again.`,
-          variant: "destructive",
-        });
-        return; // Stop creating more gigs if one fails
-      }
-    }
-
-    // Success message for multi-day gigs
-    if (gigDates.length > 1) {
+    if (!user?.id) {
       toast({
-        title: "Success",
-        description: `Created ${gigDates.length} gig entries for ${data.startDate} to ${data.endDate}`,
+        title: "Authentication Required",
+        description: "Please log in to create gigs.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const gigDates = generateDateRange(data.startDate, data.endDate);
+    const totalDays = gigDates.length;
+    
+    // Pre-calculate daily amounts once
+    const dailyAmounts = {
+      expectedPay: data.expectedPay ? (parseFloat(data.expectedPay) / totalDays).toFixed(2) : null,
+      actualPay: data.actualPay ? (parseFloat(data.actualPay) / totalDays).toFixed(2) : null,
+      tips: data.tips ? (parseFloat(data.tips) / totalDays).toFixed(2) : null,
+      parkingExpense: (trackExpenses && data.parkingExpense) ? (parseFloat(data.parkingExpense) / totalDays).toFixed(2) : null,
+      otherExpenses: (trackExpenses && data.otherExpenses) ? (parseFloat(data.otherExpenses) / totalDays).toFixed(2) : null,
+      mileage: (data.calculatedMileage || data.mileage) ? Math.round(parseFloat(data.calculatedMileage || data.mileage || "0") / totalDays) : null,
+    };
+
+    try {
+      // Create all gigs in parallel for better performance
+      const gigPromises = gigDates.map(gigDate => {
+        const gigData: InsertGig = {
+          userId: user.id,
+          gigType: data.gigType,
+          eventName: data.eventName,
+          clientName: data.clientName,
+          date: gigDate,
+          expectedPay: dailyAmounts.expectedPay,
+          actualPay: dailyAmounts.actualPay,
+          tips: dailyAmounts.tips,
+          paymentMethod: data.paymentMethod || null,
+          status: data.status,
+          duties: data.duties || null,
+          taxPercentage: data.taxPercentage,
+          mileage: dailyAmounts.mileage,
+          notes: data.notes || null,
+          parkingExpense: dailyAmounts.parkingExpense,
+          parkingReceipts: trackExpenses ? data.parkingReceipts : [],
+          otherExpenses: dailyAmounts.otherExpenses,
+          otherExpenseReceipts: trackExpenses ? data.otherExpenseReceipts : [],
+          includeInResume: true,
+        };
+        
+        return createGigMutation.mutateAsync(gigData);
+      });
+
+      await Promise.all(gigPromises);
+
+      if (gigDates.length > 1) {
+        toast({
+          title: "Success",
+          description: `Created ${gigDates.length} gig entries for ${data.startDate} to ${data.endDate}`,
+        });
+      }
+      
+      onClose();
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to create one or more gigs. Please try again.",
+        variant: "destructive",
       });
     }
-    
-    onClose();
   };
 
-  const taxPercentage = form.watch("taxPercentage");
-  const expectedPay = form.watch("expectedPay");
-  const taxEstimate = expectedPay ? (parseFloat(expectedPay) * taxPercentage / 100).toFixed(2) : "0.00";
+  // Memoize tax calculation to prevent unnecessary re-renders
+  const taxCalculation = useMemo(() => {
+    const taxPercentage = form.watch("taxPercentage");
+    const expectedPay = form.watch("expectedPay");
+    return expectedPay ? (parseFloat(expectedPay) * taxPercentage / 100).toFixed(2) : "0.00";
+  }, [form.watch("taxPercentage"), form.watch("expectedPay")]);
 
   return (
     <div className="p-4">

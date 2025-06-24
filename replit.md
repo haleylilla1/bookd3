@@ -14,6 +14,9 @@ Giggy is a comprehensive gig worker companion app with advanced features includi
 - Maintain simple, clean interface design
 
 ## Recent Changes
+- 2025-06-24: Completely optimized Add Gig form - improved performance, error handling, and data validation
+- 2025-06-24: Fixed numeric field validation issues preventing gig updates from failing
+- 2025-06-24: Added parallel gig creation for multi-day events and better UX feedback
 - 2025-06-24: Updated all export functionality (tax data, Excel, PDF) to only include completed/paid gigs
 - 2025-06-24: Added comprehensive export endpoints with authentication and proper filtering
 - 2025-06-24: Fixed projected earnings calculation to properly include upcoming/pending gigs in dashboard
