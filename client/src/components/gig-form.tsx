@@ -47,6 +47,53 @@ const gigFormSchema = z.object({
 
 type GigFormData = z.infer<typeof gigFormSchema>;
 
+// Helper function to sanitize numeric fields - robust error handling
+function sanitizeNumericField(value: string | number | undefined): string | null {
+  if (value === undefined || value === null || value === "") return null;
+  
+  let numValue: number;
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+    if (trimmed === "") return null;
+    numValue = parseFloat(trimmed);
+  } else {
+    numValue = value;
+  }
+  
+  // Return null for invalid numbers instead of causing errors
+  return (isNaN(numValue) || !isFinite(numValue)) ? null : Math.max(0, numValue).toString();
+}
+
+// Robust date range generator with validation
+function generateDateRange(startDate: string, endDate?: string): string[] {
+  if (!startDate?.trim()) return [];
+  
+  const start = new Date(startDate);
+  if (isNaN(start.getTime())) return []; // Invalid date
+  
+  if (!endDate || endDate === startDate) {
+    return [startDate];
+  }
+  
+  const end = new Date(endDate);
+  if (isNaN(end.getTime()) || end < start) {
+    return [startDate]; // Invalid or backwards date range
+  }
+  
+  const dates = [];
+  const current = new Date(start);
+  
+  // Prevent infinite loops with a reasonable limit
+  let maxDays = 365; // Max 1 year of gigs
+  while (current <= end && maxDays > 0) {
+    dates.push(current.toISOString().split('T')[0]);
+    current.setDate(current.getDate() + 1);
+    maxDays--;
+  }
+  
+  return dates;
+}
+
 // Helper function to sanitize numeric fields
 const sanitizeNumericFields = (data: Partial<InsertGig>) => ({
   ...data,
@@ -133,6 +180,74 @@ export default function GigForm({ onClose }: GigFormProps) {
   // Optimized mutation with better error handling
   const createGigMutation = useMutation({
     mutationFn: async (data: InsertGig) => {
+      // Comprehensive data sanitization and validation
+      const sanitizedData = {
+        ...data,
+        // Ensure required fields are properly trimmed and validated
+        gigType: data.gigType?.trim() || '',
+        eventName: data.eventName?.trim() || '',
+        clientName: data.clientName?.trim() || '',
+        date: data.date?.trim() || '',
+        
+        // Sanitize all numeric fields with robust error handling
+        expectedPay: sanitizeNumericField(data.expectedPay),
+        actualPay: sanitizeNumericField(data.actualPay),
+        tips: sanitizeNumericField(data.tips),
+        taxPercentage: Math.max(0, Math.min(50, data.taxPercentage || 23)), // Clamp tax percentage
+        mileage: data.mileage ? Math.max(0, parseInt(data.mileage.toString()) || 0) : null,
+        parkingExpense: sanitizeNumericField(data.parkingExpense),
+        otherExpenses: sanitizeNumericField(data.otherExpenses),
+        
+        // Ensure arrays are valid
+        parkingReceipts: Array.isArray(data.parkingReceipts) ? data.parkingReceipts.filter(r => r?.trim()) : [],
+        otherExpenseReceipts: Array.isArray(data.otherExpenseReceipts) ? data.otherExpenseReceipts.filter(r => r?.trim()) : [],
+        
+        // Sanitize optional text fields
+        duties: data.duties?.trim() || null,
+        notes: data.notes?.trim() || null,
+        paymentMethod: data.paymentMethod?.trim() || null,
+      };
+      
+      // Final validation before API call
+      if (!sanitizedData.gigType || !sanitizedData.eventName || !sanitizedData.clientName || !sanitizedData.date) {
+        throw new Error("Missing required fields");
+      }
+      
+      return await apiRequest(`/api/gigs`, {
+        method: "POST",
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(sanitizedData),
+      });
+    },
+    onSuccess: () => {
+      // Efficient cache invalidation
+      Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["/api/gigs"] }),
+        queryClient.invalidateQueries({ queryKey: ["/api/dashboard/stats"] }),
+        queryClient.invalidateQueries({ queryKey: ["/api/goals"] })
+      ]).catch(console.error);
+      
+      toast({
+        title: "Success",
+        description: "Gig saved successfully!",
+      });
+      onClose();
+    },
+    onError: (error) => {
+      console.error("Failed to create gig:", error);
+      const errorMessage = error instanceof Error ? error.message : "Failed to save gig. Please check your data and try again.";
+      toast({
+        title: "Error",
+        description: errorMessage,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const originalCreateGigMutation = useMutation({
+    mutationFn: async (data: InsertGig) => {
       const sanitizedData = sanitizeNumericFields(data);
       const response = await apiRequest("POST", "/api/gigs", sanitizedData);
       return response.json();
@@ -161,9 +276,8 @@ export default function GigForm({ onClose }: GigFormProps) {
 
 
   const handleCalculateMileage = async () => {
-    const filteredStops = stops.filter(stop => stop.trim());
-
-    if (!startingAddress || !endingAddress) {
+    // Validate inputs
+    if (!startingAddress?.trim() || !endingAddress?.trim()) {
       toast({
         title: "Missing Addresses",
         description: "Both starting and ending addresses are required for mileage calculation.",
@@ -172,37 +286,58 @@ export default function GigForm({ onClose }: GigFormProps) {
       return;
     }
 
+    // Prevent concurrent calculations
+    if (isCalculatingDistance) return;
+
     setIsCalculatingDistance(true);
     
     try {
       let totalDistance = 0;
       let totalTime = 0;
       
-      // Create the complete route: start -> stops -> end
-      const waypoints = [startingAddress, ...filteredStops, endingAddress];
+      const filteredStops = stops.filter(stop => stop?.trim()).slice(0, 10); // Limit stops to prevent API abuse
+      const waypoints = [startingAddress.trim(), ...filteredStops, endingAddress.trim()];
       
-      // Calculate distance between each consecutive pair of waypoints
+      // Calculate distance with timeout and retry logic
       for (let i = 0; i < waypoints.length - 1; i++) {
-        const result = await calculateDistance(waypoints[i], waypoints[i + 1]);
+        let retries = 2;
+        let result = null;
         
-        if (result.status === 'success') {
-          totalDistance += result.distanceMiles;
-          totalTime += result.travelTimeMinutes;
+        while (retries > 0 && !result) {
+          try {
+            result = await Promise.race([
+              calculateDistance(waypoints[i], waypoints[i + 1]),
+              new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 10000))
+            ]);
+          } catch (timeoutError) {
+            retries--;
+            if (retries === 0) throw new Error(`Failed to calculate distance between ${waypoints[i]} and ${waypoints[i + 1]}: Timeout`);
+            await new Promise(resolve => setTimeout(resolve, 1000)); // Wait 1s before retry
+          }
+        }
+        
+        if (result.status === 'success' && typeof result.distanceMiles === 'number' && isFinite(result.distanceMiles)) {
+          totalDistance += Math.max(0, result.distanceMiles);
+          totalTime += Math.max(0, result.travelTimeMinutes || 0);
         } else {
-          throw new Error(`Failed to calculate distance between ${waypoints[i]} and ${waypoints[i + 1]}`);
+          throw new Error(`Invalid response for route segment ${i + 1}`);
         }
       }
       
-      // Double the distance if round trip is included
+      // Validate calculated values
+      if (!isFinite(totalDistance) || totalDistance < 0) {
+        throw new Error("Invalid distance calculation result");
+      }
+      
+      // Apply round trip multiplier
       if (includeRoundtrip) {
         totalDistance *= 2;
         totalTime *= 2;
       }
       
-      // Round to 1 decimal place
-      const roundedDistance = Math.round(totalDistance * 10) / 10;
+      // Round and validate final result
+      const roundedDistance = Math.round(Math.min(9999, totalDistance) * 10) / 10; // Cap at 9999 miles
       
-      // Set the calculated mileage
       form.setValue("calculatedMileage", roundedDistance.toString());
       
       toast({
@@ -214,7 +349,7 @@ export default function GigForm({ onClose }: GigFormProps) {
       console.error("Mileage calculation error:", error);
       toast({
         title: "Calculation Failed",
-        description: error instanceof Error ? error.message : "Failed to calculate mileage. Please check your addresses.",
+        description: error instanceof Error ? error.message : "Failed to calculate mileage. Please check your addresses and try again.",
         variant: "destructive",
       });
     } finally {
@@ -224,6 +359,7 @@ export default function GigForm({ onClose }: GigFormProps) {
 
   // Simplified and optimized submit handler
   const onSubmit = async (data: GigFormData) => {
+    // Comprehensive validation before submission
     if (!user?.id) {
       toast({
         title: "Authentication Required",
@@ -233,48 +369,72 @@ export default function GigForm({ onClose }: GigFormProps) {
       return;
     }
 
-    const gigDates = generateDateRange(data.startDate, data.endDate);
-    const totalDays = gigDates.length;
-    
-    // Pre-calculate daily amounts once
-    const dailyAmounts = {
-      expectedPay: data.expectedPay ? (parseFloat(data.expectedPay) / totalDays).toFixed(2) : null,
-      actualPay: data.actualPay ? (parseFloat(data.actualPay) / totalDays).toFixed(2) : null,
-      tips: data.tips ? (parseFloat(data.tips) / totalDays).toFixed(2) : null,
-      parkingExpense: (trackExpenses && data.parkingExpense) ? (parseFloat(data.parkingExpense) / totalDays).toFixed(2) : null,
-      otherExpenses: (trackExpenses && data.otherExpenses) ? (parseFloat(data.otherExpenses) / totalDays).toFixed(2) : null,
-      mileage: (data.calculatedMileage || data.mileage) ? Math.round(parseFloat(data.calculatedMileage || data.mileage || "0") / totalDays) : null,
-    };
+    // Validate required fields
+    if (!data.gigType?.trim() || !data.eventName?.trim() || !data.clientName?.trim() || !data.startDate?.trim()) {
+      toast({
+        title: "Missing Required Fields",
+        description: "Please fill in all required fields (gig type, event name, client name, and start date).",
+        variant: "destructive",
+      });
+      return;
+    }
 
     try {
-      // Create all gigs in parallel for better performance
-      const gigPromises = gigDates.map(gigDate => {
+      const gigDates = generateDateRange(data.startDate, data.endDate);
+      const totalDays = gigDates.length;
+      
+      // Robust numeric parsing with NaN checks
+      const parseNumericField = (value: string | undefined): number | null => {
+        if (!value || value.trim() === '') return null;
+        const parsed = parseFloat(value.trim());
+        return isNaN(parsed) ? null : parsed;
+      };
+
+      // Pre-calculate daily amounts with error handling
+      const expectedPayNum = parseNumericField(data.expectedPay);
+      const actualPayNum = parseNumericField(data.actualPay);
+      const tipsNum = parseNumericField(data.tips);
+      const parkingExpenseNum = trackExpenses ? parseNumericField(data.parkingExpense) : null;
+      const otherExpensesNum = trackExpenses ? parseNumericField(data.otherExpenses) : null;
+      const mileageNum = parseNumericField(data.calculatedMileage || data.mileage);
+
+      const dailyAmounts = {
+        expectedPay: expectedPayNum ? (expectedPayNum / totalDays).toFixed(2) : null,
+        actualPay: actualPayNum ? (actualPayNum / totalDays).toFixed(2) : null,
+        tips: tipsNum ? (tipsNum / totalDays).toFixed(2) : null,
+        parkingExpense: parkingExpenseNum ? (parkingExpenseNum / totalDays).toFixed(2) : null,
+        otherExpenses: otherExpensesNum ? (otherExpensesNum / totalDays).toFixed(2) : null,
+        mileage: mileageNum ? Math.max(0, Math.round(mileageNum / totalDays)) : null,
+      };
+
+      // Create gigs sequentially to prevent database race conditions
+      const createdGigs = [];
+      for (const gigDate of gigDates) {
         const gigData: InsertGig = {
           userId: user.id,
-          gigType: data.gigType,
-          eventName: data.eventName,
-          clientName: data.clientName,
+          gigType: data.gigType.trim(),
+          eventName: data.eventName.trim(),
+          clientName: data.clientName.trim(),
           date: gigDate,
           expectedPay: dailyAmounts.expectedPay,
           actualPay: dailyAmounts.actualPay,
           tips: dailyAmounts.tips,
-          paymentMethod: data.paymentMethod || null,
+          paymentMethod: data.paymentMethod?.trim() || null,
           status: data.status,
-          duties: data.duties || null,
-          taxPercentage: data.taxPercentage,
+          duties: data.duties?.trim() || null,
+          taxPercentage: Math.max(0, Math.min(50, data.taxPercentage)), // Clamp between 0-50
           mileage: dailyAmounts.mileage,
-          notes: data.notes || null,
+          notes: data.notes?.trim() || null,
           parkingExpense: dailyAmounts.parkingExpense,
-          parkingReceipts: trackExpenses ? data.parkingReceipts : [],
+          parkingReceipts: trackExpenses ? (data.parkingReceipts || []) : [],
           otherExpenses: dailyAmounts.otherExpenses,
-          otherExpenseReceipts: trackExpenses ? data.otherExpenseReceipts : [],
+          otherExpenseReceipts: trackExpenses ? (data.otherExpenseReceipts || []) : [],
           includeInResume: true,
         };
         
-        return createGigMutation.mutateAsync(gigData);
-      });
-
-      await Promise.all(gigPromises);
+        const createdGig = await createGigMutation.mutateAsync(gigData);
+        createdGigs.push(createdGig);
+      }
 
       if (gigDates.length > 1) {
         toast({
@@ -304,15 +464,31 @@ export default function GigForm({ onClose }: GigFormProps) {
   const startDate = form.watch("startDate");
   const endDate = form.watch("endDate");
   
-  // Memoize calculations to prevent redundant computations
+  // Robust memoized calculations with error handling
   const taxCalculation = useMemo(() => {
-    return expectedPay ? (parseFloat(expectedPay) * taxPercentage / 100).toFixed(2) : "0.00";
+    if (!expectedPay || expectedPay.trim() === '') return "0.00";
+    const payNum = parseFloat(expectedPay.trim());
+    if (isNaN(payNum) || !isFinite(payNum)) return "0.00";
+    const tax = Math.max(0, payNum) * Math.max(0, Math.min(50, taxPercentage)) / 100;
+    return tax.toFixed(2);
   }, [expectedPay, taxPercentage]);
 
   const multiDayInfo = useMemo(() => {
-    const isMultiDay = startDate && endDate && startDate !== endDate;
-    const dayCount = isMultiDay ? Math.ceil((new Date(endDate).getTime() - new Date(startDate).getTime()) / (1000 * 60 * 60 * 24)) + 1 : 1;
-    return { isMultiDay, dayCount };
+    if (!startDate?.trim()) return { isMultiDay: false, dayCount: 1 };
+    
+    const isMultiDay = endDate && endDate.trim() && startDate !== endDate;
+    if (!isMultiDay) return { isMultiDay: false, dayCount: 1 };
+    
+    const startDateObj = new Date(startDate);
+    const endDateObj = new Date(endDate);
+    
+    // Validate dates
+    if (isNaN(startDateObj.getTime()) || isNaN(endDateObj.getTime()) || endDateObj < startDateObj) {
+      return { isMultiDay: false, dayCount: 1 };
+    }
+    
+    const dayCount = Math.max(1, Math.ceil((endDateObj.getTime() - startDateObj.getTime()) / (1000 * 60 * 60 * 24)) + 1);
+    return { isMultiDay: true, dayCount: Math.min(365, dayCount) }; // Cap at 365 days
   }, [startDate, endDate]);
 
   return (
@@ -495,7 +671,9 @@ export default function GigForm({ onClose }: GigFormProps) {
                 name="tips"
                 render={({ field }) => {
                   const { isMultiDay, dayCount } = multiDayInfo;
-                  const dailyAmount = field.value ? (parseFloat(field.value) / dayCount).toFixed(2) : "0.00";
+                  const fieldValue = field.value?.trim() || '';
+                  const parsedValue = fieldValue ? parseFloat(fieldValue) : 0;
+                  const dailyAmount = (isFinite(parsedValue) && parsedValue > 0) ? (parsedValue / dayCount).toFixed(2) : "0.00";
 
                   return (
                     <FormItem>
