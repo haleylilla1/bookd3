@@ -24,7 +24,8 @@ export function createSessionConfig() {
       secure: process.env.NODE_ENV === "production",
       httpOnly: true,
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-      sameSite: process.env.NODE_ENV === "production" ? "lax" : "lax",
+      sameSite: "lax", // Critical for mobile compatibility
+      domain: process.env.NODE_ENV === "production" ? undefined : undefined, // Let browser set domain
     },
   });
 }
@@ -238,8 +239,8 @@ function setupAuthRoutes(app: Express) {
     });
   });
 
-  // Current user
-  app.get('/api/auth/user', (req, res) => {
+  // Current user endpoint
+  app.get('/api/user', (req, res) => {
     if (req.isAuthenticated()) {
       res.json(req.user);
     } else {

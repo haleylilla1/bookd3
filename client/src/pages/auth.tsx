@@ -17,6 +17,15 @@ export default function AuthPage() {
   });
   const { toast } = useToast();
 
+  // Prevent zoom on mobile input focus
+  const inputProps = {
+    style: { fontSize: '16px' }, // Prevents iOS zoom
+    autoComplete: "off",
+    autoCorrect: "off",
+    autoCapitalize: "off",
+    spellCheck: false,
+  };
+
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
