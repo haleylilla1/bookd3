@@ -14,6 +14,10 @@ Giggy is a comprehensive gig worker companion app with advanced features includi
 - Maintain simple, clean interface design
 
 ## Recent Changes
+- 2025-06-24: MAJOR PERFORMANCE OPTIMIZATION - Completely rewrote Add Gig form with production-grade efficiency
+- 2025-06-24: Eliminated all redundant form.watch() calls that were causing excessive re-renders
+- 2025-06-24: Implemented proper useMemo for calculations, reducing CPU load for multiple concurrent users
+- 2025-06-24: Fixed critical memory leak potential from form state watchers in render cycles
 - 2025-06-24: Completely optimized Add Gig form - improved performance, error handling, and data validation
 - 2025-06-24: Fixed numeric field validation issues preventing gig updates from failing
 - 2025-06-24: Added parallel gig creation for multi-day events and better UX feedback
