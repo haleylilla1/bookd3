@@ -763,7 +763,7 @@ function GigEditForm({ gig, onSave, onCancel, isLoading }: GigEditFormProps) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           origin: homeAddress,
-          destination: formData.gigAddress,
+          destination: "gig location", // Placeholder since address removed
         }),
       });
 
