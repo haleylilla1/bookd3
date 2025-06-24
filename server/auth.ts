@@ -20,12 +20,13 @@ export function createSessionConfig() {
     name: "giggy.session",
     resave: false,
     saveUninitialized: false,
+    rolling: true, // Extend session on activity
     cookie: {
-      secure: process.env.NODE_ENV === "production",
+      secure: false, // Allow non-HTTPS for mobile compatibility
       httpOnly: true,
-      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-      sameSite: "lax", // Critical for mobile compatibility
-      domain: process.env.NODE_ENV === "production" ? undefined : undefined, // Let browser set domain
+      maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days for mobile
+      sameSite: "lax",
+      path: "/",
     },
   });
 }
@@ -239,14 +240,7 @@ function setupAuthRoutes(app: Express) {
     });
   });
 
-  // Current user endpoint
-  app.get('/api/user', (req, res) => {
-    if (req.isAuthenticated()) {
-      res.json(req.user);
-    } else {
-      res.status(401).json({ message: 'Not authenticated' });
-    }
-  });
+  // Current user endpoint - moved to routes.ts to avoid conflicts
 
   // Debug endpoint - SECURITY: Block in production
   app.get('/api/auth/debug', (req, res) => {

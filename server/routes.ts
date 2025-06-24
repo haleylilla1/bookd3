@@ -19,7 +19,11 @@ import { count, gte } from "drizzle-orm";
 import { users } from "@shared/schema";
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // Authentication is now handled in server/auth.ts
+  // SIMPLIFIED UNIFIED AUTHENTICATION SYSTEM
+  
+  // Setup authentication first
+  const { setupAuth, requireAuth } = await import("./auth");
+  setupAuth(app);
   
   // Helper function to get current user ID from session or auth
   const getCurrentUserId = (req: any) => {
@@ -43,26 +47,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   });
 
-  // Get current user (fallback for existing functionality)
-  app.get("/api/user", async (req, res) => {
-    try {
-      const userId = getCurrentUserId(req);
-      
-      if (!userId || userId <= 0) {
-        return res.status(401).json({ message: "Authentication required" });
-      }
-      
-      const user = await getCurrentUser(req);
-      if (!user) {
-        return res.status(404).json({ message: "User not found" });
-      }
-      res.json(user);
-    } catch (error) {
-      if (error instanceof Error && error.message === 'User not authenticated') {
-        return res.status(401).json({ message: "Authentication required" });
-      }
-      console.error("Get user error:", error);
-      res.status(500).json({ message: "Failed to fetch user" });
+  // SIMPLIFIED USER ENDPOINT - No complex error handling
+  app.get("/api/user", (req, res) => {
+    if (req.isAuthenticated() && req.user) {
+      res.json(req.user);
+    } else {
+      res.status(401).json({ message: "Not authenticated" });
     }
   });
 
