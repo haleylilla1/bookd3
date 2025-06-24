@@ -22,14 +22,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Authentication is now handled in server/auth.ts
   
   // Simple session-based user switching for existing functionality
-  let currentUserId = 1; // Default user
+  let currentUserId = 1; // Default user for fallback only
 
   // Helper function to get current user ID from session or auth
   const getCurrentUserId = (req: any) => {
     if (req.isAuthenticated && req.isAuthenticated()) {
       return req.user.id;
     }
-    return currentUserId;
+    // Only use fallback for development/testing - in production this should throw an error
+    if (process.env.NODE_ENV === 'development') {
+      return currentUserId;
+    }
+    throw new Error('User not authenticated');
   };
 
   // Helper function to get current user
@@ -63,12 +67,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/user", async (req, res) => {
     try {
       const userId = getCurrentUserId(req);
+      
+      if (!userId || userId <= 0) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+      
       const user = await getCurrentUser(req);
       if (!user) {
         return res.status(404).json({ message: "User not found" });
       }
       res.json(user);
     } catch (error) {
+      if (error instanceof Error && error.message === 'User not authenticated') {
+        return res.status(401).json({ message: "Authentication required" });
+      }
       console.error("Get user error:", error);
       res.status(500).json({ message: "Failed to fetch user" });
     }
@@ -78,6 +90,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.put("/api/user", async (req, res) => {
     try {
       const userId = getCurrentUserId(req);
+      
+      if (!userId || userId <= 0) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+      
       const { 
         name, 
         email, 
@@ -109,6 +126,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       res.json(updatedUser);
     } catch (error) {
+      if (error instanceof Error && error.message === 'User not authenticated') {
+        return res.status(401).json({ message: "Authentication required" });
+      }
       console.error("Update user error:", error);
       res.status(500).json({ message: "Failed to update user" });
     }
@@ -129,6 +149,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/gigs/date-range", async (req, res) => {
     try {
       const userId = getCurrentUserId(req);
+      
+      if (!userId || userId <= 0) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+      
       const { startDate, endDate } = req.query;
       if (!startDate || !endDate) {
         return res.status(400).json({ message: "Start date and end date are required" });
@@ -137,6 +162,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const gigs = await storage.getGigsByDateRange(userId, startDate as string, endDate as string);
       res.json(gigs);
     } catch (error) {
+      if (error instanceof Error && error.message === 'User not authenticated') {
+        return res.status(401).json({ message: "Authentication required" });
+      }
       console.error("Get gigs by date range error:", error);
       res.status(500).json({ message: "Failed to fetch gigs by date range" });
     }
@@ -403,12 +431,21 @@ Be VERY generous in extracting gigs:
   app.post("/api/gigs", async (req, res) => {
     try {
       const userId = getCurrentUserId(req);
+      
+      // Ensure userId is valid
+      if (!userId || userId <= 0) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+      
       const gigData = insertGigSchema.parse({ ...req.body, userId });
       const gig = await storage.createGig(gigData);
       res.json(gig);
     } catch (error) {
       if (error instanceof z.ZodError) {
         return res.status(400).json({ message: "Invalid gig data", errors: error.errors });
+      }
+      if (error instanceof Error && error.message === 'User not authenticated') {
+        return res.status(401).json({ message: "Authentication required" });
       }
       console.error("Create gig error:", error);
       res.status(500).json({ message: "Failed to create gig" });

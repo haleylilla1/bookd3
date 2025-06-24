@@ -275,7 +275,7 @@ export default function GigForm({ onClose }: GigFormProps) {
     // Create a gig entry for each date
     for (const gigDate of gigDates) {
       const gigData: InsertGig = {
-        userId: 1, // For MVP, using single user
+        userId: user?.id || 0, // Use actual authenticated user ID
         gigType: data.gigType,
         eventName: data.eventName,
         clientName: data.clientName,
@@ -300,6 +300,15 @@ export default function GigForm({ onClose }: GigFormProps) {
       };
 
       try {
+        // Validate user is authenticated before creating gig
+        if (!user?.id) {
+          toast({
+            title: "Authentication Required",
+            description: "Please log in to create gigs.",
+            variant: "destructive",
+          });
+          return;
+        }
         await createGigMutation.mutateAsync(gigData);
       } catch (error) {
         toast({
