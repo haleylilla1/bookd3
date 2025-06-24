@@ -14,6 +14,10 @@ Giggy is a comprehensive gig worker companion app with advanced features includi
 - Maintain simple, clean interface design
 
 ## Recent Changes
+- 2025-06-24: Updated all export functionality (tax data, Excel, PDF) to only include completed/paid gigs
+- 2025-06-24: Added comprehensive export endpoints with authentication and proper filtering
+- 2025-06-24: Fixed projected earnings calculation to properly include upcoming/pending gigs in dashboard
+- 2025-06-24: Removed redundant "gig address" field from Add Gig form since mileage tracking handles addresses separately
 - 2025-06-24: COMPREHENSIVE SECURITY AUDIT COMPLETE - All user isolation vulnerabilities eliminated
 - 2025-06-24: Added authentication to /api/calculate-distance preventing unauthorized API usage
 - 2025-06-24: Removed ALL hardcoded user fallbacks that violated user isolation principles
