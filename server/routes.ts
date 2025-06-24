@@ -21,46 +21,26 @@ import { users } from "@shared/schema";
 export async function registerRoutes(app: Express): Promise<Server> {
   // Authentication is now handled in server/auth.ts
   
-  // Simple session-based user switching for existing functionality
-  let currentUserId = 1; // Default user for fallback only
-
   // Helper function to get current user ID from session or auth
   const getCurrentUserId = (req: any) => {
-    if (req.isAuthenticated && req.isAuthenticated()) {
+    if (req?.isAuthenticated && req.isAuthenticated()) {
       return req.user.id;
-    }
-    // Only use fallback for development/testing - in production this should throw an error
-    if (process.env.NODE_ENV === 'development') {
-      return currentUserId;
     }
     throw new Error('User not authenticated');
   };
 
   // Helper function to get current user
-  const getCurrentUser = async (req?: any) => {
-    const userId = req ? getCurrentUserId(req) : currentUserId;
+  const getCurrentUser = async (req: any): Promise<User | undefined> => {
+    const userId = getCurrentUserId(req);
     return await storage.getUser(userId);
   };
 
-  // User switching endpoint for testing
+  // SECURITY: User switching disabled - violates authentication principles
   app.post("/api/switch-user", async (req, res) => {
-    try {
-      const { userId } = req.body;
-      if (!userId || typeof userId !== "number") {
-        return res.status(400).json({ message: "Invalid user ID" });
-      }
-      
-      const user = await storage.getUser(userId);
-      if (!user) {
-        return res.status(404).json({ message: "User not found" });
-      }
-      
-      currentUserId = userId;
-      res.json({ message: "User switched successfully", user });
-    } catch (error) {
-      console.error("Switch user error:", error);
-      res.status(500).json({ message: "Failed to switch user" });
-    }
+    return res.status(403).json({ 
+      message: "User switching disabled for security",
+      error: "This endpoint violated user isolation principles"
+    });
   });
 
   // Get current user (fallback for existing functionality)

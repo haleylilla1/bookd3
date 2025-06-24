@@ -18,65 +18,21 @@ export default function SimpleUserManager({ currentUser, onUserChange }: SimpleU
   const { toast } = useToast();
 
   const handleCreateUser = async () => {
-    try {
-      const response = await fetch("/api/create-user", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: newUserName || "New User",
-          email: `${newUserName.toLowerCase().replace(/\s+/g, '')}@example.com`
-        })
-      });
-      
-      if (response.ok) {
-        const data = await response.json();
-        toast({
-          title: "Account Created",
-          description: `Welcome ${data.user.name}! You can now start tracking your gigs.`
-        });
-        
-        setNewUserName("");
-        setIsOpen(false);
-        onUserChange();
-      } else {
-        throw new Error("Failed to create user");
-      }
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to create new account",
-        variant: "destructive"
-      });
-    }
+    // SECURITY: User creation disabled - must use proper authentication
+    toast({
+      title: "Security Notice",
+      description: "Account creation must go through proper authentication. Please use the login/register flow.",
+      variant: "destructive"
+    });
   };
 
   const handleSwitchToUser = async (userId: number) => {
-    try {
-      const response = await fetch("/api/switch-user", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId })
-      });
-      
-      if (response.ok) {
-        const data = await response.json();
-        toast({
-          title: "Switched Account",
-          description: `Now viewing ${data.user.name}'s data`
-        });
-        
-        setIsOpen(false);
-        onUserChange();
-      } else {
-        throw new Error("Failed to switch user");
-      }
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to switch account",
-        variant: "destructive"
-      });
-    }
+    // SECURITY: User switching disabled to maintain proper authentication
+    toast({
+      title: "Security Notice",
+      description: "User switching has been disabled. Please log out and log in with the desired account.",
+      variant: "destructive"
+    });
   };
 
   return (
