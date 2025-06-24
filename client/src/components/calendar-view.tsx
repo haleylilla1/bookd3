@@ -738,7 +738,7 @@ function GigEditForm({ gig, onSave, onCancel, isLoading }: GigEditFormProps) {
     tips: gig.tips || "",
     status: gig.status,
     duties: gig.duties || "",
-    gigAddress: gig.gigAddress || "",
+
     mileage: gig.mileage || 0,
     parkingExpense: gig.parkingExpense || "",
     parkingReceipts: (gig as any).parkingReceipts || [],
@@ -749,15 +749,12 @@ function GigEditForm({ gig, onSave, onCancel, isLoading }: GigEditFormProps) {
   const [isCalculatingMileage, setIsCalculatingMileage] = useState(false);
 
   const calculateMileage = async () => {
-    const homeAddress = (user as any)?.homeAddress;
-    if (!homeAddress || !formData.gigAddress) {
-      toast({
-        title: "Missing Information",
-        description: "Home address and gig address are required.",
-        variant: "destructive",
-      });
-      return;
-    }
+    // Mileage calculation now handled in dedicated mileage tracking section
+    toast({
+      title: "Mileage Tracking",
+      description: "Use the enhanced mileage tracking section to calculate distances with starting/ending addresses.",
+    });
+    return;
 
     setIsCalculatingMileage(true);
     try {
