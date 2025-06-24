@@ -78,14 +78,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.put("/api/user", async (req, res) => {
     try {
       const userId = getCurrentUserId(req);
-      const { name, email, homeAddress, defaultTaxPercentage } = req.body;
+      const { 
+        name, 
+        email, 
+        homeAddress, 
+        defaultTaxPercentage, 
+        customGigTypes,
+        businessName,
+        businessAddress,
+        businessPhone,
+        businessEmail
+      } = req.body;
       
-      const updatedUser = await storage.updateUser(userId, {
-        name,
-        email,
-        homeAddress,
-        defaultTaxPercentage,
-      });
+      const updateData: any = {};
+      if (name !== undefined) updateData.name = name;
+      if (email !== undefined) updateData.email = email;
+      if (homeAddress !== undefined) updateData.homeAddress = homeAddress;
+      if (defaultTaxPercentage !== undefined) updateData.defaultTaxPercentage = defaultTaxPercentage;
+      if (customGigTypes !== undefined) updateData.customGigTypes = customGigTypes;
+      if (businessName !== undefined) updateData.businessName = businessName;
+      if (businessAddress !== undefined) updateData.businessAddress = businessAddress;
+      if (businessPhone !== undefined) updateData.businessPhone = businessPhone;
+      if (businessEmail !== undefined) updateData.businessEmail = businessEmail;
+      
+      const updatedUser = await storage.updateUser(userId, updateData);
       
       if (!updatedUser) {
         return res.status(404).json({ message: "User not found" });
