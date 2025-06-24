@@ -666,10 +666,10 @@ export default function GigForm({ onClose }: GigFormProps) {
               <div className="bg-gray-50 rounded-lg p-4">
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-sm font-medium text-gray-700">
-                    Estimated Tax ({taxPercentage}%)
+                    Estimated Tax ({form.watch("taxPercentage")}%)
                   </span>
                   <span className="text-sm font-semibold text-gray-900">
-                    ${taxEstimate}
+                    ${taxCalculation}
                   </span>
                 </div>
                 <FormField
