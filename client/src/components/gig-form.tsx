@@ -223,32 +223,7 @@ export default function GigForm({ onClose }: GigFormProps) {
     },
   });
 
-  const originalCreateGigMutation = useMutation({
-    mutationFn: async (data: InsertGig) => {
-      const sanitizedData = sanitizeNumericFields(data);
-      const response = await apiRequest("POST", "/api/gigs", sanitizedData);
-      return response.json();
-    },
-    onSuccess: () => {
-      // Batch invalidate queries for better performance
-      queryClient.invalidateQueries({ queryKey: ["/api/gigs"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/dashboard/stats"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/goals"] });
-      toast({
-        title: "Success",
-        description: "Gig saved successfully!",
-      });
-      onClose();
-    },
-    onError: (error) => {
-      console.error("Failed to create gig:", error);
-      toast({
-        title: "Error",
-        description: "Failed to save gig. Please try again.",
-        variant: "destructive",
-      });
-    },
-  });
+  // Removed redundant mutation - using simplified createGigMutation
 
 
 
