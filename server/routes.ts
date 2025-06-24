@@ -755,6 +755,9 @@ Be VERY generous in extracting gigs:
   app.get("/api/dashboard/stats", async (req, res) => {
     try {
       const userId = getCurrentUserId(req);
+      if (!userId || userId <= 0) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
       const gigs = await storage.getGigsByUser(userId);
       
       const monthlyEarnings = gigs
@@ -800,9 +803,15 @@ Be VERY generous in extracting gigs:
   app.get("/api/invoices", async (req, res) => {
     try {
       const userId = getCurrentUserId(req);
+      if (!userId || userId <= 0) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
       const invoices = await storage.getInvoicesByUser(userId);
       res.json(invoices);
     } catch (error) {
+      if (error instanceof Error && error.message === 'User not authenticated') {
+        return res.status(401).json({ message: "Authentication required" });
+      }
       console.error("Get invoices error:", error);
       res.status(500).json({ message: "Failed to fetch invoices" });
     }
@@ -811,6 +820,9 @@ Be VERY generous in extracting gigs:
   app.post("/api/invoices", async (req, res) => {
     try {
       const userId = getCurrentUserId(req);
+      if (!userId || userId <= 0) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
       const invoiceData = insertInvoiceSchema.parse({ ...req.body, userId });
       const invoice = await storage.createInvoice(invoiceData);
       res.json(invoice);
@@ -859,9 +871,15 @@ Be VERY generous in extracting gigs:
   app.get("/api/expenses", async (req, res) => {
     try {
       const userId = getCurrentUserId(req);
+      if (!userId || userId <= 0) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
       const expenses = await storage.getExpensesByUser(userId);
       res.json(expenses);
     } catch (error) {
+      if (error instanceof Error && error.message === 'User not authenticated') {
+        return res.status(401).json({ message: "Authentication required" });
+      }
       console.error("Get expenses error:", error);
       res.status(500).json({ message: "Failed to fetch expenses" });
     }
@@ -870,6 +888,9 @@ Be VERY generous in extracting gigs:
   app.get("/api/expenses/date-range", async (req, res) => {
     try {
       const userId = getCurrentUserId(req);
+      if (!userId || userId <= 0) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
       const { startDate, endDate } = req.query;
       if (!startDate || !endDate) {
         return res.status(400).json({ message: "Start date and end date are required" });
@@ -878,6 +899,9 @@ Be VERY generous in extracting gigs:
       const expenses = await storage.getExpensesByDateRange(userId, startDate as string, endDate as string);
       res.json(expenses);
     } catch (error) {
+      if (error instanceof Error && error.message === 'User not authenticated') {
+        return res.status(401).json({ message: "Authentication required" });
+      }
       console.error("Get expenses by date range error:", error);
       res.status(500).json({ message: "Failed to fetch expenses by date range" });
     }
@@ -886,6 +910,9 @@ Be VERY generous in extracting gigs:
   app.post("/api/expenses", async (req, res) => {
     try {
       const userId = getCurrentUserId(req);
+      if (!userId || userId <= 0) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
       const expenseData = insertExpenseSchema.parse({ ...req.body, userId });
       const expense = await storage.createExpense(expenseData);
       res.json(expense);
@@ -934,9 +961,15 @@ Be VERY generous in extracting gigs:
   app.get("/api/budgets", async (req, res) => {
     try {
       const userId = getCurrentUserId(req);
+      if (!userId || userId <= 0) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
       const budgets = await storage.getBudgetsByUser(userId);
       res.json(budgets);
     } catch (error) {
+      if (error instanceof Error && error.message === 'User not authenticated') {
+        return res.status(401).json({ message: "Authentication required" });
+      }
       console.error("Get budgets error:", error);
       res.status(500).json({ message: "Failed to fetch budgets" });
     }
@@ -945,12 +978,18 @@ Be VERY generous in extracting gigs:
   app.get("/api/budgets/month/:month/:year", async (req, res) => {
     try {
       const userId = getCurrentUserId(req);
+      if (!userId || userId <= 0) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
       const month = parseInt(req.params.month);
       const year = parseInt(req.params.year);
       
       const budgets = await storage.getBudgetsByMonth(userId, month, year);
       res.json(budgets);
     } catch (error) {
+      if (error instanceof Error && error.message === 'User not authenticated') {
+        return res.status(401).json({ message: "Authentication required" });
+      }
       console.error("Get budgets by month error:", error);
       res.status(500).json({ message: "Failed to fetch budgets by month" });
     }
@@ -959,6 +998,9 @@ Be VERY generous in extracting gigs:
   app.post("/api/budgets", async (req, res) => {
     try {
       const userId = getCurrentUserId(req);
+      if (!userId || userId <= 0) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
       const budgetData = insertBudgetSchema.parse({ ...req.body, userId });
       const budget = await storage.createBudget(budgetData);
       res.json(budget);
