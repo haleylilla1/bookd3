@@ -94,30 +94,7 @@ function generateDateRange(startDate: string, endDate?: string): string[] {
   return dates;
 }
 
-// Helper function to sanitize numeric fields
-const sanitizeNumericFields = (data: Partial<InsertGig>) => ({
-  ...data,
-  expectedPay: data.expectedPay === "" ? null : data.expectedPay,
-  actualPay: data.actualPay === "" ? null : data.actualPay,
-  tips: data.tips === "" ? null : data.tips,
-  mileage: data.mileage === "" || data.mileage === "0" ? null : data.mileage,
-  taxPercentage: data.taxPercentage === "" ? null : data.taxPercentage,
-  parkingExpense: data.parkingExpense === "" ? null : data.parkingExpense,
-  otherExpenses: data.otherExpenses === "" ? null : data.otherExpenses,
-});
 
-// Helper function to generate date range
-const generateDateRange = (startDate: string, endDate?: string) => {
-  const start = new Date(startDate);
-  const end = endDate ? new Date(endDate) : start;
-  const dates: string[] = [];
-  
-  for (let date = new Date(start); date <= end; date.setDate(date.getDate() + 1)) {
-    dates.push(date.toISOString().split('T')[0]);
-  }
-  
-  return dates;
-};
 
 interface GigFormProps {
   onClose: () => void;
