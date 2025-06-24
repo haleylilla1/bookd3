@@ -1074,7 +1074,19 @@ Be VERY generous in extracting gigs:
 
   app.put("/api/expenses/:id", async (req, res) => {
     try {
+      const userId = getCurrentUserId(req);
+      if (!userId || userId <= 0) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+      
       const id = parseInt(req.params.id);
+      
+      // Verify the expense belongs to the authenticated user
+      const existingExpense = await storage.getExpense(id);
+      if (!existingExpense || existingExpense.userId !== userId) {
+        return res.status(404).json({ message: "Expense not found" });
+      }
+      
       const expenseData = insertExpenseSchema.partial().parse(req.body);
       const expense = await storage.updateExpense(id, expenseData);
       if (!expense) {
@@ -1085,6 +1097,9 @@ Be VERY generous in extracting gigs:
       if (error instanceof z.ZodError) {
         return res.status(400).json({ message: "Invalid expense data", errors: error.errors });
       }
+      if (error instanceof Error && error.message === 'User not authenticated') {
+        return res.status(401).json({ message: "Authentication required" });
+      }
       console.error("Update expense error:", error);
       res.status(500).json({ message: "Failed to update expense" });
     }
@@ -1092,13 +1107,28 @@ Be VERY generous in extracting gigs:
 
   app.delete("/api/expenses/:id", async (req, res) => {
     try {
+      const userId = getCurrentUserId(req);
+      if (!userId || userId <= 0) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+      
       const id = parseInt(req.params.id);
+      
+      // Verify the expense belongs to the authenticated user
+      const existingExpense = await storage.getExpense(id);
+      if (!existingExpense || existingExpense.userId !== userId) {
+        return res.status(404).json({ message: "Expense not found" });
+      }
+      
       const success = await storage.deleteExpense(id);
       if (!success) {
         return res.status(404).json({ message: "Expense not found" });
       }
       res.json({ message: "Expense deleted successfully" });
     } catch (error) {
+      if (error instanceof Error && error.message === 'User not authenticated') {
+        return res.status(401).json({ message: "Authentication required" });
+      }
       console.error("Delete expense error:", error);
       res.status(500).json({ message: "Failed to delete expense" });
     }
@@ -1162,7 +1192,19 @@ Be VERY generous in extracting gigs:
 
   app.put("/api/budgets/:id", async (req, res) => {
     try {
+      const userId = getCurrentUserId(req);
+      if (!userId || userId <= 0) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+      
       const id = parseInt(req.params.id);
+      
+      // Verify the budget belongs to the authenticated user
+      const existingBudget = await storage.getBudget(id);
+      if (!existingBudget || existingBudget.userId !== userId) {
+        return res.status(404).json({ message: "Budget not found" });
+      }
+      
       const budgetData = insertBudgetSchema.partial().parse(req.body);
       const budget = await storage.updateBudget(id, budgetData);
       if (!budget) {
@@ -1173,6 +1215,9 @@ Be VERY generous in extracting gigs:
       if (error instanceof z.ZodError) {
         return res.status(400).json({ message: "Invalid budget data", errors: error.errors });
       }
+      if (error instanceof Error && error.message === 'User not authenticated') {
+        return res.status(401).json({ message: "Authentication required" });
+      }
       console.error("Update budget error:", error);
       res.status(500).json({ message: "Failed to update budget" });
     }
@@ -1180,13 +1225,28 @@ Be VERY generous in extracting gigs:
 
   app.delete("/api/budgets/:id", async (req, res) => {
     try {
+      const userId = getCurrentUserId(req);
+      if (!userId || userId <= 0) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+      
       const id = parseInt(req.params.id);
+      
+      // Verify the budget belongs to the authenticated user
+      const existingBudget = await storage.getBudget(id);
+      if (!existingBudget || existingBudget.userId !== userId) {
+        return res.status(404).json({ message: "Budget not found" });
+      }
+      
       const success = await storage.deleteBudget(id);
       if (!success) {
         return res.status(404).json({ message: "Budget not found" });
       }
       res.json({ message: "Budget deleted successfully" });
     } catch (error) {
+      if (error instanceof Error && error.message === 'User not authenticated') {
+        return res.status(401).json({ message: "Authentication required" });
+      }
       console.error("Delete budget error:", error);
       res.status(500).json({ message: "Failed to delete budget" });
     }
@@ -1357,6 +1417,9 @@ Be VERY generous in extracting gigs:
   // Admin support endpoints for user troubleshooting
   app.get('/api/admin/lookup/:email', async (req, res) => {
     try {
+      // SECURITY: Admin-only user lookup - block unauthorized access
+      return res.status(403).json({ error: 'Admin authentication required' });
+      
       const email = req.params.email;
       const user = await storage.getUserByEmail(email);
       
