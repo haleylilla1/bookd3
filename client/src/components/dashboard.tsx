@@ -315,12 +315,46 @@ export default function Dashboard() {
       .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
   };
 
-  // Calculate earnings based on selected period
+  // Calculate earnings based on selected period - fixed for multi-day gigs
   const getEarningsForPeriod = () => {
     if (!gigs) return { earnings: 0, gigs: 0, avgPerGig: 0, period: "" };
     
-    // Filter gigs to current period
-    const currentPeriodGigs = (gigs as any[]).filter(gig => {
+    // Group gigs by event name, client name, and consecutive dates to identify multi-day gigs
+    const groupedGigs = new Map();
+    (gigs as any[]).forEach(gig => {
+      const key = `${gig.eventName}-${gig.clientName}-${gig.gigType}`;
+      if (!groupedGigs.has(key)) {
+        groupedGigs.set(key, []);
+      }
+      groupedGigs.get(key).push(gig);
+    });
+
+    // Process groups to reconstruct original amounts for multi-day gigs
+    const processedGigs = [];
+    groupedGigs.forEach(gigGroup => {
+      if (gigGroup.length === 1) {
+        // Single day gig - use as is
+        processedGigs.push(gigGroup[0]);
+      } else {
+        // Multi-day gig - sum amounts and use first gig as representative
+        const sortedGroup = gigGroup.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+        const totalActualPay = sortedGroup.reduce((sum, gig) => sum + parseFloat(gig.actualPay || "0"), 0);
+        const totalExpectedPay = sortedGroup.reduce((sum, gig) => sum + parseFloat(gig.expectedPay || "0"), 0);
+        const totalTips = sortedGroup.reduce((sum, gig) => sum + parseFloat(gig.tips || "0"), 0);
+        
+        processedGigs.push({
+          ...sortedGroup[0],
+          actualPay: totalActualPay.toString(),
+          expectedPay: totalExpectedPay.toString(),
+          tips: totalTips.toString(),
+          isMultiDay: true,
+          dayCount: sortedGroup.length
+        });
+      }
+    });
+    
+    // Filter processed gigs to current period
+    const currentPeriodGigs = processedGigs.filter(gig => {
       const gigDate = new Date(gig.date);
       
       switch (selectedPeriod) {
@@ -368,12 +402,43 @@ export default function Dashboard() {
     }
   };
 
-  // Calculate projected earnings based on selected period (actual + expected, but NOT tips)
+  // Calculate projected earnings based on selected period - fixed for multi-day gigs
   const getProjectedEarningsForPeriod = () => {
     if (!gigs) return { projectedEarnings: 0, period: "" };
     
-    // Filter gigs to current period
-    const currentPeriodGigs = (gigs as any[]).filter(gig => {
+    // Use the same grouping logic as getEarningsForPeriod
+    const groupedGigs = new Map();
+    (gigs as any[]).forEach(gig => {
+      const key = `${gig.eventName}-${gig.clientName}-${gig.gigType}`;
+      if (!groupedGigs.has(key)) {
+        groupedGigs.set(key, []);
+      }
+      groupedGigs.get(key).push(gig);
+    });
+
+    const processedGigs = [];
+    groupedGigs.forEach(gigGroup => {
+      if (gigGroup.length === 1) {
+        processedGigs.push(gigGroup[0]);
+      } else {
+        const sortedGroup = gigGroup.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+        const totalActualPay = sortedGroup.reduce((sum, gig) => sum + parseFloat(gig.actualPay || "0"), 0);
+        const totalExpectedPay = sortedGroup.reduce((sum, gig) => sum + parseFloat(gig.expectedPay || "0"), 0);
+        const totalTips = sortedGroup.reduce((sum, gig) => sum + parseFloat(gig.tips || "0"), 0);
+        
+        processedGigs.push({
+          ...sortedGroup[0],
+          actualPay: totalActualPay.toString(),
+          expectedPay: totalExpectedPay.toString(),
+          tips: totalTips.toString(),
+          isMultiDay: true,
+          dayCount: sortedGroup.length
+        });
+      }
+    });
+    
+    // Filter processed gigs to current period
+    const currentPeriodGigs = processedGigs.filter(gig => {
       const gigDate = new Date(gig.date);
       
       switch (selectedPeriod) {

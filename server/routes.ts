@@ -893,7 +893,7 @@ Be VERY generous in extracting gigs:
     }
   });
 
-  // Dashboard stats
+  // Dashboard stats - fixed for multi-day gigs
   app.get("/api/dashboard/stats", async (req, res) => {
     try {
       const userId = getCurrentUserId(req);
@@ -902,9 +902,43 @@ Be VERY generous in extracting gigs:
       }
       const gigs = await storage.getGigsByUser(userId);
       
+      // Group gigs by event name, client name, and consecutive dates to identify multi-day gigs
+      const groupedGigs = new Map();
+      gigs.forEach(gig => {
+        const key = `${gig.eventName}-${gig.clientName}-${gig.gigType}`;
+        if (!groupedGigs.has(key)) {
+          groupedGigs.set(key, []);
+        }
+        groupedGigs.get(key).push(gig);
+      });
+
+      // Process groups to reconstruct original amounts for multi-day gigs
+      const processedGigs = [];
+      groupedGigs.forEach(gigGroup => {
+        if (gigGroup.length === 1) {
+          // Single day gig - use as is
+          processedGigs.push(gigGroup[0]);
+        } else {
+          // Multi-day gig - sum amounts and use first gig as representative
+          const sortedGroup = gigGroup.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+          const totalActualPay = sortedGroup.reduce((sum, gig) => sum + parseFloat(String(gig.actualPay || "0")), 0);
+          const totalExpectedPay = sortedGroup.reduce((sum, gig) => sum + parseFloat(String(gig.expectedPay || "0")), 0);
+          const totalTips = sortedGroup.reduce((sum, gig) => sum + parseFloat(String(gig.tips || "0")), 0);
+          
+          processedGigs.push({
+            ...sortedGroup[0],
+            actualPay: totalActualPay.toString(),
+            expectedPay: totalExpectedPay.toString(),
+            tips: totalTips.toString(),
+            isMultiDay: true,
+            dayCount: sortedGroup.length
+          });
+        }
+      });
+      
       // Separate completed vs upcoming/pending gigs
-      const completedGigs = gigs.filter(gig => gig.status === "completed");
-      const upcomingGigs = gigs.filter(gig => gig.status === "upcoming" || gig.status === "pending_payment");
+      const completedGigs = processedGigs.filter(gig => gig.status === "completed");
+      const upcomingGigs = processedGigs.filter(gig => gig.status === "upcoming" || gig.status === "pending_payment");
       
       // Calculate actual monthly earnings from completed gigs only
       const monthlyEarnings = completedGigs
@@ -937,7 +971,7 @@ Be VERY generous in extracting gigs:
         return sum + (isNaN(pay) ? 0 : pay) + (isNaN(tips) ? 0 : tips);
       }, 0);
       
-      const totalGigs = gigs.length;
+      const totalGigs = processedGigs.length; // Count unique gigs, not days
       const completedGigsCount = completedGigs.length;
       const upcomingGigsCount = upcomingGigs.length;
       
