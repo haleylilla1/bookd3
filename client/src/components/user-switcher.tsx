@@ -20,33 +20,12 @@ export default function UserSwitcher({ currentUser, onUserChange }: UserSwitcher
   const { toast } = useToast();
 
   const handleCreateUser = async () => {
-    try {
-      const response = await fetch("/api/create-user", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: newUserName,
-          email: newUserEmail
-        })
-      });
-      const data = await response.json();
-      
-      toast({
-        title: "User Created",
-        description: `Welcome ${data.user.name}! You can now start tracking your gigs.`
-      });
-      
-      setNewUserName("");
-      setNewUserEmail("");
-      setIsOpen(false);
-      onUserChange();
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to create new user",
-        variant: "destructive"
-      });
-    }
+    // SECURITY: User creation disabled - must use proper authentication
+    toast({
+      title: "Security Notice", 
+      description: "Account creation must go through proper authentication. Please use the login/register flow.",
+      variant: "destructive"
+    });
   };
 
   const handleSwitchUser = async () => {
