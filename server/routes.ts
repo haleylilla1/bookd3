@@ -138,9 +138,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/gigs", async (req, res) => {
     try {
       const userId = getCurrentUserId(req);
+      
+      if (!userId || userId <= 0) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+      
       const gigs = await storage.getGigsByUser(userId);
       res.json(gigs);
     } catch (error) {
+      if (error instanceof Error && error.message === 'User not authenticated') {
+        return res.status(401).json({ message: "Authentication required" });
+      }
       console.error("Get gigs error:", error);
       res.status(500).json({ message: "Failed to fetch gigs" });
     }
@@ -363,6 +371,11 @@ Be VERY generous in extracting gigs:
   app.post("/api/gigs/bulk-import", async (req, res) => {
     try {
       const userId = getCurrentUserId(req);
+      
+      if (!userId || userId <= 0) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+      
       const { gigs } = req.body;
 
       if (!Array.isArray(gigs)) {
@@ -423,6 +436,9 @@ Be VERY generous in extracting gigs:
         errors,
       });
     } catch (error) {
+      if (error instanceof Error && error.message === 'User not authenticated') {
+        return res.status(401).json({ message: "Authentication required" });
+      }
       console.error("Bulk import error:", error);
       res.status(500).json({ error: "Failed to import gigs" });
     }
@@ -488,9 +504,15 @@ Be VERY generous in extracting gigs:
   app.get("/api/goals", async (req, res) => {
     try {
       const userId = getCurrentUserId(req);
+      if (!userId || userId <= 0) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
       const goals = await storage.getGoalsByUser(userId);
       res.json(goals);
     } catch (error) {
+      if (error instanceof Error && error.message === 'User not authenticated') {
+        return res.status(401).json({ message: "Authentication required" });
+      }
       console.error("Get goals error:", error);
       res.status(500).json({ message: "Failed to fetch goals" });
     }
@@ -499,6 +521,9 @@ Be VERY generous in extracting gigs:
   app.post("/api/goals", async (req, res) => {
     try {
       const userId = getCurrentUserId(req);
+      if (!userId || userId <= 0) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
       const goalData = insertGoalSchema.parse({ ...req.body, userId });
       const goal = await storage.createGoal(goalData);
       res.json(goal);
@@ -547,9 +572,15 @@ Be VERY generous in extracting gigs:
   app.get("/api/allocations", async (req, res) => {
     try {
       const userId = getCurrentUserId(req);
+      if (!userId || userId <= 0) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
       const allocations = await storage.getAllocationsByUser(userId);
       res.json(allocations);
     } catch (error) {
+      if (error instanceof Error && error.message === 'User not authenticated') {
+        return res.status(401).json({ message: "Authentication required" });
+      }
       console.error("Get allocations error:", error);
       res.status(500).json({ message: "Failed to fetch allocations" });
     }
@@ -580,6 +611,9 @@ Be VERY generous in extracting gigs:
   app.post("/api/allocations", async (req, res) => {
     try {
       const userId = getCurrentUserId(req);
+      if (!userId || userId <= 0) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
       const allocationData = insertAllocationSchema.parse({ ...req.body, userId });
       const allocation = await storage.createAllocation(allocationData);
       res.json(allocation);
