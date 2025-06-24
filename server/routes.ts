@@ -863,7 +863,12 @@ Be VERY generous in extracting gigs:
       }
       const gigs = await storage.getGigsByUser(userId);
       
-      const monthlyEarnings = gigs
+      // Separate completed vs upcoming/pending gigs
+      const completedGigs = gigs.filter(gig => gig.status === "completed");
+      const upcomingGigs = gigs.filter(gig => gig.status === "upcoming" || gig.status === "pending_payment");
+      
+      // Calculate actual monthly earnings from completed gigs only
+      const monthlyEarnings = completedGigs
         .filter(gig => {
           const gigDate = new Date(gig.date);
           const now = new Date();
@@ -871,29 +876,42 @@ Be VERY generous in extracting gigs:
                  gigDate.getFullYear() === now.getFullYear();
         })
         .reduce((sum, gig) => {
-          const pay = parseFloat(String(gig.actualPay || gig.expectedPay || "0"));
+          const pay = parseFloat(String(gig.actualPay || "0"));
           return sum + (isNaN(pay) ? 0 : pay);
         }, 0);
 
-      const totalTips = gigs.reduce((sum, gig) => {
+      // Calculate projected earnings from upcoming/pending gigs
+      const projectedEarnings = upcomingGigs.reduce((sum, gig) => {
+        const expectedPay = parseFloat(String(gig.expectedPay || "0"));
+        return sum + (isNaN(expectedPay) ? 0 : expectedPay);
+      }, 0);
+
+      const totalTips = completedGigs.reduce((sum, gig) => {
         const tips = parseFloat(String(gig.tips || "0"));
         return sum + (isNaN(tips) ? 0 : tips);
       }, 0);
       
-      const totalEarnings = gigs.reduce((sum, gig) => {
-        const pay = parseFloat(String(gig.actualPay || gig.expectedPay || "0"));
+      // Total earnings from completed gigs only
+      const totalEarnings = completedGigs.reduce((sum, gig) => {
+        const pay = parseFloat(String(gig.actualPay || "0"));
         const tips = parseFloat(String(gig.tips || "0"));
         return sum + (isNaN(pay) ? 0 : pay) + (isNaN(tips) ? 0 : tips);
       }, 0);
-      const totalGigs = gigs.length;
       
-      const averageEarningsPerGig = totalGigs > 0 ? totalEarnings / totalGigs : 0;
+      const totalGigs = gigs.length;
+      const completedGigsCount = completedGigs.length;
+      const upcomingGigsCount = upcomingGigs.length;
+      
+      const averageEarningsPerGig = completedGigsCount > 0 ? totalEarnings / completedGigsCount : 0;
 
       res.json({
         monthlyEarnings,
         totalTips,
         totalEarnings,
         totalGigs,
+        completedGigs: completedGigsCount,
+        upcomingGigs: upcomingGigsCount,
+        projectedEarnings,
         averageEarningsPerGig
       });
     } catch (error) {

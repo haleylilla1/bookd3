@@ -401,7 +401,7 @@ export default function Dashboard() {
     
     // Calculate expected earnings (upcoming/pending gigs)
     const expectedEarnings = currentPeriodGigs
-      .filter(gig => gig.status === "upcoming" || gig.status === "pending" || gig.status === "confirmed")
+      .filter(gig => gig.status === "upcoming" || gig.status === "pending_payment")
       .reduce((sum, gig) => sum + parseFloat(gig.expectedPay || "0"), 0);
     
     const actualWithoutTips = actualEarnings - actualTips;
