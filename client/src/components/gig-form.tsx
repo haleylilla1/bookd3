@@ -25,7 +25,6 @@ const gigFormSchema = z.object({
   clientName: z.string().min(1, "Client name is required"),
   startDate: z.string().min(1, "Start date is required"),
   endDate: z.string().optional(),
-  gigAddress: z.string().optional(),
   expectedPay: z.string().optional(),
   actualPay: z.string().optional(),
   tips: z.string().optional(),
@@ -72,7 +71,6 @@ export default function GigForm({ onClose }: GigFormProps) {
       clientName: "",
       startDate: new Date().toISOString().split('T')[0],
       endDate: "",
-      gigAddress: "",
       expectedPay: "",
       actualPay: "",
       paymentMethod: "",
@@ -128,49 +126,7 @@ export default function GigForm({ onClose }: GigFormProps) {
     },
   });
 
-  const handleCalculateDistance = async () => {
-    const gigAddress = form.getValues("gigAddress");
-    const homeAddress = user?.homeAddress;
 
-    if (!gigAddress || !homeAddress) {
-      toast({
-        title: "Missing Address",
-        description: "Both home address and gig address are needed for distance calculation.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    setIsCalculatingDistance(true);
-    
-    try {
-      const result = await calculateDistance(homeAddress, gigAddress);
-      
-      if (result.status === 'success') {
-        // Auto-populate mileage field with calculated distance
-        form.setValue("mileage", Math.round(result.distanceMiles * 2).toString()); // Round trip
-        
-        toast({
-          title: "Distance Calculated",
-          description: `${result.distanceMiles} miles (${result.travelTimeMinutes} min travel time). Round trip mileage has been set.`,
-        });
-      } else {
-        toast({
-          title: "Distance Calculation Failed",
-          description: result.error || "Could not calculate distance.",
-          variant: "destructive",
-        });
-      }
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to calculate distance. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsCalculatingDistance(false);
-    }
-  };
 
   const handleCalculateMileage = async () => {
     const startingAddress = form.getValues("startingAddress");
@@ -238,17 +194,6 @@ export default function GigForm({ onClose }: GigFormProps) {
   };
 
   const onSubmit = async (data: GigFormData) => {
-    let distanceMiles = null;
-    let travelTimeMinutes = null;
-
-    // Calculate distance if both addresses are available
-    if (data.gigAddress && user?.homeAddress) {
-      const result = await calculateDistance(user.homeAddress, data.gigAddress);
-      if (result.status === 'success') {
-        distanceMiles = result.distanceMiles.toString();
-        travelTimeMinutes = result.travelTimeMinutes;
-      }
-    }
 
     // Generate array of dates for the gig
     const startDate = new Date(data.startDate);
@@ -280,9 +225,6 @@ export default function GigForm({ onClose }: GigFormProps) {
         eventName: data.eventName,
         clientName: data.clientName,
         date: gigDate,
-        gigAddress: data.gigAddress || null,
-        distanceMiles,
-        travelTimeMinutes,
         expectedPay: dailyExpectedPay,
         actualPay: dailyActualPay,
         tips: dailyTips,
@@ -453,32 +395,7 @@ export default function GigForm({ onClose }: GigFormProps) {
                 />
               </div>
 
-              {/* Gig Address */}
-              <FormField
-                control={form.control}
-                name="gigAddress"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Gig Address</FormLabel>
-                    <FormControl>
-                      <Input placeholder="e.g. 123 Main St, City, State 12345" {...field} />
-                    </FormControl>
-                    {user?.homeAddress && field.value && (
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={handleCalculateDistance}
-                        disabled={isCalculatingDistance}
-                        className="mt-2"
-                      >
-                        {isCalculatingDistance ? "Calculating..." : "Calculate Distance"}
-                      </Button>
-                    )}
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+
 
               {/* Payment Information */}
               <div className="grid grid-cols-2 gap-3">
