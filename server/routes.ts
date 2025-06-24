@@ -13,7 +13,7 @@ import {
 } from "@shared/schema";
 import { z } from "zod";
 import { requireAuth } from "./auth";
-import { isAuthenticated } from "./replitAuth";
+// Removed conflicting import - using unified auth system
 import { db } from "./db";
 import { count, gte } from "drizzle-orm";
 import { users } from "@shared/schema";
