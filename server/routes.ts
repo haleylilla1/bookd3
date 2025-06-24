@@ -440,7 +440,20 @@ Be VERY generous in extracting gigs:
       }
       
       const gigData = insertGigSchema.parse({ ...req.body, userId });
-      const gig = await storage.createGig(gigData);
+      
+      // Sanitize numeric fields - convert empty strings to null
+      const sanitizedData = {
+        ...gigData,
+        expectedPay: gigData.expectedPay === "" ? null : gigData.expectedPay,
+        actualPay: gigData.actualPay === "" ? null : gigData.actualPay,
+        tips: gigData.tips === "" ? null : gigData.tips,
+        mileage: gigData.mileage === "" ? null : gigData.mileage,
+        taxPercentage: gigData.taxPercentage === "" ? null : gigData.taxPercentage,
+        parkingExpense: gigData.parkingExpense === "" ? null : gigData.parkingExpense,
+        otherExpenses: gigData.otherExpenses === "" ? null : gigData.otherExpenses
+      };
+      
+      const gig = await storage.createGig(sanitizedData);
       res.json(gig);
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -470,7 +483,20 @@ Be VERY generous in extracting gigs:
       }
       
       const gigData = insertGigSchema.partial().parse(req.body);
-      const gig = await storage.updateGig(id, gigData);
+      
+      // Sanitize numeric fields - convert empty strings to null
+      const sanitizedData = {
+        ...gigData,
+        expectedPay: gigData.expectedPay === "" ? null : gigData.expectedPay,
+        actualPay: gigData.actualPay === "" ? null : gigData.actualPay,
+        tips: gigData.tips === "" ? null : gigData.tips,
+        mileage: gigData.mileage === "" ? null : gigData.mileage,
+        taxPercentage: gigData.taxPercentage === "" ? null : gigData.taxPercentage,
+        parkingExpense: gigData.parkingExpense === "" ? null : gigData.parkingExpense,
+        otherExpenses: gigData.otherExpenses === "" ? null : gigData.otherExpenses
+      };
+      
+      const gig = await storage.updateGig(id, sanitizedData);
       if (!gig) {
         return res.status(404).json({ message: "Gig not found" });
       }
