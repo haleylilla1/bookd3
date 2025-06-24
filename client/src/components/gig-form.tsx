@@ -161,10 +161,7 @@ export default function GigForm({ onClose }: GigFormProps) {
 
 
   const handleCalculateMileage = async () => {
-    const startingAddress = form.getValues("startingAddress");
-    const endingAddress = form.getValues("endingAddress");
-    const stops = form.getValues("stops").filter(stop => stop.trim());
-    const includeRoundtrip = form.getValues("includeRoundtrip");
+    const filteredStops = stops.filter(stop => stop.trim());
 
     if (!startingAddress || !endingAddress) {
       toast({
@@ -182,7 +179,7 @@ export default function GigForm({ onClose }: GigFormProps) {
       let totalTime = 0;
       
       // Create the complete route: start -> stops -> end
-      const waypoints = [startingAddress, ...stops, endingAddress];
+      const waypoints = [startingAddress, ...filteredStops, endingAddress];
       
       // Calculate distance between each consecutive pair of waypoints
       for (let i = 0; i < waypoints.length - 1; i++) {
@@ -296,12 +293,21 @@ export default function GigForm({ onClose }: GigFormProps) {
     }
   };
 
-  // Memoize tax calculation to prevent unnecessary re-renders
+  // Watch form values efficiently
+  const taxPercentage = form.watch("taxPercentage");
+  const expectedPay = form.watch("expectedPay");
+  const stops = form.watch("stops");
+  const calculatedMileage = form.watch("calculatedMileage");
+  const includeRoundtrip = form.watch("includeRoundtrip");
+  const startingAddress = form.watch("startingAddress");
+  const endingAddress = form.watch("endingAddress");
+  const startDate = form.watch("startDate");
+  const endDate = form.watch("endDate");
+  
+  // Memoize tax calculation properly
   const taxCalculation = useMemo(() => {
-    const taxPercentage = form.watch("taxPercentage");
-    const expectedPay = form.watch("expectedPay");
     return expectedPay ? (parseFloat(expectedPay) * taxPercentage / 100).toFixed(2) : "0.00";
-  }, [form.watch("taxPercentage"), form.watch("expectedPay")]);
+  }, [expectedPay, taxPercentage]);
 
   return (
     <div className="p-4">
@@ -614,7 +620,7 @@ export default function GigForm({ onClose }: GigFormProps) {
                       />
                       <ReceiptUpload
                         label="Parking Receipts"
-                        receipts={form.watch("parkingReceipts")}
+                        receipts={form.getValues("parkingReceipts")}
                         onReceiptsChange={(receipts) => form.setValue("parkingReceipts", receipts)}
                       />
                     </div>
@@ -635,7 +641,7 @@ export default function GigForm({ onClose }: GigFormProps) {
                       />
                       <ReceiptUpload
                         label="Other Expense Receipts"
-                        receipts={form.watch("otherExpenseReceipts")}
+                        receipts={form.getValues("otherExpenseReceipts")}
                         onReceiptsChange={(receipts) => form.setValue("otherExpenseReceipts", receipts)}
                       />
                     </div>
@@ -666,7 +672,7 @@ export default function GigForm({ onClose }: GigFormProps) {
               <div className="bg-gray-50 rounded-lg p-4">
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-sm font-medium text-gray-700">
-                    Estimated Tax ({form.watch("taxPercentage")}%)
+                    Estimated Tax ({taxPercentage}%)
                   </span>
                   <span className="text-sm font-semibold text-gray-900">
                     ${taxCalculation}
@@ -744,14 +750,14 @@ export default function GigForm({ onClose }: GigFormProps) {
                     <div>
                       <Label className="text-sm font-medium">Additional Stops (Optional)</Label>
                       <div className="space-y-2 mt-2">
-                        {form.watch("stops").map((stop, index) => (
+                        {stops.map((stop, index) => (
                           <div key={index} className="flex gap-2">
                             <Input
                               value={stop}
                               onChange={(e) => {
-                                const stops = [...form.watch("stops")];
-                                stops[index] = e.target.value;
-                                form.setValue("stops", stops);
+                                const newStops = [...stops];
+                                newStops[index] = e.target.value;
+                                form.setValue("stops", newStops);
                               }}
                               placeholder={`Stop ${index + 1} address...`}
                               className="flex-1"
@@ -761,8 +767,8 @@ export default function GigForm({ onClose }: GigFormProps) {
                               variant="outline"
                               size="sm"
                               onClick={() => {
-                                const stops = form.watch("stops").filter((_, i) => i !== index);
-                                form.setValue("stops", stops);
+                                const newStops = stops.filter((_, i) => i !== index);
+                                form.setValue("stops", newStops);
                               }}
                             >
                               Remove
@@ -774,8 +780,8 @@ export default function GigForm({ onClose }: GigFormProps) {
                           variant="outline"
                           size="sm"
                           onClick={() => {
-                            const stops = [...form.watch("stops"), ""];
-                            form.setValue("stops", stops);
+                            const newStops = [...stops, ""];
+                            form.setValue("stops", newStops);
                           }}
                         >
                           Add Stop
@@ -812,7 +818,7 @@ export default function GigForm({ onClose }: GigFormProps) {
                       type="button"
                       variant="outline"
                       onClick={handleCalculateMileage}
-                      disabled={isCalculatingDistance || !form.watch("startingAddress") || !form.watch("endingAddress")}
+                      disabled={isCalculatingDistance || !startingAddress || !endingAddress}
                       className="w-full"
                     >
                       {isCalculatingDistance ? "Calculating..." : "Calculate Mileage"}
