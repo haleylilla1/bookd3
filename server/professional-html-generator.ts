@@ -39,7 +39,6 @@ export async function generateProfessionalHTML(options: ReportOptions): Promise<
   
   const parkingTotal = data.gigs.reduce((sum, g) => sum + parseFloat(g.parkingExpense || '0'), 0);
   const otherTotal = data.gigs.reduce((sum, g) => sum + parseFloat(g.otherExpenses || '0'), 0);
-  const quarterlyEstimate = data.estimatedTaxes / 4;
   
   return `
 <!DOCTYPE html>
