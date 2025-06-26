@@ -1,4 +1,3 @@
-import jsPDF from 'jspdf';
 import { storage } from './storage';
 
 export async function generateSimplePDF(
@@ -9,6 +8,10 @@ export async function generateSimplePDF(
 ): Promise<Buffer> {
   try {
     console.log('Starting simple PDF generation for user:', userId);
+    
+    // Import jsPDF with proper version 3.x handling - use require for compatibility
+    const jsPDFModule = require('jspdf');
+    const jsPDF = jsPDFModule.jsPDF;
     
     // Initialize PDF with standard settings
     const doc = new jsPDF();
