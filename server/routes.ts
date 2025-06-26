@@ -22,8 +22,8 @@ import { users } from "@shared/schema";
 export async function registerRoutes(app: Express): Promise<Server> {
   // UNIFIED REPLIT AUTHENTICATION SYSTEM
   
-  // Setup custom authentication system
-  const { setupAuth } = await import("./auth");
+  // Setup Replit authentication first
+  const { setupAuth } = await import("./replitAuth");
   await setupAuth(app);
   
   // Helper function to get current user ID from Replit Auth session
