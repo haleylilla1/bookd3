@@ -261,21 +261,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Test auth endpoint
+  app.get('/api/test-auth', requireAuth, async (req: any, res) => {
+    try {
+      const userId = getUserId(req);
+      console.log('Test auth - User ID:', userId);
+      res.json({ success: true, userId, authenticated: true });
+    } catch (error) {
+      console.error('Test auth error:', error);
+      res.status(500).json({ message: 'Auth test failed' });
+    }
+  });
+
   // PDF Report endpoints with user verification
   app.get('/api/reports/pdf', requireAuth, async (req: any, res) => {
     try {
+      console.log('PDF request received:', { 
+        query: req.query, 
+        cookies: req.cookies,
+        userId: req.userId 
+      });
+      
       const userId = getUserId(req);
-      if (!userId) {
-        return res.status(401).json({ message: "Authentication required" });
-      }
+      console.log('User ID retrieved:', userId);
       
       const { period, year, month } = req.query;
 
       if (!period || !year) {
+        console.log('Missing period or year');
         return res.status(400).json({ message: 'Period and year are required' });
       }
 
       if (period === 'monthly' && !month) {
+        console.log('Missing month for monthly report');
         return res.status(400).json({ message: 'Month is required for monthly reports' });
       }
 
@@ -295,9 +313,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.setHeader('Content-Type', 'application/pdf');
       res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
       res.send(pdfBuffer);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error generating PDF report:', error);
-      res.status(500).json({ message: 'Failed to generate PDF report' });
+      console.error('Error stack:', error?.stack);
+      
+      // Return more specific error information for debugging
+      if (error instanceof Error) {
+        res.status(500).json({ 
+          message: 'Failed to generate PDF report',
+          error: error.message,
+          stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+        });
+      } else {
+        res.status(500).json({ message: 'Unknown error generating PDF report' });
+      }
     }
   });
 
