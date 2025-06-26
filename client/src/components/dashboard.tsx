@@ -7,7 +7,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
-import { ChevronLeft, ChevronRight, Edit2, Save, X, DollarSign, Calendar, Users, TrendingUp, Receipt, Calculator, PiggyBank } from "lucide-react";
+import { ChevronLeft, ChevronRight, Edit2, Save, X, DollarSign, Calendar, Users, TrendingUp, Receipt, Calculator, PiggyBank, FileText, Download } from "lucide-react";
 import type { Gig, User } from "@shared/schema";
 
 type TimePeriod = "monthly" | "annual";
@@ -212,6 +212,55 @@ export default function Dashboard() {
     setGoalAmount(currentGoal?.goalAmount || "");
   };
 
+  const handleDownloadPDF = async () => {
+    try {
+      const year = currentDate.getFullYear();
+      const month = currentDate.getMonth() + 1;
+      
+      const params = new URLSearchParams({
+        period: selectedPeriod,
+        year: year.toString()
+      });
+      
+      if (selectedPeriod === 'monthly') {
+        params.append('month', month.toString());
+      }
+      
+      const response = await fetch(`/api/reports/pdf?${params.toString()}`, {
+        method: 'GET',
+        credentials: 'include'
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to generate PDF report');
+      }
+      
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = selectedPeriod === 'monthly' 
+        ? `freelancer-report-${year}-${month}.pdf`
+        : `freelancer-report-${year}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      
+      toast({
+        title: "PDF Downloaded",
+        description: "Your CPA-ready report has been downloaded successfully.",
+      });
+    } catch (error) {
+      console.error('PDF download error:', error);
+      toast({
+        title: "Download Failed",
+        description: "Failed to generate PDF report. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
   // Get breakdown data for modals with safe parsing
   const getActualEarningsBreakdown = () => {
     return currentPeriodGigs
@@ -371,6 +420,19 @@ export default function Dashboard() {
           className="h-8 w-8 p-0"
         >
           <ChevronRight className="w-4 h-4" />
+        </Button>
+      </div>
+
+      {/* Export Options */}
+      <div className="flex justify-end mb-4">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={handleDownloadPDF}
+          className="flex items-center gap-2"
+        >
+          <FileText className="w-4 h-4" />
+          Download PDF Report
         </Button>
       </div>
 
