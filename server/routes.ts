@@ -9,26 +9,27 @@ import {
   insertInvoiceSchema,
   insertExpenseSchema,
   insertBudgetSchema,
-  insertExpenseCategorySchema 
+  insertExpenseCategorySchema,
+  User
 } from "@shared/schema";
 import { z } from "zod";
-import { requireAuth } from "./auth";
+import { isAuthenticated } from "./replitAuth";
 // Removed conflicting import - using unified auth system
 import { db } from "./db";
 import { count, gte } from "drizzle-orm";
 import { users } from "@shared/schema";
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // SIMPLIFIED UNIFIED AUTHENTICATION SYSTEM
+  // UNIFIED REPLIT AUTHENTICATION SYSTEM
   
-  // Setup authentication first
-  const { setupAuth, requireAuth } = await import("./auth");
-  setupAuth(app);
+  // Setup Replit authentication first
+  const { setupAuth } = await import("./replitAuth");
+  await setupAuth(app);
   
-  // Helper function to get current user ID from session or auth
+  // Helper function to get current user ID from Replit Auth session
   const getCurrentUserId = (req: any) => {
-    if (req?.isAuthenticated && req.isAuthenticated()) {
-      return req.user.id;
+    if (req?.isAuthenticated && req.isAuthenticated() && req.user?.claims?.sub) {
+      return req.user.claims.sub; // Replit Auth stores user ID in claims.sub
     }
     throw new Error('User not authenticated');
   };
@@ -57,7 +58,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Update user profile
-  app.put("/api/user", async (req, res) => {
+  app.put("/api/user", isAuthenticated, async (req, res) => {
     try {
       const userId = getCurrentUserId(req);
       
@@ -105,7 +106,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Gig routes
-  app.get("/api/gigs", async (req, res) => {
+  app.get("/api/gigs", isAuthenticated, async (req, res) => {
     try {
       const userId = getCurrentUserId(req);
       
@@ -124,7 +125,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/gigs/date-range", async (req, res) => {
+  app.get("/api/gigs/date-range", isAuthenticated, async (req, res) => {
     try {
       const userId = getCurrentUserId(req);
       
