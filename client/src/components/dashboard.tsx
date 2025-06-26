@@ -319,6 +319,9 @@ export default function Dashboard() {
   const getEarningsForPeriod = () => {
     if (!gigs) return { earnings: 0, gigs: 0, avgPerGig: 0, period: "" };
     
+    console.log(`[DEBUG] getEarningsForPeriod - Selected period: ${selectedPeriod}, Current year: ${currentDate.getFullYear()}`);
+    console.log(`[DEBUG] Total gigs before filtering:`, (gigs as any[]).length);
+    
     // First filter gigs to current period BEFORE grouping
     const filteredGigs = (gigs as any[]).filter(gig => {
       const gigDate = new Date(gig.date);
@@ -331,12 +334,23 @@ export default function Dashboard() {
           return gigDate.getMonth() === currentDate.getMonth() && 
                  gigDate.getFullYear() === currentDate.getFullYear();
         case "annual":
-          return gigDate.getFullYear() === currentDate.getFullYear();
+          const isCurrentYear = gigDate.getFullYear() === currentDate.getFullYear();
+          if (selectedPeriod === "annual") {
+            console.log(`[DEBUG] Gig ${gig.id}: Date ${gig.date}, Year ${gigDate.getFullYear()}, Current Year ${currentDate.getFullYear()}, Include: ${isCurrentYear}`);
+          }
+          return isCurrentYear;
         default:
           return gigDate.getMonth() === currentDate.getMonth() && 
                  gigDate.getFullYear() === currentDate.getFullYear();
       }
     });
+    
+    console.log(`[DEBUG] Filtered gigs for ${selectedPeriod}:`, filteredGigs.length);
+    if (selectedPeriod === "annual") {
+      filteredGigs.forEach(gig => {
+        console.log(`[DEBUG] Annual gig: ${gig.id}, Date: ${gig.date}, Pay: ${gig.actualPay}, Expected: ${gig.expectedPay}, Status: ${gig.status}`);
+      });
+    }
 
     // Only group multi-day gigs within the current period
     const groupedGigs = new Map();
@@ -392,9 +406,17 @@ export default function Dashboard() {
     });
     
     // Calculate actual earnings from completed gigs only
-    const completedGigs = processedGigs.filter(gig => gig.status === "completed");
-    const totalEarnings = completedGigs.reduce((sum, gig) => sum + parseFloat(gig.actualPay || "0"), 0);
+    const completedGigs = processedGigs.filter((gig: any) => gig.status === "completed");
+    const totalEarnings = completedGigs.reduce((sum: number, gig: any) => sum + parseFloat(gig.actualPay || "0"), 0);
     const avgPerGig = completedGigs.length > 0 ? totalEarnings / completedGigs.length : 0;
+    
+    if (selectedPeriod === "annual") {
+      console.log(`[DEBUG] Annual completed gigs:`, completedGigs.length);
+      console.log(`[DEBUG] Annual total earnings:`, totalEarnings);
+      completedGigs.forEach((gig: any) => {
+        console.log(`[DEBUG] Completed gig ${gig.id}: Pay ${gig.actualPay}, Multi-day: ${gig.isMultiDay}, Days: ${gig.dayCount}`);
+      });
+    }
     
     switch (selectedPeriod) {
       case "weekly":
@@ -496,17 +518,21 @@ export default function Dashboard() {
     
     // Calculate actual earnings (completed gigs only, without tips)
     const actualEarnings = processedGigs
-      .filter(gig => gig.status === "completed")
-      .reduce((sum, gig) => sum + parseFloat(gig.actualPay || "0"), 0);
+      .filter((gig: any) => gig.status === "completed")
+      .reduce((sum: number, gig: any) => sum + parseFloat(gig.actualPay || "0"), 0);
     
     const actualTips = processedGigs
-      .filter(gig => gig.status === "completed")
-      .reduce((sum, gig) => sum + parseFloat(gig.tips || "0"), 0);
+      .filter((gig: any) => gig.status === "completed")
+      .reduce((sum: number, gig: any) => sum + parseFloat(gig.tips || "0"), 0);
     
     // Calculate expected earnings (upcoming/pending gigs)
     const expectedEarnings = processedGigs
-      .filter(gig => gig.status === "upcoming" || gig.status === "pending_payment")
-      .reduce((sum, gig) => sum + parseFloat(gig.expectedPay || "0"), 0);
+      .filter((gig: any) => gig.status === "upcoming" || gig.status === "pending_payment")
+      .reduce((sum: number, gig: any) => sum + parseFloat(gig.expectedPay || "0"), 0);
+    
+    if (selectedPeriod === "annual") {
+      console.log(`[DEBUG] Annual projections - Actual: ${actualEarnings}, Tips: ${actualTips}, Expected: ${expectedEarnings}`);
+    }
     
     const actualWithoutTips = actualEarnings - actualTips;
     const projectedTotal = actualWithoutTips + expectedEarnings;
