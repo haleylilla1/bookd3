@@ -419,6 +419,57 @@ export default function Dashboard() {
         </Card>
       </div>
 
+      {/* Additional Stats Grid */}
+      <div className="grid grid-cols-3 gap-3 mb-6">
+        {/* Tax Estimate */}
+        <Card 
+          className="cursor-pointer hover:shadow-md transition-shadow"
+          onClick={() => setShowTaxBreakdown(true)}
+        >
+          <CardContent className="p-4">
+            <div className="text-center">
+              <Calculator className="w-6 h-6 text-red-500 mx-auto mb-2" />
+              <p className="text-xs font-medium text-gray-600 mb-1">Tax Estimate</p>
+              <p className="text-lg font-bold text-red-600">
+                ${periodStats.estimatedTax.toFixed(2)}
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Tips Earned */}
+        <Card 
+          className="cursor-pointer hover:shadow-md transition-shadow"
+          onClick={() => setShowTipsBreakdown(true)}
+        >
+          <CardContent className="p-4">
+            <div className="text-center">
+              <PiggyBank className="w-6 h-6 text-purple-500 mx-auto mb-2" />
+              <p className="text-xs font-medium text-gray-600 mb-1">Tips Earned</p>
+              <p className="text-lg font-bold text-purple-600">
+                ${periodStats.totalTips.toFixed(2)}
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Expenses Breakdown */}
+        <Card 
+          className="cursor-pointer hover:shadow-md transition-shadow"
+          onClick={() => setShowExpensesBreakdown(true)}
+        >
+          <CardContent className="p-4">
+            <div className="text-center">
+              <Receipt className="w-6 h-6 text-orange-500 mx-auto mb-2" />
+              <p className="text-xs font-medium text-gray-600 mb-1">Expenses</p>
+              <p className="text-lg font-bold text-orange-600">
+                ${periodStats.totalExpenses.toFixed(2)}
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
       {/* Goal Section */}
       <Card className="mb-6">
         <CardContent className="p-6">
@@ -484,57 +535,6 @@ export default function Dashboard() {
           )}
         </CardContent>
       </Card>
-
-      {/* Additional Stats Grid */}
-      <div className="grid grid-cols-3 gap-3 mb-6">
-        {/* Tax Estimate */}
-        <Card 
-          className="cursor-pointer hover:shadow-md transition-shadow"
-          onClick={() => setShowTaxBreakdown(true)}
-        >
-          <CardContent className="p-4">
-            <div className="text-center">
-              <Calculator className="w-6 h-6 text-red-500 mx-auto mb-2" />
-              <p className="text-xs font-medium text-gray-600 mb-1">Tax Estimate</p>
-              <p className="text-lg font-bold text-red-600">
-                ${periodStats.estimatedTax.toFixed(2)}
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Tips Earned */}
-        <Card 
-          className="cursor-pointer hover:shadow-md transition-shadow"
-          onClick={() => setShowTipsBreakdown(true)}
-        >
-          <CardContent className="p-4">
-            <div className="text-center">
-              <PiggyBank className="w-6 h-6 text-purple-500 mx-auto mb-2" />
-              <p className="text-xs font-medium text-gray-600 mb-1">Tips Earned</p>
-              <p className="text-lg font-bold text-purple-600">
-                ${periodStats.totalTips.toFixed(2)}
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Expenses Breakdown */}
-        <Card 
-          className="cursor-pointer hover:shadow-md transition-shadow"
-          onClick={() => setShowExpensesBreakdown(true)}
-        >
-          <CardContent className="p-4">
-            <div className="text-center">
-              <Receipt className="w-6 h-6 text-orange-500 mx-auto mb-2" />
-              <p className="text-xs font-medium text-gray-600 mb-1">Expenses</p>
-              <p className="text-lg font-bold text-orange-600">
-                ${periodStats.totalExpenses.toFixed(2)}
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
 
       {/* Earnings Breakdown Modal */}
       <Dialog open={showEarningsBreakdown} onOpenChange={setShowEarningsBreakdown}>
