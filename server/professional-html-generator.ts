@@ -290,7 +290,7 @@ export async function generateProfessionalHTML(options: ReportOptions): Promise<
 
         <!-- Expense Receipts Page -->
         <div class="page">
-            <h2 style="font-size: 24px; margin-bottom: 30px; text-align: center;">EXPENSE RECEIPTS & DOCUMENTATION</h2>
+            <h2 style="font-size: 24px; margin-bottom: 30px; text-align: center;">BUSINESS EXPENSES & RECEIPTS</h2>
             
             ${data.receipts.length > 0 ? `
                 <div style="margin: 20px 0;">
@@ -355,8 +355,8 @@ export async function generateProfessionalHTML(options: ReportOptions): Promise<
                 </div>
             ` : `
                 <div style="text-align: center; padding: 60px 20px; color: #666;">
-                    <h3 style="margin-bottom: 15px;">No Expense Receipts Found</h3>
-                    <p>No expenses with receipts were recorded for this period.</p>
+                    <h3 style="margin-bottom: 15px;">No Expenses Found</h3>
+                    <p>No business expenses were recorded for this period.</p>
                 </div>
             `}
         </div>
