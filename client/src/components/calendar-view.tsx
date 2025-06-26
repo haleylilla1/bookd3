@@ -134,9 +134,13 @@ export default function CalendarView() {
     return gigMap;
   }, [gigs]);
 
-  // Get gigs for a specific date
+  // Get gigs for a specific date with consistent date formatting
   const getGigsForDate = (date: Date) => {
-    const dateString = date.toISOString().split('T')[0];
+    // Use consistent UTC date formatting to match gig.date format
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const dateString = `${year}-${month}-${day}`;
     return gigsByDate.get(dateString) || [];
   };
 
@@ -182,21 +186,28 @@ export default function CalendarView() {
       const similarGigs = [currentGig];
       processed.add(currentGig.id);
       
-      // Look for consecutive similar gigs
+      // Look for consecutive similar gigs (within 7 days and in chronological order)
       for (let j = i + 1; j < sortedGigs.length; j++) {
         const nextGig = sortedGigs[j];
         if (processed.has(nextGig.id)) continue;
         
-        const currentDate = new Date(currentGig.date);
-        const nextDate = new Date(nextGig.date);
-        const dayDiff = Math.abs((nextDate.getTime() - currentDate.getTime()) / (1000 * 60 * 60 * 24));
+        // Use consistent UTC date parsing to avoid timezone issues
+        const lastGigDate = new Date(similarGigs[similarGigs.length - 1].date + 'T00:00:00.000Z');
+        const nextDate = new Date(nextGig.date + 'T00:00:00.000Z');
         
+        // Calculate days difference - must be positive (forward in time) and <= 7 days
+        const dayDiff = (nextDate.getTime() - lastGigDate.getTime()) / (1000 * 60 * 60 * 24);
+        
+        // Only group if: same details, within 7 days, and consecutive
         if (nextGig.eventName === currentGig.eventName &&
             nextGig.clientName === currentGig.clientName &&
             nextGig.gigType === currentGig.gigType &&
-            dayDiff <= 7) {
+            dayDiff > 0 && dayDiff <= 7) {
           similarGigs.push(nextGig);
           processed.add(nextGig.id);
+        } else if (dayDiff > 7) {
+          // Stop looking if we've exceeded the 7-day window
+          break;
         }
       }
       

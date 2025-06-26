@@ -61,27 +61,39 @@ export default function Dashboard() {
     },
   });
 
-  // Filter gigs based on selected period
+  // Filter gigs based on selected period with consistent UTC date handling
   const currentPeriodGigs = useMemo(() => {
     if (!gigs || gigs.length === 0) return [];
     
     return gigs.filter(gig => {
-      const gigDate = new Date(gig.date);
+      // Consistent UTC date parsing to avoid timezone issues
+      const gigDate = new Date(gig.date + 'T00:00:00.000Z');
+      const currentUtcDate = new Date(currentDate.getTime() - currentDate.getTimezoneOffset() * 60000);
+      
+      // Validate date
+      if (isNaN(gigDate.getTime())) return false;
       
       switch (selectedPeriod) {
         case "monthly":
-          return gigDate.getMonth() === currentDate.getMonth() && 
-                 gigDate.getFullYear() === currentDate.getFullYear();
+          return gigDate.getUTCMonth() === currentUtcDate.getUTCMonth() && 
+                 gigDate.getUTCFullYear() === currentUtcDate.getUTCFullYear();
         case "annual":
-          return gigDate.getFullYear() === currentDate.getFullYear();
+          return gigDate.getUTCFullYear() === currentUtcDate.getUTCFullYear();
         default:
-          return gigDate.getMonth() === currentDate.getMonth() && 
-                 gigDate.getFullYear() === currentDate.getFullYear();
+          return gigDate.getUTCMonth() === currentUtcDate.getUTCMonth() && 
+                 gigDate.getUTCFullYear() === currentUtcDate.getUTCFullYear();
       }
     });
   }, [gigs, selectedPeriod, currentDate]);
 
-  // Calculate earnings for current period
+  // Safe numeric parsing function
+  const safeParseFloat = (value: string | null | undefined): number => {
+    if (!value) return 0;
+    const parsed = parseFloat(value);
+    return isNaN(parsed) || !isFinite(parsed) ? 0 : Math.max(0, parsed);
+  };
+
+  // Calculate earnings for current period with proper error handling
   const periodStats = useMemo(() => {
     if (!currentPeriodGigs.length) {
       return {
@@ -96,20 +108,28 @@ export default function Dashboard() {
     const completedGigs = currentPeriodGigs.filter(gig => gig.status === "completed");
     const upcomingGigs = currentPeriodGigs.filter(gig => gig.status !== "completed");
     
-    const actualEarnings = completedGigs.reduce((sum, gig) => 
-      sum + parseFloat(gig.actualPay || "0"), 0);
+    // Calculate actual earnings only from completed gigs
+    const actualEarnings = completedGigs.reduce((sum, gig) => {
+      const actualPay = safeParseFloat(gig.actualPay);
+      const tips = safeParseFloat(gig.tips);
+      return sum + actualPay + tips;
+    }, 0);
     
+    // Calculate projected earnings: actual for completed, expected for upcoming
     const projectedEarnings = currentPeriodGigs.reduce((sum, gig) => {
       if (gig.status === "completed") {
-        return sum + parseFloat(gig.actualPay || "0");
+        const actualPay = safeParseFloat(gig.actualPay);
+        const tips = safeParseFloat(gig.tips);
+        return sum + actualPay + tips;
       } else {
-        return sum + parseFloat(gig.expectedPay || "0");
+        const expectedPay = safeParseFloat(gig.expectedPay);
+        return sum + expectedPay;
       }
     }, 0);
 
     return {
-      actualEarnings,
-      projectedEarnings,
+      actualEarnings: Math.round(actualEarnings * 100) / 100, // Round to 2 decimal places
+      projectedEarnings: Math.round(projectedEarnings * 100) / 100,
       completedGigs: completedGigs.length,
       upcomingGigs: upcomingGigs.length,
       totalGigs: currentPeriodGigs.length
@@ -159,25 +179,41 @@ export default function Dashboard() {
     setGoalAmount(currentGoal?.goalAmount || "");
   };
 
-  // Get breakdown data for modals
+  // Get breakdown data for modals with safe parsing
   const getActualEarningsBreakdown = () => {
     return currentPeriodGigs
-      .filter(gig => gig.status === "completed" && parseFloat(gig.actualPay || "0") > 0)
-      .map(gig => ({
-        ...gig,
-        amount: parseFloat(gig.actualPay || "0")
-      }))
+      .filter(gig => gig.status === "completed")
+      .map(gig => {
+        const actualPay = safeParseFloat(gig.actualPay);
+        const tips = safeParseFloat(gig.tips);
+        const totalAmount = actualPay + tips;
+        return {
+          ...gig,
+          amount: totalAmount,
+          actualPay,
+          tips
+        };
+      })
+      .filter(gig => gig.amount > 0)
       .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
   };
 
   const getProjectedEarningsBreakdown = () => {
     return currentPeriodGigs
-      .map(gig => ({
-        ...gig,
-        amount: gig.status === "completed" 
-          ? parseFloat(gig.actualPay || "0")
-          : parseFloat(gig.expectedPay || "0")
-      }))
+      .map(gig => {
+        let amount = 0;
+        if (gig.status === "completed") {
+          const actualPay = safeParseFloat(gig.actualPay);
+          const tips = safeParseFloat(gig.tips);
+          amount = actualPay + tips;
+        } else {
+          amount = safeParseFloat(gig.expectedPay);
+        }
+        return {
+          ...gig,
+          amount
+        };
+      })
       .filter(gig => gig.amount > 0)
       .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
   };
