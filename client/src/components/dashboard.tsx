@@ -132,14 +132,13 @@ export default function Dashboard() {
       }
     }, 0);
 
-    // Calculate actual average tax rate from gigs (updated in real-time)
-    const gigTaxRates = currentPeriodGigs
-      .filter(gig => gig.taxPercentage && gig.taxPercentage > 0)
-      .map(gig => gig.taxPercentage);
+    // Calculate actual average tax rate from gigs (including 0% for under-the-table payments)
+    const gigsWithTaxRates = currentPeriodGigs
+      .filter(gig => typeof gig.taxPercentage === 'number');
     
-    const avgTaxRate = gigTaxRates.length > 0 
-      ? gigTaxRates.reduce((sum, rate) => sum + rate, 0) / gigTaxRates.length 
-      : 25; // Default 25% only if no tax rates set
+    const avgTaxRate = gigsWithTaxRates.length > 0 
+      ? gigsWithTaxRates.reduce((sum, gig) => sum + gig.taxPercentage, 0) / gigsWithTaxRates.length 
+      : 25; // Default 25% only if no tax rates are explicitly set
     
     const taxableIncome = Math.max(0, actualEarnings - totalExpenses);
     const estimatedTax = (taxableIncome * avgTaxRate) / 100;
