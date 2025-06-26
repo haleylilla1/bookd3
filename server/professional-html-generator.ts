@@ -228,6 +228,56 @@ export async function generateProfessionalHTML(options: ReportOptions): Promise<
             </div>
         </div>
 
+        <!-- Tax Breakdown Per Gig Page -->
+        <div class="page">
+            <h2 style="font-size: 24px; margin-bottom: 30px; text-align: center;">TAX BREAKDOWN BY GIG</h2>
+            
+            <div style="margin: 40px 0;">
+                <table style="width: 100%; border-collapse: collapse; font-family: monospace;">
+                    <thead>
+                        <tr>
+                            <th style="text-align: left; padding: 10px 0; border-bottom: 1px solid #333;">Date</th>
+                            <th style="text-align: left; padding: 10px 0; border-bottom: 1px solid #333;">Event</th>
+                            <th style="text-align: right; padding: 10px 0; border-bottom: 1px solid #333;">Income</th>
+                            <th style="text-align: right; padding: 10px 0; border-bottom: 1px solid #333;">Est. Tax (23%)</th>
+                            <th style="text-align: right; padding: 10px 0; border-bottom: 1px solid #333;">After Tax</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${data.gigs.map(gig => {
+                          const actualPay = parseFloat(gig.actualPay || '0');
+                          const tips = parseFloat(gig.tips || '0');
+                          const total = actualPay + tips;
+                          const estimatedTax = total * 0.23;
+                          const afterTax = total - estimatedTax;
+                          const dateStr = gig.date.includes(' - ') ? gig.date : new Date(gig.date).toLocaleDateString();
+                          const eventName = (gig.eventName || 'Event').substring(0, 20);
+                          
+                          return `
+                            <tr>
+                                <td style="padding: 8px 0;">${dateStr}</td>
+                                <td style="padding: 8px 0;">${eventName}</td>
+                                <td style="padding: 8px 0; text-align: right;">$${total.toFixed(2)}</td>
+                                <td style="padding: 8px 0; text-align: right;">$${estimatedTax.toFixed(2)}</td>
+                                <td style="padding: 8px 0; text-align: right;">$${afterTax.toFixed(2)}</td>
+                            </tr>
+                          `;
+                        }).join('')}
+                        <tr style="border-top: 2px solid #333; font-weight: bold;">
+                            <td colspan="2" style="padding: 12px 0; font-weight: bold;">TOTALS:</td>
+                            <td style="padding: 12px 0; text-align: right; font-weight: bold;">$${data.totalIncome.toFixed(2)}</td>
+                            <td style="padding: 12px 0; text-align: right; font-weight: bold;">$${(data.totalIncome * 0.23).toFixed(2)}</td>
+                            <td style="padding: 12px 0; text-align: right; font-weight: bold;">$${(data.totalIncome * 0.77).toFixed(2)}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            
+            <div style="margin: 30px 0; padding: 15px; background-color: #f0f8ff; border-left: 4px solid #4a90e2;">
+                <p style="font-size: 14px; margin: 0;"><strong>Note:</strong> Tax estimates are calculated at 23% for planning purposes. Actual tax rates may vary based on total annual income, deductions, and filing status.</p>
+            </div>
+        </div>
+
         <!-- Tax Due Dates Page -->
         <div class="page">
             <h2 style="font-size: 24px; margin-bottom: 30px; text-align: center;">2025 ESTIMATED TAX PAYMENT DUE DATES</h2>
