@@ -28,6 +28,7 @@ export default function Dashboard() {
   const [showTaxBreakdown, setShowTaxBreakdown] = useState(false);
   const [showTipsBreakdown, setShowTipsBreakdown] = useState(false);
   const [showExpensesBreakdown, setShowExpensesBreakdown] = useState(false);
+  const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
   
   const { toast } = useToast();
   const queryClient = useQueryClient();
