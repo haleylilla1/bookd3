@@ -31,6 +31,8 @@ interface ReceiptData {
   description: string;
   gigName: string;
   clientName: string;
+  reimbursed: boolean;
+  receipts: string[]; // Array of receipt photo URLs/base64 strings
 }
 
 export async function generateProfessionalHTML(options: ReportOptions): Promise<string> {
@@ -286,6 +288,79 @@ export async function generateProfessionalHTML(options: ReportOptions): Promise<
             </div>
         </div>
 
+        <!-- Expense Receipts Page -->
+        <div class="page">
+            <h2 style="font-size: 24px; margin-bottom: 30px; text-align: center;">EXPENSE RECEIPTS & DOCUMENTATION</h2>
+            
+            ${data.receipts.length > 0 ? `
+                <div style="margin: 20px 0;">
+                    ${data.receipts.map(receipt => `
+                        <div style="margin-bottom: 30px; border: 1px solid #ddd; border-radius: 8px; padding: 20px; background-color: ${receipt.reimbursed ? '#f8f9fa' : '#fff'};">
+                            <!-- Receipt Header -->
+                            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 1px solid #eee;">
+                                <div>
+                                    <h3 style="margin: 0 0 5px 0; font-size: 18px; color: #333;">${receipt.gigName}</h3>
+                                    <p style="margin: 0; color: #666; font-size: 14px;">Client: ${receipt.clientName}</p>
+                                    <p style="margin: 5px 0 0 0; color: #666; font-size: 14px;">Date: ${new Date(receipt.date).toLocaleDateString()}</p>
+                                </div>
+                                <div style="text-align: right;">
+                                    <div style="font-size: 20px; font-weight: bold; color: #198754;">$${receipt.amount.toFixed(2)}</div>
+                                    <div style="font-size: 12px; text-transform: uppercase; color: #666; margin-top: 5px;">${receipt.type === 'parking' ? 'Parking' : 'Other'} Expense</div>
+                                    ${receipt.reimbursed ? 
+                                        '<div style="background-color: #d1ecf1; color: #0c5460; padding: 3px 8px; border-radius: 12px; font-size: 11px; margin-top: 5px; display: inline-block;">✓ REIMBURSED</div>' : 
+                                        '<div style="background-color: #fff3cd; color: #856404; padding: 3px 8px; border-radius: 12px; font-size: 11px; margin-top: 5px; display: inline-block;">TAX DEDUCTIBLE</div>'
+                                    }
+                                </div>
+                            </div>
+                            
+                            <!-- Receipt Photos -->
+                            ${receipt.receipts.length > 0 ? `
+                                <div style="margin-top: 15px;">
+                                    <h4 style="font-size: 14px; color: #666; margin-bottom: 10px;">Receipt Photos:</h4>
+                                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
+                                        ${receipt.receipts.map((receiptImg, index) => `
+                                            <div style="border: 1px solid #ddd; border-radius: 6px; overflow: hidden; background-color: #f8f9fa;">
+                                                <img src="${receiptImg}" alt="Receipt ${index + 1}" style="width: 100%; height: 200px; object-fit: cover; display: block;" />
+                                                <div style="padding: 8px; text-align: center; font-size: 12px; color: #666;">Receipt ${index + 1}</div>
+                                            </div>
+                                        `).join('')}
+                                    </div>
+                                </div>
+                            ` : `
+                                <div style="padding: 20px; text-align: center; background-color: #f8f9fa; border-radius: 6px; color: #666;">
+                                    <p style="margin: 0; font-style: italic;">No receipt photos uploaded for this expense</p>
+                                </div>
+                            `}
+                        </div>
+                    `).join('')}
+                </div>
+                
+                <!-- Summary -->
+                <div style="margin-top: 40px; padding: 20px; background-color: #f0f8ff; border-left: 4px solid #4a90e2;">
+                    <h3 style="margin: 0 0 15px 0; font-size: 16px;">Receipt Summary</h3>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; font-size: 14px;">
+                        <div>
+                            <strong>Total Expenses:</strong> $${data.receipts.reduce((sum, r) => sum + r.amount, 0).toFixed(2)}
+                        </div>
+                        <div>
+                            <strong>Reimbursed Amount:</strong> $${data.receipts.filter(r => r.reimbursed).reduce((sum, r) => sum + r.amount, 0).toFixed(2)}
+                        </div>
+                        <div>
+                            <strong>Tax Deductible:</strong> $${data.receipts.filter(r => !r.reimbursed).reduce((sum, r) => sum + r.amount, 0).toFixed(2)}
+                        </div>
+                        <div>
+                            <strong>Total Receipts:</strong> ${data.receipts.length} items
+                        </div>
+                    </div>
+                </div>
+            ` : `
+                <div style="text-align: center; padding: 60px 20px; color: #666;">
+                    <h3 style="margin-bottom: 15px;">No Expense Receipts Found</h3>
+                    <p>No expenses with receipts were recorded for this period.</p>
+                </div>
+            `}
+        </div>
+
         <!-- Tax Due Dates Page -->
         <div class="page">
             <h2 style="font-size: 24px; margin-bottom: 30px; text-align: center;">2025 ESTIMATED TAX PAYMENT DUE DATES</h2>
@@ -385,7 +460,7 @@ async function prepareReportData(options: ReportOptions): Promise<ReportData> {
   const estimatedTaxes = Math.max(0, netIncome * (taxPercentage / 100));
   const afterTaxIncome = netIncome - estimatedTaxes;
 
-  // Prepare receipts data
+  // Prepare receipts data with photos and reimbursement status
   const receipts: ReceiptData[] = [];
   completedGigs.forEach(gig => {
     if (parseFloat(gig.parkingExpense || '0') > 0) {
@@ -395,7 +470,9 @@ async function prepareReportData(options: ReportOptions): Promise<ReportData> {
         amount: parseFloat(gig.parkingExpense || '0'),
         description: 'Parking expense',
         gigName: gig.eventName || 'Unnamed Event',
-        clientName: gig.clientName || 'Direct Client'
+        clientName: gig.clientName || 'Direct Client',
+        reimbursed: Boolean((gig as any).parkingReimbursed),
+        receipts: Array.isArray((gig as any).parkingReceipts) ? (gig as any).parkingReceipts : []
       });
     }
     if (parseFloat(gig.otherExpenses || '0') > 0) {
@@ -405,7 +482,9 @@ async function prepareReportData(options: ReportOptions): Promise<ReportData> {
         amount: parseFloat(gig.otherExpenses || '0'),
         description: 'Other business expense',
         gigName: gig.eventName || 'Unnamed Event',
-        clientName: gig.clientName || 'Direct Client'
+        clientName: gig.clientName || 'Direct Client',
+        reimbursed: Boolean((gig as any).otherExpensesReimbursed),
+        receipts: Array.isArray((gig as any).otherExpenseReceipts) ? (gig as any).otherExpenseReceipts : []
       });
     }
   });
