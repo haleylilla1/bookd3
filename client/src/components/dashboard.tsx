@@ -276,44 +276,60 @@ export default function Dashboard() {
       
       console.log('Requesting PDF with params:', params.toString());
       
-      const response = await fetch(`/api/reports/pdf?${params.toString()}`, {
-        method: 'GET',
-        credentials: 'include',
-        headers: {
-          'Accept': 'application/pdf',
+      // Check if mobile device first
+      const isMobile = navigator.userAgent.match(/Android|iPhone|iPad|iPod|BlackBerry|IEMobile/i);
+      
+      if (isMobile) {
+        // Mobile device - skip fetch/blob entirely, navigate directly to PDF URL
+        console.log('Mobile device detected, using direct URL navigation');
+        const pdfUrl = `/api/reports/pdf?${params.toString()}`;
+        
+        // First verify the PDF generates successfully with a HEAD request
+        const testResponse = await fetch(pdfUrl, { 
+          method: 'HEAD', 
+          credentials: 'include' 
+        });
+        
+        if (!testResponse.ok) {
+          throw new Error(`Failed to generate PDF report: ${testResponse.status} ${testResponse.statusText}`);
         }
-      });
-      
-      console.log('PDF response status:', response.status);
-      console.log('PDF response headers:', Object.fromEntries(response.headers.entries()));
-      
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('PDF response error:', errorText);
-        throw new Error(`Failed to generate PDF report: ${response.status} ${response.statusText}`);
-      }
-      
-      const blob = await response.blob();
-      console.log('PDF blob size:', blob.size, 'type:', blob.type);
-      
-      if (blob.size === 0) {
-        throw new Error('PDF file is empty');
-      }
-      
-      // Mobile-optimized download approach
-      const url = window.URL.createObjectURL(blob);
-      const filename = selectedPeriod === 'monthly' 
-        ? `freelancer-report-${year}-${month}.pdf`
-        : `freelancer-report-${year}.pdf`;
-      
-      // Try multiple download methods for mobile compatibility
-      if (navigator.userAgent.match(/Android|iPhone|iPad|iPod|BlackBerry|IEMobile/i)) {
-        // Mobile device - use direct navigation
-        console.log('Mobile device detected, using direct navigation');
-        window.open(url, '_blank');
+        
+        // Open PDF in new tab/window - mobile browser will handle download
+        window.open(pdfUrl, '_blank');
+        
       } else {
-        // Desktop - use traditional download
-        console.log('Desktop device, using download attribute');
+        // Desktop - use traditional blob approach
+        console.log('Desktop device, using blob download');
+        
+        const response = await fetch(`/api/reports/pdf?${params.toString()}`, {
+          method: 'GET',
+          credentials: 'include',
+          headers: {
+            'Accept': 'application/pdf',
+          }
+        });
+        
+        console.log('PDF response status:', response.status);
+        
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error('PDF response error:', errorText);
+          throw new Error(`Failed to generate PDF report: ${response.status} ${response.statusText}`);
+        }
+        
+        const blob = await response.blob();
+        console.log('PDF blob size:', blob.size, 'type:', blob.type);
+        
+        if (blob.size === 0) {
+          throw new Error('PDF file is empty');
+        }
+        
+        // Desktop download
+        const url = window.URL.createObjectURL(blob);
+        const filename = selectedPeriod === 'monthly' 
+          ? `freelancer-report-${year}-${month}.pdf`
+          : `freelancer-report-${year}.pdf`;
+        
         const a = document.createElement('a');
         a.href = url;
         a.download = filename;
@@ -321,12 +337,11 @@ export default function Dashboard() {
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
+        
+        setTimeout(() => {
+          window.URL.revokeObjectURL(url);
+        }, 1000);
       }
-      
-      // Cleanup after delay to ensure download started
-      setTimeout(() => {
-        window.URL.revokeObjectURL(url);
-      }, 1000);
       
       toast({
         title: "PDF Downloaded",

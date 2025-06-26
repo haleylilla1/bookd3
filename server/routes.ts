@@ -274,6 +274,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // PDF Report endpoints with user verification
+  app.head('/api/reports/pdf', requireAuth, async (req: any, res) => {
+    // HEAD request for mobile verification - just check auth and params
+    try {
+      const userId = getUserId(req);
+      const { period, year, month } = req.query;
+
+      if (!period || !year) {
+        return res.status(400).end();
+      }
+
+      if (period === 'monthly' && !month) {
+        return res.status(400).end();
+      }
+
+      res.setHeader('Content-Type', 'application/pdf');
+      res.status(200).end();
+    } catch (error: any) {
+      res.status(500).end();
+    }
+  });
+
   app.get('/api/reports/pdf', requireAuth, async (req: any, res) => {
     try {
       console.log('PDF request received:', { 
@@ -309,8 +330,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ? `freelancer-report-${year}-${month}.pdf`
         : `freelancer-report-${year}.pdf`;
 
+      // Set mobile-friendly headers
       res.setHeader('Content-Type', 'application/pdf');
-      res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+      res.setHeader('Content-Disposition', `inline; filename="${filename}"`);
+      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+      res.setHeader('Pragma', 'no-cache');
+      res.setHeader('Expires', '0');
+      res.setHeader('Access-Control-Allow-Origin', '*');
+      res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+      
       res.send(pdfBuffer);
     } catch (error: any) {
       console.error('Error generating PDF report:', error);
