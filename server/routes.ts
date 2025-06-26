@@ -49,6 +49,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Update gig
+  app.put("/api/gigs/:id", requireAuth, async (req, res) => {
+    try {
+      const userId = getUserId(req);
+      const gigId = parseInt(req.params.id);
+      
+      // Verify ownership
+      const existingGig = await storage.getGig(gigId);
+      if (!existingGig || existingGig.userId !== userId) {
+        return res.status(404).json({ message: "Gig not found" });
+      }
+      
+      const updatedGig = await storage.updateGig(gigId, req.body);
+      res.json(updatedGig);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to update gig" });
+    }
+  });
+
   // Get goals
   app.get("/api/goals/period", requireAuth, async (req, res) => {
     try {
@@ -57,6 +76,76 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(goals);
     } catch (error) {
       res.status(500).json({ message: "Failed to get goals" });
+    }
+  });
+
+  // Calculate distance with Google Maps API
+  app.post("/api/calculate-distance", requireAuth, async (req, res) => {
+    try {
+      const { startAddress, endAddress, waypoints = [], roundTrip = false } = req.body;
+      
+      if (!startAddress || !endAddress) {
+        return res.status(400).json({ error: "Starting and ending addresses are required" });
+      }
+
+      const apiKey = process.env.VITE_GOOGLE_MAPS_API_KEY;
+      if (!apiKey) {
+        return res.status(500).json({ error: "Google Maps API key not configured" });
+      }
+
+      let totalDistance = 0;
+      let totalTime = 0;
+
+      // Build route: start -> waypoints -> end
+      const routePoints = [startAddress.trim(), ...waypoints.filter(w => w?.trim()), endAddress.trim()];
+      
+      // Calculate distance for each segment
+      for (let i = 0; i < routePoints.length - 1; i++) {
+        const origin = encodeURIComponent(routePoints[i]);
+        const destination = encodeURIComponent(routePoints[i + 1]);
+        
+        const url = `https://maps.googleapis.com/maps/api/distancematrix/json?origins=${origin}&destinations=${destination}&units=imperial&key=${apiKey}`;
+        
+        const response = await fetch(url);
+        const data = await response.json();
+
+        if (data.status !== 'OK') {
+          return res.status(500).json({ error: `Google Maps API error: ${data.status}` });
+        }
+
+        const element = data.rows[0]?.elements[0];
+        
+        if (!element || element.status !== 'OK') {
+          return res.status(500).json({ error: `Could not calculate distance between ${routePoints[i]} and ${routePoints[i + 1]}` });
+        }
+
+        // Convert meters to miles (1 meter = 0.000621371 miles)
+        const segmentMiles = element.distance.value * 0.000621371;
+        const segmentMinutes = element.duration.value / 60;
+        
+        totalDistance += segmentMiles;
+        totalTime += segmentMinutes;
+      }
+
+      // Apply round trip multiplier
+      if (roundTrip) {
+        totalDistance *= 2;
+        totalTime *= 2;
+      }
+
+      // Round to 1 decimal place
+      const distanceMiles = Math.round(totalDistance * 10) / 10;
+      const travelTimeMinutes = Math.round(totalTime);
+
+      res.json({
+        status: 'success',
+        distanceMiles,
+        travelTimeMinutes
+      });
+      
+    } catch (error) {
+      console.error("Distance calculation error:", error);
+      res.status(500).json({ error: "Failed to calculate distance" });
     }
   });
 

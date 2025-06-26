@@ -121,7 +121,7 @@ export default function GigLog() {
     };
     
     // Safe numeric conversions
-    const safeParseFloat = (value: string | number | undefined): string | null => {
+    const safeParseFloat = (value: any): string | null => {
       if (value === "" || value === null || value === undefined) return null;
       const parsed = parseFloat(String(value));
       return isNaN(parsed) ? null : parsed.toString();
