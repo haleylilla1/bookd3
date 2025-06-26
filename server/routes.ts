@@ -7,10 +7,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Setup simple authentication
   setupAuthRoutes(app);
 
-  // Simple helper to get user ID from request
-  const getUserId = (req: any) => req.userId;
+  // Secure helper to get user ID with validation
+  const getUserId = (req: any): number => {
+    const userId = req.userId;
+    if (!userId || userId <= 0) {
+      throw new Error("Invalid user ID");
+    }
+    return userId;
+  };
 
-  // Dashboard stats
+  // Dashboard stats with user isolation
   app.get("/api/dashboard/stats", requireAuth, async (req, res) => {
     try {
       const userId = getUserId(req);
@@ -22,6 +28,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       res.json({ monthlyEarnings, totalTips: 0, totalExpenses: 0 });
     } catch (error) {
+      if (error instanceof Error && error.message === "Invalid user ID") {
+        return res.status(401).json({ message: "Authentication required" });
+      }
       res.status(500).json({ message: "Failed to get stats" });
     }
   });
@@ -92,14 +101,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Get goals
+  // Goals endpoints with proper user isolation
   app.get("/api/goals/period", requireAuth, async (req, res) => {
     try {
       const userId = getUserId(req);
+      if (!userId) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
       const goals = await storage.getGoalsByUser(userId);
       res.json(goals);
     } catch (error) {
       res.status(500).json({ message: "Failed to get goals" });
+    }
+  });
+
+  app.post("/api/goals/period/:period/:date", requireAuth, async (req, res) => {
+    try {
+      const userId = getUserId(req);
+      if (!userId) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+      
+      const { period, date } = req.params;
+      const { goalAmount } = req.body;
+      
+      if (period === 'monthly') {
+        const dateObj = new Date(date);
+        const goal = await storage.setMonthlyGoal(userId, dateObj.getMonth() + 1, dateObj.getFullYear(), goalAmount);
+        res.json(goal);
+      } else if (period === 'annual') {
+        const year = new Date(date).getFullYear();
+        const goal = await storage.setYearlyGoal(userId, year, goalAmount);
+        res.json(goal);
+      } else {
+        res.status(400).json({ message: "Invalid period" });
+      }
+    } catch (error) {
+      res.status(500).json({ message: "Failed to set goal" });
     }
   });
 
@@ -173,10 +211,64 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // PDF Report endpoints
+  // Expenses endpoints with user isolation
+  app.get("/api/expenses", requireAuth, async (req, res) => {
+    try {
+      const userId = getUserId(req);
+      if (!userId) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+      const expenses = await storage.getExpensesByUser(userId);
+      res.json(expenses);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to get expenses" });
+    }
+  });
+
+  app.post("/api/expenses", requireAuth, async (req, res) => {
+    try {
+      const userId = getUserId(req);
+      if (!userId) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+      const expenseData = { ...req.body, userId };
+      const expense = await storage.createExpense(expenseData);
+      res.json(expense);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to create expense" });
+    }
+  });
+
+  app.delete("/api/expenses/:id", requireAuth, async (req, res) => {
+    try {
+      const userId = getUserId(req);
+      const expenseId = parseInt(req.params.id);
+      
+      // Verify ownership
+      const existingExpense = await storage.getExpense(expenseId);
+      if (!existingExpense || existingExpense.userId !== userId) {
+        return res.status(404).json({ message: "Expense not found" });
+      }
+      
+      const success = await storage.deleteExpense(expenseId);
+      if (!success) {
+        return res.status(500).json({ message: "Failed to delete expense" });
+      }
+      
+      res.json({ message: "Expense deleted successfully" });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to delete expense" });
+    }
+  });
+
+  // PDF Report endpoints with user verification
   app.get('/api/reports/pdf', requireAuth, async (req: any, res) => {
     try {
       const userId = getUserId(req);
+      if (!userId) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+      
       const { period, year, month } = req.query;
 
       if (!period || !year) {

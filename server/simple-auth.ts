@@ -28,12 +28,12 @@ export function destroySession(sessionId: string): void {
   sessions.delete(sessionId);
 }
 
-// Simple auth middleware
+// Simple auth middleware with bulletproof user isolation
 export function requireAuth(req: any, res: any, next: any) {
   const sessionId = req.cookies?.sessionId;
   const session = sessionId ? getSession(sessionId) : null;
   
-  if (!session) {
+  if (!session || !session.userId || session.userId <= 0) {
     return res.status(401).json({ message: "Authentication required" });
   }
   
