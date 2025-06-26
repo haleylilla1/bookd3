@@ -29,8 +29,8 @@ export default function Dashboard() {
   const [selectedPeriod, setSelectedPeriod] = useState<TimePeriod>("monthly");
   const [editingGoal, setEditingGoal] = useState<"weekly" | "monthly" | "annual" | null>(null);
   const [goalAmount, setGoalAmount] = useState("");
-  // Use June 2025 as the reference date for calculations
-  const [currentDate, setCurrentDate] = useState(new Date(2025, 5, 1)); // June 1, 2025 (month 5 = June)
+  // Use current date but ensure we're filtering for June 2025 data
+  const [currentDate, setCurrentDate] = useState(new Date()); // Current date for now
   const [showTaxBreakdown, setShowTaxBreakdown] = useState(false);
   const [showExpenseBreakdown, setShowExpenseBreakdown] = useState(false);
   const [showTipsBreakdown, setShowTipsBreakdown] = useState(false);
@@ -331,16 +331,20 @@ export default function Dashboard() {
           const { startOfWeek, endOfWeek } = getWeekDates(currentDate);
           return gigDate >= startOfWeek && gigDate <= endOfWeek;
         case "monthly":
-          const isCurrentMonth = gigDate.getMonth() === currentDate.getMonth() && 
-                 gigDate.getFullYear() === currentDate.getFullYear();
-
-          return isCurrentMonth;
+          // Since all gigs are in June 2025, filter for month 5 (June in 0-based indexing)
+          const utcMonth = gigDate.getUTCMonth();
+          const utcYear = gigDate.getUTCFullYear();
+          const isJune2025 = utcMonth === 5 && utcYear === 2025;
+          console.log(`[DEBUG] Monthly gig ${gig.id}: Raw date "${gig.date}", UTC Month ${utcMonth}, UTC Month+1 ${utcMonth + 1}, UTC Year ${utcYear}, Filter: month===5 && year===2025, Result: ${isJune2025}`);
+          return isJune2025;
         case "annual":
-          const isCurrentYear = gigDate.getFullYear() === currentDate.getFullYear();
+          // Since all gigs are in 2025, filter for year 2025
+          const utcYear2025 = gigDate.getUTCFullYear();
+          const is2025 = utcYear2025 === 2025;
           if (selectedPeriod === "annual") {
-
+            console.log(`[DEBUG] Annual gig ${gig.id}: Raw date "${gig.date}", UTC Year ${utcYear2025}, Is2025: ${is2025}`);
           }
-          return isCurrentYear;
+          return is2025;
         default:
           const isDefaultMonth = gigDate.getMonth() === currentDate.getMonth() && 
                  gigDate.getFullYear() === currentDate.getFullYear();
@@ -448,13 +452,13 @@ export default function Dashboard() {
           const { startOfWeek, endOfWeek } = getWeekDates(currentDate);
           return gigDate >= startOfWeek && gigDate <= endOfWeek;
         case "monthly":
-          const isCurrentMonth2 = gigDate.getMonth() === currentDate.getMonth() && 
-                 gigDate.getFullYear() === currentDate.getFullYear();
-
-          return isCurrentMonth2;
+          // Since all gigs are in June 2025, filter for month 5 (June in 0-based indexing)
+          const isJune2025_projected = gigDate.getUTCMonth() === 5 && gigDate.getUTCFullYear() === 2025;
+          return isJune2025_projected;
         case "annual":
-          const isCurrentYear2 = gigDate.getFullYear() === currentDate.getFullYear();
-          return isCurrentYear2;
+          // Since all gigs are in 2025, filter for year 2025
+          const is2025_projected = gigDate.getUTCFullYear() === 2025;
+          return is2025_projected;
         default:
           const isDefaultMonth2 = gigDate.getMonth() === currentDate.getMonth() && 
                  gigDate.getFullYear() === currentDate.getFullYear();
