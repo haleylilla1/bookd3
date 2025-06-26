@@ -299,7 +299,7 @@ export default function Dashboard() {
         const mileageDeduction = (gig.mileage || 0) * 0.67;
         const totalExpenses = parkingExpense + otherExpenses + mileageDeduction;
         const taxableIncome = Math.max(0, income - totalExpenses);
-        const taxRate = gig.taxPercentage || 25;
+        const taxRate = (gig.taxPercentage !== null && gig.taxPercentage !== undefined) ? gig.taxPercentage : (user?.defaultTaxPercentage || 23);
         const estimatedTax = (taxableIncome * taxRate) / 100;
         
         return {
