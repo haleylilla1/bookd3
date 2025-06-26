@@ -7,7 +7,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
-import { ChevronLeft, ChevronRight, Edit2, Save, X, DollarSign, Calendar, Users, TrendingUp } from "lucide-react";
+import { ChevronLeft, ChevronRight, Edit2, Save, X, DollarSign, Calendar, Users, TrendingUp, Receipt, Calculator, PiggyBank } from "lucide-react";
 import type { Gig, User } from "@shared/schema";
 
 type TimePeriod = "monthly" | "annual";
@@ -19,6 +19,9 @@ export default function Dashboard() {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [showEarningsBreakdown, setShowEarningsBreakdown] = useState(false);
   const [showProjectedBreakdown, setShowProjectedBreakdown] = useState(false);
+  const [showTaxBreakdown, setShowTaxBreakdown] = useState(false);
+  const [showTipsBreakdown, setShowTipsBreakdown] = useState(false);
+  const [showExpensesBreakdown, setShowExpensesBreakdown] = useState(false);
   
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -99,6 +102,9 @@ export default function Dashboard() {
       return {
         actualEarnings: 0,
         projectedEarnings: 0,
+        totalTips: 0,
+        totalExpenses: 0,
+        estimatedTax: 0,
         completedGigs: 0,
         upcomingGigs: 0,
         totalGigs: 0
@@ -115,6 +121,19 @@ export default function Dashboard() {
       return sum + actualPay + tips;
     }, 0);
     
+    // Calculate total tips from completed gigs
+    const totalTips = completedGigs.reduce((sum, gig) => {
+      return sum + safeParseFloat(gig.tips);
+    }, 0);
+    
+    // Calculate total expenses from all gigs
+    const totalExpenses = currentPeriodGigs.reduce((sum, gig) => {
+      const parkingExpense = safeParseFloat(gig.parkingExpense);
+      const otherExpenses = safeParseFloat(gig.otherExpenses);
+      const mileageDeduction = (gig.mileage || 0) * 0.67; // Standard mileage rate $0.67/mile
+      return sum + parkingExpense + otherExpenses + mileageDeduction;
+    }, 0);
+    
     // Calculate projected earnings: actual for completed, expected for upcoming
     const projectedEarnings = currentPeriodGigs.reduce((sum, gig) => {
       if (gig.status === "completed") {
@@ -127,9 +146,23 @@ export default function Dashboard() {
       }
     }, 0);
 
+    // Calculate estimated tax (use average tax percentage from gigs, or default 25%)
+    const gigTaxRates = currentPeriodGigs
+      .map(gig => gig.taxPercentage || 0)
+      .filter(rate => rate > 0);
+    const avgTaxRate = gigTaxRates.length > 0 
+      ? gigTaxRates.reduce((sum, rate) => sum + rate, 0) / gigTaxRates.length 
+      : 25; // Default 25%
+    
+    const taxableIncome = Math.max(0, actualEarnings - totalExpenses);
+    const estimatedTax = (taxableIncome * avgTaxRate) / 100;
+
     return {
-      actualEarnings: Math.round(actualEarnings * 100) / 100, // Round to 2 decimal places
+      actualEarnings: Math.round(actualEarnings * 100) / 100,
       projectedEarnings: Math.round(projectedEarnings * 100) / 100,
+      totalTips: Math.round(totalTips * 100) / 100,
+      totalExpenses: Math.round(totalExpenses * 100) / 100,
+      estimatedTax: Math.round(estimatedTax * 100) / 100,
       completedGigs: completedGigs.length,
       upcomingGigs: upcomingGigs.length,
       totalGigs: currentPeriodGigs.length
@@ -212,6 +245,65 @@ export default function Dashboard() {
         return {
           ...gig,
           amount
+        };
+      })
+      .filter(gig => gig.amount > 0)
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  };
+
+  const getTaxBreakdown = () => {
+    return currentPeriodGigs
+      .filter(gig => gig.status === "completed")
+      .map(gig => {
+        const actualPay = safeParseFloat(gig.actualPay);
+        const tips = safeParseFloat(gig.tips);
+        const income = actualPay + tips;
+        const parkingExpense = safeParseFloat(gig.parkingExpense);
+        const otherExpenses = safeParseFloat(gig.otherExpenses);
+        const mileageDeduction = (gig.mileage || 0) * 0.67;
+        const totalExpenses = parkingExpense + otherExpenses + mileageDeduction;
+        const taxableIncome = Math.max(0, income - totalExpenses);
+        const taxRate = gig.taxPercentage || 25;
+        const estimatedTax = (taxableIncome * taxRate) / 100;
+        
+        return {
+          ...gig,
+          amount: estimatedTax,
+          taxableIncome,
+          taxRate
+        };
+      })
+      .filter(gig => gig.amount > 0)
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  };
+
+  const getTipsBreakdown = () => {
+    return currentPeriodGigs
+      .filter(gig => gig.status === "completed" && safeParseFloat(gig.tips) > 0)
+      .map(gig => {
+        const tips = safeParseFloat(gig.tips);
+        return {
+          ...gig,
+          amount: tips
+        };
+      })
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  };
+
+  const getExpensesBreakdown = () => {
+    return currentPeriodGigs
+      .map(gig => {
+        const parkingExpense = safeParseFloat(gig.parkingExpense);
+        const otherExpenses = safeParseFloat(gig.otherExpenses);
+        const mileageDeduction = (gig.mileage || 0) * 0.67;
+        const totalExpenses = parkingExpense + otherExpenses + mileageDeduction;
+        
+        return {
+          ...gig,
+          amount: totalExpenses,
+          parkingExpense,
+          otherExpenses,
+          mileageDeduction
         };
       })
       .filter(gig => gig.amount > 0)
@@ -322,6 +414,72 @@ export default function Dashboard() {
                 </p>
               </div>
               <TrendingUp className="w-8 h-8 text-blue-500" />
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Additional Stats Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        {/* Tax Estimate */}
+        <Card 
+          className="cursor-pointer hover:shadow-md transition-shadow"
+          onClick={() => setShowTaxBreakdown(true)}
+        >
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">Tax Estimate</p>
+                <p className="text-2xl font-bold text-red-600">
+                  ${periodStats.estimatedTax.toFixed(2)}
+                </p>
+                <p className="text-xs text-gray-500 mt-1">
+                  Set aside for taxes
+                </p>
+              </div>
+              <Calculator className="w-8 h-8 text-red-500" />
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Tips Earned */}
+        <Card 
+          className="cursor-pointer hover:shadow-md transition-shadow"
+          onClick={() => setShowTipsBreakdown(true)}
+        >
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">Tips Earned</p>
+                <p className="text-2xl font-bold text-purple-600">
+                  ${periodStats.totalTips.toFixed(2)}
+                </p>
+                <p className="text-xs text-gray-500 mt-1">
+                  From completed gigs
+                </p>
+              </div>
+              <PiggyBank className="w-8 h-8 text-purple-500" />
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Expenses Breakdown */}
+        <Card 
+          className="cursor-pointer hover:shadow-md transition-shadow"
+          onClick={() => setShowExpensesBreakdown(true)}
+        >
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">Total Expenses</p>
+                <p className="text-2xl font-bold text-orange-600">
+                  ${periodStats.totalExpenses.toFixed(2)}
+                </p>
+                <p className="text-xs text-gray-500 mt-1">
+                  Deductible expenses
+                </p>
+              </div>
+              <Receipt className="w-8 h-8 text-orange-500" />
             </div>
           </CardContent>
         </Card>
