@@ -41,10 +41,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // SIMPLIFIED USER ENDPOINT - No complex error handling
-  app.get("/api/user", (req, res) => {
-    if (req.requireAuth() && req.user) {
-      res.json(req.user);
-    } else {
+  app.get("/api/user", requireAuth, async (req, res) => {
+    try {
+      const userId = getCurrentUserId(req);
+      const user = await storage.getUser(userId);
+      if (user) {
+        res.json({
+          id: user.id,
+          name: user.name,
+          email: user.email
+        });
+      } else {
+        res.status(404).json({ message: "User not found" });
+      }
+    } catch (error) {
       res.status(401).json({ message: "Not authenticated" });
     }
   });

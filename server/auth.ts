@@ -261,3 +261,14 @@ function setupAuthRoutes(app: Express) {
     });
   });
 }
+
+// Export getCurrentUserId function for use in routes
+export const getCurrentUserId = (req: any): number => {
+  if (!req.isAuthenticated || !req.isAuthenticated()) {
+    throw new Error('User not authenticated');
+  }
+  if (!req.user?.id) {
+    throw new Error('User ID not found');
+  }
+  return req.user.id;
+};
