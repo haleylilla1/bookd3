@@ -95,7 +95,58 @@ export default function Dashboard() {
     return isNaN(parsed) || !isFinite(parsed) ? 0 : Math.max(0, parsed);
   };
 
-  // Calculate earnings with simple totals - no complex grouping needed
+  // Helper function to group multi-day gigs (prevents double-counting)
+  const getGroupedGigs = (gigs: Gig[]): (Gig & { isMultiDay?: boolean; startDate?: string; endDate?: string })[] => {
+    if (!gigs || gigs.length === 0) return [];
+
+    const sortedGigs = [...gigs].sort((a, b) => parseGigDate(a.date).getTime() - parseGigDate(b.date).getTime());
+    const grouped: (Gig & { isMultiDay?: boolean; startDate?: string; endDate?: string })[] = [];
+    const processed = new Set<number>();
+    
+    for (let i = 0; i < sortedGigs.length; i++) {
+      if (processed.has(sortedGigs[i].id)) continue;
+      
+      const currentGig = sortedGigs[i];
+      const similarGigs = [currentGig];
+      processed.add(currentGig.id);
+      
+      // Look for consecutive similar gigs
+      for (let j = i + 1; j < sortedGigs.length; j++) {
+        const nextGig = sortedGigs[j];
+        if (processed.has(nextGig.id)) continue;
+        
+        const lastGigDate = parseGigDate(similarGigs[similarGigs.length - 1].date);
+        const nextDate = parseGigDate(nextGig.date);
+        const dayDiff = (nextDate.getTime() - lastGigDate.getTime()) / (1000 * 60 * 60 * 24);
+        
+        if (nextGig.eventName === currentGig.eventName &&
+            nextGig.clientName === currentGig.clientName &&
+            nextGig.gigType === currentGig.gigType &&
+            dayDiff > 0 && dayDiff <= 7) {
+          similarGigs.push(nextGig);
+          processed.add(nextGig.id);
+        }
+      }
+      
+      // Create consolidated gig entry
+      if (similarGigs.length > 1) {
+        // Multi-day gig - Use only first entry's amount (don't sum duplicates)
+        grouped.push({
+          ...similarGigs[0], // Use first entry data
+          isMultiDay: true,
+          startDate: similarGigs[0].date,
+          endDate: similarGigs[similarGigs.length - 1].date
+        });
+      } else {
+        // Single day gig
+        grouped.push(currentGig);
+      }
+    }
+    
+    return grouped;
+  };
+
+  // Calculate earnings with proper multi-day grouping to prevent double-counting
   const periodStats = useMemo(() => {
     if (!currentPeriodGigs.length) {
       return {
@@ -110,18 +161,21 @@ export default function Dashboard() {
       };
     }
 
-    const completedGigs = currentPeriodGigs.filter(gig => gig.status === "completed");
-    const upcomingGigs = currentPeriodGigs.filter(gig => gig.status !== "completed");
+    // Use grouped gigs to prevent double-counting multi-day events
+    const groupedGigs = getGroupedGigs(currentPeriodGigs);
+    const completedGroupedGigs = groupedGigs.filter(gig => gig.status === "completed");
+    const upcomingGroupedGigs = groupedGigs.filter(gig => gig.status !== "completed");
     
-    // Simple sum of all completed gig earnings (includes multi-day totals naturally)
-    const actualEarnings = completedGigs.reduce((sum, gig) => {
+    // Calculate earnings from grouped gigs (no double-counting)
+    const actualEarnings = completedGroupedGigs.reduce((sum, gig) => {
       return sum + safeParseFloat(gig.actualPay) + safeParseFloat(gig.tips);
     }, 0);
     
-    const totalTips = completedGigs.reduce((sum, gig) => {
+    const totalTips = completedGroupedGigs.reduce((sum, gig) => {
       return sum + safeParseFloat(gig.tips);
     }, 0);
     
+    // For expenses, use original gigs since each day has separate expenses
     const totalExpenses = currentPeriodGigs.reduce((sum, gig) => {
       const parkingExpense = safeParseFloat(gig.parkingExpense);
       const otherExpenses = safeParseFloat(gig.otherExpenses);
@@ -129,7 +183,7 @@ export default function Dashboard() {
       return sum + parkingExpense + otherExpenses + mileageDeduction;
     }, 0);
     
-    const projectedEarnings = currentPeriodGigs.reduce((sum, gig) => {
+    const projectedEarnings = groupedGigs.reduce((sum, gig) => {
       if (gig.status === "completed") {
         return sum + safeParseFloat(gig.actualPay) + safeParseFloat(gig.tips);
       } else {
@@ -140,8 +194,8 @@ export default function Dashboard() {
     // Use user's default tax rate (23%), but allow per-gig overrides (including 0% for under-the-table)
     const userTaxRate = user?.defaultTaxPercentage || 23;
     
-    // Calculate tax estimate using individual gig tax rates where set, otherwise use user default
-    const estimatedTax = completedGigs.reduce((sum, gig) => {
+    // Calculate tax estimate using grouped gigs to prevent double-counting
+    const estimatedTax = completedGroupedGigs.reduce((sum, gig) => {
       const income = safeParseFloat(gig.actualPay) + safeParseFloat(gig.tips);
       const expenses = safeParseFloat(gig.parkingExpense) + safeParseFloat(gig.otherExpenses) + ((gig.mileage || 0) * 0.67);
       const taxableIncome = Math.max(0, income - expenses);
@@ -155,9 +209,9 @@ export default function Dashboard() {
       totalTips: Math.round(totalTips * 100) / 100,
       totalExpenses: Math.round(totalExpenses * 100) / 100,
       estimatedTax: Math.round(estimatedTax * 100) / 100,
-      completedGigs: completedGigs.length,
-      upcomingGigs: upcomingGigs.length,
-      totalGigs: currentPeriodGigs.length
+      completedGigs: completedGroupedGigs.length,
+      upcomingGigs: upcomingGroupedGigs.length,
+      totalGigs: groupedGigs.length
     };
   }, [currentPeriodGigs]);
 
@@ -290,16 +344,15 @@ export default function Dashboard() {
       
       // Create consolidated gig entry
       if (similarGigs.length > 1) {
-        const totalActualPay = similarGigs.reduce((sum, gig) => sum + safeParseFloat(gig.actualPay), 0);
-        const totalTips = similarGigs.reduce((sum, gig) => sum + safeParseFloat(gig.tips), 0);
-        
+        // Multi-day gig - Use only first entry's amount (don't sum duplicates)
         grouped.push({
           ...currentGig,
           isMultiDay: true,
           startDate: similarGigs[0].date,
           endDate: similarGigs[similarGigs.length - 1].date,
-          actualPay: totalActualPay.toString(),
-          tips: totalTips.toString(),
+          // Use amounts from first entry only
+          actualPay: similarGigs[0].actualPay,
+          tips: similarGigs[0].tips,
           gigIds: similarGigs.map(g => g.id)
         });
       } else {
@@ -324,78 +377,10 @@ export default function Dashboard() {
   };
 
   const getProjectedEarningsBreakdown = () => {
-    if (!currentPeriodGigs || currentPeriodGigs.length === 0) return [];
-
-    // Debug log to see what we're working with
-    console.log("Current period gigs for breakdown:", currentPeriodGigs.map(g => ({
-      id: g.id,
-      eventName: g.eventName,
-      date: g.date,
-      expectedPay: g.expectedPay,
-      actualPay: g.actualPay
-    })));
-
-    // First, group multi-day gigs (same logic as calendar)
-    const sortedGigs = [...currentPeriodGigs].sort((a, b) => parseGigDate(a.date).getTime() - parseGigDate(b.date).getTime());
-    const grouped: (Gig & { isMultiDay?: boolean; startDate?: string; endDate?: string; gigIds?: number[] })[] = [];
-    const processed = new Set<number>();
-    
-    for (let i = 0; i < sortedGigs.length; i++) {
-      if (processed.has(sortedGigs[i].id)) continue;
-      
-      const currentGig = sortedGigs[i];
-      const similarGigs = [currentGig];
-      processed.add(currentGig.id);
-      
-      // Look for consecutive similar gigs (same event/client within 7 days)
-      for (let j = i + 1; j < sortedGigs.length; j++) {
-        const nextGig = sortedGigs[j];
-        if (processed.has(nextGig.id)) continue;
-        
-        const lastGigDate = parseGigDate(similarGigs[similarGigs.length - 1].date);
-        const nextDate = parseGigDate(nextGig.date);
-        const dayDiff = (nextDate.getTime() - lastGigDate.getTime()) / (1000 * 60 * 60 * 24);
-        
-        // Group if: same details, within 7 days, and consecutive
-        if (nextGig.eventName === currentGig.eventName &&
-            nextGig.clientName === currentGig.clientName &&
-            nextGig.gigType === currentGig.gigType &&
-            dayDiff > 0 && dayDiff <= 7) {
-          similarGigs.push(nextGig);
-          processed.add(nextGig.id);
-        }
-      }
-      
-      // Create consolidated gig entry
-      if (similarGigs.length > 1) {
-        // Multi-day gig - DO NOT sum amounts (they're duplicated), use only first entry amount
-        console.log("Found multi-day gig:", similarGigs.map(g => ({ id: g.id, amount: g.expectedPay || g.actualPay })));
-        
-        grouped.push({
-          ...currentGig,
-          isMultiDay: true,
-          startDate: similarGigs[0].date,
-          endDate: similarGigs[similarGigs.length - 1].date,
-          // Use original amounts from first entry - don't sum duplicates
-          actualPay: currentGig.actualPay,
-          expectedPay: currentGig.expectedPay,
-          tips: currentGig.tips,
-          gigIds: similarGigs.map(g => g.id)
-        });
-      } else {
-        // Single day gig
-        grouped.push(currentGig);
-      }
-    }
-    
-    console.log("Grouped gigs for breakdown:", grouped.map(g => ({
-      eventName: g.eventName,
-      isMultiDay: g.isMultiDay,
-      amount: g.expectedPay || g.actualPay
-    })));
+    const groupedGigs = getGroupedGigs(currentPeriodGigs);
     
     // Calculate amount and filter/sort
-    return grouped
+    return groupedGigs
       .map(gig => {
         let amount = 0;
         if (gig.status === "completed") {
