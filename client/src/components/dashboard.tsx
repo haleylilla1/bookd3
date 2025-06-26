@@ -375,121 +375,131 @@ export default function Dashboard() {
       </div>
 
       {/* Main Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
         {/* Actual Earnings */}
         <Card 
-          className="cursor-pointer hover:shadow-md transition-shadow"
+          className="cursor-pointer hover:shadow-lg transition-all duration-200 hover:scale-[1.02] border-0 shadow-sm bg-gradient-to-br from-green-50 to-green-100/50"
           onClick={() => setShowEarningsBreakdown(true)}
         >
-          <CardContent className="p-6">
+          <CardContent className="p-8">
             <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Actual Earnings</p>
-                <p className="text-2xl font-bold text-green-600">
+              <div className="flex-1">
+                <p className="text-sm font-semibold text-green-700 uppercase tracking-wide mb-2">Actual Earnings</p>
+                <p className="text-3xl font-bold text-green-800 mb-1">
                   ${periodStats.actualEarnings.toFixed(2)}
                 </p>
-                <p className="text-xs text-gray-500 mt-1">
+                <p className="text-sm text-green-600">
                   From {periodStats.completedGigs} completed gigs
                 </p>
               </div>
-              <DollarSign className="w-8 h-8 text-green-500" />
+              <div className="w-16 h-16 bg-green-500 rounded-2xl flex items-center justify-center shadow-lg">
+                <DollarSign className="w-8 h-8 text-white" />
+              </div>
             </div>
           </CardContent>
         </Card>
 
         {/* Projected Earnings */}
         <Card 
-          className="cursor-pointer hover:shadow-md transition-shadow"
+          className="cursor-pointer hover:shadow-lg transition-all duration-200 hover:scale-[1.02] border-0 shadow-sm bg-gradient-to-br from-blue-50 to-blue-100/50"
           onClick={() => setShowProjectedBreakdown(true)}
         >
-          <CardContent className="p-6">
+          <CardContent className="p-8">
             <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Projected Earnings</p>
-                <p className="text-2xl font-bold text-blue-600">
+              <div className="flex-1">
+                <p className="text-sm font-semibold text-blue-700 uppercase tracking-wide mb-2">Projected Earnings</p>
+                <p className="text-3xl font-bold text-blue-800 mb-1">
                   ${periodStats.projectedEarnings.toFixed(2)}
                 </p>
-                <p className="text-xs text-gray-500 mt-1">
+                <p className="text-sm text-blue-600">
                   From {periodStats.totalGigs} total gigs
                 </p>
               </div>
-              <TrendingUp className="w-8 h-8 text-blue-500" />
+              <div className="w-16 h-16 bg-blue-500 rounded-2xl flex items-center justify-center shadow-lg">
+                <TrendingUp className="w-8 h-8 text-white" />
+              </div>
             </div>
           </CardContent>
         </Card>
       </div>
 
       {/* Additional Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
         {/* Tax Estimate */}
         <Card 
-          className="cursor-pointer hover:shadow-md transition-shadow"
+          className="cursor-pointer hover:shadow-lg transition-all duration-200 hover:scale-[1.02] border-0 shadow-sm bg-gradient-to-br from-red-50 to-red-100/50"
           onClick={() => setShowTaxBreakdown(true)}
         >
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Tax Estimate</p>
-                <p className="text-2xl font-bold text-red-600">
+              <div className="flex-1">
+                <p className="text-xs font-semibold text-red-700 uppercase tracking-wide mb-2">Tax Estimate</p>
+                <p className="text-2xl font-bold text-red-800 mb-1">
                   ${periodStats.estimatedTax.toFixed(2)}
                 </p>
-                <p className="text-xs text-gray-500 mt-1">
+                <p className="text-xs text-red-600">
                   Set aside for taxes
                 </p>
               </div>
-              <Calculator className="w-8 h-8 text-red-500" />
+              <div className="w-12 h-12 bg-red-500 rounded-xl flex items-center justify-center shadow-md">
+                <Calculator className="w-6 h-6 text-white" />
+              </div>
             </div>
           </CardContent>
         </Card>
 
         {/* Tips Earned */}
         <Card 
-          className="cursor-pointer hover:shadow-md transition-shadow"
+          className="cursor-pointer hover:shadow-lg transition-all duration-200 hover:scale-[1.02] border-0 shadow-sm bg-gradient-to-br from-purple-50 to-purple-100/50"
           onClick={() => setShowTipsBreakdown(true)}
         >
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Tips Earned</p>
-                <p className="text-2xl font-bold text-purple-600">
+              <div className="flex-1">
+                <p className="text-xs font-semibold text-purple-700 uppercase tracking-wide mb-2">Tips Earned</p>
+                <p className="text-2xl font-bold text-purple-800 mb-1">
                   ${periodStats.totalTips.toFixed(2)}
                 </p>
-                <p className="text-xs text-gray-500 mt-1">
+                <p className="text-xs text-purple-600">
                   From completed gigs
                 </p>
               </div>
-              <PiggyBank className="w-8 h-8 text-purple-500" />
+              <div className="w-12 h-12 bg-purple-500 rounded-xl flex items-center justify-center shadow-md">
+                <PiggyBank className="w-6 h-6 text-white" />
+              </div>
             </div>
           </CardContent>
         </Card>
 
         {/* Expenses Breakdown */}
         <Card 
-          className="cursor-pointer hover:shadow-md transition-shadow"
+          className="cursor-pointer hover:shadow-lg transition-all duration-200 hover:scale-[1.02] border-0 shadow-sm bg-gradient-to-br from-orange-50 to-orange-100/50"
           onClick={() => setShowExpensesBreakdown(true)}
         >
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Total Expenses</p>
-                <p className="text-2xl font-bold text-orange-600">
+              <div className="flex-1">
+                <p className="text-xs font-semibold text-orange-700 uppercase tracking-wide mb-2">Total Expenses</p>
+                <p className="text-2xl font-bold text-orange-800 mb-1">
                   ${periodStats.totalExpenses.toFixed(2)}
                 </p>
-                <p className="text-xs text-gray-500 mt-1">
+                <p className="text-xs text-orange-600">
                   Deductible expenses
                 </p>
               </div>
-              <Receipt className="w-8 h-8 text-orange-500" />
+              <div className="w-12 h-12 bg-orange-500 rounded-xl flex items-center justify-center shadow-md">
+                <Receipt className="w-6 h-6 text-white" />
+              </div>
             </div>
           </CardContent>
         </Card>
       </div>
 
       {/* Goal Section */}
-      <Card className="mb-6">
-        <CardContent className="p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold">
+      <Card className="mb-8 border-0 shadow-lg bg-gradient-to-br from-slate-50 to-slate-100/50">
+        <CardContent className="p-8">
+          <div className="flex items-center justify-between mb-6">
+            <h3 className="text-xl font-bold text-slate-800">
               {selectedPeriod === "monthly" ? "Monthly" : "Annual"} Goal
             </h3>
             {!editingGoal && (
@@ -497,6 +507,7 @@ export default function Dashboard() {
                 variant="ghost"
                 size="sm"
                 onClick={() => startEditingGoal(selectedPeriod)}
+                className="hover:bg-slate-200/50 text-slate-600 font-medium"
               >
                 <Edit2 className="w-4 h-4 mr-2" />
                 Edit Goal
@@ -528,23 +539,23 @@ export default function Dashboard() {
             <div>
               {currentGoal?.goalAmount ? (
                 <>
-                  <div className="text-2xl font-bold mb-2">
+                  <div className="text-3xl font-bold mb-4 text-slate-800">
                     ${parseFloat(currentGoal.goalAmount).toFixed(2)}
                   </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2">
+                  <div className="w-full bg-slate-200 rounded-full h-3 shadow-inner">
                     <div
-                      className="bg-green-500 h-2 rounded-full transition-all"
+                      className="bg-gradient-to-r from-green-500 to-green-600 h-3 rounded-full transition-all duration-500 shadow-sm"
                       style={{
                         width: `${Math.min(100, (periodStats.actualEarnings / parseFloat(currentGoal.goalAmount)) * 100)}%`
                       }}
                     />
                   </div>
-                  <p className="text-sm text-gray-600 mt-2">
-                    {((periodStats.actualEarnings / parseFloat(currentGoal.goalAmount)) * 100).toFixed(1)}% achieved
+                  <p className="text-sm text-slate-600 mt-3 font-medium">
+                    {((periodStats.actualEarnings / parseFloat(currentGoal.goalAmount)) * 100).toFixed(1)}% achieved • ${(parseFloat(currentGoal.goalAmount) - periodStats.actualEarnings).toFixed(2)} remaining
                   </p>
                 </>
               ) : (
-                <p className="text-gray-500">No goal set for this period</p>
+                <p className="text-slate-500 text-lg">No goal set for this period</p>
               )}
             </div>
           )}
