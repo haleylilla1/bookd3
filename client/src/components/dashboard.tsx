@@ -7,7 +7,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
-import { ChevronLeft, ChevronRight, Edit2, Save, X, DollarSign, Calendar, Users, TrendingUp, Receipt, Calculator, PiggyBank, FileText, Download } from "lucide-react";
+import { ChevronLeft, ChevronRight, Edit2, Save, X, DollarSign, Calendar, Users, TrendingUp, Receipt, Calculator, PiggyBank, FileText, Download, Eye } from "lucide-react";
 import type { Gig, User } from "@shared/schema";
 
 type TimePeriod = "monthly" | "annual";
@@ -24,6 +24,7 @@ export default function Dashboard() {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [showEarningsBreakdown, setShowEarningsBreakdown] = useState(false);
   const [showProjectedBreakdown, setShowProjectedBreakdown] = useState(false);
+  const [mobilePdfReady, setMobilePdfReady] = useState(false);
   const [showTaxBreakdown, setShowTaxBreakdown] = useState(false);
   const [showTipsBreakdown, setShowTipsBreakdown] = useState(false);
   const [showExpensesBreakdown, setShowExpensesBreakdown] = useState(false);
@@ -294,8 +295,19 @@ export default function Dashboard() {
           throw new Error(`Failed to generate PDF report: ${testResponse.status} ${testResponse.statusText}`);
         }
         
-        // Open PDF in new tab/window - mobile browser will handle download
-        window.open(pdfUrl, '_blank');
+        // For mobile, create a persistent link the user can click
+        console.log('Creating mobile PDF link');
+        
+        // Store the PDF URL for mobile access
+        sessionStorage.setItem('pdfUrl', pdfUrl);
+        sessionStorage.setItem('pdfFilename', `freelancer-report-${year}${selectedPeriod === 'monthly' ? `-${month}` : ''}.pdf`);
+        
+        // Show success message with special mobile handling
+        toast({
+          title: "PDF Ready!",
+          description: "Tap 'View PDF' button that appeared below to open your report.",
+          duration: 10000, // Show longer for mobile users
+        });
         
       } else {
         // Desktop - use traditional blob approach
@@ -343,10 +355,16 @@ export default function Dashboard() {
         }, 1000);
       }
       
-      toast({
-        title: "PDF Downloaded",
-        description: "Your CPA-ready report has been downloaded successfully.",
-      });
+      // Different success messages for mobile vs desktop
+      if (navigator.userAgent.match(/Android|iPhone|iPad|iPod|BlackBerry|IEMobile/i)) {
+        // Mobile user already got custom message above
+        return;
+      } else {
+        toast({
+          title: "PDF Downloaded",
+          description: "Your CPA-ready report has been downloaded successfully.",
+        });
+      }
     } catch (error) {
       console.error('PDF download error:', error);
       
@@ -538,7 +556,7 @@ export default function Dashboard() {
       </div>
 
       {/* Export Options */}
-      <div className="flex justify-end mb-4">
+      <div className="flex justify-end mb-4 gap-2">
         <Button
           variant="outline"
           size="sm"
@@ -548,6 +566,24 @@ export default function Dashboard() {
           <FileText className="w-4 h-4" />
           Download PDF Report
         </Button>
+        
+        {/* Mobile PDF View Button - only show if PDF is ready */}
+        {sessionStorage.getItem('pdfUrl') && navigator.userAgent.match(/Android|iPhone|iPad|iPod|BlackBerry|IEMobile/i) && (
+          <Button
+            variant="default"
+            size="sm"
+            onClick={() => {
+              const pdfUrl = sessionStorage.getItem('pdfUrl');
+              if (pdfUrl) {
+                window.open(pdfUrl, '_blank');
+              }
+            }}
+            className="flex items-center gap-2 bg-green-600 hover:bg-green-700"
+          >
+            <Eye className="w-4 h-4" />
+            View PDF
+          </Button>
+        )}
       </div>
 
       {/* Main Earnings Stats */}
