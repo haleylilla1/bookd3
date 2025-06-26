@@ -1504,24 +1504,24 @@ export default function Dashboard() {
 
       {/* Actual Earnings Breakdown Modal */}
       <Dialog open={showEarningsBreakdown} onOpenChange={setShowEarningsBreakdown}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Actual Earnings Breakdown - {getCurrentPeriodLabel()}</DialogTitle>
+            <DialogTitle>Actual Earnings - {getCurrentPeriodLabel()}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
-            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-4 rounded-lg">
-              <div className="flex justify-between items-center mb-2">
-                <span className="text-sm font-medium text-gray-600">Total Actual Earnings</span>
-                <span className="text-2xl font-bold text-gray-900">
+            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-3 rounded-lg mb-3">
+              <div className="flex justify-between items-center mb-1">
+                <span className="text-sm font-medium text-gray-600">Total</span>
+                <span className="text-xl font-bold text-gray-900">
                   {formatCurrency(currentData.earnings)}
                 </span>
               </div>
-              <div className="text-sm text-gray-500">
-                {Math.round(currentData.gigs)} completed gigs • {formatCurrency(currentData.avgPerGig)} average per gig
+              <div className="text-xs text-gray-500">
+                {Math.round(currentData.gigs)} completed gigs
               </div>
             </div>
 
-            <div className="max-h-96 overflow-y-auto">
+            <div className="max-h-64 overflow-y-auto">
               {(() => {
                 const filteredGigs = (gigs as any[])?.filter(gig => {
                   const gigDate = new Date(gig.date + 'T00:00:00.000Z');
@@ -1556,44 +1556,39 @@ export default function Dashboard() {
                 );
 
                 return gigList.length > 0 ? (
-                  <div className="space-y-3">
+                  <div className="space-y-2">
                     {gigList.map((gig: any, index: number) => (
-                      <div key={index} className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50">
-                        <div className="flex justify-between items-start mb-2">
-                          <div className="flex-1">
-                            <h4 className="font-medium text-gray-900">{gig.eventName || gig.gigType}</h4>
-                            <p className="text-sm text-gray-600">{gig.clientName}</p>
+                      <div key={index} className="border border-gray-200 rounded p-3 hover:bg-gray-50">
+                        <div className="flex justify-between items-start mb-1">
+                          <div className="flex-1 min-w-0">
+                            <h4 className="font-medium text-sm text-gray-900 truncate">{gig.eventName || gig.gigType}</h4>
+                            <p className="text-xs text-gray-600 truncate">{gig.clientName}</p>
                             <p className="text-xs text-gray-500">
                               {gig.dates.length === 1 
-                                ? new Date(gig.dates[0]).toLocaleDateString()
-                                : `${new Date(gig.dates[0]).toLocaleDateString()} - ${new Date(gig.dates[gig.dates.length - 1]).toLocaleDateString()}`
+                                ? new Date(gig.dates[0]).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+                                : `${new Date(gig.dates[0]).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${new Date(gig.dates[gig.dates.length - 1]).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`
                               }
-                              {gig.dates.length > 1 && ` (${gig.dates.length} days)`}
+                              {gig.dates.length > 1 && ` (${gig.dates.length}d)`}
                             </p>
                           </div>
-                          <div className="text-right">
-                            <div className="text-lg font-bold text-green-600">
+                          <div className="text-right ml-2">
+                            <div className="text-sm font-bold text-green-600">
                               {formatCurrency(gig.originalAmount)}
                             </div>
                             {gig.tips && parseFloat(gig.tips) > 0 && (
-                              <div className="text-sm text-gray-500">
-                                +{formatCurrency(parseFloat(gig.tips))} tips
+                              <div className="text-xs text-gray-500">
+                                +{formatCurrency(parseFloat(gig.tips))}
                               </div>
                             )}
                           </div>
-                        </div>
-                        <div className="flex items-center justify-between text-xs text-gray-500">
-                          <span>{gig.gigType}</span>
-                          <span>Status: {gig.status}</span>
                         </div>
                       </div>
                     ))}
                   </div>
                 ) : (
-                  <div className="text-center py-8 text-gray-500">
-                    <TrendingUp className="w-12 h-12 mx-auto mb-3 text-gray-300" />
-                    <p>No completed gigs found</p>
-                    <p className="text-sm">Complete gigs to see earnings breakdown</p>
+                  <div className="text-center py-6 text-gray-500">
+                    <TrendingUp className="w-8 h-8 mx-auto mb-2 text-gray-300" />
+                    <p className="text-sm">No completed gigs found</p>
                   </div>
                 );
               })()}
@@ -1604,24 +1599,24 @@ export default function Dashboard() {
 
       {/* Projected Earnings Breakdown Modal */}
       <Dialog open={showProjectedBreakdown} onOpenChange={setShowProjectedBreakdown}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Projected Earnings Breakdown - {getCurrentPeriodLabel()}</DialogTitle>
+            <DialogTitle>Projected Earnings - {getCurrentPeriodLabel()}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
-            <div className="bg-gradient-to-r from-green-50 to-emerald-50 p-4 rounded-lg">
-              <div className="flex justify-between items-center mb-2">
-                <span className="text-sm font-medium text-gray-600">Total Projected Earnings</span>
-                <span className="text-2xl font-bold text-gray-900">
+            <div className="bg-gradient-to-r from-green-50 to-emerald-50 p-3 rounded-lg mb-3">
+              <div className="flex justify-between items-center mb-1">
+                <span className="text-sm font-medium text-gray-600">Total</span>
+                <span className="text-xl font-bold text-gray-900">
                   {formatCurrency(projectedData.projectedEarnings)}
                 </span>
               </div>
-              <div className="text-sm text-gray-500">
-                Includes completed + upcoming gigs • Expected pay only (tips not projected)
+              <div className="text-xs text-gray-500">
+                Completed + upcoming gigs
               </div>
             </div>
 
-            <div className="max-h-96 overflow-y-auto">
+            <div className="max-h-64 overflow-y-auto">
               {(() => {
                 const filteredGigs = (gigs as any[])?.filter(gig => {
                   const gigDate = new Date(gig.date + 'T00:00:00.000Z');
@@ -1659,23 +1654,23 @@ export default function Dashboard() {
                 );
 
                 return gigList.length > 0 ? (
-                  <div className="space-y-3">
+                  <div className="space-y-2">
                     {gigList.map((gig: any, index: number) => (
-                      <div key={index} className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50">
-                        <div className="flex justify-between items-start mb-2">
-                          <div className="flex-1">
-                            <h4 className="font-medium text-gray-900">{gig.eventName || gig.gigType}</h4>
-                            <p className="text-sm text-gray-600">{gig.clientName}</p>
+                      <div key={index} className="border border-gray-200 rounded p-3 hover:bg-gray-50">
+                        <div className="flex justify-between items-start mb-1">
+                          <div className="flex-1 min-w-0">
+                            <h4 className="font-medium text-sm text-gray-900 truncate">{gig.eventName || gig.gigType}</h4>
+                            <p className="text-xs text-gray-600 truncate">{gig.clientName}</p>
                             <p className="text-xs text-gray-500">
                               {gig.dates.length === 1 
-                                ? new Date(gig.dates[0]).toLocaleDateString()
-                                : `${new Date(gig.dates[0]).toLocaleDateString()} - ${new Date(gig.dates[gig.dates.length - 1]).toLocaleDateString()}`
+                                ? new Date(gig.dates[0]).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+                                : `${new Date(gig.dates[0]).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${new Date(gig.dates[gig.dates.length - 1]).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`
                               }
-                              {gig.dates.length > 1 && ` (${gig.dates.length} days)`}
+                              {gig.dates.length > 1 && ` (${gig.dates.length}d)`}
                             </p>
                           </div>
-                          <div className="text-right">
-                            <div className="text-lg font-bold text-blue-600">
+                          <div className="text-right ml-2">
+                            <div className="text-sm font-bold text-blue-600">
                               {formatCurrency(gig.originalAmount)}
                             </div>
                             <div className="text-xs text-gray-500">
@@ -1683,8 +1678,8 @@ export default function Dashboard() {
                             </div>
                           </div>
                         </div>
-                        <div className="flex items-center justify-between text-xs text-gray-500">
-                          <span>{gig.gigType}</span>
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="text-gray-500">{gig.gigType}</span>
                           <span className={`px-2 py-1 rounded-full text-xs ${
                             gig.status === 'completed' 
                               ? 'bg-green-100 text-green-700' 
@@ -1697,10 +1692,9 @@ export default function Dashboard() {
                     ))}
                   </div>
                 ) : (
-                  <div className="text-center py-8 text-gray-500">
-                    <TrendingUp className="w-12 h-12 mx-auto mb-3 text-gray-300" />
-                    <p>No gigs found</p>
-                    <p className="text-sm">Add gigs to see projected earnings breakdown</p>
+                  <div className="text-center py-6 text-gray-500">
+                    <TrendingUp className="w-8 h-8 mx-auto mb-2 text-gray-300" />
+                    <p className="text-sm">No gigs found</p>
                   </div>
                 );
               })()}
