@@ -152,7 +152,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // PDF Report endpoints
   app.get('/api/reports/pdf', requireAuth, async (req: any, res) => {
     try {
-      const userId = getCurrentUserId(req);
+      const userId = req.user?.id;
+      if (!userId) {
+        return res.status(401).json({ message: 'User not authenticated' });
+      }
       const { period, year, month } = req.query;
 
       if (!period || !year) {
@@ -163,15 +166,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: 'Month is required for monthly reports' });
       }
 
-      const { PDFReportGenerator } = await import('./pdf-generator');
-      const generator = new PDFReportGenerator();
-      
-      const pdfBuffer = await generator.generateReport({
+      const { generateSimplePDF } = await import('./simple-pdf');
+      const pdfBuffer = await generateSimplePDF(
         userId,
-        period: period as 'monthly' | 'annual',
-        year: parseInt(year as string),
-        month: month ? parseInt(month as string) : undefined
-      });
+        period as string,
+        parseInt(year as string),
+        month ? parseInt(month as string) : undefined
+      );
 
       const filename = period === 'monthly' 
         ? `freelancer-report-${year}-${month}.pdf`
