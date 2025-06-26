@@ -277,8 +277,10 @@ export default function Dashboard() {
       
       console.log('Requesting PDF with params:', params.toString());
       
-      // Check if mobile device first
-      const isMobile = navigator.userAgent.match(/Android|iPhone|iPad|iPod|BlackBerry|IEMobile/i);
+      // Enhanced mobile detection for universal compatibility
+      const isMobile = /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini|Mobile|mobile|CriOS/i.test(navigator.userAgent) ||
+                       (typeof window.orientation !== 'undefined') ||
+                       (window.innerWidth <= 768);
       
       if (isMobile) {
         // Mobile device - skip fetch/blob entirely, navigate directly to PDF URL
@@ -571,18 +573,36 @@ export default function Dashboard() {
         </Button>
         
         {/* Mobile PDF View Button - only show if PDF is ready and on mobile */}
-        {mobilePdfReady && navigator.userAgent.match(/Android|iPhone|iPad|iPod|BlackBerry|IEMobile/i) && (
+        {mobilePdfReady && (/Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini|Mobile|mobile|CriOS/i.test(navigator.userAgent) || 
+                           (typeof window.orientation !== 'undefined') || 
+                           (window.innerWidth <= 768)) && (
           <Button
             variant="default"
             size="sm"
             onClick={() => {
               const pdfUrl = sessionStorage.getItem('pdfUrl');
               if (pdfUrl) {
-                window.open(pdfUrl, '_blank');
-                // Also try opening in same tab as fallback
-                setTimeout(() => {
+                // Try multiple approaches for maximum compatibility
+                try {
+                  // Method 1: Try window.open first
+                  const newWindow = window.open(pdfUrl, '_blank');
+                  
+                  // Method 2: If popup blocked, create a temporary link
+                  if (!newWindow || newWindow.closed || typeof newWindow.closed === 'undefined') {
+                    console.log('Popup blocked, using link method');
+                    const link = document.createElement('a');
+                    link.href = pdfUrl;
+                    link.target = '_blank';
+                    link.rel = 'noopener noreferrer';
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                  }
+                } catch (error) {
+                  // Method 3: Fallback to same-tab navigation
+                  console.log('All methods failed, using location.href');
                   window.location.href = pdfUrl;
-                }, 500);
+                }
               }
             }}
             className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white"
