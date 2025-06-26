@@ -310,57 +310,9 @@ export default function Dashboard() {
   // Get breakdown data for modals with safe parsing
   const getActualEarningsBreakdown = () => {
     const completedGigs = currentPeriodGigs.filter(gig => gig.status === "completed");
-    if (!completedGigs || completedGigs.length === 0) return [];
-
-    // Group multi-day gigs for completed gigs only
-    const sortedGigs = [...completedGigs].sort((a, b) => parseGigDate(a.date).getTime() - parseGigDate(b.date).getTime());
-    const grouped: (Gig & { isMultiDay?: boolean; startDate?: string; endDate?: string; gigIds?: number[] })[] = [];
-    const processed = new Set<number>();
+    const groupedGigs = getGroupedGigs(completedGigs);
     
-    for (let i = 0; i < sortedGigs.length; i++) {
-      if (processed.has(sortedGigs[i].id)) continue;
-      
-      const currentGig = sortedGigs[i];
-      const similarGigs = [currentGig];
-      processed.add(currentGig.id);
-      
-      // Look for consecutive similar gigs
-      for (let j = i + 1; j < sortedGigs.length; j++) {
-        const nextGig = sortedGigs[j];
-        if (processed.has(nextGig.id)) continue;
-        
-        const lastGigDate = parseGigDate(similarGigs[similarGigs.length - 1].date);
-        const nextDate = parseGigDate(nextGig.date);
-        const dayDiff = (nextDate.getTime() - lastGigDate.getTime()) / (1000 * 60 * 60 * 24);
-        
-        if (nextGig.eventName === currentGig.eventName &&
-            nextGig.clientName === currentGig.clientName &&
-            nextGig.gigType === currentGig.gigType &&
-            dayDiff > 0 && dayDiff <= 7) {
-          similarGigs.push(nextGig);
-          processed.add(nextGig.id);
-        }
-      }
-      
-      // Create consolidated gig entry
-      if (similarGigs.length > 1) {
-        // Multi-day gig - Use only first entry's amount (don't sum duplicates)
-        grouped.push({
-          ...currentGig,
-          isMultiDay: true,
-          startDate: similarGigs[0].date,
-          endDate: similarGigs[similarGigs.length - 1].date,
-          // Use amounts from first entry only
-          actualPay: similarGigs[0].actualPay,
-          tips: similarGigs[0].tips,
-          gigIds: similarGigs.map(g => g.id)
-        });
-      } else {
-        grouped.push(currentGig);
-      }
-    }
-    
-    return grouped
+    return groupedGigs
       .map(gig => {
         const actualPay = safeParseFloat(gig.actualPay);
         const tips = safeParseFloat(gig.tips);
