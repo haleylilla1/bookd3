@@ -104,50 +104,43 @@ export async function generateProfessionalHTML(options: ReportOptions): Promise<
 </head>
 <body>
     <div class="container">
-        <!-- Cover Page -->
+        <!-- Cover Page - Matching Exact Format -->
         <div class="page">
-            <div class="header">
-                <h1>PROFESSIONAL FREELANCER REPORT</h1>
-                <h2>${data.period}</h2>
-                <p>Generated on ${new Date().toLocaleDateString()}</p>
-            </div>
-            
-            <div class="info-box">
-                <h3>FREELANCER INFORMATION</h3>
-                <p><strong>Name:</strong> ${(data.user.firstName || '') + ' ' + (data.user.lastName || '')}</p>
-                <p><strong>Email:</strong> ${data.user.email || 'N/A'}</p>
-                <p><strong>Report Period:</strong> ${data.period}</p>
-                <p><strong>Generated:</strong> ${new Date().toLocaleDateString()}</p>
-            </div>
-            
-            <div class="info-box summary-box">
-                <h3>EXECUTIVE SUMMARY</h3>
-                <p><strong>Total Gigs Completed:</strong> ${data.gigs.length}</p>
-                <p><strong>Gross Income:</strong> <span class="highlight">$${data.totalIncome.toFixed(2)}</span></p>
-                <p><strong>Business Expenses:</strong> $${(data.totalExpenses + data.mileageValue).toFixed(2)}</p>
-                <p><strong>Net Income:</strong> <span class="highlight">$${data.netIncome.toFixed(2)}</span></p>
-                <p><strong>Estimated Taxes (${data.taxPercentage}%):</strong> <span class="tax-highlight">$${data.estimatedTaxes.toFixed(2)}</span></p>
-                <p><strong>After-Tax Income:</strong> <span class="highlight">$${data.afterTaxIncome.toFixed(2)}</span></p>
-            </div>
-            
-            <div class="note">
-                This report is generated for tax preparation purposes. Please consult with a tax professional for filing requirements.
+            <div style="text-align: center; margin-bottom: 50px;">
+                <h1 style="font-size: 32px; margin-bottom: 30px;">FREELANCER INCOME REPORT</h1>
+                
+                <div style="margin: 40px 0;">
+                    <h2 style="font-size: 24px; margin: 20px 0;">${(data.user.firstName || '') + ' ' + (data.user.lastName || '') || 'Freelancer'}</h2>
+                </div>
+                
+                <div style="margin: 40px 0;">
+                    <h2 style="font-size: 20px; margin: 20px 0;">${data.period}</h2>
+                </div>
+                
+                <div style="margin: 40px 0;">
+                    <p style="font-size: 16px; margin: 20px 0;">Generated: ${new Date().toLocaleDateString()}</p>
+                </div>
+                
+                ${data.user.email ? `
+                <div style="margin: 40px 0;">
+                    <p style="font-size: 16px; margin: 20px 0;">Contact: ${data.user.email}</p>
+                </div>
+                ` : ''}
             </div>
         </div>
 
-        <!-- Income Summary Page -->
+        <!-- Income Summary Page - Matching Exact Format -->
         <div class="page">
-            <h2 class="section-title">INCOME SUMMARY</h2>
+            <h2 style="font-size: 24px; margin-bottom: 30px; text-align: center;">INCOME SUMMARY</h2>
             
-            <div class="table-container">
-                <table>
+            <div style="margin: 40px 0;">
+                <table style="width: 100%; border-collapse: collapse; font-family: monospace;">
                     <thead>
                         <tr>
-                            <th>Date</th>
-                            <th>Client/Event</th>
-                            <th>Base Pay</th>
-                            <th>Tips</th>
-                            <th>Total</th>
+                            <th style="text-align: left; padding: 10px 0; border-bottom: 1px solid #333;">Date</th>
+                            <th style="text-align: left; padding: 10px 0; border-bottom: 1px solid #333;">Source</th>
+                            <th style="text-align: left; padding: 10px 0; border-bottom: 1px solid #333;">Type</th>
+                            <th style="text-align: right; padding: 10px 0; border-bottom: 1px solid #333;">Amount</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -156,24 +149,83 @@ export async function generateProfessionalHTML(options: ReportOptions): Promise<
                           const tips = parseFloat(gig.tips || '0');
                           const total = actualPay + tips;
                           const dateStr = gig.date.includes(' - ') ? gig.date : new Date(gig.date).toLocaleDateString();
-                          const eventName = gig.eventName || 'Unnamed Event';
+                          const source = gig.clientName || 'Direct Client';
+                          const type = gig.gigType || 'Service';
                           
                           return `
                             <tr>
-                                <td>${dateStr}</td>
-                                <td>${eventName}</td>
-                                <td>$${actualPay.toFixed(2)}</td>
-                                <td>$${tips.toFixed(2)}</td>
-                                <td><strong>$${total.toFixed(2)}</strong></td>
+                                <td style="padding: 8px 0;">${dateStr}</td>
+                                <td style="padding: 8px 0;">${source}</td>
+                                <td style="padding: 8px 0;">${type}</td>
+                                <td style="padding: 8px 0; text-align: right;">$${total.toFixed(2)}</td>
                             </tr>
                           `;
                         }).join('')}
-                        <tr class="total-row">
-                            <td colspan="4"><strong>TOTAL INCOME:</strong></td>
-                            <td><strong>$${data.totalIncome.toFixed(2)}</strong></td>
-                        </tr>
                     </tbody>
                 </table>
+                
+                <div style="margin-top: 40px; text-align: center;">
+                    <p style="font-size: 18px; font-weight: bold;">TOTAL INCOME: $${data.totalIncome.toFixed(2)}</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Mileage Summary Page - Matching Exact Format -->
+        <div class="page">
+            <h2 style="font-size: 24px; margin-bottom: 30px; text-align: center;">MILEAGE SUMMARY</h2>
+            
+            ${data.gigs.some(g => parseFloat(g.mileage || '0') > 0) ? `
+            <div style="margin: 40px 0;">
+                <table style="width: 100%; border-collapse: collapse; font-family: monospace;">
+                    <thead>
+                        <tr>
+                            <th style="text-align: left; padding: 10px 0; border-bottom: 1px solid #333;">Date</th>
+                            <th style="text-align: left; padding: 10px 0; border-bottom: 1px solid #333;">Purpose</th>
+                            <th style="text-align: right; padding: 10px 0; border-bottom: 1px solid #333;">Miles</th>
+                            <th style="text-align: right; padding: 10px 0; border-bottom: 1px solid #333;">Value</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${data.gigs.filter(g => parseFloat(g.mileage || '0') > 0).map(gig => {
+                          const miles = parseFloat(gig.mileage || '0');
+                          const dateStr = gig.date.includes(' - ') ? gig.date : new Date(gig.date).toLocaleDateString();
+                          const purpose = `${gig.eventName || 'Event'} (${gig.clientName || 'Client'})`;
+                          const value = (miles * MILEAGE_RATE);
+                          
+                          return `
+                            <tr>
+                                <td style="padding: 8px 0;">${dateStr}</td>
+                                <td style="padding: 8px 0;">${purpose}</td>
+                                <td style="padding: 8px 0; text-align: right;">${Math.round(miles)}</td>
+                                <td style="padding: 8px 0; text-align: right;">$${value.toFixed(2)}</td>
+                            </tr>
+                          `;
+                        }).join('')}
+                    </tbody>
+                </table>
+                
+                <div style="margin-top: 40px;">
+                    <p style="font-size: 18px; font-weight: bold; margin: 10px 0;">TOTAL MILEAGE: ${Math.round(data.totalMileage)} miles</p>
+                    <p style="font-size: 18px; font-weight: bold; margin: 10px 0;">TOTAL MILEAGE VALUE: $${data.mileageValue.toFixed(2)}</p>
+                </div>
+            </div>
+            ` : `
+            <div style="text-align: center; margin: 40px 0;">
+                <p style="font-size: 16px;">No mileage recorded for this period.</p>
+            </div>
+            `}
+        </div>
+
+        <!-- Summary Totals Page - Matching Exact Format -->
+        <div class="page">
+            <h2 style="font-size: 24px; margin-bottom: 30px; text-align: center;">SUMMARY TOTALS</h2>
+            
+            <div style="margin: 40px 0; font-size: 18px; line-height: 2;">
+                <p><strong>Total Income: $${data.totalIncome.toFixed(2)}</strong></p>
+                <p><strong>Total Expenses: $${data.totalExpenses.toFixed(2)}</strong></p>
+                <p><strong>Total Mileage: ${Math.round(data.totalMileage)} miles</strong></p>
+                <p><strong>Mileage Value: $${data.mileageValue.toFixed(2)}</strong></p>
+                <p><strong>Net Income: $${data.netIncome.toFixed(2)}</strong></p>
             </div>
         </div>
 

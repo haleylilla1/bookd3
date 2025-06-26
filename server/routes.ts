@@ -314,7 +314,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: 'User not found' });
       }
       
-      const { period, year, month } = req.query;
+      const { period, year, month, professional } = req.query;
 
       if (!period || !year) {
         console.log('Missing period or year');
@@ -326,16 +326,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: 'Month is required for monthly reports' });
       }
 
-      const { generateHTMLPDF } = await import('./html-pdf-generator');
-      // Use professional HTML generator for better formatting
-      const { generateProfessionalHTML } = await import('./professional-html-generator');
+      // Check if professional report is requested
+      if (professional === 'true') {
+        const { generateProfessionalHTML } = await import('./professional-html-generator');
+        
+        const htmlContent = await generateProfessionalHTML({
+          userId,
+          period: period as 'monthly' | 'annual',
+          year: parseInt(year as string),
+          month: month ? parseInt(month as string) : undefined
+        });
+
+        const filename = period === 'monthly' 
+          ? `professional-tax-report-${year}-${month}`
+          : `professional-tax-report-${year}`;
+
+        // Set mobile-friendly HTML headers
+        res.setHeader('Content-Type', 'text/html; charset=utf-8');
+        res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+        res.setHeader('Pragma', 'no-cache');
+        res.setHeader('Expires', '0');
+        
+        return res.send(htmlContent);
+      }
       
-      const htmlContent = await generateProfessionalHTML({
+      // Original quick report format
+      const { generateHTMLPDF } = await import('./html-pdf-generator');
+      
+      const htmlContent = await generateHTMLPDF(
         userId,
-        period: period as 'monthly' | 'annual',
-        year: parseInt(year as string),
-        month: month ? parseInt(month as string) : undefined
-      });
+        period as 'monthly' | 'annual',
+        parseInt(year as string),
+        month ? parseInt(month as string) : undefined
+      );
 
       const filename = period === 'monthly' 
         ? `freelancer-report-${year}-${month}`
