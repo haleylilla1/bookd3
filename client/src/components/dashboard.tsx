@@ -326,6 +326,15 @@ export default function Dashboard() {
   const getProjectedEarningsBreakdown = () => {
     if (!currentPeriodGigs || currentPeriodGigs.length === 0) return [];
 
+    // Debug log to see what we're working with
+    console.log("Current period gigs for breakdown:", currentPeriodGigs.map(g => ({
+      id: g.id,
+      eventName: g.eventName,
+      date: g.date,
+      expectedPay: g.expectedPay,
+      actualPay: g.actualPay
+    })));
+
     // First, group multi-day gigs (same logic as calendar)
     const sortedGigs = [...currentPeriodGigs].sort((a, b) => parseGigDate(a.date).getTime() - parseGigDate(b.date).getTime());
     const grouped: (Gig & { isMultiDay?: boolean; startDate?: string; endDate?: string; gigIds?: number[] })[] = [];
@@ -359,19 +368,18 @@ export default function Dashboard() {
       
       // Create consolidated gig entry
       if (similarGigs.length > 1) {
-        // Multi-day gig - sum the total amounts from original gigs
-        const totalActualPay = similarGigs.reduce((sum, gig) => sum + safeParseFloat(gig.actualPay), 0);
-        const totalExpectedPay = similarGigs.reduce((sum, gig) => sum + safeParseFloat(gig.expectedPay), 0);
-        const totalTips = similarGigs.reduce((sum, gig) => sum + safeParseFloat(gig.tips), 0);
+        // Multi-day gig - DO NOT sum amounts (they're duplicated), use only first entry amount
+        console.log("Found multi-day gig:", similarGigs.map(g => ({ id: g.id, amount: g.expectedPay || g.actualPay })));
         
         grouped.push({
           ...currentGig,
           isMultiDay: true,
           startDate: similarGigs[0].date,
           endDate: similarGigs[similarGigs.length - 1].date,
-          actualPay: totalActualPay.toString(),
-          expectedPay: totalExpectedPay.toString(),
-          tips: totalTips.toString(),
+          // Use original amounts from first entry - don't sum duplicates
+          actualPay: currentGig.actualPay,
+          expectedPay: currentGig.expectedPay,
+          tips: currentGig.tips,
           gigIds: similarGigs.map(g => g.id)
         });
       } else {
@@ -379,6 +387,12 @@ export default function Dashboard() {
         grouped.push(currentGig);
       }
     }
+    
+    console.log("Grouped gigs for breakdown:", grouped.map(g => ({
+      eventName: g.eventName,
+      isMultiDay: g.isMultiDay,
+      amount: g.expectedPay || g.actualPay
+    })));
     
     // Calculate amount and filter/sort
     return grouped
