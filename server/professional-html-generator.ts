@@ -462,13 +462,10 @@ async function prepareReportData(options: ReportOptions): Promise<ReportData> {
 
   // Prepare receipts data with photos and reimbursement status
   const receipts: ReceiptData[] = [];
-  console.log('Processing gigs for receipts:', completedGigs.length);
   
   completedGigs.forEach(gig => {
-    console.log(`Checking gig: ${gig.eventName}, parking: ${gig.parkingExpense}, other: ${gig.otherExpenses}`);
-    
     if (parseFloat(gig.parkingExpense || '0') > 0) {
-      const receiptData = {
+      receipts.push({
         date: gig.date,
         type: 'parking' as const,
         amount: parseFloat(gig.parkingExpense || '0'),
@@ -477,12 +474,10 @@ async function prepareReportData(options: ReportOptions): Promise<ReportData> {
         clientName: gig.clientName || 'Direct Client',
         reimbursed: Boolean((gig as any).parkingReimbursed),
         receipts: Array.isArray((gig as any).parkingReceipts) ? (gig as any).parkingReceipts : []
-      };
-      console.log('Adding parking receipt:', receiptData);
-      receipts.push(receiptData);
+      });
     }
     if (parseFloat(gig.otherExpenses || '0') > 0) {
-      const receiptData = {
+      receipts.push({
         date: gig.date,
         type: 'other' as const,
         amount: parseFloat(gig.otherExpenses || '0'),
@@ -491,13 +486,9 @@ async function prepareReportData(options: ReportOptions): Promise<ReportData> {
         clientName: gig.clientName || 'Direct Client',
         reimbursed: Boolean((gig as any).otherExpensesReimbursed),
         receipts: Array.isArray((gig as any).otherExpenseReceipts) ? (gig as any).otherExpenseReceipts : []
-      };
-      console.log('Adding other expense receipt:', receiptData);
-      receipts.push(receiptData);
+      });
     }
   });
-  
-  console.log('Total receipts prepared:', receipts.length);
 
   const periodStr = options.period === 'monthly' && options.month 
     ? `${new Date(options.year, options.month - 1).toLocaleString('default', { month: 'long' })} ${options.year}`

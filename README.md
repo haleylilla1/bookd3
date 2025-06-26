@@ -32,8 +32,12 @@ Purpose-built for live-service gig workers including brand ambassadors, freelanc
 
 ### PDF Report Generation System - COMPLETE
 - **Professional Tax Reports**: CPA-ready PDF generation with comprehensive financial summaries
+- **Business Expenses & Receipts Page**: Dedicated section showing all parking and other expenses with amounts, gig details, and reimbursement status
+- **Receipt Photo Integration**: Displays uploaded receipt photos when available, clear indication when missing
+- **Reimbursement Tracking**: Visual indicators distinguishing between reimbursed expenses and tax-deductible items
+- **Expense Summary Totals**: Complete breakdown of total expenses, reimbursed amounts, and tax-deductible totals
 - **Manual Table Formatting**: Native jsPDF implementation ensuring maximum browser compatibility
-- **Multi-Page Structure**: Cover page, income summary, mileage logs, and tax calculation totals
+- **Multi-Page Structure**: Cover page, income summary, mileage logs, expense receipts, and tax calculation totals
 - **Dashboard Integration**: One-click PDF download with period-aware file naming (monthly/annual)
 - **Standard Mileage Rate**: IRS-compliant $0.67/mile calculations for accurate tax deductions
 

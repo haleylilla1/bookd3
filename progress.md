@@ -6,8 +6,12 @@
 
 #### 📄 PDF Report Generation System - COMPLETE
 - **Professional Tax Reports**: CPA-ready PDF generation with comprehensive income and expense summaries
+- **Business Expenses & Receipts Page**: Dedicated page showing all expenses with photos, reimbursement status, and visual indicators
+- **Reimbursement Tracking**: Clear distinction between reimbursed expenses and tax-deductible expenses
+- **Receipt Photo Integration**: Displays uploaded receipt photos when available, shows clear indication when missing
+- **Expense Summary**: Complete breakdown of total expenses, reimbursed amounts, and tax-deductible totals
 - **Manual Table Formatting**: Native jsPDF implementation for maximum browser compatibility
-- **Multi-Page Reports**: Cover page, income summary, mileage logs, and tax totals
+- **Multi-Page Reports**: Cover page, income summary, mileage logs, expense receipts, and tax totals
 - **Period-Aware Downloads**: Monthly and annual report generation with smart file naming
 - **Dashboard Integration**: One-click PDF download directly from the main dashboard
 - **Standard Mileage Rate**: IRS-compliant $0.67/mile calculations for tax deductions

@@ -21,6 +21,11 @@ Giggy is a comprehensive gig worker companion app with advanced features includi
 - Maintain simple, clean interface design
 
 ## Recent Changes
+- 2025-06-26: BUSINESS EXPENSES & RECEIPTS PAGE COMPLETE - Added comprehensive expense documentation page to professional tax reports
+- 2025-06-26: Enhanced receipts page displays all parking and other expenses with amounts, gig details, and reimbursement status
+- 2025-06-26: Receipt photo integration shows uploaded photos when available, clear indication when missing
+- 2025-06-26: Visual reimbursement indicators distinguish between reimbursed expenses and tax-deductible items
+- 2025-06-26: Expense summary totals provide complete breakdown of reimbursed vs tax-deductible amounts
 - 2025-06-26: PROFESSIONAL FREELANCER PDF REPORT COMPLETE - Matches exact user-provided format with tax due date reminders
 - 2025-06-26: Replaced quarterly tax estimates with simple 2025 tax payment due dates (Q1: Apr 15, Q2: Jun 16, Q3: Sep 15, Q4: Jan 15 2026)
 - 2025-06-26: Created cover page, income summary, mileage summary, and summary totals matching freelancer report format exactly
