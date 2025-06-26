@@ -16,6 +16,9 @@ Giggy is a comprehensive gig worker companion app with advanced features includi
 - Maintain simple, clean interface design
 
 ## Recent Changes
+- 2025-06-25: FIXED ANNUAL CALCULATION BUG - Annual tab now only shows current year data with proper date filtering
+- 2025-06-25: Enhanced multi-day gig detection with consecutive date validation and 7-day maximum limit
+- 2025-06-25: Improved dashboard logic to filter by period BEFORE grouping to prevent cross-year contamination
 - 2025-06-24: FIXED MULTI-DAY GIG DASHBOARD CALCULATION - Multi-day gigs now show correct totals instead of multiplying by days
 - 2025-06-24: Enhanced dashboard logic to group consecutive days and sum original amounts
 - 2025-06-24: BULLETPROOF ERROR PREVENTION - Users never see errors, all failures handled gracefully

@@ -919,20 +919,39 @@ Be VERY generous in extracting gigs:
           // Single day gig - use as is
           processedGigs.push(gigGroup[0]);
         } else {
-          // Multi-day gig - sum amounts and use first gig as representative
+          // Multi-day gig - check if dates are actually consecutive
           const sortedGroup = gigGroup.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-          const totalActualPay = sortedGroup.reduce((sum, gig) => sum + parseFloat(String(gig.actualPay || "0")), 0);
-          const totalExpectedPay = sortedGroup.reduce((sum, gig) => sum + parseFloat(String(gig.expectedPay || "0")), 0);
-          const totalTips = sortedGroup.reduce((sum, gig) => sum + parseFloat(String(gig.tips || "0")), 0);
           
-          processedGigs.push({
-            ...sortedGroup[0],
-            actualPay: totalActualPay.toString(),
-            expectedPay: totalExpectedPay.toString(),
-            tips: totalTips.toString(),
-            isMultiDay: true,
-            dayCount: sortedGroup.length
-          });
+          // Check if this is actually a consecutive multi-day gig
+          let isConsecutive = true;
+          for (let i = 1; i < sortedGroup.length; i++) {
+            const prevDate = new Date(sortedGroup[i-1].date);
+            const currDate = new Date(sortedGroup[i].date);
+            const diffDays = (currDate.getTime() - prevDate.getTime()) / (1000 * 60 * 60 * 24);
+            if (diffDays > 1) {
+              isConsecutive = false;
+              break;
+            }
+          }
+          
+          if (isConsecutive && sortedGroup.length <= 7) { // Max 7 days to be safe
+            // Multi-day gig - sum amounts and use first gig as representative
+            const totalActualPay = sortedGroup.reduce((sum, gig) => sum + parseFloat(String(gig.actualPay || "0")), 0);
+            const totalExpectedPay = sortedGroup.reduce((sum, gig) => sum + parseFloat(String(gig.expectedPay || "0")), 0);
+            const totalTips = sortedGroup.reduce((sum, gig) => sum + parseFloat(String(gig.tips || "0")), 0);
+            
+            processedGigs.push({
+              ...sortedGroup[0],
+              actualPay: totalActualPay.toString(),
+              expectedPay: totalExpectedPay.toString(),
+              tips: totalTips.toString(),
+              isMultiDay: true,
+              dayCount: sortedGroup.length
+            });
+          } else {
+            // Not consecutive or too many days - treat as separate gigs
+            sortedGroup.forEach(gig => processedGigs.push(gig));
+          }
         }
       });
       
