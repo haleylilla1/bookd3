@@ -136,6 +136,9 @@ function setupAuthRoutes(app: Express) {
   app.post('/api/auth/login', (req, res, next) => {
     console.log('Login attempt:', req.body.email);
     
+    // Ensure we always send JSON responses
+    res.setHeader('Content-Type', 'application/json');
+    
     passport.authenticate('local', (err: any, user: any, info: any) => {
       if (err) {
         console.error('Auth error:', err);
@@ -170,6 +173,9 @@ function setupAuthRoutes(app: Express) {
 
   // Registration
   app.post('/api/auth/register', async (req, res) => {
+    // Ensure we always send JSON responses
+    res.setHeader('Content-Type', 'application/json');
+    
     try {
       const { email, password, name } = req.body;
       

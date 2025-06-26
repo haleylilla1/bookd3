@@ -111,6 +111,12 @@ export default function AuthPage() {
       });
 
       console.log(`${isLogin ? 'Login' : 'Registration'} response:`, response.status);
+      console.log('Response headers:', response.headers.get('content-type'));
+      
+      // Debug: log first few characters of response to identify HTML vs JSON
+      const responseClone = response.clone();
+      const responseText = await responseClone.text();
+      console.log('Response preview:', responseText.substring(0, 100));
 
       if (response.ok) {
         let result;
