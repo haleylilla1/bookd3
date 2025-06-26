@@ -13,7 +13,7 @@ import {
   User
 } from "@shared/schema";
 import { z } from "zod";
-import { isAuthenticated } from "./replitAuth";
+// Using unified authentication system - imports handled below
 // Removed conflicting import - using unified auth system
 import { db } from "./db";
 import { count, gte } from "drizzle-orm";
@@ -22,17 +22,9 @@ import { users } from "@shared/schema";
 export async function registerRoutes(app: Express): Promise<Server> {
   // UNIFIED REPLIT AUTHENTICATION SYSTEM
   
-  // Setup Replit authentication first
-  const { setupAuth } = await import("./replitAuth");
-  await setupAuth(app);
-  
-  // Helper function to get current user ID from Replit Auth session
-  const getCurrentUserId = (req: any) => {
-    if (req?.isAuthenticated && req.isAuthenticated() && req.user?.claims?.sub) {
-      return req.user.claims.sub; // Replit Auth stores user ID in claims.sub
-    }
-    throw new Error('User not authenticated');
-  };
+  // Setup simple, bulletproof authentication system
+  const { setupAuth, requireAuth, getCurrentUserId } = await import("./auth");
+  setupAuth(app);
 
   // Helper function to get current user
   const getCurrentUser = async (req: any): Promise<User | undefined> => {
@@ -50,7 +42,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // SIMPLIFIED USER ENDPOINT - No complex error handling
   app.get("/api/user", (req, res) => {
-    if (req.isAuthenticated() && req.user) {
+    if (req.requireAuth() && req.user) {
       res.json(req.user);
     } else {
       res.status(401).json({ message: "Not authenticated" });
@@ -58,7 +50,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Update user profile
-  app.put("/api/user", isAuthenticated, async (req, res) => {
+  app.put("/api/user", requireAuth, async (req, res) => {
     try {
       const userId = getCurrentUserId(req);
       
@@ -106,7 +98,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Gig routes
-  app.get("/api/gigs", isAuthenticated, async (req, res) => {
+  app.get("/api/gigs", requireAuth, async (req, res) => {
     try {
       const userId = getCurrentUserId(req);
       
@@ -125,7 +117,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/gigs/date-range", isAuthenticated, async (req, res) => {
+  app.get("/api/gigs/date-range", requireAuth, async (req, res) => {
     try {
       const userId = getCurrentUserId(req);
       
@@ -150,7 +142,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Distance calculation endpoint
-  app.post("/api/calculate-distance", isAuthenticated, async (req, res) => {
+  app.post("/api/calculate-distance", requireAuth, async (req, res) => {
     try {
       // SECURITY: Require authentication for API usage
       const userId = getCurrentUserId(req);
@@ -203,7 +195,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // AI-powered gig parsing endpoint
-  app.post("/api/gigs/parse-bulk", isAuthenticated, async (req, res) => {
+  app.post("/api/gigs/parse-bulk", requireAuth, async (req, res) => {
     try {
       const { text } = req.body;
       const userId = getCurrentUserId(req);
@@ -421,7 +413,7 @@ Be VERY generous in extracting gigs:
     }
   });
 
-  app.post("/api/gigs", isAuthenticated, async (req, res) => {
+  app.post("/api/gigs", requireAuth, async (req, res) => {
     try {
       let userId;
       try {
@@ -481,7 +473,7 @@ Be VERY generous in extracting gigs:
     }
   });
 
-  app.put("/api/gigs/:id", isAuthenticated, async (req, res) => {
+  app.put("/api/gigs/:id", requireAuth, async (req, res) => {
     try {
       const userId = getCurrentUserId(req);
       if (!userId || userId <= 0) {
@@ -527,7 +519,7 @@ Be VERY generous in extracting gigs:
     }
   });
 
-  app.delete("/api/gigs/:id", isAuthenticated, async (req, res) => {
+  app.delete("/api/gigs/:id", requireAuth, async (req, res) => {
     try {
       const userId = getCurrentUserId(req);
       if (!userId || userId <= 0) {
@@ -557,7 +549,7 @@ Be VERY generous in extracting gigs:
   });
 
   // Goals routes
-  app.get("/api/goals", isAuthenticated, async (req, res) => {
+  app.get("/api/goals", requireAuth, async (req, res) => {
     try {
       const userId = getCurrentUserId(req);
       if (!userId || userId <= 0) {
@@ -574,7 +566,7 @@ Be VERY generous in extracting gigs:
     }
   });
 
-  app.post("/api/goals", isAuthenticated, async (req, res) => {
+  app.post("/api/goals", requireAuth, async (req, res) => {
     try {
       const userId = getCurrentUserId(req);
       if (!userId || userId <= 0) {
@@ -592,7 +584,7 @@ Be VERY generous in extracting gigs:
     }
   });
 
-  app.put("/api/goals/:id", isAuthenticated, async (req, res) => {
+  app.put("/api/goals/:id", requireAuth, async (req, res) => {
     try {
       const userId = getCurrentUserId(req);
       if (!userId || userId <= 0) {
@@ -625,7 +617,7 @@ Be VERY generous in extracting gigs:
     }
   });
 
-  app.delete("/api/goals/:id", isAuthenticated, async (req, res) => {
+  app.delete("/api/goals/:id", requireAuth, async (req, res) => {
     try {
       const userId = getCurrentUserId(req);
       if (!userId || userId <= 0) {
@@ -1112,7 +1104,7 @@ Be VERY generous in extracting gigs:
   });
 
   // Expenses routes
-  app.get("/api/expenses", isAuthenticated, async (req, res) => {
+  app.get("/api/expenses", requireAuth, async (req, res) => {
     try {
       const userId = getCurrentUserId(req);
       if (!userId || userId <= 0) {
@@ -1151,7 +1143,7 @@ Be VERY generous in extracting gigs:
     }
   });
 
-  app.post("/api/expenses", isAuthenticated, async (req, res) => {
+  app.post("/api/expenses", requireAuth, async (req, res) => {
     try {
       const userId = getCurrentUserId(req);
       if (!userId || userId <= 0) {
@@ -1169,7 +1161,7 @@ Be VERY generous in extracting gigs:
     }
   });
 
-  app.put("/api/expenses/:id", isAuthenticated, async (req, res) => {
+  app.put("/api/expenses/:id", requireAuth, async (req, res) => {
     try {
       const userId = getCurrentUserId(req);
       if (!userId || userId <= 0) {
@@ -1202,7 +1194,7 @@ Be VERY generous in extracting gigs:
     }
   });
 
-  app.delete("/api/expenses/:id", isAuthenticated, async (req, res) => {
+  app.delete("/api/expenses/:id", requireAuth, async (req, res) => {
     try {
       const userId = getCurrentUserId(req);
       if (!userId || userId <= 0) {
@@ -1232,7 +1224,7 @@ Be VERY generous in extracting gigs:
   });
 
   // Budgets routes
-  app.get("/api/budgets", isAuthenticated, async (req, res) => {
+  app.get("/api/budgets", requireAuth, async (req, res) => {
     try {
       const userId = getCurrentUserId(req);
       if (!userId || userId <= 0) {
@@ -1249,7 +1241,7 @@ Be VERY generous in extracting gigs:
     }
   });
 
-  app.get("/api/budgets/month/:month/:year", isAuthenticated, async (req, res) => {
+  app.get("/api/budgets/month/:month/:year", requireAuth, async (req, res) => {
     try {
       const userId = getCurrentUserId(req);
       if (!userId || userId <= 0) {
@@ -1269,7 +1261,7 @@ Be VERY generous in extracting gigs:
     }
   });
 
-  app.post("/api/budgets", isAuthenticated, async (req, res) => {
+  app.post("/api/budgets", requireAuth, async (req, res) => {
     try {
       const userId = getCurrentUserId(req);
       if (!userId || userId <= 0) {
@@ -1287,7 +1279,7 @@ Be VERY generous in extracting gigs:
     }
   });
 
-  app.put("/api/budgets/:id", isAuthenticated, async (req, res) => {
+  app.put("/api/budgets/:id", requireAuth, async (req, res) => {
     try {
       const userId = getCurrentUserId(req);
       if (!userId || userId <= 0) {
@@ -1320,7 +1312,7 @@ Be VERY generous in extracting gigs:
     }
   });
 
-  app.delete("/api/budgets/:id", isAuthenticated, async (req, res) => {
+  app.delete("/api/budgets/:id", requireAuth, async (req, res) => {
     try {
       const userId = getCurrentUserId(req);
       if (!userId || userId <= 0) {
@@ -1350,7 +1342,7 @@ Be VERY generous in extracting gigs:
   });
 
   // Expense Categories routes
-  app.get("/api/expense-categories", isAuthenticated, async (req, res) => {
+  app.get("/api/expense-categories", requireAuth, async (req, res) => {
     try {
       const userId = getCurrentUserId(req);
       if (!userId || userId <= 0) {
@@ -1367,7 +1359,7 @@ Be VERY generous in extracting gigs:
     }
   });
 
-  app.post("/api/expense-categories", isAuthenticated, async (req, res) => {
+  app.post("/api/expense-categories", requireAuth, async (req, res) => {
     try {
       const userId = getCurrentUserId(req);
       if (!userId || userId <= 0) {
@@ -1385,7 +1377,7 @@ Be VERY generous in extracting gigs:
     }
   });
 
-  app.put("/api/expense-categories/:id", isAuthenticated, async (req, res) => {
+  app.put("/api/expense-categories/:id", requireAuth, async (req, res) => {
     try {
       const userId = getCurrentUserId(req);
       if (!userId || userId <= 0) {
@@ -1418,7 +1410,7 @@ Be VERY generous in extracting gigs:
     }
   });
 
-  app.delete("/api/expense-categories/:id", isAuthenticated, async (req, res) => {
+  app.delete("/api/expense-categories/:id", requireAuth, async (req, res) => {
     try {
       const userId = getCurrentUserId(req);
       if (!userId || userId <= 0) {
