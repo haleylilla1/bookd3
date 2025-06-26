@@ -318,8 +318,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: 'Month is required for monthly reports' });
       }
 
-      const { generateSimplePDF } = await import('./simple-pdf-fixed');
-      const pdfBuffer = await generateSimplePDF(
+      const { generateHTMLPDF } = await import('./html-pdf-generator');
+      const htmlContent = await generateHTMLPDF(
         userId,
         period as 'monthly' | 'annual',
         parseInt(year as string),
@@ -327,19 +327,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       );
 
       const filename = period === 'monthly' 
-        ? `freelancer-report-${year}-${month}.pdf`
-        : `freelancer-report-${year}.pdf`;
+        ? `freelancer-report-${year}-${month}`
+        : `freelancer-report-${year}`;
 
-      // Set mobile-friendly headers
-      res.setHeader('Content-Type', 'application/pdf');
-      res.setHeader('Content-Disposition', `inline; filename="${filename}"`);
+      // Set mobile-friendly HTML headers
+      res.setHeader('Content-Type', 'text/html; charset=utf-8');
       res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
       res.setHeader('Pragma', 'no-cache');
       res.setHeader('Expires', '0');
-      res.setHeader('Access-Control-Allow-Origin', '*');
-      res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
       
-      res.send(pdfBuffer);
+      res.send(htmlContent);
     } catch (error: any) {
       console.error('Error generating PDF report:', error);
       console.error('Error stack:', error?.stack);
