@@ -14,6 +14,11 @@ import type { Gig } from "@shared/schema";
 import { formatMonth, addMonths } from "@/lib/dateUtils";
 import ReceiptUpload from "@/components/receipt-upload";
 
+// Utility function to parse dates consistently across timezones (same as dashboard)
+const parseGigDate = (dateString: string): Date => {
+  return new Date(dateString + 'T00:00:00');
+};
+
 // Color mapping for gig status
 const getGigStatusColor = (status: string) => {
   switch (status) {
@@ -770,7 +775,7 @@ function GigEditForm({ gig, onSave, onCancel, isLoading }: GigEditFormProps) {
     tips: gig.tips || "",
     status: gig.status,
     duties: gig.duties || "",
-    taxPercentage: gig.taxPercentage || 0,
+    taxPercentage: (gig.taxPercentage !== null && gig.taxPercentage !== undefined) ? gig.taxPercentage : (user?.defaultTaxPercentage || 23),
     mileage: gig.mileage || 0,
     startingAddress: (user as any)?.homeAddress || "",
     endingAddress: "",

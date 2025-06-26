@@ -18,6 +18,11 @@ Giggy is a comprehensive gig worker companion app with advanced features includi
 - Maintain simple, clean interface design
 
 ## Recent Changes
+- 2025-06-26: GLOBAL TIMEZONE AND TAX FIXES APPLIED - All user accounts now protected from date shifting and inconsistent tax calculations
+- 2025-06-26: Created parseGigDate() utility ensuring consistent UTC date parsing across dashboard, calendar, and all breakdown modals
+- 2025-06-26: Fixed tax percentage initialization in calendar edit forms to use user's profile default (23%) instead of defaulting to 0%
+- 2025-06-26: Enhanced tax breakdown modal to properly handle 0% tax rates for under-the-table payments globally
+- 2025-06-26: All date displays now immune to timezone shifts - June 1st gigs show correctly for users worldwide
 - 2025-06-26: PDF REPORT GENERATION SYSTEM COMPLETE - Professional CPA-ready reports with income, mileage, and tax summaries
 - 2025-06-26: Created comprehensive PDF download functionality with manual table formatting for maximum compatibility
 - 2025-06-26: Implemented cover page, income summary, mileage logs, and summary totals in downloadable PDF format
