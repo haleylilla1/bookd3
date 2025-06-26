@@ -279,13 +279,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: 'Month is required for monthly reports' });
       }
 
-      const { generateSimplePDF } = await import('./simple-pdf');
-      const pdfBuffer = await generateSimplePDF(
+      const { MobilePDFGenerator } = await import('./mobile-pdf');
+      const pdfGenerator = new MobilePDFGenerator();
+      const pdfBuffer = await pdfGenerator.generateReport({
         userId,
-        period as string,
-        parseInt(year as string),
-        month ? parseInt(month as string) : undefined
-      );
+        period: period as 'monthly' | 'annual',
+        year: parseInt(year as string),
+        month: month ? parseInt(month as string) : undefined
+      });
 
       const filename = period === 'monthly' 
         ? `freelancer-report-${year}-${month}.pdf`
