@@ -113,8 +113,22 @@ export default function AuthPage() {
       console.log(`${isLogin ? 'Login' : 'Registration'} response:`, response.status);
 
       if (response.ok) {
-        const result = await response.json();
-        console.log("Success:", result);
+        let result;
+        const contentType = response.headers.get("content-type");
+        
+        if (contentType && contentType.includes("application/json")) {
+          try {
+            result = await response.json();
+            console.log("Success:", result);
+          } catch (jsonError) {
+            console.error("JSON parsing error:", jsonError);
+            // If JSON parsing fails but response is ok, assume success
+            result = { message: "Authentication successful" };
+          }
+        } else {
+          // Non-JSON response but successful
+          result = { message: "Authentication successful" };
+        }
         
         toast({
           title: isLogin ? "Welcome back!" : "Welcome to Giggy!",
@@ -128,7 +142,19 @@ export default function AuthPage() {
           window.location.href = "/";
         }, 500);
       } else {
-        const error = await response.json();
+        let error;
+        try {
+          const contentType = response.headers.get("content-type");
+          if (contentType && contentType.includes("application/json")) {
+            error = await response.json();
+          } else {
+            error = { message: "Authentication failed" };
+          }
+        } catch (jsonError) {
+          console.error("Error JSON parsing failed:", jsonError);
+          error = { message: "Authentication failed" };
+        }
+        
         console.error("Auth error:", error);
         
         toast({
@@ -139,9 +165,20 @@ export default function AuthPage() {
       }
     } catch (error) {
       console.error("Network error:", error);
+      
+      // More specific error handling for different types of errors
+      let errorMessage = "Unable to connect to the server. Please try again.";
+      
+      if (error instanceof SyntaxError) {
+        errorMessage = "Server response error. Please try again.";
+        console.error("JSON parsing failed - server may have returned non-JSON response");
+      } else if (error instanceof TypeError) {
+        errorMessage = "Network connection failed. Please check your connection.";
+      }
+      
       toast({
         title: "Connection Error",
-        description: "Unable to connect to the server. Please try again.",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {
