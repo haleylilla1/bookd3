@@ -626,6 +626,113 @@ export default function Dashboard() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Tax Estimate Breakdown Modal */}
+      <Dialog open={showTaxBreakdown} onOpenChange={setShowTaxBreakdown}>
+        <DialogContent className="max-w-md max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Tax Estimate Breakdown</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            {getTaxBreakdown().map((gig, index) => (
+              <div key={index} className="border rounded-lg p-3">
+                <div className="flex justify-between items-start mb-2">
+                  <div className="flex-1">
+                    <p className="font-medium">{gig.eventName || "Unnamed Gig"}</p>
+                    <p className="text-sm text-gray-600">{gig.clientName}</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="font-semibold text-red-600">${gig.amount.toFixed(2)}</p>
+                    <p className="text-xs text-gray-500">
+                      {new Date(gig.date).toLocaleDateString()}
+                    </p>
+                  </div>
+                </div>
+                <div className="text-xs text-gray-600 mb-2">
+                  Taxable: ${gig.taxableIncome.toFixed(2)} × {gig.taxRate}%
+                </div>
+                <Badge variant="secondary" className="text-xs">
+                  {gig.gigType}
+                </Badge>
+              </div>
+            ))}
+            {getTaxBreakdown().length === 0 && (
+              <p className="text-center text-gray-500 py-4">No tax estimates available</p>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Tips Breakdown Modal */}
+      <Dialog open={showTipsBreakdown} onOpenChange={setShowTipsBreakdown}>
+        <DialogContent className="max-w-md max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Tips Earned Breakdown</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            {getTipsBreakdown().map((gig, index) => (
+              <div key={index} className="border rounded-lg p-3">
+                <div className="flex justify-between items-start mb-2">
+                  <div className="flex-1">
+                    <p className="font-medium">{gig.eventName || "Unnamed Gig"}</p>
+                    <p className="text-sm text-gray-600">{gig.clientName}</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="font-semibold text-purple-600">${gig.amount.toFixed(2)}</p>
+                    <p className="text-xs text-gray-500">
+                      {new Date(gig.date).toLocaleDateString()}
+                    </p>
+                  </div>
+                </div>
+                <Badge variant="secondary" className="text-xs">
+                  {gig.gigType}
+                </Badge>
+              </div>
+            ))}
+            {getTipsBreakdown().length === 0 && (
+              <p className="text-center text-gray-500 py-4">No tips earned yet</p>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Expenses Breakdown Modal */}
+      <Dialog open={showExpensesBreakdown} onOpenChange={setShowExpensesBreakdown}>
+        <DialogContent className="max-w-md max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Expenses Breakdown</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            {getExpensesBreakdown().map((gig, index) => (
+              <div key={index} className="border rounded-lg p-3">
+                <div className="flex justify-between items-start mb-2">
+                  <div className="flex-1">
+                    <p className="font-medium">{gig.eventName || "Unnamed Gig"}</p>
+                    <p className="text-sm text-gray-600">{gig.clientName}</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="font-semibold text-orange-600">${gig.amount.toFixed(2)}</p>
+                    <p className="text-xs text-gray-500">
+                      {new Date(gig.date).toLocaleDateString()}
+                    </p>
+                  </div>
+                </div>
+                <div className="text-xs text-gray-600 mb-2 space-y-1">
+                  {gig.parkingExpense > 0 && <div>Parking: ${gig.parkingExpense.toFixed(2)}</div>}
+                  {gig.otherExpenses > 0 && <div>Other: ${gig.otherExpenses.toFixed(2)}</div>}
+                  {gig.mileageDeduction > 0 && <div>Mileage: ${gig.mileageDeduction.toFixed(2)} ({gig.mileage} mi)</div>}
+                </div>
+                <Badge variant="secondary" className="text-xs">
+                  {gig.gigType}
+                </Badge>
+              </div>
+            ))}
+            {getExpensesBreakdown().length === 0 && (
+              <p className="text-center text-gray-500 py-4">No expenses recorded</p>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
