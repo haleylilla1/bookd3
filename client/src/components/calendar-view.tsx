@@ -303,12 +303,20 @@ export default function CalendarView() {
       updatePayload.mileage = Math.max(0, parseInt(String(updatedData.mileage)) || 0);
     }
     
-    // Handle receipts if they exist
+    // Handle receipts and reimbursement tracking
     if (updatedData.parkingReceipts) {
       updatePayload.parkingReceipts = Array.isArray(updatedData.parkingReceipts) ? updatedData.parkingReceipts : [];
     }
     if (updatedData.otherExpenseReceipts) {
       updatePayload.otherExpenseReceipts = Array.isArray(updatedData.otherExpenseReceipts) ? updatedData.otherExpenseReceipts : [];
+    }
+    
+    // Add reimbursement tracking fields
+    if (updatedData.parkingReimbursed !== undefined) {
+      updatePayload.parkingReimbursed = Boolean(updatedData.parkingReimbursed);
+    }
+    if (updatedData.otherExpensesReimbursed !== undefined) {
+      updatePayload.otherExpensesReimbursed = Boolean(updatedData.otherExpensesReimbursed);
     }
 
     console.log("Saving gig edit:", updatePayload); // Debug log
