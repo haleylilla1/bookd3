@@ -817,7 +817,7 @@ function GigEditForm({ gig, onSave, onCancel, isLoading }: GigEditFormProps) {
       const result = await response.json();
       
       if (result.status === 'success') {
-        const roundedDistance = Math.round(result.distanceMiles * 10) / 10;
+        const roundedDistance = Math.ceil(result.distanceMiles);
         setFormData(prev => ({ 
           ...prev, 
           calculatedMileage: roundedDistance.toString(),
