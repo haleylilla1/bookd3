@@ -28,6 +28,7 @@ Giggy is a comprehensive gig worker companion app with advanced features includi
 - 2025-06-26: Implemented mileage calculation that rounds UP to nearest whole number for tax purposes
 - 2025-06-26: Added missing PUT /api/gigs/:id endpoint for saving gig edits
 - 2025-06-26: Enhanced form validation with safe numeric parsing and error handling
+- 2025-06-26: SIMPLIFIED DASHBOARD CALCULATIONS - Removed complex multi-day grouping logic in favor of simple, efficient summation
 - 2025-06-26: FIXED CRITICAL LOGIC ERRORS - Dashboard and calendar now use consistent UTC date parsing and safe numeric operations
 - 2025-06-26: Enhanced dashboard earnings calculations to include tips and handle null values properly
 - 2025-06-26: Fixed calendar multi-day gig grouping logic to prevent incorrect date comparisons
