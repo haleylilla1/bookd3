@@ -4,6 +4,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Edit2, Trash2, Filter, Calendar, DollarSign, Clock, ChevronLeft, ChevronRight, Car, Calculator } from "lucide-react";
@@ -784,8 +785,10 @@ function GigEditForm({ gig, onSave, onCancel, isLoading }: GigEditFormProps) {
     calculatedMileage: "",
     parkingExpense: gig.parkingExpense || "",
     parkingReceipts: (gig as any).parkingReceipts || [],
+    parkingReimbursed: (gig as any).parkingReimbursed || false,
     otherExpenses: gig.otherExpenses || "",
     otherExpenseReceipts: (gig as any).otherExpenseReceipts || [],
+    otherExpensesReimbursed: (gig as any).otherExpensesReimbursed || false,
   });
 
   const [isCalculatingMileage, setIsCalculatingMileage] = useState(false);
@@ -1076,6 +1079,30 @@ function GigEditForm({ gig, onSave, onCancel, isLoading }: GigEditFormProps) {
             onReceiptsChange={(receipts) => setFormData({ ...formData, otherExpenseReceipts: receipts })}
             maxFiles={3}
           />
+        </div>
+
+        {/* Reimbursement Tracking */}
+        <div className="space-y-2">
+          <div className="flex items-center space-x-2">
+            <Checkbox
+              id="parkingReimbursed"
+              checked={formData.parkingReimbursed}
+              onCheckedChange={(checked) => setFormData({ ...formData, parkingReimbursed: checked })}
+            />
+            <label htmlFor="parkingReimbursed" className="text-sm">
+              Parking expense was reimbursed
+            </label>
+          </div>
+          <div className="flex items-center space-x-2">
+            <Checkbox
+              id="otherExpensesReimbursed"
+              checked={formData.otherExpensesReimbursed}
+              onCheckedChange={(checked) => setFormData({ ...formData, otherExpensesReimbursed: checked })}
+            />
+            <label htmlFor="otherExpensesReimbursed" className="text-sm">
+              Other expenses were reimbursed
+            </label>
+          </div>
         </div>
       </div>
 
