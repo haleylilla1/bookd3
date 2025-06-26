@@ -1,0 +1,462 @@
+import { storage } from './storage';
+import type { User, Gig, Expense } from '@shared/schema';
+
+interface ReportOptions {
+  userId: number;
+  period: 'monthly' | 'annual';
+  year: number;
+  month?: number;
+}
+
+interface ReportData {
+  user: User;
+  gigs: Gig[];
+  expenses: Expense[];
+  period: string;
+  totalIncome: number;
+  totalExpenses: number;
+  totalMileage: number;
+  mileageValue: number;
+  netIncome: number;
+  taxPercentage: number;
+  estimatedTaxes: number;
+  afterTaxIncome: number;
+  receipts: ReceiptData[];
+}
+
+interface ReceiptData {
+  date: string;
+  type: 'parking' | 'other';
+  amount: number;
+  description: string;
+  gigName: string;
+  clientName: string;
+}
+
+export async function generateProfessionalHTML(options: ReportOptions): Promise<string> {
+  const data = await prepareReportData(options);
+  const MILEAGE_RATE = 0.67; // 2024 IRS rate
+  
+  const parkingTotal = data.gigs.reduce((sum, g) => sum + parseFloat(g.parkingExpense || '0'), 0);
+  const otherTotal = data.gigs.reduce((sum, g) => sum + parseFloat(g.otherExpenses || '0'), 0);
+  const quarterlyEstimate = data.estimatedTaxes / 4;
+  
+  return `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Professional Freelancer Report - ${data.period}</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Arial', sans-serif; line-height: 1.6; color: #333; background: #f8f9fa; }
+        .container { max-width: 800px; margin: 0 auto; padding: 20px; }
+        .page { background: white; margin: 20px 0; padding: 30px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        
+        /* Header Styles */
+        .header { text-align: center; border-bottom: 3px solid #2c3e50; padding-bottom: 20px; margin-bottom: 30px; }
+        .header h1 { font-size: 28px; color: #2c3e50; margin-bottom: 10px; }
+        .header h2 { font-size: 18px; color: #7f8c8d; margin-bottom: 5px; }
+        
+        /* Info Boxes */
+        .info-box { border: 2px solid #3498db; border-radius: 8px; padding: 20px; margin: 20px 0; }
+        .info-box h3 { color: #2c3e50; margin-bottom: 15px; font-size: 16px; }
+        .info-box p { margin-bottom: 8px; }
+        
+        .summary-box { border: 2px solid #27ae60; background: #f8fff8; }
+        .tax-box { border: 2px solid #e74c3c; background: #fff8f8; }
+        .expense-box { border: 2px solid #f39c12; background: #fff9f0; }
+        
+        /* Tables */
+        .table-container { overflow-x: auto; margin: 20px 0; }
+        table { width: 100%; border-collapse: collapse; background: white; }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #ddd; }
+        th { background: #f8f9fa; font-weight: bold; color: #2c3e50; }
+        tr:nth-child(even) { background: #f8f9fa; }
+        .total-row { background: #e8f4f8 !important; font-weight: bold; }
+        
+        /* Mobile Responsive */
+        @media (max-width: 768px) {
+            .container { padding: 10px; }
+            .page { padding: 20px; margin: 10px 0; }
+            .header h1 { font-size: 24px; }
+            .header h2 { font-size: 16px; }
+            table { font-size: 14px; }
+            th, td { padding: 8px; }
+        }
+        
+        /* Print Styles */
+        @media print {
+            body { background: white; }
+            .page { box-shadow: none; margin: 0; page-break-after: always; }
+            .page:last-child { page-break-after: auto; }
+        }
+        
+        .section-title { color: #2c3e50; font-size: 20px; margin: 30px 0 15px 0; border-bottom: 2px solid #3498db; padding-bottom: 5px; }
+        .highlight { color: #27ae60; font-weight: bold; }
+        .tax-highlight { color: #e74c3c; font-weight: bold; }
+        .note { font-style: italic; color: #7f8c8d; font-size: 14px; margin-top: 15px; }
+        
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin: 20px 0; }
+        @media (max-width: 768px) { .grid { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Cover Page -->
+        <div class="page">
+            <div class="header">
+                <h1>PROFESSIONAL FREELANCER REPORT</h1>
+                <h2>${data.period}</h2>
+                <p>Generated on ${new Date().toLocaleDateString()}</p>
+            </div>
+            
+            <div class="info-box">
+                <h3>FREELANCER INFORMATION</h3>
+                <p><strong>Name:</strong> ${(data.user.firstName || '') + ' ' + (data.user.lastName || '')}</p>
+                <p><strong>Email:</strong> ${data.user.email || 'N/A'}</p>
+                <p><strong>Report Period:</strong> ${data.period}</p>
+                <p><strong>Generated:</strong> ${new Date().toLocaleDateString()}</p>
+            </div>
+            
+            <div class="info-box summary-box">
+                <h3>EXECUTIVE SUMMARY</h3>
+                <p><strong>Total Gigs Completed:</strong> ${data.gigs.length}</p>
+                <p><strong>Gross Income:</strong> <span class="highlight">$${data.totalIncome.toFixed(2)}</span></p>
+                <p><strong>Business Expenses:</strong> $${(data.totalExpenses + data.mileageValue).toFixed(2)}</p>
+                <p><strong>Net Income:</strong> <span class="highlight">$${data.netIncome.toFixed(2)}</span></p>
+                <p><strong>Estimated Taxes (${data.taxPercentage}%):</strong> <span class="tax-highlight">$${data.estimatedTaxes.toFixed(2)}</span></p>
+                <p><strong>After-Tax Income:</strong> <span class="highlight">$${data.afterTaxIncome.toFixed(2)}</span></p>
+            </div>
+            
+            <div class="note">
+                This report is generated for tax preparation purposes. Please consult with a tax professional for filing requirements.
+            </div>
+        </div>
+
+        <!-- Income Summary Page -->
+        <div class="page">
+            <h2 class="section-title">INCOME SUMMARY</h2>
+            
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Client/Event</th>
+                            <th>Base Pay</th>
+                            <th>Tips</th>
+                            <th>Total</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${data.gigs.map(gig => {
+                          const actualPay = parseFloat(gig.actualPay || '0');
+                          const tips = parseFloat(gig.tips || '0');
+                          const total = actualPay + tips;
+                          const dateStr = gig.date.includes(' - ') ? gig.date : new Date(gig.date).toLocaleDateString();
+                          const eventName = gig.eventName || 'Unnamed Event';
+                          
+                          return `
+                            <tr>
+                                <td>${dateStr}</td>
+                                <td>${eventName}</td>
+                                <td>$${actualPay.toFixed(2)}</td>
+                                <td>$${tips.toFixed(2)}</td>
+                                <td><strong>$${total.toFixed(2)}</strong></td>
+                            </tr>
+                          `;
+                        }).join('')}
+                        <tr class="total-row">
+                            <td colspan="4"><strong>TOTAL INCOME:</strong></td>
+                            <td><strong>$${data.totalIncome.toFixed(2)}</strong></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Tax Breakdown Page -->
+        <div class="page">
+            <h2 class="section-title">TAX BREAKDOWN & ESTIMATES</h2>
+            
+            <div class="info-box tax-box">
+                <h3>TAX CALCULATION BREAKDOWN</h3>
+                <div class="grid">
+                    <div>
+                        <p><strong>INCOME:</strong></p>
+                        <p>Gross Income: $${data.totalIncome.toFixed(2)}</p>
+                        
+                        <p style="margin-top: 15px;"><strong>DEDUCTIONS:</strong></p>
+                        <p>Business Expenses: $${data.totalExpenses.toFixed(2)}</p>
+                        <p>Mileage Deduction (${data.totalMileage.toFixed(1)} mi): $${data.mileageValue.toFixed(2)}</p>
+                        <p>Total Deductions: $${(data.totalExpenses + data.mileageValue).toFixed(2)}</p>
+                    </div>
+                    <div>
+                        <p><strong>NET TAXABLE INCOME:</strong></p>
+                        <p class="highlight" style="font-size: 18px;">$${data.netIncome.toFixed(2)}</p>
+                        
+                        <p style="margin-top: 15px;"><strong>TAX ESTIMATES:</strong></p>
+                        <p>Tax Rate: ${data.taxPercentage}%</p>
+                        <p class="tax-highlight">Estimated Taxes: $${data.estimatedTaxes.toFixed(2)}</p>
+                        <p class="highlight" style="font-size: 18px;">After-Tax Income: $${data.afterTaxIncome.toFixed(2)}</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="info-box">
+                <h3>QUARTERLY TAX ESTIMATES</h3>
+                <p><strong>Recommended quarterly payment:</strong> <span class="tax-highlight">$${quarterlyEstimate.toFixed(2)}</span></p>
+                <p><strong>Due dates:</strong> January 15, April 15, June 15, September 15</p>
+                <div class="note">
+                    Note: These are estimates. Consult a tax professional for accurate calculations.
+                </div>
+            </div>
+        </div>
+
+        <!-- Expense Summary Page -->
+        <div class="page">
+            <h2 class="section-title">EXPENSE & MILEAGE SUMMARY</h2>
+            
+            <div class="info-box expense-box">
+                <h3>EXPENSE TOTALS</h3>
+                <div class="grid">
+                    <div>
+                        <p>Parking Expenses: $${parkingTotal.toFixed(2)}</p>
+                        <p>Other Business Expenses: $${otherTotal.toFixed(2)}</p>
+                        <p><strong>Total Direct Expenses: $${data.totalExpenses.toFixed(2)}</strong></p>
+                    </div>
+                    <div>
+                        <p>Total Business Miles: ${data.totalMileage.toFixed(1)} miles</p>
+                        <p>IRS Mileage Rate: $${MILEAGE_RATE}/mile</p>
+                        <p><strong>Mileage Deduction: $${data.mileageValue.toFixed(2)}</strong></p>
+                    </div>
+                </div>
+                <p style="margin-top: 15px; font-size: 18px;"><strong>TOTAL BUSINESS DEDUCTIONS: <span class="highlight">$${(data.totalExpenses + data.mileageValue).toFixed(2)}</span></strong></p>
+            </div>
+            
+            ${data.gigs.some(g => parseFloat(g.mileage || '0') > 0) ? `
+            <h3 style="margin-top: 30px;">MILEAGE LOG</h3>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Purpose</th>
+                            <th>Miles</th>
+                            <th>Value</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${data.gigs.filter(g => parseFloat(g.mileage || '0') > 0).map(gig => {
+                          const miles = parseFloat(gig.mileage || '0');
+                          const dateStr = gig.date.includes(' - ') ? gig.date : new Date(gig.date).toLocaleDateString();
+                          const purpose = `${gig.eventName || 'Event'} - ${gig.clientName || 'Client'}`;
+                          
+                          return `
+                            <tr>
+                                <td>${dateStr}</td>
+                                <td>${purpose}</td>
+                                <td>${miles.toFixed(1)}</td>
+                                <td>$${(miles * MILEAGE_RATE).toFixed(2)}</td>
+                            </tr>
+                          `;
+                        }).join('')}
+                    </tbody>
+                </table>
+            </div>
+            ` : ''}
+        </div>
+
+        <!-- Receipts Page -->
+        ${data.receipts.length > 0 ? `
+        <div class="page">
+            <h2 class="section-title">RECEIPTS & EXPENSE DOCUMENTATION</h2>
+            
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Type</th>
+                            <th>Description</th>
+                            <th>Amount</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${data.receipts.map(receipt => {
+                          const dateStr = new Date(receipt.date).toLocaleDateString();
+                          const type = receipt.type === 'parking' ? 'Parking' : 'Other';
+                          const description = `${receipt.gigName} (${receipt.clientName})`;
+                          
+                          return `
+                            <tr>
+                                <td>${dateStr}</td>
+                                <td>${type}</td>
+                                <td>${description}</td>
+                                <td>$${receipt.amount.toFixed(2)}</td>
+                            </tr>
+                          `;
+                        }).join('')}
+                        <tr class="total-row">
+                            <td colspan="3"><strong>TOTAL RECEIPTS:</strong></td>
+                            <td><strong>$${data.receipts.reduce((sum, r) => sum + r.amount, 0).toFixed(2)}</strong></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            
+            <div class="info-box">
+                <h3>NOTES FOR TAX FILING</h3>
+                <ul style="margin-left: 20px;">
+                    <li>Keep all original receipts and documentation</li>
+                    <li>Business expenses must be ordinary and necessary</li>
+                    <li>Mileage calculated using IRS standard rate</li>
+                    <li>Consult tax professional for proper categorization</li>
+                </ul>
+            </div>
+        </div>
+        ` : ''}
+    </div>
+</body>
+</html>
+  `;
+}
+
+async function prepareReportData(options: ReportOptions): Promise<ReportData> {
+  const user = await storage.getUser(options.userId);
+  if (!user) throw new Error('User not found');
+
+  // Calculate date range
+  let startDate: string, endDate: string;
+  if (options.period === 'monthly' && options.month) {
+    startDate = `${options.year}-${options.month.toString().padStart(2, '0')}-01`;
+    const nextMonth = options.month === 12 ? 1 : options.month + 1;
+    const nextYear = options.month === 12 ? options.year + 1 : options.year;
+    endDate = `${nextYear}-${nextMonth.toString().padStart(2, '0')}-01`;
+  } else {
+    startDate = `${options.year}-01-01`;
+    endDate = `${options.year + 1}-01-01`;
+  }
+
+  // Get data
+  const gigs = await storage.getGigsByDateRange(options.userId, startDate, endDate);
+  const expenses = await storage.getExpensesByDateRange(options.userId, startDate, endDate);
+  
+  // Group multi-day gigs to prevent double counting
+  const groupedGigs = groupMultiDayGigs(gigs);
+  
+  // Filter completed gigs for income calculations
+  const completedGigs = groupedGigs.filter(g => g.status === 'completed' || g.actualPay);
+  
+  // Calculate totals
+  const totalIncome = completedGigs.reduce((sum, gig) => {
+    const actualPay = parseFloat(gig.actualPay || '0');
+    const tips = parseFloat(gig.tips || '0');
+    return sum + actualPay + tips;
+  }, 0);
+
+  const totalExpenses = completedGigs.reduce((sum, gig) => {
+    const parking = parseFloat(gig.parkingExpense || '0');
+    const other = parseFloat(gig.otherExpenses || '0');
+    return sum + parking + other;
+  }, 0);
+
+  const totalMileage = completedGigs.reduce((sum, gig) => {
+    return sum + (parseFloat(gig.mileage || '0'));
+  }, 0);
+
+  const MILEAGE_RATE = 0.67;
+  const mileageValue = totalMileage * MILEAGE_RATE;
+  const netIncome = totalIncome - totalExpenses - mileageValue;
+  
+  // Tax calculations
+  const taxPercentage = parseFloat(user.defaultTaxPercentage || '23');
+  const estimatedTaxes = netIncome * (taxPercentage / 100);
+  const afterTaxIncome = netIncome - estimatedTaxes;
+
+  // Prepare receipts data
+  const receipts: ReceiptData[] = [];
+  completedGigs.forEach(gig => {
+    if (parseFloat(gig.parkingExpense || '0') > 0) {
+      receipts.push({
+        date: gig.date,
+        type: 'parking',
+        amount: parseFloat(gig.parkingExpense || '0'),
+        description: 'Parking expense',
+        gigName: gig.eventName || 'Unnamed Event',
+        clientName: gig.clientName || 'Direct Client'
+      });
+    }
+    if (parseFloat(gig.otherExpenses || '0') > 0) {
+      receipts.push({
+        date: gig.date,
+        type: 'other',
+        amount: parseFloat(gig.otherExpenses || '0'),
+        description: gig.expenseDescription || 'Other business expense',
+        gigName: gig.eventName || 'Unnamed Event',
+        clientName: gig.clientName || 'Direct Client'
+      });
+    }
+  });
+
+  const periodStr = options.period === 'monthly' && options.month 
+    ? `${new Date(options.year, options.month - 1).toLocaleString('default', { month: 'long' })} ${options.year}`
+    : `${options.year}`;
+
+  return {
+    user,
+    gigs: completedGigs,
+    expenses,
+    period: periodStr,
+    totalIncome,
+    totalExpenses,
+    totalMileage,
+    mileageValue,
+    netIncome,
+    taxPercentage,
+    estimatedTaxes,
+    afterTaxIncome,
+    receipts: receipts.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+  };
+}
+
+function groupMultiDayGigs(gigs: Gig[]): Gig[] {
+  const grouped: Gig[] = [];
+  const processed = new Set<number>();
+
+  for (const gig of gigs) {
+    if (processed.has(gig.id)) continue;
+
+    const multiDayGroup = gigs.filter(g => 
+      g.eventName === gig.eventName && 
+      g.clientName === gig.clientName &&
+      g.actualPay === gig.actualPay &&
+      Math.abs(new Date(g.date).getTime() - new Date(gig.date).getTime()) <= 7 * 24 * 60 * 60 * 1000
+    );
+
+    if (multiDayGroup.length > 1) {
+      // Create consolidated gig entry
+      const dates = multiDayGroup.map(g => new Date(g.date)).sort((a, b) => a.getTime() - b.getTime());
+      const startDate = dates[0].toLocaleDateString();
+      const endDate = dates[dates.length - 1].toLocaleDateString();
+      
+      const consolidatedGig = {
+        ...gig,
+        date: `${startDate} - ${endDate}`,
+        mileage: multiDayGroup.reduce((sum, g) => sum + parseFloat(g.mileage || '0'), 0).toString(),
+        parkingExpense: multiDayGroup.reduce((sum, g) => sum + parseFloat(g.parkingExpense || '0'), 0).toString(),
+        otherExpenses: multiDayGroup.reduce((sum, g) => sum + parseFloat(g.otherExpenses || '0'), 0).toString()
+      };
+      
+      grouped.push(consolidatedGig);
+      multiDayGroup.forEach(g => processed.add(g.id));
+    } else {
+      grouped.push(gig);
+      processed.add(gig.id);
+    }
+  }
+
+  return grouped;
+}

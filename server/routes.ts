@@ -327,12 +327,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const { generateHTMLPDF } = await import('./html-pdf-generator');
-      const htmlContent = await generateHTMLPDF(
+      // Use professional HTML generator for better formatting
+      const { generateProfessionalHTML } = await import('./professional-html-generator');
+      
+      const htmlContent = await generateProfessionalHTML({
         userId,
-        period as 'monthly' | 'annual',
-        parseInt(year as string),
-        month ? parseInt(month as string) : undefined
-      );
+        period: period as 'monthly' | 'annual',
+        year: parseInt(year as string),
+        month: month ? parseInt(month as string) : undefined
+      });
 
       const filename = period === 'monthly' 
         ? `freelancer-report-${year}-${month}`
