@@ -1249,7 +1249,7 @@ Be VERY generous in extracting gigs:
     }
   });
 
-  app.get("/api/budgets/month/:month/:year", async (req, res) => {
+  app.get("/api/budgets/month/:month/:year", isAuthenticated, async (req, res) => {
     try {
       const userId = getCurrentUserId(req);
       if (!userId || userId <= 0) {
@@ -1269,7 +1269,7 @@ Be VERY generous in extracting gigs:
     }
   });
 
-  app.post("/api/budgets", async (req, res) => {
+  app.post("/api/budgets", isAuthenticated, async (req, res) => {
     try {
       const userId = getCurrentUserId(req);
       if (!userId || userId <= 0) {
@@ -1287,7 +1287,7 @@ Be VERY generous in extracting gigs:
     }
   });
 
-  app.put("/api/budgets/:id", async (req, res) => {
+  app.put("/api/budgets/:id", isAuthenticated, async (req, res) => {
     try {
       const userId = getCurrentUserId(req);
       if (!userId || userId <= 0) {
@@ -1320,7 +1320,7 @@ Be VERY generous in extracting gigs:
     }
   });
 
-  app.delete("/api/budgets/:id", async (req, res) => {
+  app.delete("/api/budgets/:id", isAuthenticated, async (req, res) => {
     try {
       const userId = getCurrentUserId(req);
       if (!userId || userId <= 0) {
@@ -1350,7 +1350,7 @@ Be VERY generous in extracting gigs:
   });
 
   // Expense Categories routes
-  app.get("/api/expense-categories", async (req, res) => {
+  app.get("/api/expense-categories", isAuthenticated, async (req, res) => {
     try {
       const userId = getCurrentUserId(req);
       if (!userId || userId <= 0) {
@@ -1367,7 +1367,7 @@ Be VERY generous in extracting gigs:
     }
   });
 
-  app.post("/api/expense-categories", async (req, res) => {
+  app.post("/api/expense-categories", isAuthenticated, async (req, res) => {
     try {
       const userId = getCurrentUserId(req);
       if (!userId || userId <= 0) {
@@ -1385,7 +1385,7 @@ Be VERY generous in extracting gigs:
     }
   });
 
-  app.put("/api/expense-categories/:id", async (req, res) => {
+  app.put("/api/expense-categories/:id", isAuthenticated, async (req, res) => {
     try {
       const userId = getCurrentUserId(req);
       if (!userId || userId <= 0) {
