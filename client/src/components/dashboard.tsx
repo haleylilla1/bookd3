@@ -29,8 +29,8 @@ export default function Dashboard() {
   const [selectedPeriod, setSelectedPeriod] = useState<TimePeriod>("monthly");
   const [editingGoal, setEditingGoal] = useState<"weekly" | "monthly" | "annual" | null>(null);
   const [goalAmount, setGoalAmount] = useState("");
-  // Use June 2025 as the reference date since that's when all the gigs are
-  const [currentDate, setCurrentDate] = useState(new Date(2025, 5, 1)); // June 1, 2025
+  // Use June 2025 as the reference date for calculations
+  const [currentDate, setCurrentDate] = useState(new Date(2025, 5, 1)); // June 1, 2025 (month 5 = June)
   const [showTaxBreakdown, setShowTaxBreakdown] = useState(false);
   const [showExpenseBreakdown, setShowExpenseBreakdown] = useState(false);
   const [showTipsBreakdown, setShowTipsBreakdown] = useState(false);
@@ -320,8 +320,7 @@ export default function Dashboard() {
   const getEarningsForPeriod = () => {
     if (!gigs) return { earnings: 0, gigs: 0, avgPerGig: 0, period: "" };
     
-    // console.log(`[DEBUG] getEarningsForPeriod - Selected period: ${selectedPeriod}, Current year: ${currentDate.getFullYear()}, Current month: ${currentDate.getMonth() + 1}`);
-    // console.log(`[DEBUG] Total gigs before filtering:`, (gigs as any[]).length);
+
     
     // First filter gigs to current period BEFORE grouping
     const filteredGigs = (gigs as any[]).filter(gig => {
@@ -334,12 +333,12 @@ export default function Dashboard() {
         case "monthly":
           const isCurrentMonth = gigDate.getMonth() === currentDate.getMonth() && 
                  gigDate.getFullYear() === currentDate.getFullYear();
-          // console.log(`[DEBUG] Monthly gig ${gig.id}: Date ${gig.date}, Month ${gigDate.getMonth() + 1}, Current Month ${currentDate.getMonth() + 1}, Year ${gigDate.getFullYear()}, Include: ${isCurrentMonth}`);
+
           return isCurrentMonth;
         case "annual":
           const isCurrentYear = gigDate.getFullYear() === currentDate.getFullYear();
           if (selectedPeriod === "annual") {
-            // console.log(`[DEBUG] Gig ${gig.id}: Date ${gig.date}, Year ${gigDate.getFullYear()}, Current Year ${currentDate.getFullYear()}, Include: ${isCurrentYear}`);
+
           }
           return isCurrentYear;
         default:
@@ -349,12 +348,7 @@ export default function Dashboard() {
       }
     });
     
-    // console.log(`[DEBUG] Filtered gigs for ${selectedPeriod}:`, filteredGigs.length);
-    // if (selectedPeriod === "annual") {
-    //   filteredGigs.forEach(gig => {
-    //     console.log(`[DEBUG] Annual gig: ${gig.id}, Date: ${gig.date}, Pay: ${gig.actualPay}, Expected: ${gig.expectedPay}, Status: ${gig.status}`);
-    //   });
-    // }
+
 
     // Only group multi-day gigs within the current period
     const groupedGigs = new Map();
@@ -414,13 +408,7 @@ export default function Dashboard() {
     const totalEarnings = completedGigs.reduce((sum: number, gig: any) => sum + parseFloat(gig.actualPay || "0"), 0);
     const avgPerGig = completedGigs.length > 0 ? totalEarnings / completedGigs.length : 0;
     
-    // console.log(`[DEBUG] ${selectedPeriod} completed gigs:`, completedGigs.length);
-    // console.log(`[DEBUG] ${selectedPeriod} total earnings:`, totalEarnings);
-    // if (selectedPeriod === "annual" || selectedPeriod === "monthly") {
-    //   completedGigs.forEach((gig: any) => {
-    //     console.log(`[DEBUG] ${selectedPeriod} completed gig ${gig.id}: Pay ${gig.actualPay}, Multi-day: ${gig.isMultiDay}, Days: ${gig.dayCount}`);
-    //   });
-    // }
+
     
     switch (selectedPeriod) {
       case "weekly":
@@ -462,7 +450,7 @@ export default function Dashboard() {
         case "monthly":
           const isCurrentMonth2 = gigDate.getMonth() === currentDate.getMonth() && 
                  gigDate.getFullYear() === currentDate.getFullYear();
-          // console.log(`[DEBUG] Monthly projected gig ${gig.id}: Date ${gig.date}, Month ${gigDate.getMonth() + 1}, Current Month ${currentDate.getMonth() + 1}, Year ${gigDate.getFullYear()}, Include: ${isCurrentMonth2}`);
+
           return isCurrentMonth2;
         case "annual":
           const isCurrentYear2 = gigDate.getFullYear() === currentDate.getFullYear();
@@ -538,9 +526,7 @@ export default function Dashboard() {
       .filter((gig: any) => gig.status === "upcoming" || gig.status === "pending_payment")
       .reduce((sum: number, gig: any) => sum + parseFloat(gig.expectedPay || "0"), 0);
     
-    // if (selectedPeriod === "annual") {
-    //   console.log(`[DEBUG] Annual projections - Actual: ${actualEarnings}, Tips: ${actualTips}, Expected: ${expectedEarnings}`);
-    // }
+
     
     const actualWithoutTips = actualEarnings - actualTips;
     const projectedTotal = actualWithoutTips + expectedEarnings;
