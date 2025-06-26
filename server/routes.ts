@@ -592,7 +592,7 @@ Be VERY generous in extracting gigs:
     }
   });
 
-  app.put("/api/goals/:id", async (req, res) => {
+  app.put("/api/goals/:id", isAuthenticated, async (req, res) => {
     try {
       const userId = getCurrentUserId(req);
       if (!userId || userId <= 0) {
@@ -625,7 +625,7 @@ Be VERY generous in extracting gigs:
     }
   });
 
-  app.delete("/api/goals/:id", async (req, res) => {
+  app.delete("/api/goals/:id", isAuthenticated, async (req, res) => {
     try {
       const userId = getCurrentUserId(req);
       if (!userId || userId <= 0) {
@@ -1112,7 +1112,7 @@ Be VERY generous in extracting gigs:
   });
 
   // Expenses routes
-  app.get("/api/expenses", async (req, res) => {
+  app.get("/api/expenses", isAuthenticated, async (req, res) => {
     try {
       const userId = getCurrentUserId(req);
       if (!userId || userId <= 0) {
@@ -1151,7 +1151,7 @@ Be VERY generous in extracting gigs:
     }
   });
 
-  app.post("/api/expenses", async (req, res) => {
+  app.post("/api/expenses", isAuthenticated, async (req, res) => {
     try {
       const userId = getCurrentUserId(req);
       if (!userId || userId <= 0) {
@@ -1169,7 +1169,7 @@ Be VERY generous in extracting gigs:
     }
   });
 
-  app.put("/api/expenses/:id", async (req, res) => {
+  app.put("/api/expenses/:id", isAuthenticated, async (req, res) => {
     try {
       const userId = getCurrentUserId(req);
       if (!userId || userId <= 0) {
@@ -1202,7 +1202,7 @@ Be VERY generous in extracting gigs:
     }
   });
 
-  app.delete("/api/expenses/:id", async (req, res) => {
+  app.delete("/api/expenses/:id", isAuthenticated, async (req, res) => {
     try {
       const userId = getCurrentUserId(req);
       if (!userId || userId <= 0) {
@@ -1232,7 +1232,7 @@ Be VERY generous in extracting gigs:
   });
 
   // Budgets routes
-  app.get("/api/budgets", async (req, res) => {
+  app.get("/api/budgets", isAuthenticated, async (req, res) => {
     try {
       const userId = getCurrentUserId(req);
       if (!userId || userId <= 0) {
