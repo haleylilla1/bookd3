@@ -324,7 +324,8 @@ export default function Dashboard() {
     
     // First filter gigs to current period BEFORE grouping
     const filteredGigs = (gigs as any[]).filter(gig => {
-      const gigDate = new Date(gig.date);
+      // Use UTC parsing to avoid timezone issues
+      const gigDate = new Date(gig.date + 'T00:00:00.000Z');
       
       switch (selectedPeriod) {
         case "weekly":
@@ -335,15 +336,11 @@ export default function Dashboard() {
           const utcMonth = gigDate.getUTCMonth();
           const utcYear = gigDate.getUTCFullYear();
           const isJune2025 = utcMonth === 5 && utcYear === 2025;
-          console.log(`[DEBUG] Monthly gig ${gig.id}: Raw date "${gig.date}", UTC Month ${utcMonth}, UTC Month+1 ${utcMonth + 1}, UTC Year ${utcYear}, Filter: month===5 && year===2025, Result: ${isJune2025}`);
           return isJune2025;
         case "annual":
           // Since all gigs are in 2025, filter for year 2025
           const utcYear2025 = gigDate.getUTCFullYear();
           const is2025 = utcYear2025 === 2025;
-          if (selectedPeriod === "annual") {
-            console.log(`[DEBUG] Annual gig ${gig.id}: Raw date "${gig.date}", UTC Year ${utcYear2025}, Is2025: ${is2025}`);
-          }
           return is2025;
         default:
           const isDefaultMonth = gigDate.getMonth() === currentDate.getMonth() && 
@@ -445,7 +442,8 @@ export default function Dashboard() {
     
     // First filter gigs to current period BEFORE grouping
     const filteredGigs = (gigs as any[]).filter(gig => {
-      const gigDate = new Date(gig.date);
+      // Use UTC parsing to avoid timezone issues
+      const gigDate = new Date(gig.date + 'T00:00:00.000Z');
       
       switch (selectedPeriod) {
         case "weekly":
