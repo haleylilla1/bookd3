@@ -132,16 +132,26 @@ export default function Dashboard() {
       }
     }, 0);
 
-    // Calculate actual average tax rate from gigs (including 0% for under-the-table payments)
-    const gigsWithTaxRates = currentPeriodGigs
-      .filter(gig => typeof gig.taxPercentage === 'number');
+    // Use user's default tax rate (23%), only override for explicitly edited gigs
+    const userTaxRate = user?.defaultTaxPercentage || 23;
     
-    const avgTaxRate = gigsWithTaxRates.length > 0 
-      ? gigsWithTaxRates.reduce((sum, gig) => sum + gig.taxPercentage, 0) / gigsWithTaxRates.length 
-      : 25; // Default 25% only if no tax rates are explicitly set
+    // Calculate tax using individual gig rates where set, otherwise use user default
+    const totalTaxableIncome = completedGigs.reduce((sum, gig) => {
+      const income = safeParseFloat(gig.actualPay) + safeParseFloat(gig.tips);
+      const expenses = safeParseFloat(gig.parkingExpense) + safeParseFloat(gig.otherExpenses) + ((gig.mileage || 0) * 0.67);
+      return sum + Math.max(0, income - expenses);
+    }, 0);
+    
+    const totalTaxEstimate = completedGigs.reduce((sum, gig) => {
+      const income = safeParseFloat(gig.actualPay) + safeParseFloat(gig.tips);
+      const expenses = safeParseFloat(gig.parkingExpense) + safeParseFloat(gig.otherExpenses) + ((gig.mileage || 0) * 0.67);
+      const taxableIncome = Math.max(0, income - expenses);
+      const gigTaxRate = typeof gig.taxPercentage === 'number' ? gig.taxPercentage : userTaxRate;
+      return sum + (taxableIncome * gigTaxRate / 100);
+    }, 0);
     
     const taxableIncome = Math.max(0, actualEarnings - totalExpenses);
-    const estimatedTax = (taxableIncome * avgTaxRate) / 100;
+    const estimatedTax = totalTaxEstimate;
 
     return {
       actualEarnings: Math.round(actualEarnings * 100) / 100,
