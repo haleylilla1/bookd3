@@ -152,10 +152,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // PDF Report endpoints
   app.get('/api/reports/pdf', requireAuth, async (req: any, res) => {
     try {
-      const userId = req.user?.id;
-      if (!userId) {
-        return res.status(401).json({ message: 'User not authenticated' });
-      }
+      const userId = getUserId(req);
       const { period, year, month } = req.query;
 
       if (!period || !year) {
