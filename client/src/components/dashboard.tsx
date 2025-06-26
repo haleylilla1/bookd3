@@ -678,7 +678,7 @@ export default function Dashboard() {
                   <div className="text-right">
                     <p className="font-semibold text-red-600">${gig.amount.toFixed(2)}</p>
                     <p className="text-xs text-gray-500">
-                      {new Date(gig.date).toLocaleDateString()}
+                      {new Date(gig.date + 'T00:00:00').toLocaleDateString()}
                     </p>
                   </div>
                 </div>
