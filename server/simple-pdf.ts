@@ -15,8 +15,7 @@ export async function generateSimplePDF(userId: number, period: string, year: nu
     await import('jspdf-autotable');
     
     const doc = new jsPDF();
-  
-  try {
+    
     // Get user
     const user = await storage.getUser(userId);
     if (!user) throw new Error('User not found');
