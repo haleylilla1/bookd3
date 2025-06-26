@@ -34,11 +34,20 @@ interface ReceiptData {
 }
 
 export async function generateProfessionalHTML(options: ReportOptions): Promise<string> {
-  const data = await prepareReportData(options);
-  const MILEAGE_RATE = 0.67; // 2024 IRS rate
-  
-  const parkingTotal = data.gigs.reduce((sum, g) => sum + parseFloat(g.parkingExpense || '0'), 0);
-  const otherTotal = data.gigs.reduce((sum, g) => sum + parseFloat(g.otherExpenses || '0'), 0);
+  try {
+    const data = await prepareReportData(options);
+    const MILEAGE_RATE = 0.67; // 2024 IRS rate
+    
+    // Safe calculation with error handling
+    const parkingTotal = data.gigs.reduce((sum, g) => {
+      const expense = parseFloat(String(g.parkingExpense || 0));
+      return sum + (isNaN(expense) ? 0 : expense);
+    }, 0);
+    
+    const otherTotal = data.gigs.reduce((sum, g) => {
+      const expense = parseFloat(String(g.otherExpenses || 0));
+      return sum + (isNaN(expense) ? 0 : expense);
+    }, 0);
   
   return `
 <!DOCTYPE html>
@@ -185,8 +194,8 @@ export async function generateProfessionalHTML(options: ReportOptions): Promise<
                         </tr>
                     </thead>
                     <tbody>
-                        ${data.gigs.filter(g => parseFloat(g.mileage || '0') > 0).map(gig => {
-                          const miles = parseFloat(gig.mileage || '0');
+                        ${data.gigs.filter(g => (parseInt(String(g.mileage || 0)) || 0) > 0).map(gig => {
+                          const miles = parseInt(String(gig.mileage || 0)) || 0;
                           const dateStr = gig.date.includes(' - ') ? gig.date : new Date(gig.date).toLocaleDateString();
                           const purpose = `${gig.eventName || 'Event'} (${gig.clientName || 'Client'})`;
                           const value = (miles * MILEAGE_RATE);
@@ -299,6 +308,29 @@ export async function generateProfessionalHTML(options: ReportOptions): Promise<
 </body>
 </html>
   `;
+  } catch (error) {
+    console.error('Error generating professional HTML report:', error);
+    // Return a fallback error page
+    return `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Report Generation Error</title>
+    <style>
+        body { font-family: Arial, sans-serif; text-align: center; padding: 50px; }
+        .error { color: #dc3545; }
+    </style>
+</head>
+<body>
+    <h1 class="error">Report Generation Error</h1>
+    <p>Unable to generate the professional tax report. Please try again later.</p>
+    <p>If this problem persists, please contact support.</p>
+</body>
+</html>
+    `;
+  }
 }
 
 async function prepareReportData(options: ReportOptions): Promise<ReportData> {
@@ -341,16 +373,16 @@ async function prepareReportData(options: ReportOptions): Promise<ReportData> {
   }, 0);
 
   const totalMileage = completedGigs.reduce((sum, gig) => {
-    return sum + (parseFloat(gig.mileage || '0'));
+    return sum + (parseInt(String(gig.mileage || 0)) || 0);
   }, 0);
 
   const MILEAGE_RATE = 0.67;
   const mileageValue = totalMileage * MILEAGE_RATE;
   const netIncome = totalIncome - totalExpenses - mileageValue;
   
-  // Tax calculations
-  const taxPercentage = parseFloat(user.defaultTaxPercentage || '23');
-  const estimatedTaxes = netIncome * (taxPercentage / 100);
+  // Tax calculations with safety checks
+  const taxPercentage = Math.max(0, Math.min(100, parseInt(String(user.defaultTaxPercentage || 23))));
+  const estimatedTaxes = Math.max(0, netIncome * (taxPercentage / 100));
   const afterTaxIncome = netIncome - estimatedTaxes;
 
   // Prepare receipts data
@@ -371,7 +403,7 @@ async function prepareReportData(options: ReportOptions): Promise<ReportData> {
         date: gig.date,
         type: 'other',
         amount: parseFloat(gig.otherExpenses || '0'),
-        description: gig.expenseDescription || 'Other business expense',
+        description: 'Other business expense',
         gigName: gig.eventName || 'Unnamed Event',
         clientName: gig.clientName || 'Direct Client'
       });
