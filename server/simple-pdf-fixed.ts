@@ -1,19 +1,16 @@
+import jsPDF from 'jspdf';
 import { storage } from './storage';
 
-export async function generateBulletproofPDF(
+export async function generateSimplePDF(
   userId: number,
   period: 'monthly' | 'annual',
   year: number,
   month?: number
 ): Promise<Buffer> {
   try {
-    console.log('Starting bulletproof PDF generation for user:', userId);
+    console.log('Starting simple PDF generation for user:', userId);
     
-    // Dynamic import with proper constructor handling
-    const jsPDFModule = await import('jspdf');
-    const jsPDF = jsPDFModule.default || jsPDFModule;
-    
-    // Initialize with basic settings
+    // Initialize PDF with standard settings
     const doc = new jsPDF();
 
     // Get report data with multi-day gig grouping
@@ -26,7 +23,9 @@ export async function generateBulletproofPDF(
       : new Date(year, 11, 31);
 
     const user = await storage.getUser(userId);
-    if (!user) throw new Error('User not found');
+    if (!user) {
+      throw new Error('User not found');
+    }
 
     const allGigs = await storage.getGigsByDateRange(
       userId,
@@ -61,7 +60,7 @@ export async function generateBulletproofPDF(
     // Create PDF content
     let yPos = 30;
     
-    // Title
+    // Title page
     doc.setFontSize(20);
     doc.setFont('helvetica', 'bold');
     doc.text('FREELANCER INCOME REPORT', 105, yPos, { align: 'center' });
@@ -83,7 +82,7 @@ export async function generateBulletproofPDF(
       doc.text(`Contact: ${user.email}`, 105, yPos, { align: 'center' });
     }
 
-    // New page for content
+    // Content page
     doc.addPage();
     yPos = 20;
 
@@ -105,7 +104,7 @@ export async function generateBulletproofPDF(
       doc.setFont('helvetica', 'normal');
       
       const dateStr = gig.date.includes(' - ') ? gig.date : new Date(gig.date).toLocaleDateString();
-      doc.text(`${dateStr}`, 20, yPos);
+      doc.text(dateStr, 20, yPos);
       yPos += 5;
       
       doc.text(`${gig.clientName || 'Direct Client'} - ${gig.gigType || 'Service'}`, 25, yPos);
@@ -148,26 +147,8 @@ export async function generateBulletproofPDF(
     return Buffer.from(pdfOutput);
     
   } catch (error) {
-    console.error('Bulletproof PDF generation error:', error);
-    
-    // Ultimate fallback - create minimal PDF
-    try {
-      const jsPDFModule = await import('jspdf');
-      const jsPDF = jsPDFModule.default || jsPDFModule;
-      const errorDoc = new jsPDF();
-      
-      errorDoc.setFontSize(16);
-      errorDoc.text('PDF Generation Error', 20, 30);
-      errorDoc.setFontSize(12);
-      errorDoc.text('Unable to generate detailed report at this time.', 20, 50);
-      errorDoc.text('Please try again later or contact support.', 20, 70);
-      errorDoc.text(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`, 20, 90);
-      
-      return Buffer.from(errorDoc.output('arraybuffer'));
-    } catch (fallbackError) {
-      console.error('Fallback PDF generation failed:', fallbackError);
-      throw new Error(`PDF generation completely failed: ${fallbackError}`);
-    }
+    console.error('Simple PDF generation error:', error);
+    throw new Error(`PDF generation failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
 }
 
