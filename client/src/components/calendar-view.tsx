@@ -6,7 +6,8 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Edit2, Trash2, Filter, Calendar, DollarSign, Clock, ChevronLeft, ChevronRight, Car } from "lucide-react";
+import { Edit2, Trash2, Filter, Calendar, DollarSign, Clock, ChevronLeft, ChevronRight, Car, Calculator } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
@@ -262,23 +263,51 @@ export default function CalendarView() {
   const handleSaveEdit = (updatedData: any) => {
     if (!editingGig) return;
 
-    // Prepare update payload
-    const updatePayload: any = { ...updatedData };
+    // Prepare update payload with safe numeric parsing
+    const updatePayload: any = {
+      eventName: updatedData.eventName?.trim() || editingGig.eventName,
+      clientName: updatedData.clientName?.trim() || editingGig.clientName,
+      gigType: updatedData.gigType?.trim() || editingGig.gigType,
+      status: updatedData.status || editingGig.status,
+      duties: updatedData.duties || null,
+      taxPercentage: Math.max(0, Math.min(50, updatedData.taxPercentage || 0)),
+    };
     
     // Handle date field mapping
     if (updatedData.startDate && updatedData.startDate !== editingGig.date) {
       updatePayload.date = updatedData.startDate;
     }
     
-    // Convert empty strings to null for numeric fields
-    if (updatePayload.expectedPay === "") updatePayload.expectedPay = null;
-    if (updatePayload.actualPay === "") updatePayload.actualPay = null;
-    if (updatePayload.tips === "") updatePayload.tips = null;
+    // Safe numeric conversions
+    const safeParseFloat = (value: string | number | undefined): string | null => {
+      if (value === "" || value === null || value === undefined) return null;
+      const parsed = parseFloat(String(value));
+      return isNaN(parsed) ? null : parsed.toString();
+    };
     
-    // Remove date range fields that aren't part of the Gig schema
-    delete updatePayload.startDate;
-    delete updatePayload.endDate;
+    updatePayload.expectedPay = safeParseFloat(updatedData.expectedPay);
+    updatePayload.actualPay = safeParseFloat(updatedData.actualPay);
+    updatePayload.tips = safeParseFloat(updatedData.tips);
+    updatePayload.parkingExpense = safeParseFloat(updatedData.parkingExpense);
+    updatePayload.otherExpenses = safeParseFloat(updatedData.otherExpenses);
+    
+    // Handle mileage calculation
+    if (updatedData.calculatedMileage) {
+      updatePayload.mileage = Math.max(0, parseInt(updatedData.calculatedMileage) || 0);
+    } else {
+      updatePayload.mileage = Math.max(0, parseInt(String(updatedData.mileage)) || 0);
+    }
+    
+    // Handle receipts if they exist
+    if (updatedData.parkingReceipts) {
+      updatePayload.parkingReceipts = Array.isArray(updatedData.parkingReceipts) ? updatedData.parkingReceipts : [];
+    }
+    if (updatedData.otherExpenseReceipts) {
+      updatePayload.otherExpenseReceipts = Array.isArray(updatedData.otherExpenseReceipts) ? updatedData.otherExpenseReceipts : [];
+    }
 
+    console.log("Saving gig edit:", updatePayload); // Debug log
+    
     // Use the existing mutation
     updateGigMutation.mutate({
       id: editingGig.id,
@@ -744,6 +773,11 @@ function GigEditForm({ gig, onSave, onCancel, isLoading }: GigEditFormProps) {
     duties: gig.duties || "",
     taxPercentage: gig.taxPercentage || 0,
     mileage: gig.mileage || 0,
+    startingAddress: (user as any)?.homeAddress || "",
+    endingAddress: "",
+    stops: [] as string[],
+    includeRoundtrip: true,
+    calculatedMileage: "",
     parkingExpense: gig.parkingExpense || "",
     parkingReceipts: (gig as any).parkingReceipts || [],
     otherExpenses: gig.otherExpenses || "",
@@ -751,12 +785,63 @@ function GigEditForm({ gig, onSave, onCancel, isLoading }: GigEditFormProps) {
   });
 
   const [isCalculatingMileage, setIsCalculatingMileage] = useState(false);
+  const [trackMileage, setTrackMileage] = useState(false);
 
-  const calculateMileage = async () => {
-    toast({
-      title: "Mileage Tracking",
-      description: "Use the dedicated mileage tracking section to calculate distances with starting/ending addresses.",
-    });
+  const handleCalculateMileage = async () => {
+    // Validate inputs
+    if (!formData.startingAddress?.trim() || !formData.endingAddress?.trim()) {
+      toast({
+        title: "Missing Addresses",
+        description: "Both starting and ending addresses are required for mileage calculation.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsCalculatingMileage(true);
+    
+    try {
+      const response = await fetch("/api/calculate-distance", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          startAddress: formData.startingAddress.trim(),
+          endAddress: formData.endingAddress.trim(),
+          waypoints: formData.stops.filter(stop => stop?.trim()),
+          roundTrip: formData.includeRoundtrip
+        })
+      });
+
+      if (!response.ok) throw new Error("Failed to calculate distance");
+      
+      const result = await response.json();
+      
+      if (result.status === 'success') {
+        const roundedDistance = Math.round(result.distanceMiles * 10) / 10;
+        setFormData(prev => ({ 
+          ...prev, 
+          calculatedMileage: roundedDistance.toString(),
+          mileage: roundedDistance 
+        }));
+        
+        toast({
+          title: "Mileage Calculated",
+          description: `${roundedDistance} miles total${formData.includeRoundtrip ? ' including round trip' : ''}.`,
+        });
+      } else {
+        throw new Error(result.error || "Failed to calculate distance");
+      }
+      
+    } catch (error) {
+      console.error("Mileage calculation error:", error);
+      toast({
+        title: "Calculation Failed",
+        description: "Failed to calculate mileage. Please check your addresses and try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsCalculatingMileage(false);
+    }
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -866,6 +951,58 @@ function GigEditForm({ gig, onSave, onCancel, isLoading }: GigEditFormProps) {
             placeholder="45"
           />
         </div>
+      </div>
+
+      {/* Mileage Calculation Section */}
+      <div className="border-t pt-3 space-y-3">
+        <h4 className="font-medium text-sm">Mileage Calculation</h4>
+        
+        <div className="grid grid-cols-1 gap-3">
+          <div>
+            <label className="block text-xs font-medium mb-1">Starting Address</label>
+            <Input
+              placeholder="Your home or starting location..."
+              value={formData.startingAddress}
+              onChange={(e) => setFormData({ ...formData, startingAddress: e.target.value })}
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-medium mb-1">Ending Address</label>
+            <Input
+              placeholder="Event venue or destination..."
+              value={formData.endingAddress}
+              onChange={(e) => setFormData({ ...formData, endingAddress: e.target.value })}
+            />
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <input
+            type="checkbox"
+            checked={formData.includeRoundtrip}
+            onChange={(e) => setFormData({ ...formData, includeRoundtrip: e.target.checked })}
+            className="rounded"
+          />
+          <span className="text-xs">Include round trip</span>
+        </div>
+
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={handleCalculateMileage}
+          disabled={isCalculatingMileage}
+          className="w-full"
+        >
+          <Calculator className="w-4 h-4 mr-2" />
+          {isCalculatingMileage ? "Calculating..." : "Calculate Mileage"}
+        </Button>
+
+        {formData.calculatedMileage && (
+          <div className="text-center p-2 bg-green-50 rounded text-sm">
+            Calculated: {formData.calculatedMileage} miles
+          </div>
+        )}
       </div>
 
       <div>

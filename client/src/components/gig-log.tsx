@@ -108,12 +108,35 @@ export default function GigLog() {
   };
 
   const handleSaveEdit = (updatedData: Partial<Gig>) => {
-    if (editingGig) {
-      updateGigMutation.mutate({
-        id: editingGig.id,
-        data: updatedData,
-      });
-    }
+    if (!editingGig) return;
+
+    // Prepare update payload with safe numeric parsing
+    const updatePayload: any = {
+      clientName: updatedData.clientName?.trim() || editingGig.clientName,
+      gigType: updatedData.gigType?.trim() || editingGig.gigType,
+      date: updatedData.date || editingGig.date,
+      status: updatedData.status || editingGig.status,
+      duties: updatedData.duties || null,
+      paymentMethod: updatedData.paymentMethod || null,
+    };
+    
+    // Safe numeric conversions
+    const safeParseFloat = (value: string | number | undefined): string | null => {
+      if (value === "" || value === null || value === undefined) return null;
+      const parsed = parseFloat(String(value));
+      return isNaN(parsed) ? null : parsed.toString();
+    };
+    
+    updatePayload.expectedPay = safeParseFloat(updatedData.expectedPay);
+    updatePayload.actualPay = safeParseFloat(updatedData.actualPay);
+    updatePayload.tips = safeParseFloat(updatedData.tips);
+
+    console.log("Saving gig edit:", updatePayload); // Debug log
+    
+    updateGigMutation.mutate({
+      id: editingGig.id,
+      data: updatePayload,
+    });
   };
 
   if (isLoading) {
