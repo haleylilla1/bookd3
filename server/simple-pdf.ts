@@ -1,9 +1,20 @@
-import jsPDF from 'jspdf';
-import 'jspdf-autotable';
 import { storage } from './storage';
 
 export async function generateSimplePDF(userId: number, period: string, year: number, month?: number): Promise<Buffer> {
-  const doc = new jsPDF();
+  try {
+    // Import jsPDF with proper Node.js handling
+    let jsPDF;
+    try {
+      const jsPDFModule = await import('jspdf');
+      jsPDF = jsPDFModule.default || jsPDFModule.jsPDF || jsPDFModule;
+    } catch (importError) {
+      console.log('Trying alternative jsPDF import...');
+      jsPDF = require('jspdf').jsPDF || require('jspdf');
+    }
+    
+    await import('jspdf-autotable');
+    
+    const doc = new jsPDF();
   
   try {
     // Get user
