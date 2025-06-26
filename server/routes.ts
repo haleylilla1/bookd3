@@ -1418,7 +1418,7 @@ Be VERY generous in extracting gigs:
     }
   });
 
-  app.delete("/api/expense-categories/:id", async (req, res) => {
+  app.delete("/api/expense-categories/:id", isAuthenticated, async (req, res) => {
     try {
       const userId = getCurrentUserId(req);
       if (!userId || userId <= 0) {
