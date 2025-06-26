@@ -17,6 +17,7 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import type { InsertGig, User } from "@shared/schema";
 import { calculateDistance } from "@/lib/distance";
+import ReceiptUpload from "@/components/receipt-upload";
 
 // Simplified schema - removed redundant fields and validations
 const gigFormSchema = z.object({
@@ -41,8 +42,10 @@ const gigFormSchema = z.object({
   status: z.enum(["upcoming", "completed", "pending_payment"]).default("upcoming"),
   parkingExpense: z.string().optional(),
   parkingReceipts: z.array(z.string()).default([]),
+  parkingReimbursed: z.boolean().default(false),
   otherExpenses: z.string().optional(),
   otherExpenseReceipts: z.array(z.string()).default([]),
+  otherExpensesReimbursed: z.boolean().default(false),
 });
 
 type GigFormData = z.infer<typeof gigFormSchema>;
@@ -132,8 +135,10 @@ export default function GigForm({ onClose }: GigFormProps) {
     status: "upcoming" as const,
     parkingExpense: "",
     parkingReceipts: [],
+    parkingReimbursed: false,
     otherExpenses: "",
     otherExpenseReceipts: [],
+    otherExpensesReimbursed: false,
   }), [user?.defaultTaxPercentage, user?.homeAddress]);
 
   const form = useForm<GigFormData>({
