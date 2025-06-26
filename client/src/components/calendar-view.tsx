@@ -7,7 +7,6 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Edit2, Trash2, Filter, Calendar, DollarSign, Clock, ChevronLeft, ChevronRight, Car, Calculator } from "lucide-react";
-import { Switch } from "@/components/ui/switch";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
@@ -785,7 +784,6 @@ function GigEditForm({ gig, onSave, onCancel, isLoading }: GigEditFormProps) {
   });
 
   const [isCalculatingMileage, setIsCalculatingMileage] = useState(false);
-  const [trackMileage, setTrackMileage] = useState(false);
 
   const handleCalculateMileage = async () => {
     // Validate inputs

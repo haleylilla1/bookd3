@@ -97,7 +97,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let totalTime = 0;
 
       // Build route: start -> waypoints -> end
-      const routePoints = [startAddress.trim(), ...waypoints.filter(w => w?.trim()), endAddress.trim()];
+      const routePoints = [startAddress.trim(), ...waypoints.filter((w: any) => w?.trim()), endAddress.trim()];
       
       // Calculate distance for each segment
       for (let i = 0; i < routePoints.length - 1; i++) {
