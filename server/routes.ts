@@ -150,7 +150,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Distance calculation endpoint
-  app.post("/api/calculate-distance", async (req, res) => {
+  app.post("/api/calculate-distance", isAuthenticated, async (req, res) => {
     try {
       // SECURITY: Require authentication for API usage
       const userId = getCurrentUserId(req);
@@ -203,7 +203,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // AI-powered gig parsing endpoint
-  app.post("/api/gigs/parse-bulk", async (req, res) => {
+  app.post("/api/gigs/parse-bulk", isAuthenticated, async (req, res) => {
     try {
       const { text } = req.body;
       const userId = getCurrentUserId(req);
@@ -421,7 +421,7 @@ Be VERY generous in extracting gigs:
     }
   });
 
-  app.post("/api/gigs", async (req, res) => {
+  app.post("/api/gigs", isAuthenticated, async (req, res) => {
     try {
       let userId;
       try {
@@ -481,7 +481,7 @@ Be VERY generous in extracting gigs:
     }
   });
 
-  app.put("/api/gigs/:id", async (req, res) => {
+  app.put("/api/gigs/:id", isAuthenticated, async (req, res) => {
     try {
       const userId = getCurrentUserId(req);
       if (!userId || userId <= 0) {
@@ -527,7 +527,7 @@ Be VERY generous in extracting gigs:
     }
   });
 
-  app.delete("/api/gigs/:id", async (req, res) => {
+  app.delete("/api/gigs/:id", isAuthenticated, async (req, res) => {
     try {
       const userId = getCurrentUserId(req);
       if (!userId || userId <= 0) {
@@ -557,7 +557,7 @@ Be VERY generous in extracting gigs:
   });
 
   // Goals routes
-  app.get("/api/goals", async (req, res) => {
+  app.get("/api/goals", isAuthenticated, async (req, res) => {
     try {
       const userId = getCurrentUserId(req);
       if (!userId || userId <= 0) {
@@ -574,7 +574,7 @@ Be VERY generous in extracting gigs:
     }
   });
 
-  app.post("/api/goals", async (req, res) => {
+  app.post("/api/goals", isAuthenticated, async (req, res) => {
     try {
       const userId = getCurrentUserId(req);
       if (!userId || userId <= 0) {
