@@ -229,41 +229,22 @@ export async function generateProfessionalHTML(options: ReportOptions): Promise<
             </div>
         </div>
 
-        <!-- Tax Breakdown Page -->
+        <!-- Tax Due Dates Page -->
         <div class="page">
-            <h2 class="section-title">TAX BREAKDOWN & ESTIMATES</h2>
+            <h2 style="font-size: 24px; margin-bottom: 30px; text-align: center;">2025 ESTIMATED TAX PAYMENT DUE DATES</h2>
             
-            <div class="info-box tax-box">
-                <h3>TAX CALCULATION BREAKDOWN</h3>
-                <div class="grid">
-                    <div>
-                        <p><strong>INCOME:</strong></p>
-                        <p>Gross Income: $${data.totalIncome.toFixed(2)}</p>
-                        
-                        <p style="margin-top: 15px;"><strong>DEDUCTIONS:</strong></p>
-                        <p>Business Expenses: $${data.totalExpenses.toFixed(2)}</p>
-                        <p>Mileage Deduction (${data.totalMileage.toFixed(1)} mi): $${data.mileageValue.toFixed(2)}</p>
-                        <p>Total Deductions: $${(data.totalExpenses + data.mileageValue).toFixed(2)}</p>
-                    </div>
-                    <div>
-                        <p><strong>NET TAXABLE INCOME:</strong></p>
-                        <p class="highlight" style="font-size: 18px;">$${data.netIncome.toFixed(2)}</p>
-                        
-                        <p style="margin-top: 15px;"><strong>TAX ESTIMATES:</strong></p>
-                        <p>Tax Rate: ${data.taxPercentage}%</p>
-                        <p class="tax-highlight">Estimated Taxes: $${data.estimatedTaxes.toFixed(2)}</p>
-                        <p class="highlight" style="font-size: 18px;">After-Tax Income: $${data.afterTaxIncome.toFixed(2)}</p>
-                    </div>
-                </div>
+            <div style="margin: 40px 0; font-size: 16px; line-height: 2;">
+                <p><strong>1st Quarter (Jan 1 - Mar 31): April 15, 2025</strong></p>
+                <p><strong>2nd Quarter (Apr 1 - May 31): June 16, 2025</strong></p>
+                <p><strong>3rd Quarter (June 1 - Aug 31): September 15, 2025</strong></p>
+                <p><strong>4th Quarter (Sept 1 - Dec 31): January 15, 2026</strong></p>
             </div>
             
-            <div class="info-box">
-                <h3>QUARTERLY TAX ESTIMATES</h3>
-                <p><strong>Recommended quarterly payment:</strong> <span class="tax-highlight">$${quarterlyEstimate.toFixed(2)}</span></p>
-                <p><strong>Due dates:</strong> January 15, April 15, June 15, September 15</p>
-                <div class="note">
-                    Note: These are estimates. Consult a tax professional for accurate calculations.
-                </div>
+            <div style="margin: 40px 0; padding: 20px; border: 1px solid #ccc; background-color: #f9f9f9;">
+                <p style="font-size: 14px; line-height: 1.5; margin: 0;">
+                    <strong>Note:</strong> This report is for informational purposes only. 
+                    Consult with a qualified tax professional for specific tax advice and filing requirements.
+                </p>
             </div>
         </div>
 

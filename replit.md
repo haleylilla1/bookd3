@@ -21,6 +21,10 @@ Giggy is a comprehensive gig worker companion app with advanced features includi
 - Maintain simple, clean interface design
 
 ## Recent Changes
+- 2025-06-26: PROFESSIONAL FREELANCER PDF REPORT COMPLETE - Matches exact user-provided format with tax due date reminders
+- 2025-06-26: Replaced quarterly tax estimates with simple 2025 tax payment due dates (Q1: Apr 15, Q2: Jun 16, Q3: Sep 15, Q4: Jan 15 2026)
+- 2025-06-26: Created cover page, income summary, mileage summary, and summary totals matching freelancer report format exactly
+- 2025-06-26: Professional tax report accessible via green "Professional Tax Report" button with mobile-optimized HTML delivery
 - 2025-06-26: MOBILE PDF DOWNLOAD COMPLETELY WORKING - HTML-based report system deployed successfully for all mobile devices
 - 2025-06-26: Created professional HTML reports with mobile-optimized styling eliminating all PDF library dependency issues
 - 2025-06-26: Mobile users now get green "View PDF" button that opens beautifully formatted income reports
