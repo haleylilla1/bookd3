@@ -393,6 +393,100 @@ export default function Dashboard() {
     }
   };
 
+  const handleDownloadProfessionalPDF = async () => {
+    try {
+      setIsGeneratingPDF(true);
+      console.log('Starting Professional PDF download...');
+      
+      const year = currentDate.getFullYear();
+      const month = currentDate.getMonth() + 1;
+      
+      const params = new URLSearchParams({
+        period: selectedPeriod,
+        year: year.toString(),
+        professional: 'true'
+      });
+      
+      if (selectedPeriod === 'monthly') {
+        params.append('month', month.toString());
+      }
+      
+      console.log('Requesting Professional PDF with params:', params.toString());
+      
+      // Enhanced mobile detection for universal compatibility
+      const isMobile = /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini|Mobile|mobile|CriOS/i.test(navigator.userAgent) ||
+                       (typeof window.orientation !== 'undefined') ||
+                       (window.innerWidth <= 768);
+      
+      if (isMobile) {
+        // Mobile device - use professional HTML report
+        console.log('Mobile device detected, using professional HTML report');
+        const pdfUrl = `/api/reports/pdf?${params.toString()}`;
+        
+        // Test the URL first
+        const testResponse = await fetch(pdfUrl, { 
+          method: 'HEAD', 
+          credentials: 'include' 
+        });
+        
+        if (!testResponse.ok) {
+          throw new Error(`Failed to generate professional report: ${testResponse.status} ${testResponse.statusText}`);
+        }
+        
+        // Open professional report in new tab/window
+        try {
+          const newWindow = window.open(pdfUrl, '_blank');
+          if (!newWindow || newWindow.closed || typeof newWindow.closed === 'undefined') {
+            // Popup blocked - fallback
+            window.location.href = pdfUrl;
+          }
+        } catch (e) {
+          console.log('Professional PDF open failed, using fallback');
+          window.location.href = pdfUrl;
+        }
+        
+        toast({
+          title: "Professional Report Opened",
+          description: "Your comprehensive tax report has been opened in a new tab.",
+          duration: 5000,
+        });
+        
+      } else {
+        // Desktop - use PDF endpoint (when available) or fallback to HTML
+        console.log('Desktop device, attempting professional PDF download');
+        
+        // For now, use HTML version until PDF endpoint is created
+        const pdfUrl = `/api/reports/pdf?${params.toString()}`;
+        window.open(pdfUrl, '_blank');
+        
+        toast({
+          title: "Professional Report Opened",
+          description: "Your comprehensive tax report has been opened in a new tab.",
+        });
+      }
+      
+    } catch (error) {
+      console.error('Professional PDF error:', error);
+      
+      let errorMessage = "Failed to generate professional report. Please try again.";
+      if (error instanceof Error) {
+        if (error.message.includes('401')) {
+          errorMessage = "Please log in again to access the professional report.";
+        } else if (error.message.includes('Failed to fetch')) {
+          errorMessage = "Network error - please check your connection.";
+        }
+      }
+      
+      toast({
+        title: "Report Failed",
+        description: errorMessage,
+        variant: "destructive",
+      });
+    } finally {
+      setIsGeneratingPDF(false);
+    }
+  };
+
   // Get breakdown data for modals with safe parsing
   const getActualEarningsBreakdown = () => {
     const completedGigs = currentPeriodGigs.filter(gig => gig.status === "completed");
@@ -561,7 +655,7 @@ export default function Dashboard() {
       </div>
 
       {/* Export Options */}
-      <div className="flex justify-end mb-4 gap-2">
+      <div className="flex justify-end mb-4 gap-2 flex-wrap">
         <Button
           variant="outline"
           size="sm"
@@ -569,7 +663,18 @@ export default function Dashboard() {
           className="flex items-center gap-2"
         >
           <FileText className="w-4 h-4" />
-          Download PDF Report
+          Quick Report
+        </Button>
+        
+        <Button
+          variant="default"
+          size="sm"
+          onClick={handleDownloadProfessionalPDF}
+          disabled={isGeneratingPDF}
+          className="flex items-center gap-2 bg-green-600 hover:bg-green-700"
+        >
+          <FileText className="w-4 h-4" />
+          Professional Tax Report
         </Button>
         
         {/* Mobile PDF View Button - only show if PDF is ready and on mobile */}
