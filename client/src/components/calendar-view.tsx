@@ -656,14 +656,7 @@ export default function CalendarView() {
                         </div>
                       )}
                       
-                      {gig.gigAddress && (
-                        <div>
-                          <span className="text-gray-600">Location:</span>
-                          <div className="font-medium text-gray-900 text-xs">
-                            {gig.gigAddress}
-                          </div>
-                        </div>
-                      )}
+
                     </div>
                     
                     {gig.duties && (
@@ -738,7 +731,7 @@ function GigEditForm({ gig, onSave, onCancel, isLoading }: GigEditFormProps) {
     tips: gig.tips || "",
     status: gig.status,
     duties: gig.duties || "",
-
+    taxPercentage: gig.taxPercentage || 0,
     mileage: gig.mileage || 0,
     parkingExpense: gig.parkingExpense || "",
     parkingReceipts: (gig as any).parkingReceipts || [],
@@ -749,42 +742,10 @@ function GigEditForm({ gig, onSave, onCancel, isLoading }: GigEditFormProps) {
   const [isCalculatingMileage, setIsCalculatingMileage] = useState(false);
 
   const calculateMileage = async () => {
-    // Mileage calculation now handled in dedicated mileage tracking section
     toast({
       title: "Mileage Tracking",
-      description: "Use the enhanced mileage tracking section to calculate distances with starting/ending addresses.",
+      description: "Use the dedicated mileage tracking section to calculate distances with starting/ending addresses.",
     });
-    return;
-
-    setIsCalculatingMileage(true);
-    try {
-      const response = await fetch('/api/calculate-distance', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          origin: homeAddress,
-          destination: "gig location", // Placeholder since address removed
-        }),
-      });
-
-      if (response.ok) {
-        const { distanceMiles } = await response.json();
-        const roundTripMiles = Math.round(distanceMiles * 2);
-        setFormData(prev => ({ ...prev, mileage: roundTripMiles }));
-        toast({
-          title: "Mileage Calculated",
-          description: `${roundTripMiles} miles (round trip)`,
-        });
-      }
-    } catch (error) {
-      toast({
-        title: "Calculation Failed",
-        description: "Please enter mileage manually.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsCalculatingMileage(false);
-    }
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -871,6 +832,31 @@ function GigEditForm({ gig, onSave, onCancel, isLoading }: GigEditFormProps) {
         </div>
       </div>
 
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <label className="block text-sm font-medium mb-1">Tax Percentage</label>
+          <Input
+            type="number"
+            step="0.1"
+            min="0"
+            max="50"
+            value={formData.taxPercentage}
+            onChange={(e) => setFormData({ ...formData, taxPercentage: parseFloat(e.target.value) || 0 })}
+            placeholder="25.0"
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium mb-1">Mileage</label>
+          <Input
+            type="number"
+            min="0"
+            value={formData.mileage}
+            onChange={(e) => setFormData({ ...formData, mileage: parseInt(e.target.value) || 0 })}
+            placeholder="45"
+          />
+        </div>
+      </div>
+
       <div>
         <label className="block text-sm font-medium mb-1">Status</label>
         <Select value={formData.status} onValueChange={(value) => setFormData({ ...formData, status: value })}>
@@ -895,35 +881,7 @@ function GigEditForm({ gig, onSave, onCancel, isLoading }: GigEditFormProps) {
         />
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
-        <div>
-          <label className="block text-sm font-medium mb-1">Gig Address</label>
-          <Input
-            value={formData.gigAddress}
-            onChange={(e) => setFormData({ ...formData, gigAddress: e.target.value })}
-            placeholder="123 Event Venue St, City, State"
-          />
-        </div>
-        <div>
-          <label className="block text-sm font-medium mb-1">Mileage</label>
-          <div className="flex gap-2">
-            <Input
-              type="number"
-              value={formData.mileage}
-              onChange={(e) => setFormData({ ...formData, mileage: parseInt(e.target.value) || 0 })}
-              placeholder="0"
-            />
-            <Button
-              type="button"
-              onClick={calculateMileage}
-              disabled={!formData.gigAddress || isCalculatingMileage}
-              size="sm"
-            >
-              {isCalculatingMileage ? "..." : "Calculate"}
-            </Button>
-          </div>
-        </div>
-      </div>
+
 
       {/* Expense Section */}
       <div className="border-t pt-3 space-y-3">
