@@ -12,6 +12,11 @@ import type { Gig, User } from "@shared/schema";
 
 type TimePeriod = "monthly" | "annual";
 
+// Utility function to parse dates consistently across timezones
+const parseGigDate = (dateString: string): Date => {
+  return new Date(dateString + 'T00:00:00');
+};
+
 export default function Dashboard() {
   const [selectedPeriod, setSelectedPeriod] = useState<TimePeriod>("monthly");
   const [editingGoal, setEditingGoal] = useState<"monthly" | "annual" | null>(null);
@@ -602,7 +607,7 @@ export default function Dashboard() {
                   <div className="text-right">
                     <p className="font-semibold text-green-600">${gig.amount.toFixed(2)}</p>
                     <p className="text-xs text-gray-500">
-                      {new Date(gig.date).toLocaleDateString()}
+                      {parseGigDate(gig.date).toLocaleDateString()}
                     </p>
                   </div>
                 </div>
@@ -678,7 +683,7 @@ export default function Dashboard() {
                   <div className="text-right">
                     <p className="font-semibold text-red-600">${gig.amount.toFixed(2)}</p>
                     <p className="text-xs text-gray-500">
-                      {new Date(gig.date + 'T00:00:00').toLocaleDateString()}
+                      {parseGigDate(gig.date).toLocaleDateString()}
                     </p>
                   </div>
                 </div>
