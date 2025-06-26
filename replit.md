@@ -18,6 +18,10 @@ Giggy is a comprehensive gig worker companion app with advanced features includi
 - Maintain simple, clean interface design
 
 ## Recent Changes
+- 2025-06-26: FIXED MULTI-DAY GIG DOUBLE-COUNTING - Dashboard now correctly shows $406 for Furbies instead of $812 duplicate
+- 2025-06-26: Applied comprehensive multi-day grouping logic preventing database duplicate summing across all dashboard calculations
+- 2025-06-26: Created getGroupedGigs() helper function ensuring consistent multi-day handling between dashboard and calendar
+- 2025-06-26: Both earnings breakdown modals now show consolidated amounts with proper date ranges for multi-day events
 - 2025-06-26: GLOBAL TIMEZONE AND TAX FIXES APPLIED - All user accounts now protected from date shifting and inconsistent tax calculations
 - 2025-06-26: Created parseGigDate() utility ensuring consistent UTC date parsing across dashboard, calendar, and all breakdown modals
 - 2025-06-26: Fixed tax percentage initialization in calendar edit forms to use user's profile default (23%) instead of defaulting to 0%
