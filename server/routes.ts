@@ -68,6 +68,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Delete gig - CRITICAL FIX
+  app.delete("/api/gigs/:id", requireAuth, async (req, res) => {
+    try {
+      const userId = getUserId(req);
+      const gigId = parseInt(req.params.id);
+      
+      // Verify ownership
+      const existingGig = await storage.getGig(gigId);
+      if (!existingGig || existingGig.userId !== userId) {
+        return res.status(404).json({ message: "Gig not found" });
+      }
+      
+      const success = await storage.deleteGig(gigId);
+      if (!success) {
+        return res.status(500).json({ message: "Failed to delete gig" });
+      }
+      
+      res.json({ message: "Gig deleted successfully" });
+    } catch (error) {
+      console.error("Delete gig error:", error);
+      res.status(500).json({ message: "Failed to delete gig" });
+    }
+  });
+
   // Get goals
   app.get("/api/goals/period", requireAuth, async (req, res) => {
     try {

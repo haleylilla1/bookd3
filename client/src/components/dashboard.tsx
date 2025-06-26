@@ -64,11 +64,12 @@ export default function Dashboard() {
     },
   });
 
-  // Filter gigs based on selected period with consistent UTC date handling
+  // Filter gigs based on selected period and handle multi-day gigs properly
   const currentPeriodGigs = useMemo(() => {
     if (!gigs || gigs.length === 0) return [];
     
-    return gigs.filter(gig => {
+    // First filter by period
+    const filteredGigs = gigs.filter(gig => {
       // Consistent UTC date parsing to avoid timezone issues
       const gigDate = new Date(gig.date + 'T00:00:00.000Z');
       const currentUtcDate = new Date(currentDate.getTime() - currentDate.getTimezoneOffset() * 60000);
@@ -87,6 +88,67 @@ export default function Dashboard() {
                  gigDate.getUTCFullYear() === currentUtcDate.getUTCFullYear();
       }
     });
+
+    // Group multi-day gigs within the current period
+    const groupedGigs = new Map();
+    filteredGigs.forEach(gig => {
+      const key = `${gig.eventName}-${gig.clientName}-${gig.gigType}`;
+      if (!groupedGigs.has(key)) {
+        groupedGigs.set(key, []);
+      }
+      groupedGigs.get(key).push(gig);
+    });
+
+    // Process groups to reconstruct original amounts for multi-day gigs
+    const processedGigs = [];
+    groupedGigs.forEach(gigGroup => {
+      if (gigGroup.length === 1) {
+        // Single day gig - use as is
+        processedGigs.push(gigGroup[0]);
+      } else {
+        // Multi-day gig - check if dates are actually consecutive
+        const sortedGroup = gigGroup.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+        
+        // Check if this is actually a consecutive multi-day gig
+        let isConsecutive = true;
+        for (let i = 1; i < sortedGroup.length; i++) {
+          const prevDate = new Date(sortedGroup[i-1].date);
+          const currDate = new Date(sortedGroup[i].date);
+          const diffDays = (currDate.getTime() - prevDate.getTime()) / (1000 * 60 * 60 * 24);
+          if (diffDays > 1) {
+            isConsecutive = false;
+            break;
+          }
+        }
+        
+        if (isConsecutive && sortedGroup.length <= 7) { // Max 7 days to be safe
+          // Multi-day gig - sum amounts and use first gig as representative
+          const totalActualPay = sortedGroup.reduce((sum, gig) => sum + parseFloat(gig.actualPay || "0"), 0);
+          const totalExpectedPay = sortedGroup.reduce((sum, gig) => sum + parseFloat(gig.expectedPay || "0"), 0);
+          const totalTips = sortedGroup.reduce((sum, gig) => sum + parseFloat(gig.tips || "0"), 0);
+          const totalParkingExpense = sortedGroup.reduce((sum, gig) => sum + parseFloat(gig.parkingExpense || "0"), 0);
+          const totalOtherExpenses = sortedGroup.reduce((sum, gig) => sum + parseFloat(gig.otherExpenses || "0"), 0);
+          const totalMileage = sortedGroup.reduce((sum, gig) => sum + (gig.mileage || 0), 0);
+          
+          processedGigs.push({
+            ...sortedGroup[0],
+            actualPay: totalActualPay.toString(),
+            expectedPay: totalExpectedPay.toString(),
+            tips: totalTips.toString(),
+            parkingExpense: totalParkingExpense.toString(),
+            otherExpenses: totalOtherExpenses.toString(),
+            mileage: totalMileage,
+            isMultiDay: true,
+            dayCount: sortedGroup.length
+          });
+        } else {
+          // Not consecutive or too many days - treat as separate gigs
+          processedGigs.push(...sortedGroup);
+        }
+      }
+    });
+
+    return processedGigs;
   }, [gigs, selectedPeriod, currentDate]);
 
   // Safe numeric parsing function
