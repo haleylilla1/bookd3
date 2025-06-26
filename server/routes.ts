@@ -133,8 +133,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         totalTime *= 2;
       }
 
-      // Round to 1 decimal place
-      const distanceMiles = Math.round(totalDistance * 10) / 10;
+      // Round up to the nearest whole number
+      const distanceMiles = Math.ceil(totalDistance);
       const travelTimeMinutes = Math.round(totalTime);
 
       res.json({

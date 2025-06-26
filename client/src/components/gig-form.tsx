@@ -247,8 +247,8 @@ export default function GigForm({ onClose }: GigFormProps) {
         totalTime *= 2;
       }
       
-      // Round and validate final result
-      const roundedDistance = Math.round(Math.min(9999, totalDistance) * 10) / 10; // Cap at 9999 miles
+      // Round up to nearest whole number and validate final result
+      const roundedDistance = Math.ceil(Math.min(9999, totalDistance)); // Cap at 9999 miles
       
       form.setValue("calculatedMileage", roundedDistance.toString());
       
