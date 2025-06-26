@@ -132,7 +132,15 @@ export default function Dashboard() {
       }
     }, 0);
 
-    const avgTaxRate = 25; // Simple default tax rate
+    // Calculate actual average tax rate from gigs (updated in real-time)
+    const gigTaxRates = currentPeriodGigs
+      .filter(gig => gig.taxPercentage && gig.taxPercentage > 0)
+      .map(gig => gig.taxPercentage);
+    
+    const avgTaxRate = gigTaxRates.length > 0 
+      ? gigTaxRates.reduce((sum, rate) => sum + rate, 0) / gigTaxRates.length 
+      : 25; // Default 25% only if no tax rates set
+    
     const taxableIncome = Math.max(0, actualEarnings - totalExpenses);
     const estimatedTax = (taxableIncome * avgTaxRate) / 100;
 
