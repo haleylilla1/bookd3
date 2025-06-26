@@ -300,11 +300,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log('PDF request received:', { 
         query: req.query, 
         cookies: req.cookies,
-        userId: req.userId 
+        userId: req.userId,
+        userAgent: req.get('User-Agent')
       });
       
       const userId = getUserId(req);
       console.log('User ID retrieved:', userId);
+      
+      // Verify user exists to prevent errors
+      const userExists = await storage.getUser(userId);
+      if (!userExists) {
+        console.log('User not found in database:', userId);
+        return res.status(404).json({ message: 'User not found' });
+      }
       
       const { period, year, month } = req.query;
 

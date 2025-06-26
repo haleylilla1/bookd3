@@ -156,18 +156,45 @@ export async function generateHTMLPDF(
 
     <div class="section">
         <h3>💰 Income Summary</h3>
-        ${completedGigs.map(gig => {
-          const gigTotal = parseFloat(gig.actualPay || '0') + parseFloat(gig.tips || '0');
-          const dateStr = gig.date.includes(' - ') ? gig.date : new Date(gig.date).toLocaleDateString();
+        ${completedGigs.length > 0 ? completedGigs.map(gig => {
+          const actualPay = parseFloat(gig.actualPay || '0');
+          const tips = parseFloat(gig.tips || '0');
+          const gigTotal = actualPay + tips;
+          
+          // Safe date parsing
+          let dateStr;
+          try {
+            if (gig.date.includes(' - ')) {
+              dateStr = gig.date;
+            } else {
+              const gigDate = new Date(gig.date);
+              dateStr = gigDate.toLocaleDateString();
+            }
+          } catch (e) {
+            dateStr = gig.date || 'Date unavailable';
+          }
+          
+          // Safe string escaping for HTML
+          const htmlEscape = (str: string): string => {
+            return str.replace(/[<>&"']/g, (char: string) => {
+              const entities: Record<string, string> = { 
+                '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;', "'": '&#39;' 
+              };
+              return entities[char] || char;
+            });
+          };
+          
+          const safeClientName = htmlEscape(gig.clientName || 'Direct Client');
+          const safeGigType = htmlEscape(gig.gigType || 'Service');
           
           return `
             <div class="gig-item">
                 <div class="gig-date">${dateStr}</div>
-                <div class="gig-details">${gig.clientName || 'Direct Client'} - ${gig.gigType || 'Service'}</div>
+                <div class="gig-details">${safeClientName} - ${safeGigType}</div>
                 <div class="gig-amount">$${gigTotal.toFixed(2)}</div>
             </div>
           `;
-        }).join('')}
+        }).join('') : '<p style="text-align: center; color: #666; margin: 20px 0;">No completed gigs found for this period.</p>'}
     </div>
 
     <div class="summary">
