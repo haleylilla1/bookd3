@@ -16,9 +16,13 @@ Giggy is a comprehensive gig worker companion app with advanced features includi
 - Maintain simple, clean interface design
 
 ## Recent Changes
-- 2025-06-26: FIXED MONTHLY/ANNUAL CALCULATION DISCREPANCY - Resolved $1000 difference between Monthly ($3110) and Annual ($4110) views
-- 2025-06-26: Root cause was JavaScript getMonth() 0-based indexing causing June 1st gig to be excluded from monthly filtering
-- 2025-06-26: Fixed by setting consistent reference date (June 1, 2025) for all period calculations
+- 2025-06-26: ADDED EARNINGS BREAKDOWN FEATURE - Users can now click on Total Actual Earnings and Total Projected cards to see detailed gig breakdowns
+- 2025-06-26: Each breakdown modal shows individual gigs with dates, clients, amounts, and status information
+- 2025-06-26: Multi-day gigs are properly grouped and displayed with date ranges
+- 2025-06-26: Actual earnings modal shows only completed gigs with actual pay amounts
+- 2025-06-26: Projected earnings modal shows all gigs (completed + upcoming) with appropriate amount calculations
+- 2025-06-26: FIXED TIMEZONE DATE PARSING ISSUE - Implemented consistent UTC parsing to prevent June 1st gig exclusion
+- 2025-06-26: Root cause was mixed local/UTC date parsing causing timezone shifts in month calculations
 - 2025-06-26: Both Monthly and Annual tabs now correctly show $4110 total earnings including all completed gigs
 - 2025-06-25: FIXED ANNUAL CALCULATION BUG - Annual tab now only shows current year data with proper date filtering
 - 2025-06-25: Enhanced multi-day gig detection with consecutive date validation and 7-day maximum limit
