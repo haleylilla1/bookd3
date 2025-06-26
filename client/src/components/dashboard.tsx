@@ -260,6 +260,8 @@ export default function Dashboard() {
 
   const handleDownloadPDF = async () => {
     try {
+      console.log('Starting PDF download...');
+      
       const year = currentDate.getFullYear();
       const month = currentDate.getMonth() + 1;
       
@@ -272,26 +274,59 @@ export default function Dashboard() {
         params.append('month', month.toString());
       }
       
+      console.log('Requesting PDF with params:', params.toString());
+      
       const response = await fetch(`/api/reports/pdf?${params.toString()}`, {
         method: 'GET',
-        credentials: 'include'
+        credentials: 'include',
+        headers: {
+          'Accept': 'application/pdf',
+        }
       });
       
+      console.log('PDF response status:', response.status);
+      console.log('PDF response headers:', Object.fromEntries(response.headers.entries()));
+      
       if (!response.ok) {
-        throw new Error('Failed to generate PDF report');
+        const errorText = await response.text();
+        console.error('PDF response error:', errorText);
+        throw new Error(`Failed to generate PDF report: ${response.status} ${response.statusText}`);
       }
       
       const blob = await response.blob();
+      console.log('PDF blob size:', blob.size, 'type:', blob.type);
+      
+      if (blob.size === 0) {
+        throw new Error('PDF file is empty');
+      }
+      
+      // Mobile-optimized download approach
       const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = selectedPeriod === 'monthly' 
+      const filename = selectedPeriod === 'monthly' 
         ? `freelancer-report-${year}-${month}.pdf`
         : `freelancer-report-${year}.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
+      
+      // Try multiple download methods for mobile compatibility
+      if (navigator.userAgent.match(/Android|iPhone|iPad|iPod|BlackBerry|IEMobile/i)) {
+        // Mobile device - use direct navigation
+        console.log('Mobile device detected, using direct navigation');
+        window.open(url, '_blank');
+      } else {
+        // Desktop - use traditional download
+        console.log('Desktop device, using download attribute');
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        a.style.display = 'none';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+      }
+      
+      // Cleanup after delay to ensure download started
+      setTimeout(() => {
+        window.URL.revokeObjectURL(url);
+      }, 1000);
       
       toast({
         title: "PDF Downloaded",
@@ -299,9 +334,22 @@ export default function Dashboard() {
       });
     } catch (error) {
       console.error('PDF download error:', error);
+      
+      // More specific error messages
+      let errorMessage = "Failed to generate PDF report. Please try again.";
+      if (error instanceof Error) {
+        if (error.message.includes('401')) {
+          errorMessage = "Please log in again to download the report.";
+        } else if (error.message.includes('empty')) {
+          errorMessage = "PDF generation failed - no data available.";
+        } else if (error.message.includes('Failed to fetch')) {
+          errorMessage = "Network error - please check your connection.";
+        }
+      }
+      
       toast({
         title: "Download Failed",
-        description: "Failed to generate PDF report. Please try again.",
+        description: errorMessage,
         variant: "destructive",
       });
     }
