@@ -140,7 +140,7 @@ export default function Dashboard() {
       const income = safeParseFloat(gig.actualPay) + safeParseFloat(gig.tips);
       const expenses = safeParseFloat(gig.parkingExpense) + safeParseFloat(gig.otherExpenses) + ((gig.mileage || 0) * 0.67);
       const taxableIncome = Math.max(0, income - expenses);
-      const gigTaxRate = typeof gig.taxPercentage === 'number' ? gig.taxPercentage : userTaxRate;
+      const gigTaxRate = (gig.taxPercentage !== null && gig.taxPercentage !== undefined) ? gig.taxPercentage : userTaxRate;
       return sum + (taxableIncome * gigTaxRate / 100);
     }, 0);
 
