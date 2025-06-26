@@ -642,7 +642,7 @@ export default function Dashboard() {
                       ${gig.amount.toFixed(2)}
                     </p>
                     <p className="text-xs text-gray-500">
-                      {new Date(gig.date).toLocaleDateString()}
+                      {parseGigDate(gig.date).toLocaleDateString()}
                     </p>
                   </div>
                 </div>
@@ -719,7 +719,7 @@ export default function Dashboard() {
                   <div className="text-right">
                     <p className="font-semibold text-purple-600">${gig.amount.toFixed(2)}</p>
                     <p className="text-xs text-gray-500">
-                      {new Date(gig.date).toLocaleDateString()}
+                      {parseGigDate(gig.date).toLocaleDateString()}
                     </p>
                   </div>
                 </div>
@@ -752,7 +752,7 @@ export default function Dashboard() {
                   <div className="text-right">
                     <p className="font-semibold text-orange-600">${gig.amount.toFixed(2)}</p>
                     <p className="text-xs text-gray-500">
-                      {new Date(gig.date).toLocaleDateString()}
+                      {parseGigDate(gig.date).toLocaleDateString()}
                     </p>
                   </div>
                 </div>
