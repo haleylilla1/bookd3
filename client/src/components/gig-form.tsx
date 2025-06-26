@@ -11,6 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Slider } from "@/components/ui/slider";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { X, Calculator } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
@@ -681,6 +682,25 @@ export default function GigForm({ onClose }: GigFormProps) {
                         receipts={form.getValues("parkingReceipts")}
                         onReceiptsChange={(receipts) => form.setValue("parkingReceipts", receipts)}
                       />
+                      <FormField
+                        control={form.control}
+                        name="parkingReimbursed"
+                        render={({ field }) => (
+                          <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                            <FormControl>
+                              <Checkbox
+                                checked={field.value}
+                                onCheckedChange={field.onChange}
+                              />
+                            </FormControl>
+                            <div className="space-y-1 leading-none">
+                              <FormLabel className="text-sm">
+                                Parking expense was reimbursed
+                              </FormLabel>
+                            </div>
+                          </FormItem>
+                        )}
+                      />
                     </div>
 
                     {/* Other Expenses */}
@@ -701,6 +721,25 @@ export default function GigForm({ onClose }: GigFormProps) {
                         label="Other Expense Receipts"
                         receipts={form.getValues("otherExpenseReceipts")}
                         onReceiptsChange={(receipts) => form.setValue("otherExpenseReceipts", receipts)}
+                      />
+                      <FormField
+                        control={form.control}
+                        name="otherExpensesReimbursed"
+                        render={({ field }) => (
+                          <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                            <FormControl>
+                              <Checkbox
+                                checked={field.value}
+                                onCheckedChange={field.onChange}
+                              />
+                            </FormControl>
+                            <div className="space-y-1 leading-none">
+                              <FormLabel className="text-sm">
+                                Other expenses were reimbursed
+                              </FormLabel>
+                            </div>
+                          </FormItem>
+                        )}
                       />
                     </div>
                   </div>
