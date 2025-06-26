@@ -149,6 +149,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // PDF Report endpoints
+  app.get('/api/reports/pdf', requireAuth, async (req: any, res) => {
+    try {
+      const userId = getCurrentUserId(req);
+      const { period, year, month } = req.query;
+
+      if (!period || !year) {
+        return res.status(400).json({ message: 'Period and year are required' });
+      }
+
+      if (period === 'monthly' && !month) {
+        return res.status(400).json({ message: 'Month is required for monthly reports' });
+      }
+
+      const { PDFReportGenerator } = await import('./pdf-generator');
+      const generator = new PDFReportGenerator();
+      
+      const pdfBuffer = await generator.generateReport({
+        userId,
+        period: period as 'monthly' | 'annual',
+        year: parseInt(year as string),
+        month: month ? parseInt(month as string) : undefined
+      });
+
+      const filename = period === 'monthly' 
+        ? `freelancer-report-${year}-${month}.pdf`
+        : `freelancer-report-${year}.pdf`;
+
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+      res.send(pdfBuffer);
+    } catch (error) {
+      console.error('Error generating PDF report:', error);
+      res.status(500).json({ message: 'Failed to generate PDF report' });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
