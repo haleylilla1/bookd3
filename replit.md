@@ -18,6 +18,10 @@ Giggy is a comprehensive gig worker companion app with advanced features includi
 - Maintain simple, clean interface design
 
 ## Recent Changes
+- 2025-06-26: FIXED CRITICAL LOGIC ERRORS - Dashboard and calendar now use consistent UTC date parsing and safe numeric operations
+- 2025-06-26: Enhanced dashboard earnings calculations to include tips and handle null values properly
+- 2025-06-26: Fixed calendar multi-day gig grouping logic to prevent incorrect date comparisons
+- 2025-06-26: Implemented bulletproof numeric parsing preventing NaN and Infinity errors
 - 2025-06-26: SUPER SIMPLE AUTHENTICATION SYSTEM - Replaced complex 400+ line auth system with 150-line solution for maximum efficiency
 - 2025-06-26: Memory-based session storage eliminating database overhead and complexity
 - 2025-06-26: Single authentication file replacing 3 separate auth modules
