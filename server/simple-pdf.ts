@@ -12,8 +12,6 @@ export async function generateSimplePDF(userId: number, period: string, year: nu
       jsPDF = require('jspdf').jsPDF || require('jspdf');
     }
     
-    await import('jspdf-autotable');
-    
     const doc = new jsPDF();
     
     // Get user
@@ -63,23 +61,52 @@ export async function generateSimplePDF(userId: number, period: string, year: nu
     doc.setFontSize(16);
     doc.text('INCOME SUMMARY', 20, 30);
     
-    const incomeData = completedGigs.map(gig => [
-      new Date(gig.date).toLocaleDateString(),
-      gig.clientName || 'Direct Client',
-      gig.gigType || 'Service',
-      `$${(parseFloat(gig.actualPay || '0') + parseFloat(gig.tips || '0')).toFixed(2)}`
-    ]);
-
     const totalIncome = completedGigs.reduce((sum, gig) => {
       return sum + parseFloat(gig.actualPay || '0') + parseFloat(gig.tips || '0');
     }, 0);
 
-    (doc as any).autoTable({
-      head: [['Date', 'Source', 'Type', 'Amount']],
-      body: incomeData,
-      startY: 40,
-      foot: [['', '', 'TOTAL', `$${totalIncome.toFixed(2)}`]]
+    // Manual table for income
+    doc.setFontSize(10);
+    let yPos = 50;
+    
+    // Table headers
+    doc.setFont('helvetica', 'bold');
+    doc.text('Date', 20, yPos);
+    doc.text('Source', 60, yPos);
+    doc.text('Type', 100, yPos);
+    doc.text('Amount', 150, yPos);
+    yPos += 10;
+    
+    // Table rows
+    doc.setFont('helvetica', 'normal');
+    completedGigs.forEach(gig => {
+      const amount = parseFloat(gig.actualPay || '0') + parseFloat(gig.tips || '0');
+      if (amount > 0) {
+        doc.text(new Date(gig.date).toLocaleDateString(), 20, yPos);
+        doc.text(gig.clientName || 'Direct Client', 60, yPos);
+        doc.text(gig.gigType || 'Service', 100, yPos);
+        doc.text(`$${amount.toFixed(2)}`, 150, yPos);
+        yPos += 8;
+        
+        if (yPos > 270) {
+          doc.addPage();
+          yPos = 30;
+          // Re-add headers
+          doc.setFont('helvetica', 'bold');
+          doc.text('Date', 20, yPos);
+          doc.text('Source', 60, yPos);
+          doc.text('Type', 100, yPos);
+          doc.text('Amount', 150, yPos);
+          yPos += 10;
+          doc.setFont('helvetica', 'normal');
+        }
+      }
     });
+    
+    // Total
+    yPos += 10;
+    doc.setFont('helvetica', 'bold');
+    doc.text(`TOTAL INCOME: $${totalIncome.toFixed(2)}`, 20, yPos);
 
     // Mileage summary
     doc.addPage();
@@ -87,23 +114,51 @@ export async function generateSimplePDF(userId: number, period: string, year: nu
     doc.text('MILEAGE SUMMARY', 20, 30);
     
     const mileageGigs = completedGigs.filter(gig => gig.mileage && gig.mileage > 0);
-    const mileageData = mileageGigs.map(gig => [
-      new Date(gig.date).toLocaleDateString(),
-      `${gig.eventName || 'Gig'} (${gig.clientName || 'Client'})`,
-      gig.mileage?.toString() || '0',
-      '$0.67/mi',
-      `$${((gig.mileage || 0) * 0.67).toFixed(2)}`
-    ]);
-
     const totalMileage = mileageGigs.reduce((sum, gig) => sum + (gig.mileage || 0), 0);
     const totalMileageValue = totalMileage * 0.67;
 
-    (doc as any).autoTable({
-      head: [['Date', 'Purpose', 'Miles', 'Rate', 'Value']],
-      body: mileageData,
-      startY: 40,
-      foot: [['', 'TOTAL', totalMileage.toString(), '', `$${totalMileageValue.toFixed(2)}`]]
+    // Manual mileage table
+    doc.setFontSize(10);
+    yPos = 50;
+    
+    // Table headers
+    doc.setFont('helvetica', 'bold');
+    doc.text('Date', 20, yPos);
+    doc.text('Purpose', 60, yPos);
+    doc.text('Miles', 120, yPos);
+    doc.text('Value', 150, yPos);
+    yPos += 10;
+    
+    // Table rows
+    doc.setFont('helvetica', 'normal');
+    mileageGigs.forEach(gig => {
+      const value = (gig.mileage || 0) * 0.67;
+      doc.text(new Date(gig.date).toLocaleDateString(), 20, yPos);
+      doc.text(`${gig.eventName || 'Gig'} (${gig.clientName || 'Client'})`.substring(0, 25), 60, yPos);
+      doc.text((gig.mileage || 0).toString(), 120, yPos);
+      doc.text(`$${value.toFixed(2)}`, 150, yPos);
+      yPos += 8;
+      
+      if (yPos > 270) {
+        doc.addPage();
+        yPos = 30;
+        // Re-add headers
+        doc.setFont('helvetica', 'bold');
+        doc.text('Date', 20, yPos);
+        doc.text('Purpose', 60, yPos);
+        doc.text('Miles', 120, yPos);
+        doc.text('Value', 150, yPos);
+        yPos += 10;
+        doc.setFont('helvetica', 'normal');
+      }
     });
+    
+    // Mileage total
+    yPos += 10;
+    doc.setFont('helvetica', 'bold');
+    doc.text(`TOTAL MILEAGE: ${totalMileage} miles`, 20, yPos);
+    yPos += 8;
+    doc.text(`TOTAL MILEAGE VALUE: $${totalMileageValue.toFixed(2)}`, 20, yPos);
 
     // Summary totals
     doc.addPage();
@@ -114,19 +169,18 @@ export async function generateSimplePDF(userId: number, period: string, year: nu
       return sum + parseFloat(gig.parkingExpense || '0') + parseFloat(gig.otherExpenses || '0');
     }, 0);
 
-    const summaryData = [
-      ['Total Income', `$${totalIncome.toFixed(2)}`],
-      ['Total Expenses', `$${expenses.toFixed(2)}`],
-      ['Total Mileage', `${totalMileage} miles`],
-      ['Mileage Value', `$${totalMileageValue.toFixed(2)}`],
-      ['Net Income', `$${(totalIncome - expenses - totalMileageValue).toFixed(2)}`]
-    ];
-
-    (doc as any).autoTable({
-      head: [['Category', 'Total']],
-      body: summaryData,
-      startY: 40
-    });
+    doc.setFontSize(12);
+    yPos = 50;
+    doc.text(`Total Income: $${totalIncome.toFixed(2)}`, 20, yPos);
+    yPos += 15;
+    doc.text(`Total Expenses: $${expenses.toFixed(2)}`, 20, yPos);
+    yPos += 15;
+    doc.text(`Total Mileage: ${totalMileage} miles`, 20, yPos);
+    yPos += 15;
+    doc.text(`Mileage Value: $${totalMileageValue.toFixed(2)}`, 20, yPos);
+    yPos += 15;
+    doc.setFont('helvetica', 'bold');
+    doc.text(`Net Income: $${(totalIncome - expenses - totalMileageValue).toFixed(2)}`, 20, yPos);
 
     return Buffer.from(doc.output('arraybuffer'));
     
