@@ -166,13 +166,13 @@ export class PDFReportGenerator {
     this.doc.setFont('helvetica', 'bold');
     this.doc.text('🧾 EXPENSE SUMMARY', 20, 30);
 
-    const expenseData = [];
+    const expenseData: string[][] = [];
     
     // Add regular expenses
     data.expenses.forEach(expense => {
       expenseData.push([
         new Date(expense.date).toLocaleDateString(),
-        expense.vendor || 'Various',
+        'Various',
         expense.category || 'Business',
         expense.description || '',
         `$${parseFloat(expense.amount || '0').toFixed(2)}`
@@ -230,8 +230,8 @@ export class PDFReportGenerator {
       .map(gig => [
         new Date(gig.date).toLocaleDateString(),
         `${gig.eventName || 'Gig'} (${gig.clientName || 'Client'})`,
-        gig.startingAddress || 'Home',
-        gig.endingAddress || 'Destination',
+        gig.gigAddress || 'Home',
+        gig.gigAddress || 'Destination',
         gig.mileage?.toString() || '0',
         '$0.67/mi',
         `$${((gig.mileage || 0) * 0.67).toFixed(2)}`
