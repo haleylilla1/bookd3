@@ -302,10 +302,13 @@ export default function Dashboard() {
         sessionStorage.setItem('pdfUrl', pdfUrl);
         sessionStorage.setItem('pdfFilename', `freelancer-report-${year}${selectedPeriod === 'monthly' ? `-${month}` : ''}.pdf`);
         
+        // Update state to show the mobile PDF button
+        setMobilePdfReady(true);
+        
         // Show success message with special mobile handling
         toast({
           title: "PDF Ready!",
-          description: "Tap 'View PDF' button that appeared below to open your report.",
+          description: "Tap the green 'View PDF' button below to open your report.",
           duration: 10000, // Show longer for mobile users
         });
         
@@ -567,8 +570,8 @@ export default function Dashboard() {
           Download PDF Report
         </Button>
         
-        {/* Mobile PDF View Button - only show if PDF is ready */}
-        {sessionStorage.getItem('pdfUrl') && navigator.userAgent.match(/Android|iPhone|iPad|iPod|BlackBerry|IEMobile/i) && (
+        {/* Mobile PDF View Button - only show if PDF is ready and on mobile */}
+        {mobilePdfReady && navigator.userAgent.match(/Android|iPhone|iPad|iPod|BlackBerry|IEMobile/i) && (
           <Button
             variant="default"
             size="sm"
@@ -576,9 +579,13 @@ export default function Dashboard() {
               const pdfUrl = sessionStorage.getItem('pdfUrl');
               if (pdfUrl) {
                 window.open(pdfUrl, '_blank');
+                // Also try opening in same tab as fallback
+                setTimeout(() => {
+                  window.location.href = pdfUrl;
+                }, 500);
               }
             }}
-            className="flex items-center gap-2 bg-green-600 hover:bg-green-700"
+            className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white"
           >
             <Eye className="w-4 h-4" />
             View PDF
