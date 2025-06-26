@@ -35,6 +35,8 @@ export default function Dashboard() {
   const [showExpenseBreakdown, setShowExpenseBreakdown] = useState(false);
   const [showTipsBreakdown, setShowTipsBreakdown] = useState(false);
   const [showClientsModal, setShowClientsModal] = useState(false);
+  const [showEarningsBreakdown, setShowEarningsBreakdown] = useState(false);
+  const [showProjectedBreakdown, setShowProjectedBreakdown] = useState(false);
   const [selectedClient, setSelectedClient] = useState<string | null>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -883,7 +885,10 @@ export default function Dashboard() {
 
 
       {/* Earnings Overview */}
-      <div className="gradient-primary rounded-xl p-6 mb-4 text-white">
+      <div 
+        className="gradient-primary rounded-xl p-6 mb-4 text-white cursor-pointer hover:opacity-95 transition-opacity"
+        onClick={() => setShowEarningsBreakdown(true)}
+      >
         <div className="flex justify-between items-start mb-2">
           <div>
             <h3 className="text-sm font-medium opacity-90 mb-1">Actual Earnings</h3>
@@ -910,7 +915,10 @@ export default function Dashboard() {
       </div>
 
       {/* Projected Earnings */}
-      <div className="bg-gradient-to-r from-green-500 to-emerald-600 rounded-xl p-6 mb-6 text-white">
+      <div 
+        className="bg-gradient-to-r from-green-500 to-emerald-600 rounded-xl p-6 mb-6 text-white cursor-pointer hover:opacity-95 transition-opacity"
+        onClick={() => setShowProjectedBreakdown(true)}
+      >
         <div className="flex justify-between items-start mb-2">
           <div>
             <h3 className="text-sm font-medium opacity-90 mb-1">Total Projected</h3>
@@ -1489,6 +1497,213 @@ export default function Dashboard() {
               >
                 Cancel
               </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Actual Earnings Breakdown Modal */}
+      <Dialog open={showEarningsBreakdown} onOpenChange={setShowEarningsBreakdown}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Actual Earnings Breakdown - {getCurrentPeriodLabel()}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-4 rounded-lg">
+              <div className="flex justify-between items-center mb-2">
+                <span className="text-sm font-medium text-gray-600">Total Actual Earnings</span>
+                <span className="text-2xl font-bold text-gray-900">
+                  {formatCurrency(currentData.earnings)}
+                </span>
+              </div>
+              <div className="text-sm text-gray-500">
+                {Math.round(currentData.gigs)} completed gigs • {formatCurrency(currentData.avgPerGig)} average per gig
+              </div>
+            </div>
+
+            <div className="max-h-96 overflow-y-auto">
+              {(() => {
+                const filteredGigs = (gigs as any[])?.filter(gig => {
+                  const gigDate = new Date(gig.date + 'T00:00:00.000Z');
+                  switch (selectedPeriod) {
+                    case "weekly":
+                      const { startOfWeek, endOfWeek } = getWeekDates(currentDate);
+                      return gigDate >= startOfWeek && gigDate <= endOfWeek;
+                    case "monthly":
+                      return gigDate.getUTCMonth() === 5 && gigDate.getUTCFullYear() === 2025;
+                    case "annual":
+                      return gigDate.getUTCFullYear() === 2025;
+                    default:
+                      return gigDate.getMonth() === currentDate.getMonth() && 
+                             gigDate.getFullYear() === currentDate.getFullYear();
+                  }
+                }).filter(gig => gig.status === 'completed' && gig.actualPay && parseFloat(gig.actualPay) > 0);
+
+                const processedGigs = new Map();
+                filteredGigs.forEach((gig: any) => {
+                  const key = `${gig.eventName}-${gig.clientName}-${gig.gigType}`;
+                  if (!processedGigs.has(key)) {
+                    processedGigs.set(key, { ...gig, dates: [gig.date], originalAmount: parseFloat(gig.actualPay || "0") });
+                  } else {
+                    const existing = processedGigs.get(key);
+                    existing.dates.push(gig.date);
+                    existing.dates.sort();
+                  }
+                });
+
+                const gigList = Array.from(processedGigs.values()).sort((a: any, b: any) => 
+                  new Date(b.dates[0]).getTime() - new Date(a.dates[0]).getTime()
+                );
+
+                return gigList.length > 0 ? (
+                  <div className="space-y-3">
+                    {gigList.map((gig: any, index: number) => (
+                      <div key={index} className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50">
+                        <div className="flex justify-between items-start mb-2">
+                          <div className="flex-1">
+                            <h4 className="font-medium text-gray-900">{gig.eventName || gig.gigType}</h4>
+                            <p className="text-sm text-gray-600">{gig.clientName}</p>
+                            <p className="text-xs text-gray-500">
+                              {gig.dates.length === 1 
+                                ? new Date(gig.dates[0]).toLocaleDateString()
+                                : `${new Date(gig.dates[0]).toLocaleDateString()} - ${new Date(gig.dates[gig.dates.length - 1]).toLocaleDateString()}`
+                              }
+                              {gig.dates.length > 1 && ` (${gig.dates.length} days)`}
+                            </p>
+                          </div>
+                          <div className="text-right">
+                            <div className="text-lg font-bold text-green-600">
+                              {formatCurrency(gig.originalAmount)}
+                            </div>
+                            {gig.tips && parseFloat(gig.tips) > 0 && (
+                              <div className="text-sm text-gray-500">
+                                +{formatCurrency(parseFloat(gig.tips))} tips
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                        <div className="flex items-center justify-between text-xs text-gray-500">
+                          <span>{gig.gigType}</span>
+                          <span>Status: {gig.status}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-8 text-gray-500">
+                    <TrendingUp className="w-12 h-12 mx-auto mb-3 text-gray-300" />
+                    <p>No completed gigs found</p>
+                    <p className="text-sm">Complete gigs to see earnings breakdown</p>
+                  </div>
+                );
+              })()}
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Projected Earnings Breakdown Modal */}
+      <Dialog open={showProjectedBreakdown} onOpenChange={setShowProjectedBreakdown}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Projected Earnings Breakdown - {getCurrentPeriodLabel()}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="bg-gradient-to-r from-green-50 to-emerald-50 p-4 rounded-lg">
+              <div className="flex justify-between items-center mb-2">
+                <span className="text-sm font-medium text-gray-600">Total Projected Earnings</span>
+                <span className="text-2xl font-bold text-gray-900">
+                  {formatCurrency(projectedData.projectedEarnings)}
+                </span>
+              </div>
+              <div className="text-sm text-gray-500">
+                Includes completed + upcoming gigs • Expected pay only (tips not projected)
+              </div>
+            </div>
+
+            <div className="max-h-96 overflow-y-auto">
+              {(() => {
+                const filteredGigs = (gigs as any[])?.filter(gig => {
+                  const gigDate = new Date(gig.date + 'T00:00:00.000Z');
+                  switch (selectedPeriod) {
+                    case "weekly":
+                      const { startOfWeek, endOfWeek } = getWeekDates(currentDate);
+                      return gigDate >= startOfWeek && gigDate <= endOfWeek;
+                    case "monthly":
+                      return gigDate.getUTCMonth() === 5 && gigDate.getUTCFullYear() === 2025;
+                    case "annual":
+                      return gigDate.getUTCFullYear() === 2025;
+                    default:
+                      return gigDate.getMonth() === currentDate.getMonth() && 
+                             gigDate.getFullYear() === currentDate.getFullYear();
+                  }
+                });
+
+                const processedGigs = new Map();
+                filteredGigs.forEach((gig: any) => {
+                  const key = `${gig.eventName}-${gig.clientName}-${gig.gigType}`;
+                  if (!processedGigs.has(key)) {
+                    const amount = gig.status === 'completed' && gig.actualPay 
+                      ? parseFloat(gig.actualPay || "0")
+                      : parseFloat(gig.expectedPay || "0");
+                    processedGigs.set(key, { ...gig, dates: [gig.date], originalAmount: amount });
+                  } else {
+                    const existing = processedGigs.get(key);
+                    existing.dates.push(gig.date);
+                    existing.dates.sort();
+                  }
+                });
+
+                const gigList = Array.from(processedGigs.values()).sort((a: any, b: any) => 
+                  new Date(b.dates[0]).getTime() - new Date(a.dates[0]).getTime()
+                );
+
+                return gigList.length > 0 ? (
+                  <div className="space-y-3">
+                    {gigList.map((gig: any, index: number) => (
+                      <div key={index} className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50">
+                        <div className="flex justify-between items-start mb-2">
+                          <div className="flex-1">
+                            <h4 className="font-medium text-gray-900">{gig.eventName || gig.gigType}</h4>
+                            <p className="text-sm text-gray-600">{gig.clientName}</p>
+                            <p className="text-xs text-gray-500">
+                              {gig.dates.length === 1 
+                                ? new Date(gig.dates[0]).toLocaleDateString()
+                                : `${new Date(gig.dates[0]).toLocaleDateString()} - ${new Date(gig.dates[gig.dates.length - 1]).toLocaleDateString()}`
+                              }
+                              {gig.dates.length > 1 && ` (${gig.dates.length} days)`}
+                            </p>
+                          </div>
+                          <div className="text-right">
+                            <div className="text-lg font-bold text-blue-600">
+                              {formatCurrency(gig.originalAmount)}
+                            </div>
+                            <div className="text-xs text-gray-500">
+                              {gig.status === 'completed' ? 'Actual' : 'Expected'}
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex items-center justify-between text-xs text-gray-500">
+                          <span>{gig.gigType}</span>
+                          <span className={`px-2 py-1 rounded-full text-xs ${
+                            gig.status === 'completed' 
+                              ? 'bg-green-100 text-green-700' 
+                              : 'bg-blue-100 text-blue-700'
+                          }`}>
+                            {gig.status}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-8 text-gray-500">
+                    <TrendingUp className="w-12 h-12 mx-auto mb-3 text-gray-300" />
+                    <p>No gigs found</p>
+                    <p className="text-sm">Add gigs to see projected earnings breakdown</p>
+                  </div>
+                );
+              })()}
             </div>
           </div>
         </DialogContent>
