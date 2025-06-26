@@ -318,8 +318,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: 'Month is required for monthly reports' });
       }
 
-      const { generateBulletproofPDF } = await import('./bulletproof-pdf');
-      const pdfBuffer = await generateBulletproofPDF(
+      const { generateSimplePDF } = await import('./simple-pdf-fixed');
+      const pdfBuffer = await generateSimplePDF(
         userId,
         period as 'monthly' | 'annual',
         parseInt(year as string),
