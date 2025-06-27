@@ -119,6 +119,7 @@ export default function GigForm({ onClose }: GigFormProps) {
     console.log("Gig Form - User data:", user);
     console.log("Gig Form - Custom gig types:", user?.customGigTypes);
     console.log("Gig Form - User loading:", userLoading);
+    console.log("Gig Form - Full user object keys:", user ? Object.keys(user) : 'none');
   }, [user, userLoading]);
 
   // Memoize default values to prevent unnecessary re-renders
@@ -459,50 +460,10 @@ export default function GigForm({ onClose }: GigFormProps) {
                             </SelectItem>
                           </>
                         ) : (
-                          <>
-                            <SelectItem 
-                              value="brand-ambassador"
-                              className="min-h-[44px] text-base cursor-pointer hover:bg-gray-100 focus:bg-gray-100"
-                              style={{ fontSize: '16px', minHeight: '44px' }}
-                            >
-                              Brand Ambassador
-                            </SelectItem>
-                            <SelectItem 
-                              value="bartender"
-                              className="min-h-[44px] text-base cursor-pointer hover:bg-gray-100 focus:bg-gray-100"
-                              style={{ fontSize: '16px', minHeight: '44px' }}
-                            >
-                              Bartender
-                            </SelectItem>
-                            <SelectItem 
-                              value="server"
-                              className="min-h-[44px] text-base cursor-pointer hover:bg-gray-100 focus:bg-gray-100"
-                              style={{ fontSize: '16px', minHeight: '44px' }}
-                            >
-                              Server/Catering
-                            </SelectItem>
-                            <SelectItem 
-                              value="promo"
-                              className="min-h-[44px] text-base cursor-pointer hover:bg-gray-100 focus:bg-gray-100"
-                              style={{ fontSize: '16px', minHeight: '44px' }}
-                            >
-                              Promo Rep
-                            </SelectItem>
-                            <SelectItem 
-                              value="event-staff"
-                              className="min-h-[44px] text-base cursor-pointer hover:bg-gray-100 focus:bg-gray-100"
-                              style={{ fontSize: '16px', minHeight: '44px' }}
-                            >
-                              Event Staff
-                            </SelectItem>
-                            <SelectItem 
-                              value="other"
-                              className="min-h-[44px] text-base cursor-pointer hover:bg-gray-100 focus:bg-gray-100"
-                              style={{ fontSize: '16px', minHeight: '44px' }}
-                            >
-                              Other
-                            </SelectItem>
-                          </>
+                          <div className="p-4 text-center text-gray-500">
+                            <p className="text-sm">No gig types added yet.</p>
+                            <p className="text-xs mt-1">Go to Profile → Add Type to create your custom gig types.</p>
+                          </div>
                         )}
                       </SelectContent>
                     </Select>

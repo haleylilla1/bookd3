@@ -24,6 +24,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!user) {
         return res.status(404).json({ message: "User not found" });
       }
+      console.log("GET /api/user - Full user object:", JSON.stringify(user, null, 2));
+      console.log("GET /api/user - customGigTypes:", user.customGigTypes);
       res.json(user);
     } catch (error) {
       console.error("Get user error:", error);
