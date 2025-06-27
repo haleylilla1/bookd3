@@ -8,7 +8,12 @@ const sessions = new Map<string, { userId: number; expires: number }>();
 console.log("Simple Auth - Session store initialized at:", new Date().toISOString());
 
 export function generateSessionId(): string {
-  return Math.random().toString(36).substring(2) + Date.now().toString(36);
+  // More secure session ID generation with higher entropy
+  const part1 = Math.random().toString(36).substring(2);
+  const part2 = Math.random().toString(36).substring(2);
+  const part3 = Date.now().toString(36);
+  const part4 = Math.random().toString(36).substring(2);
+  return part1 + part2 + part3 + part4;
 }
 
 export function createSession(userId: number): string {
@@ -34,19 +39,13 @@ export function destroySession(sessionId: string): void {
 // Simple auth middleware with bulletproof user isolation
 export function requireAuth(req: any, res: any, next: any) {
   const sessionId = req.cookies?.sessionId;
-  console.log("RequireAuth - SessionId:", sessionId);
-  console.log("RequireAuth - Total sessions:", sessions.size);
-  
   const session = sessionId ? getSession(sessionId) : null;
-  console.log("RequireAuth - Session found:", session);
   
   if (!session || !session.userId || session.userId <= 0) {
-    console.log("RequireAuth - Auth failed, returning 401");
     return res.status(401).json({ message: "Authentication required" });
   }
   
   req.userId = session.userId;
-  console.log("RequireAuth - Success, userId:", req.userId);
   next();
 }
 

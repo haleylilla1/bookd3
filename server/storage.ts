@@ -388,6 +388,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateGoal(id: number, updateData: Partial<InsertGoal>): Promise<Goal | undefined> {
+    // SECURITY: This method should only be called after ownership verification in routes
     const [goal] = await db
       .update(goals)
       .set(updateData)
@@ -397,6 +398,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deleteGoal(id: number): Promise<boolean> {
+    // SECURITY: This method should only be called after ownership verification in routes
     const result = await db.delete(goals).where(eq(goals.id, id));
     return (result.rowCount || 0) > 0;
   }
@@ -584,6 +586,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateExpense(id: number, updateData: Partial<InsertExpense>): Promise<Expense | undefined> {
+    // SECURITY: This method should only be called after ownership verification in routes
     const [expense] = await db
       .update(expenses)
       .set(updateData)
@@ -593,6 +596,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deleteExpense(id: number): Promise<boolean> {
+    // SECURITY: This method should only be called after ownership verification in routes
     const result = await db.delete(expenses).where(eq(expenses.id, id));
     return result.rowCount !== null && result.rowCount > 0;
   }

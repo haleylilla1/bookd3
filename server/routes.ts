@@ -19,17 +19,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // User profile endpoints
   app.get("/api/user", requireAuth, async (req, res) => {
     try {
-      console.log("=== GET /api/user REQUEST RECEIVED ===");
       const userId = getUserId(req);
-      console.log("User ID from auth:", userId);
       const user = await storage.getUser(userId);
       if (!user) {
-        console.log("No user found for ID:", userId);
         return res.status(404).json({ message: "User not found" });
       }
-      console.log("GET /api/user - Full user object:", JSON.stringify(user, null, 2));
-      console.log("GET /api/user - customGigTypes:", user.customGigTypes);
-      console.log("=== SENDING RESPONSE ===");
       res.json(user);
     } catch (error) {
       console.error("Get user error:", error);
