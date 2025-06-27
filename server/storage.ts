@@ -353,6 +353,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateGig(id: number, updateData: Partial<InsertGig>): Promise<Gig | undefined> {
+    // SECURITY: This method should only be called after ownership verification in routes
     const [gig] = await db
       .update(gigs)
       .set(updateData)
@@ -362,6 +363,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deleteGig(id: number): Promise<boolean> {
+    // SECURITY: This method should only be called after ownership verification in routes
     const result = await db.delete(gigs).where(eq(gigs.id, id));
     return (result.rowCount || 0) > 0;
   }
