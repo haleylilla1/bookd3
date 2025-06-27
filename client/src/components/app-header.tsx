@@ -84,15 +84,7 @@ export default function AppHeader({ currentScreen, onScreenChange }: AppHeaderPr
               <Calendar className="w-4 h-4" />
               Calendar
             </Button>
-            <Button
-              variant={currentScreen === 'goals' ? 'default' : 'ghost'}
-              size="sm"
-              onClick={() => onScreenChange('goals')}
-              className="gap-2"
-            >
-              <Target className="w-4 h-4" />
-              Goals
-            </Button>
+
             <Button
               variant="outline"
               size="sm"

@@ -141,7 +141,7 @@ export default function LandingPage() {
           </h1>
           
           <p className="text-xl text-gray-600 mb-8 max-w-2xl mx-auto">
-            Track earnings, manage goals, and organize your gig work like a pro. 
+            Track earnings, manage expenses, and organize your gig work like a pro. 
             Built by gig workers, for gig workers.
           </p>
 
@@ -198,8 +198,8 @@ export default function LandingPage() {
               <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center mx-auto mb-4">
                 <Target className="w-6 h-6 text-green-600" />
               </div>
-              <h3 className="font-semibold mb-2">Goal Setting</h3>
-              <p className="text-sm text-gray-600">Set monthly and yearly goals, track progress automatically</p>
+              <h3 className="font-semibold mb-2">Expense Tracking</h3>
+              <p className="text-sm text-gray-600">Track expenses and receipts for better tax preparation</p>
             </CardContent>
           </Card>
 

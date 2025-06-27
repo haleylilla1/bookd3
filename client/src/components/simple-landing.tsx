@@ -13,7 +13,7 @@ export default function SimpleLanding() {
             </div>
             <CardTitle className="text-xl">Welcome to Giggy</CardTitle>
             <p className="text-sm text-gray-600">
-              Track your gig work earnings and goals
+              Track your gig work earnings and expenses
             </p>
           </CardHeader>
           <CardContent className="space-y-4">
