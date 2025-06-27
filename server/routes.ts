@@ -154,45 +154,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Goals endpoints with proper user isolation
-  app.get("/api/goals/period", requireAuth, async (req, res) => {
-    try {
-      const userId = getUserId(req);
-      if (!userId) {
-        return res.status(401).json({ message: "Authentication required" });
-      }
-      const goals = await storage.getGoalsByUser(userId);
-      res.json(goals);
-    } catch (error) {
-      res.status(500).json({ message: "Failed to get goals" });
-    }
-  });
 
-  app.post("/api/goals/period/:period/:date", requireAuth, async (req, res) => {
-    try {
-      const userId = getUserId(req);
-      if (!userId) {
-        return res.status(401).json({ message: "Authentication required" });
-      }
-      
-      const { period, date } = req.params;
-      const { goalAmount } = req.body;
-      
-      if (period === 'monthly') {
-        const dateObj = new Date(date);
-        const goal = await storage.setMonthlyGoal(userId, dateObj.getMonth() + 1, dateObj.getFullYear(), goalAmount);
-        res.json(goal);
-      } else if (period === 'annual') {
-        const year = new Date(date).getFullYear();
-        const goal = await storage.setYearlyGoal(userId, year, goalAmount);
-        res.json(goal);
-      } else {
-        res.status(400).json({ message: "Invalid period" });
-      }
-    } catch (error) {
-      res.status(500).json({ message: "Failed to set goal" });
-    }
-  });
 
   // Calculate distance with Google Maps API
   app.post("/api/calculate-distance", requireAuth, async (req, res) => {
