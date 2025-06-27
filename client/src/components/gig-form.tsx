@@ -110,25 +110,43 @@ export default function GigForm({ onClose }: GigFormProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const { data: user, isLoading: userLoading } = useQuery({
+  const { data: user, isLoading: userLoading } = useQuery<User>({
     queryKey: ["/api/user"],
     staleTime: 0, // Always fetch fresh data
-    gcTime: 0, // Don't cache the result (cacheTime is now gcTime in v5)
+    refetchOnMount: true, // Always refetch when component mounts
+    refetchOnWindowFocus: true, // Refetch when window gets focus
+    queryFn: async () => {
+      console.log("Gig Form - Making direct API call to /api/user");
+      const response = await fetch("/api/user", {
+        credentials: "include"
+      });
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+      const userData = await response.json();
+      console.log("Gig Form - Direct API response:", userData);
+      return userData;
+    }
   });
 
-  // Debug logging for custom gig types
+  // Force cache clear and debug logging
   useEffect(() => {
+    // Clear any stale cache immediately when component mounts
+    queryClient.removeQueries({ queryKey: ["/api/user"] });
+    queryClient.invalidateQueries({ queryKey: ["/api/user"] });
+    
     console.log("Gig Form - User data:", user);
     console.log("Gig Form - Custom gig types:", user?.customGigTypes);
     console.log("Gig Form - User loading:", userLoading);
     console.log("Gig Form - Full user object keys:", user ? Object.keys(user) : 'none');
-    
-    // Force cache invalidation if user data is incomplete
-    if (user && (!user.customGigTypes || !user.hasOwnProperty('customGigTypes'))) {
-      console.log("Gig Form - User data incomplete, forcing refresh...");
-      queryClient.invalidateQueries({ queryKey: ["/api/user"] });
+  }, [queryClient]);
+
+  // Additional debug log when user data changes
+  useEffect(() => {
+    if (user) {
+      console.log("Gig Form - User data updated:", user);
     }
-  }, [user, userLoading, queryClient]);
+  }, [user]);
 
   // Memoize default values to prevent unnecessary re-renders
   const defaultValues = useMemo(() => ({
