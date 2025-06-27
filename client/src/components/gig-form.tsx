@@ -110,8 +110,10 @@ export default function GigForm({ onClose }: GigFormProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const { data: user, isLoading: userLoading } = useQuery<User>({
+  const { data: user, isLoading: userLoading } = useQuery({
     queryKey: ["/api/user"],
+    staleTime: 0, // Always fetch fresh data
+    gcTime: 0, // Don't cache the result (cacheTime is now gcTime in v5)
   });
 
   // Debug logging for custom gig types
@@ -120,7 +122,13 @@ export default function GigForm({ onClose }: GigFormProps) {
     console.log("Gig Form - Custom gig types:", user?.customGigTypes);
     console.log("Gig Form - User loading:", userLoading);
     console.log("Gig Form - Full user object keys:", user ? Object.keys(user) : 'none');
-  }, [user, userLoading]);
+    
+    // Force cache invalidation if user data is incomplete
+    if (user && (!user.customGigTypes || !user.hasOwnProperty('customGigTypes'))) {
+      console.log("Gig Form - User data incomplete, forcing refresh...");
+      queryClient.invalidateQueries({ queryKey: ["/api/user"] });
+    }
+  }, [user, userLoading, queryClient]);
 
   // Memoize default values to prevent unnecessary re-renders
   const defaultValues = useMemo(() => ({
