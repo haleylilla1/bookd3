@@ -29,6 +29,15 @@ export default function Profile() {
     queryKey: ["/api/user"],
   });
 
+  // Debug user data
+  useEffect(() => {
+    if (user) {
+      console.log("Profile - User data:", user);
+      console.log("Profile - customGigTypes:", user.customGigTypes);
+      console.log("Profile - User object keys:", Object.keys(user));
+    }
+  }, [user]);
+
   const updateUserMutation = useMutation({
     mutationFn: async (userData: Partial<UserType>) => {
       console.log("Updating user with data:", userData);
