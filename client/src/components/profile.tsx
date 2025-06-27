@@ -215,7 +215,7 @@ export default function Profile() {
                   <Percent className="w-4 h-4 absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
                 </div>
                 <p className="text-sm text-gray-600">
-                  This percentage will be used as default for new gigs and invoices.
+                  This percentage will be used as default for new gigs.
                 </p>
               </div>
 
@@ -223,7 +223,7 @@ export default function Profile() {
               <div className="pt-4 border-t">
                 <h3 className="text-md font-semibold mb-4">Business Information</h3>
                 <p className="text-sm text-gray-600 mb-4">
-                  These details will automatically populate in your invoices.
+                  These details will be used for your tax reports.
                 </p>
                 
                 <div className="space-y-4">
@@ -243,7 +243,7 @@ export default function Profile() {
                       id="businessAddress"
                       value={editedBusinessAddress}
                       onChange={(e) => setEditedBusinessAddress(e.target.value)}
-                      placeholder="Business address for invoices"
+                      placeholder="Business address for tax reports"
                     />
                   </div>
                   
@@ -331,7 +331,7 @@ export default function Profile() {
                     </div>
                     {(user.businessName || user.businessAddress || user.businessPhone || user.businessEmail) && (
                       <p className="text-xs text-gray-500 mt-1">
-                        Auto-populates in invoice generator
+                        Used in tax reports
                       </p>
                     )}
                   </div>

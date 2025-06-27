@@ -43,19 +43,12 @@ export default function Dashboard() {
     retry: 1,
   });
 
-  // Fetch period-specific goal
-  const { data: currentGoal, refetch: refetchGoal } = useQuery<{ goalAmount: string; id: number }>({
-    queryKey: ["/api/goals/period", selectedPeriod, currentDate.toISOString()],
-    retry: 1,
-  });
-
   const updateGoalMutation = useMutation({
-    mutationFn: async (goalData: { goalAmount: string }) => {
-      const response = await apiRequest("POST", `/api/goals/period/${selectedPeriod}/${currentDate.toISOString()}`, goalData);
-      return response.json();
+    mutationFn: async () => {
+      // Goals functionality removed
+      return Promise.resolve();
     },
     onSuccess: () => {
-      refetchGoal();
       toast({
         title: "Success",
         description: "Goal updated successfully!",
