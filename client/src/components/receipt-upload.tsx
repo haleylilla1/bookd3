@@ -25,35 +25,54 @@ export default function ReceiptUpload({
   const cameraInputRef = useRef<HTMLInputElement>(null);
 
   const compressImage = (file: File, quality: number = 0.7): Promise<string> => {
-    return new Promise((resolve) => {
+    return new Promise((resolve, reject) => {
       const canvas = document.createElement('canvas');
       const ctx = canvas.getContext('2d');
       const img = new Image();
       
+      if (!ctx) {
+        reject(new Error('Canvas context not available'));
+        return;
+      }
+      
       img.onload = () => {
-        // Calculate optimal dimensions (max 1200px width/height for mobile)
-        const maxSize = 1200;
-        let { width, height } = img;
-        
-        if (width > height) {
-          if (width > maxSize) {
-            height = (height * maxSize) / width;
-            width = maxSize;
+        try {
+          // Calculate optimal dimensions (max 1200px width/height for mobile)
+          const maxSize = 1200;
+          let { width, height } = img;
+          
+          if (width > height) {
+            if (width > maxSize) {
+              height = (height * maxSize) / width;
+              width = maxSize;
+            }
+          } else {
+            if (height > maxSize) {
+              width = (width * maxSize) / height;
+              height = maxSize;
+            }
           }
-        } else {
-          if (height > maxSize) {
-            width = (width * maxSize) / height;
-            height = maxSize;
-          }
+          
+          canvas.width = width;
+          canvas.height = height;
+          
+          // Draw and compress
+          ctx.drawImage(img, 0, 0, width, height);
+          const compressedDataUrl = canvas.toDataURL('image/jpeg', quality);
+          
+          // Clean up
+          URL.revokeObjectURL(img.src);
+          
+          resolve(compressedDataUrl);
+        } catch (error) {
+          URL.revokeObjectURL(img.src);
+          reject(error);
         }
-        
-        canvas.width = width;
-        canvas.height = height;
-        
-        // Draw and compress
-        ctx?.drawImage(img, 0, 0, width, height);
-        const compressedDataUrl = canvas.toDataURL('image/jpeg', quality);
-        resolve(compressedDataUrl);
+      };
+      
+      img.onerror = () => {
+        URL.revokeObjectURL(img.src);
+        reject(new Error('Failed to load image'));
       };
       
       img.src = URL.createObjectURL(file);
@@ -71,13 +90,27 @@ export default function ReceiptUpload({
       const availableSlots = maxFiles - (receipts || []).length;
       const filesToProcess = fileArray.slice(0, availableSlots);
       
-      // Process files in parallel for faster upload
-      const compressedImages = await Promise.all(
-        filesToProcess.map(file => compressImage(file, 0.8))
-      );
+      // Process files with fallback to original if compression fails
+      const processedImages: string[] = [];
+      
+      for (const file of filesToProcess) {
+        try {
+          const compressed = await compressImage(file, 0.8);
+          processedImages.push(compressed);
+        } catch (error) {
+          console.warn('Compression failed, using original:', error);
+          // Fallback to original file as base64
+          const reader = new FileReader();
+          const originalBase64 = await new Promise<string>((resolve) => {
+            reader.onload = (e) => resolve(e.target?.result as string);
+            reader.readAsDataURL(file);
+          });
+          processedImages.push(originalBase64);
+        }
+      }
       
       // Update receipts in a single batch
-      onReceiptsChange([...(receipts || []), ...compressedImages]);
+      onReceiptsChange([...(receipts || []), ...processedImages]);
     } catch (error) {
       console.error('Error processing images:', error);
     } finally {
