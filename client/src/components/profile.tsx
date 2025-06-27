@@ -37,10 +37,16 @@ export default function Profile() {
     },
     onSuccess: async (data) => {
       console.log("User update successful:", data);
+      console.log("Updated customGigTypes:", data.customGigTypes);
       
-      // Force cache invalidation and refetch
+      // Force cache invalidation and refetch across all user queries
       await queryClient.invalidateQueries({ queryKey: ["/api/user"] });
       await queryClient.refetchQueries({ queryKey: ["/api/user"] });
+      
+      // Also invalidate any other user-related queries
+      await queryClient.invalidateQueries({ predicate: (query) => 
+        query.queryKey.some(key => typeof key === 'string' && key.includes('user'))
+      });
       
       toast({
         title: "Success",
