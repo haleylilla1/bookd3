@@ -781,17 +781,16 @@ export class DatabaseStorage implements IStorage {
   async getUserTotalEarnings(userId: number): Promise<number> {
     const result = await db
       .select({ 
-        totalActual: expenses.actualPay,
-        totalProjected: expenses.projectedPay 
+        actualPay: gigs.actualPay,
+        expectedPay: gigs.expectedPay 
       })
       .from(gigs)
-      .leftJoin(expenses, eq(gigs.id, expenses.gigId))
       .where(eq(gigs.userId, userId));
     
     let total = 0;
     result.forEach(row => {
-      // Use actual pay if available, otherwise projected pay
-      const earning = row.totalActual || row.totalProjected || 0;
+      // Use actual pay if available, otherwise expected pay
+      const earning = row.actualPay || row.expectedPay || 0;
       total += parseFloat(earning.toString());
     });
     

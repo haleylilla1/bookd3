@@ -1,0 +1,627 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Giggy Admin Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+        
+        .header p {
+            opacity: 0.9;
+            font-size: 1.1rem;
+        }
+        
+        .content {
+            padding: 30px;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .stat-card {
+            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+            border-radius: 12px;
+            padding: 24px;
+            border-left: 4px solid #3b82f6;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        
+        .stat-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+        }
+        
+        .stat-card h3 {
+            color: #1e40af;
+            font-size: 0.875rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 8px;
+        }
+        
+        .stat-card .value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #1f2937;
+            margin-bottom: 4px;
+        }
+        
+        .stat-card .label {
+            color: #6b7280;
+            font-size: 0.875rem;
+        }
+        
+        .section {
+            background: #f9fafb;
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 20px;
+            border: 1px solid #e5e7eb;
+        }
+        
+        .section h2 {
+            color: #1f2937;
+            font-size: 1.5rem;
+            margin-bottom: 20px;
+            font-weight: 600;
+        }
+        
+        .user-lookup {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        
+        .user-lookup input {
+            flex: 1;
+            min-width: 200px;
+            padding: 12px 16px;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.2s;
+        }
+        
+        .user-lookup input:focus {
+            outline: none;
+            border-color: #3b82f6;
+        }
+        
+        .btn {
+            background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        
+        .btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+        }
+        
+        .btn-refresh {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        }
+        
+        .btn-refresh:hover {
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+        }
+        
+        .user-result {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            border: 1px solid #e5e7eb;
+            margin-top: 16px;
+        }
+        
+        .user-result h3 {
+            color: #1f2937;
+            margin-bottom: 12px;
+        }
+        
+        .user-details {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 12px;
+        }
+        
+        .user-detail {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #f3f4f6;
+        }
+        
+        .user-detail:last-child {
+            border-bottom: none;
+        }
+        
+        .user-detail .label {
+            font-weight: 600;
+            color: #374151;
+        }
+        
+        .user-detail .value {
+            color: #6b7280;
+        }
+        
+        .logs-container {
+            background: #1f2937;
+            border-radius: 8px;
+            padding: 20px;
+            color: white;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 13px;
+            line-height: 1.4;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        
+        .log-entry {
+            margin-bottom: 8px;
+            padding: 4px 0;
+        }
+        
+        .log-entry.info {
+            color: #10b981;
+        }
+        
+        .log-entry.warn {
+            color: #f59e0b;
+        }
+        
+        .log-entry.error {
+            color: #ef4444;
+        }
+        
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        
+        .status-healthy {
+            background: #10b981;
+            box-shadow: 0 0 8px rgba(16, 185, 129, 0.4);
+        }
+        
+        .status-warning {
+            background: #f59e0b;
+            box-shadow: 0 0 8px rgba(245, 158, 11, 0.4);
+        }
+        
+        .status-error {
+            background: #ef4444;
+            box-shadow: 0 0 8px rgba(239, 68, 68, 0.4);
+        }
+        
+        .loading {
+            text-align: center;
+            color: #6b7280;
+            padding: 20px;
+        }
+        
+        .error-message {
+            background: #fee2e2;
+            color: #dc2626;
+            padding: 12px 16px;
+            border-radius: 8px;
+            margin: 12px 0;
+            border-left: 4px solid #dc2626;
+        }
+        
+        .timestamp {
+            font-size: 0.75rem;
+            color: #9ca3af;
+            margin-left: auto;
+        }
+        
+        @media (max-width: 768px) {
+            .user-lookup {
+                flex-direction: column;
+            }
+            
+            .user-lookup input {
+                min-width: 100%;
+            }
+            
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .auto-refresh {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+        
+        .auto-refresh input[type="checkbox"] {
+            width: 16px;
+            height: 16px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎯 Giggy Admin Dashboard</h1>
+            <p>Real-time system monitoring and user management</p>
+        </div>
+        
+        <div class="content">
+            <!-- System Health Section -->
+            <div class="section">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <h2><span class="status-indicator status-healthy"></span>System Health</h2>
+                    <div class="auto-refresh">
+                        <input type="checkbox" id="autoRefresh" checked>
+                        <label for="autoRefresh">Auto-refresh (30s)</label>
+                        <button class="btn btn-refresh" onclick="refreshAllData()">Refresh Now</button>
+                    </div>
+                </div>
+                
+                <div class="stats-grid" id="healthStats">
+                    <div class="loading">Loading system health...</div>
+                </div>
+            </div>
+            
+            <!-- Analytics Section -->
+            <div class="section">
+                <h2>📊 Platform Analytics</h2>
+                <div class="stats-grid" id="analyticsStats">
+                    <div class="loading">Loading analytics...</div>
+                </div>
+            </div>
+            
+            <!-- User Lookup Section -->
+            <div class="section">
+                <h2>👤 User Lookup</h2>
+                <div class="user-lookup">
+                    <input type="email" id="userEmail" placeholder="Enter user email...">
+                    <input type="number" id="userId" placeholder="Enter user ID...">
+                    <button class="btn" onclick="lookupUser()">Lookup User</button>
+                </div>
+                <div id="userResult"></div>
+            </div>
+            
+            <!-- System Logs Section -->
+            <div class="section">
+                <h2>📋 System Logs</h2>
+                <div class="logs-container" id="systemLogs">
+                    <div class="loading">Loading system logs...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Admin access configuration
+        const ADMIN_KEY = 'giggy-admin-2025'; // This should be configured via environment variables
+        
+        // Set admin header for all requests
+        const adminHeaders = {
+            'Content-Type': 'application/json',
+            'X-Admin-Key': ADMIN_KEY
+        };
+        
+        // Auto-refresh functionality
+        let refreshInterval;
+        
+        document.getElementById('autoRefresh').addEventListener('change', function() {
+            if (this.checked) {
+                startAutoRefresh();
+            } else {
+                stopAutoRefresh();
+            }
+        });
+        
+        function startAutoRefresh() {
+            refreshInterval = setInterval(refreshAllData, 30000); // 30 seconds
+        }
+        
+        function stopAutoRefresh() {
+            clearInterval(refreshInterval);
+        }
+        
+        // Load system health data
+        async function loadSystemHealth() {
+            try {
+                const response = await fetch('/api/admin/health', {
+                    headers: adminHeaders
+                });
+                
+                if (!response.ok) {
+                    throw new Error('Failed to fetch health data');
+                }
+                
+                const health = await response.json();
+                
+                const healthHtml = `
+                    <div class="stat-card">
+                        <h3>System Status</h3>
+                        <div class="value">${health.status.toUpperCase()}</div>
+                        <div class="label">Overall Status</div>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Uptime</h3>
+                        <div class="value">${formatUptime(health.uptime)}</div>
+                        <div class="label">Server Uptime</div>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Memory Usage</h3>
+                        <div class="value">${health.memory.heapUsed}MB</div>
+                        <div class="label">of ${health.memory.heapTotal}MB total</div>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Last Updated</h3>
+                        <div class="value">${new Date(health.timestamp).toLocaleTimeString()}</div>
+                        <div class="label">System Time</div>
+                    </div>
+                `;
+                
+                document.getElementById('healthStats').innerHTML = healthHtml;
+            } catch (error) {
+                document.getElementById('healthStats').innerHTML = `
+                    <div class="error-message">Error loading system health: ${error.message}</div>
+                `;
+            }
+        }
+        
+        // Load analytics data
+        async function loadAnalytics() {
+            try {
+                const response = await fetch('/api/admin/analytics', {
+                    headers: adminHeaders
+                });
+                
+                if (!response.ok) {
+                    throw new Error('Failed to fetch analytics data');
+                }
+                
+                const analytics = await response.json();
+                
+                const analyticsHtml = `
+                    <div class="stat-card">
+                        <h3>Total Users</h3>
+                        <div class="value">${analytics.totalUsers}</div>
+                        <div class="label">Registered Users</div>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Active Users (24h)</h3>
+                        <div class="value">${analytics.activeUsers24h}</div>
+                        <div class="label">Users with activity</div>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Gigs Created (24h)</h3>
+                        <div class="value">${analytics.gigsCreated24h}</div>
+                        <div class="label">New gigs added</div>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Expenses Added (24h)</h3>
+                        <div class="value">${analytics.expensesAdded24h}</div>
+                        <div class="label">New expenses tracked</div>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Error Rate</h3>
+                        <div class="value">${(analytics.systemHealth.errorRate * 100).toFixed(2)}%</div>
+                        <div class="label">System Error Rate</div>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Avg Response Time</h3>
+                        <div class="value">${analytics.systemHealth.averageResponseTime}ms</div>
+                        <div class="label">API Response Time</div>
+                    </div>
+                `;
+                
+                document.getElementById('analyticsStats').innerHTML = analyticsHtml;
+            } catch (error) {
+                document.getElementById('analyticsStats').innerHTML = `
+                    <div class="error-message">Error loading analytics: ${error.message}</div>
+                `;
+            }
+        }
+        
+        // Load system logs
+        async function loadSystemLogs() {
+            try {
+                const response = await fetch('/api/admin/logs', {
+                    headers: adminHeaders
+                });
+                
+                if (!response.ok) {
+                    throw new Error('Failed to fetch system logs');
+                }
+                
+                const logsData = await response.json();
+                
+                const logsHtml = logsData.logs.map(log => `
+                    <div class="log-entry ${log.level}">
+                        [${new Date(log.timestamp).toLocaleTimeString()}] 
+                        [${log.category.toUpperCase()}] 
+                        ${log.message}
+                    </div>
+                `).join('');
+                
+                document.getElementById('systemLogs').innerHTML = logsHtml;
+            } catch (error) {
+                document.getElementById('systemLogs').innerHTML = `
+                    <div class="error-message">Error loading system logs: ${error.message}</div>
+                `;
+            }
+        }
+        
+        // User lookup functionality
+        async function lookupUser() {
+            const email = document.getElementById('userEmail').value.trim();
+            const userId = document.getElementById('userId').value.trim();
+            
+            if (!email && !userId) {
+                alert('Please enter either an email or user ID');
+                return;
+            }
+            
+            try {
+                const params = new URLSearchParams();
+                if (email) params.append('email', email);
+                if (userId) params.append('id', userId);
+                
+                const response = await fetch(`/api/admin/user-lookup?${params}`, {
+                    headers: adminHeaders
+                });
+                
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.error || 'User lookup failed');
+                }
+                
+                const user = await response.json();
+                
+                const userHtml = `
+                    <div class="user-result">
+                        <h3>User Details</h3>
+                        <div class="user-details">
+                            <div class="user-detail">
+                                <span class="label">ID:</span>
+                                <span class="value">${user.id}</span>
+                            </div>
+                            <div class="user-detail">
+                                <span class="label">Email:</span>
+                                <span class="value">${user.email}</span>
+                            </div>
+                            <div class="user-detail">
+                                <span class="label">Name:</span>
+                                <span class="value">${user.firstName || ''} ${user.lastName || ''}</span>
+                            </div>
+                            <div class="user-detail">
+                                <span class="label">Created:</span>
+                                <span class="value">${new Date(user.createdAt).toLocaleDateString()}</span>
+                            </div>
+                            <div class="user-detail">
+                                <span class="label">Last Login:</span>
+                                <span class="value">${user.lastLoginAt ? new Date(user.lastLoginAt).toLocaleDateString() : 'Never'}</span>
+                            </div>
+                            <div class="user-detail">
+                                <span class="label">Subscription:</span>
+                                <span class="value">${user.subscriptionTier || 'Trial'}</span>
+                            </div>
+                            <div class="user-detail">
+                                <span class="label">Gigs Count:</span>
+                                <span class="value">${user.gigCount}</span>
+                            </div>
+                            <div class="user-detail">
+                                <span class="label">Expenses Count:</span>
+                                <span class="value">${user.expenseCount}</span>
+                            </div>
+                            <div class="user-detail">
+                                <span class="label">Total Earnings:</span>
+                                <span class="value">$${user.totalEarnings.toFixed(2)}</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                document.getElementById('userResult').innerHTML = userHtml;
+                
+                // Clear input fields
+                document.getElementById('userEmail').value = '';
+                document.getElementById('userId').value = '';
+                
+            } catch (error) {
+                document.getElementById('userResult').innerHTML = `
+                    <div class="error-message">Error looking up user: ${error.message}</div>
+                `;
+            }
+        }
+        
+        // Refresh all data
+        function refreshAllData() {
+            loadSystemHealth();
+            loadAnalytics();
+            loadSystemLogs();
+        }
+        
+        // Utility functions
+        function formatUptime(seconds) {
+            const days = Math.floor(seconds / 86400);
+            const hours = Math.floor((seconds % 86400) / 3600);
+            const minutes = Math.floor((seconds % 3600) / 60);
+            
+            if (days > 0) {
+                return `${days}d ${hours}h ${minutes}m`;
+            } else if (hours > 0) {
+                return `${hours}h ${minutes}m`;
+            } else {
+                return `${minutes}m`;
+            }
+        }
+        
+        // Allow Enter key for user lookup
+        document.getElementById('userEmail').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                lookupUser();
+            }
+        });
+        
+        document.getElementById('userId').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                lookupUser();
+            }
+        });
+        
+        // Initialize dashboard
+        document.addEventListener('DOMContentLoaded', function() {
+            refreshAllData();
+            startAutoRefresh();
+        });
+    </script>
+</body>
+</html>
