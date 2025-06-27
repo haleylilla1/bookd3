@@ -4,16 +4,14 @@ import CalendarView from "@/components/calendar-view";
 import GigForm from "@/components/gig-form";
 import Dashboard from "@/components/dashboard";
 import ResumeBuilder from "@/components/resume-builder";
-import GoalTracker from "@/components/goal-tracker";
 import Profile from "@/components/profile";
-import InvoiceGenerator from "@/components/invoice-generator";
 import BottomNavigation from "@/components/bottom-navigation";
 import AppHeader from "@/components/app-header";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Plus, Bell, Briefcase } from "lucide-react";
 
-export type Screen = "calendar" | "dashboard" | "resume" | "goals" | "profile" | "gig-form" | "invoices" | "settings";
+export type Screen = "calendar" | "dashboard" | "resume" | "profile" | "gig-form" | "settings";
 
 export default function Home() {
   const [currentScreen, setCurrentScreen] = useState<Screen>("dashboard");
@@ -33,14 +31,10 @@ export default function Home() {
         return <Dashboard />;
       case "resume":
         return <ResumeBuilder />;
-      case "goals":
-        return <GoalTracker />;
       case "profile":
         return <Profile />;
       case "gig-form":
         return <GigForm onClose={() => setCurrentScreen("calendar")} />;
-      case "invoices":
-        return <InvoiceGenerator />;
       case "settings":
         return <Profile />; // Use Profile component for settings for now
       default:
