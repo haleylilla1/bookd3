@@ -35,12 +35,16 @@ export default function Profile() {
       const response = await apiRequest("PUT", "/api/user", userData);
       return response.json();
     },
-    onSuccess: (data) => {
+    onSuccess: async (data) => {
       console.log("User update successful:", data);
-      queryClient.invalidateQueries({ queryKey: ["/api/user"] });
+      
+      // Force cache invalidation and refetch
+      await queryClient.invalidateQueries({ queryKey: ["/api/user"] });
+      await queryClient.refetchQueries({ queryKey: ["/api/user"] });
+      
       toast({
         title: "Success",
-        description: "Profile updated successfully!",
+        description: "Successfully added to your profile!",
       });
       setIsEditing(false);
       setNewGigType("");
@@ -113,6 +117,7 @@ export default function Profile() {
 
     console.log("Adding gig type:", trimmedType);
     console.log("Current types:", currentTypes);
+    console.log("New types array:", [...currentTypes, trimmedType]);
     
     updateUserMutation.mutate({
       customGigTypes: [...currentTypes, trimmedType],

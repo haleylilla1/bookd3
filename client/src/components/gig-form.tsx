@@ -114,6 +114,13 @@ export default function GigForm({ onClose }: GigFormProps) {
     queryKey: ["/api/user"],
   });
 
+  // Debug logging for custom gig types
+  useEffect(() => {
+    console.log("Gig Form - User data:", user);
+    console.log("Gig Form - Custom gig types:", user?.customGigTypes);
+    console.log("Gig Form - User loading:", userLoading);
+  }, [user, userLoading]);
+
   // Memoize default values to prevent unnecessary re-renders
   const defaultValues = useMemo(() => ({
     gigType: "",
