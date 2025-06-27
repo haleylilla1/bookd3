@@ -199,8 +199,24 @@ export default function Dashboard() {
     // Calculate tax estimate using grouped gigs to prevent double-counting
     const estimatedTax = completedGroupedGigs.reduce((sum, gig) => {
       const income = safeParseFloat(gig.actualPay) + safeParseFloat(gig.tips);
-      const expenses = safeParseFloat(gig.parkingExpense) + safeParseFloat(gig.otherExpenses) + ((gig.mileage || 0) * 0.67);
-      const taxableIncome = Math.max(0, income - expenses);
+      // For multi-day gigs, we need to aggregate expenses from all related days
+      let totalExpenses = 0;
+      if (gig.isMultiDay) {
+        // Find all gigs in the multi-day sequence for accurate expense calculation
+        const relatedGigs = currentPeriodGigs.filter(originalGig => 
+          originalGig.eventName === gig.eventName &&
+          originalGig.clientName === gig.clientName &&
+          originalGig.gigType === gig.gigType
+        );
+        totalExpenses = relatedGigs.reduce((expSum, relatedGig) => {
+          return expSum + safeParseFloat(relatedGig.parkingExpense) + 
+                 safeParseFloat(relatedGig.otherExpenses) + 
+                 ((relatedGig.mileage || 0) * 0.67);
+        }, 0);
+      } else {
+        totalExpenses = safeParseFloat(gig.parkingExpense) + safeParseFloat(gig.otherExpenses) + ((gig.mileage || 0) * 0.67);
+      }
+      const taxableIncome = Math.max(0, income - totalExpenses);
       const gigTaxRate = (gig.taxPercentage !== null && gig.taxPercentage !== undefined) ? gig.taxPercentage : userTaxRate;
       return sum + (taxableIncome * gigTaxRate / 100);
     }, 0);
@@ -215,7 +231,7 @@ export default function Dashboard() {
       upcomingGigs: upcomingGroupedGigs.length,
       totalGigs: groupedGigs.length
     };
-  }, [currentPeriodGigs]);
+  }, [currentPeriodGigs, user]);
 
   // Get period display text
   const getPeriodText = () => {

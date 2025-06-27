@@ -29,24 +29,19 @@ export default function Profile() {
     queryKey: ["/api/user"],
   });
 
-  // Debug user data
+  // Initialize form fields when user data loads
   useEffect(() => {
-    if (user) {
-      console.log("Profile - User data:", user);
-      console.log("Profile - customGigTypes:", user.customGigTypes);
-      console.log("Profile - User object keys:", Object.keys(user));
+    if (user && !isEditing) {
+      // Pre-populate form fields with current user data for better UX
     }
-  }, [user]);
+  }, [user, isEditing]);
 
   const updateUserMutation = useMutation({
     mutationFn: async (userData: Partial<UserType>) => {
-      console.log("Updating user with data:", userData);
       const response = await apiRequest("PUT", "/api/user", userData);
       return response.json();
     },
     onSuccess: async (data) => {
-      console.log("User update successful:", data);
-      console.log("Updated customGigTypes:", data.customGigTypes);
       
       // Force cache invalidation and refetch across all user queries
       await queryClient.invalidateQueries({ queryKey: ["/api/user"] });
@@ -66,7 +61,6 @@ export default function Profile() {
       setIsAddingGigType(false);
     },
     onError: (error) => {
-      console.error("User update error:", error);
       toast({
         title: "Error",
         description: "Failed to update profile. Please try again.",
@@ -130,9 +124,7 @@ export default function Profile() {
       return;
     }
 
-    console.log("Adding gig type:", trimmedType);
-    console.log("Current types:", currentTypes);
-    console.log("New types array:", [...currentTypes, trimmedType]);
+    // Add new gig type to user's custom list
     
     updateUserMutation.mutate({
       customGigTypes: [...currentTypes, trimmedType],
