@@ -187,7 +187,7 @@ export default function GigForm({ onClose }: GigFormProps) {
       if (user.homeAddress && !form.getValues("startingAddress")) {
         form.setValue("startingAddress", user.homeAddress);
       }
-      if (user.defaultTaxPercentage !== undefined) {
+      if (user.defaultTaxPercentage !== undefined && user.defaultTaxPercentage !== null) {
         form.setValue("taxPercentage", user.defaultTaxPercentage);
       }
     }
@@ -253,7 +253,7 @@ export default function GigForm({ onClose }: GigFormProps) {
       // Calculate distance with timeout and retry logic
       for (let i = 0; i < waypoints.length - 1; i++) {
         let retries = 2;
-        let result = null;
+        let result: any = null;
         
         while (retries > 0 && !result) {
           try {
@@ -268,9 +268,9 @@ export default function GigForm({ onClose }: GigFormProps) {
           }
         }
         
-        if (result.status === 'success' && typeof result.distanceMiles === 'number' && isFinite(result.distanceMiles)) {
-          totalDistance += Math.max(0, result.distanceMiles);
-          totalTime += Math.max(0, result.travelTimeMinutes || 0);
+        if (result && (result as any).status === 'success' && typeof (result as any).distanceMiles === 'number' && isFinite((result as any).distanceMiles)) {
+          totalDistance += Math.max(0, (result as any).distanceMiles);
+          totalTime += Math.max(0, (result as any).travelTimeMinutes || 0);
         } else {
           throw new Error(`Invalid response for route segment ${i + 1}`);
         }
