@@ -455,10 +455,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return res.status(404).send('Not Found');
     }
     
-    // Serve the admin dashboard HTML
+    // Serve the enhanced admin dashboard HTML
     const fs = require('fs');
     const path = require('path');
-    const adminHtmlPath = path.join(__dirname, '..', 'admin-dashboard.html');
+    const adminHtmlPath = path.join(__dirname, '..', 'admin-dashboard-enhanced.html');
     
     if (fs.existsSync(adminHtmlPath)) {
       res.sendFile(path.resolve(adminHtmlPath));
