@@ -277,8 +277,12 @@ export default function GigForm({ onClose }: GigFormProps) {
 
   // Bulletproof submit handler - never fails for users
   const onSubmit = async (data: GigFormData) => {
+    console.log("Form submit triggered with data:", data);
+    console.log("User data:", user);
+    
     // Auto-fix missing authentication
     if (!user?.id) {
+      console.log("No user ID, reloading page");
       // Silently refresh auth and continue
       window.location.reload();
       return;
@@ -292,6 +296,8 @@ export default function GigForm({ onClose }: GigFormProps) {
       clientName: data.clientName?.trim() || "Client",
       startDate: data.startDate?.trim() || new Date().toISOString().split('T')[0],
     };
+    
+    console.log("Safe data for submission:", safeData);
 
     try {
       const gigDates = generateDateRange(safeData.startDate, safeData.endDate);
@@ -390,7 +396,15 @@ export default function GigForm({ onClose }: GigFormProps) {
           </div>
 
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            <form onSubmit={form.handleSubmit(onSubmit, (errors) => {
+              console.log("Form validation errors:", errors);
+              // Show user-friendly error if form validation fails
+              toast({
+                title: "Please check your entries",
+                description: "Some required fields need to be completed.",
+                variant: "destructive"
+              });
+            })} className="space-y-4">
               {/* Gig Type */}
               <FormField
                 control={form.control}
@@ -398,30 +412,89 @@ export default function GigForm({ onClose }: GigFormProps) {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Type of Gig</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
-                        <SelectTrigger>
+                        <SelectTrigger 
+                          className="min-h-[48px] text-base bg-white border-2 border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                          style={{
+                            fontSize: '16px',
+                            minHeight: '48px',
+                            touchAction: 'manipulation',
+                            WebkitAppearance: 'none'
+                          }}
+                        >
                           <SelectValue placeholder="Select gig type..." />
                         </SelectTrigger>
                       </FormControl>
-                      <SelectContent>
+                      <SelectContent 
+                        className="max-h-[300px] overflow-y-auto z-50"
+                        position="popper"
+                        sideOffset={4}
+                      >
                         {user?.customGigTypes && user.customGigTypes.length > 0 ? (
                           <>
                             {user.customGigTypes.map((gigType) => (
-                              <SelectItem key={gigType} value={gigType}>
+                              <SelectItem 
+                                key={gigType} 
+                                value={gigType}
+                                className="min-h-[44px] text-base cursor-pointer hover:bg-gray-100 focus:bg-gray-100"
+                                style={{ fontSize: '16px', minHeight: '44px' }}
+                              >
                                 {gigType}
                               </SelectItem>
                             ))}
-                            <SelectItem value="other">Other</SelectItem>
+                            <SelectItem 
+                              value="other"
+                              className="min-h-[44px] text-base cursor-pointer hover:bg-gray-100 focus:bg-gray-100"
+                              style={{ fontSize: '16px', minHeight: '44px' }}
+                            >
+                              Other
+                            </SelectItem>
                           </>
                         ) : (
                           <>
-                            <SelectItem value="brand-ambassador">Brand Ambassador</SelectItem>
-                            <SelectItem value="bartender">Bartender</SelectItem>
-                            <SelectItem value="server">Server/Catering</SelectItem>
-                            <SelectItem value="promo">Promo Rep</SelectItem>
-                            <SelectItem value="event-staff">Event Staff</SelectItem>
-                            <SelectItem value="other">Other</SelectItem>
+                            <SelectItem 
+                              value="brand-ambassador"
+                              className="min-h-[44px] text-base cursor-pointer hover:bg-gray-100 focus:bg-gray-100"
+                              style={{ fontSize: '16px', minHeight: '44px' }}
+                            >
+                              Brand Ambassador
+                            </SelectItem>
+                            <SelectItem 
+                              value="bartender"
+                              className="min-h-[44px] text-base cursor-pointer hover:bg-gray-100 focus:bg-gray-100"
+                              style={{ fontSize: '16px', minHeight: '44px' }}
+                            >
+                              Bartender
+                            </SelectItem>
+                            <SelectItem 
+                              value="server"
+                              className="min-h-[44px] text-base cursor-pointer hover:bg-gray-100 focus:bg-gray-100"
+                              style={{ fontSize: '16px', minHeight: '44px' }}
+                            >
+                              Server/Catering
+                            </SelectItem>
+                            <SelectItem 
+                              value="promo"
+                              className="min-h-[44px] text-base cursor-pointer hover:bg-gray-100 focus:bg-gray-100"
+                              style={{ fontSize: '16px', minHeight: '44px' }}
+                            >
+                              Promo Rep
+                            </SelectItem>
+                            <SelectItem 
+                              value="event-staff"
+                              className="min-h-[44px] text-base cursor-pointer hover:bg-gray-100 focus:bg-gray-100"
+                              style={{ fontSize: '16px', minHeight: '44px' }}
+                            >
+                              Event Staff
+                            </SelectItem>
+                            <SelectItem 
+                              value="other"
+                              className="min-h-[44px] text-base cursor-pointer hover:bg-gray-100 focus:bg-gray-100"
+                              style={{ fontSize: '16px', minHeight: '44px' }}
+                            >
+                              Other
+                            </SelectItem>
                           </>
                         )}
                       </SelectContent>
@@ -983,8 +1056,14 @@ export default function GigForm({ onClose }: GigFormProps) {
               {/* Submit Button */}
               <Button 
                 type="submit" 
-                className="w-full"
+                className="w-full min-h-[48px] text-base font-semibold bg-blue-600 hover:bg-blue-700 text-white border-0"
                 disabled={createGigMutation.isPending}
+                style={{
+                  fontSize: '16px',
+                  minHeight: '48px',
+                  touchAction: 'manipulation',
+                  WebkitTapHighlightColor: 'transparent'
+                }}
               >
                 {createGigMutation.isPending ? "Saving..." : "Save Gig"}
               </Button>
