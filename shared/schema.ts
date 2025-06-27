@@ -60,6 +60,7 @@ export const users = pgTable("users", {
   trialEndDate: timestamp("trial_end_date"),
   subscriptionStatus: varchar("subscription_status").default("trial"), // trial, free, premium, suspended
   subscriptionTier: varchar("subscription_tier").default("trial"), // trial, free, premium
+  lastLoginAt: timestamp("last_login_at"),
   
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
