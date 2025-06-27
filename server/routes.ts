@@ -16,6 +16,59 @@ export async function registerRoutes(app: Express): Promise<Server> {
     return userId;
   };
 
+  // User profile endpoints
+  app.get("/api/user", requireAuth, async (req, res) => {
+    try {
+      const userId = getUserId(req);
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      res.json(user);
+    } catch (error) {
+      console.error("Get user error:", error);
+      res.status(500).json({ message: "Failed to get user" });
+    }
+  });
+
+  app.put("/api/user", requireAuth, async (req, res) => {
+    try {
+      const userId = getUserId(req);
+      const { 
+        name, 
+        email, 
+        homeAddress, 
+        defaultTaxPercentage, 
+        customGigTypes,
+        businessName,
+        businessAddress,
+        businessPhone,
+        businessEmail
+      } = req.body;
+      
+      const updateData: any = {};
+      if (name !== undefined) updateData.name = name;
+      if (email !== undefined) updateData.email = email;
+      if (homeAddress !== undefined) updateData.homeAddress = homeAddress;
+      if (defaultTaxPercentage !== undefined) updateData.defaultTaxPercentage = defaultTaxPercentage;
+      if (customGigTypes !== undefined) updateData.customGigTypes = customGigTypes;
+      if (businessName !== undefined) updateData.businessName = businessName;
+      if (businessAddress !== undefined) updateData.businessAddress = businessAddress;
+      if (businessPhone !== undefined) updateData.businessPhone = businessPhone;
+      if (businessEmail !== undefined) updateData.businessEmail = businessEmail;
+      
+      const updatedUser = await storage.updateUser(userId, updateData);
+      if (!updatedUser) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      res.json(updatedUser);
+    } catch (error) {
+      console.error("Update user error:", error);
+      res.status(500).json({ message: "Failed to update user" });
+    }
+  });
+
   // Dashboard stats with user isolation
   app.get("/api/dashboard/stats", requireAuth, async (req, res) => {
     try {
