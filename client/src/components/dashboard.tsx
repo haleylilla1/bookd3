@@ -250,14 +250,15 @@ export default function Dashboard() {
     setCurrentDate(newDate);
   };
 
-  const handleSaveGoal = () => {
-    if (!goalAmount.trim()) return;
-    updateGoalMutation.mutate({ goalAmount: goalAmount.trim() });
-  };
-
+  // Goal management functions
   const startEditingGoal = (period: "monthly" | "annual") => {
     setEditingGoal(period);
     setGoalAmount(currentGoal?.goalAmount || "");
+  };
+
+  const handleSaveGoal = () => {
+    if (!goalAmount.trim()) return;
+    updateGoalMutation.mutate({ goalAmount: goalAmount.trim() });
   };
 
   const handleDownloadPDF = async () => {
