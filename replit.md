@@ -21,7 +21,9 @@ Giggy is a comprehensive gig worker companion app with advanced features includi
 - Maintain simple, clean interface design
 
 ## Recent Changes
-- 2025-06-27: CUSTOM GIG TYPES SYSTEM COMPLETE - Users now create their own custom gig types with no hardcoded defaults
+- 2025-06-27: CUSTOM GIG TYPES SYSTEM COMPLETE - Fixed duplicate endpoint conflict that prevented custom gig types from persisting
+- 2025-06-27: Removed conflicting /api/user endpoint from simple-auth.ts that returned incomplete user data
+- 2025-06-27: Users now create their own custom gig types with no hardcoded defaults - FULLY WORKING
 - 2025-06-27: Removed all hardcoded default gig types (brand-ambassador, bartender, server, promo) per user requirement
 - 2025-06-27: Fixed backend user data fetching to ensure custom gig types appear properly in both profile and gig form
 - 2025-06-27: Enhanced authentication debugging and session management for production reliability
