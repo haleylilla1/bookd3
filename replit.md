@@ -21,6 +21,12 @@ Giggy is a comprehensive gig worker companion app with advanced features includi
 - Maintain simple, clean interface design
 
 ## Recent Changes
+- 2025-06-27: GOALS AND INVOICE PAGES COMPLETELY REMOVED - Eliminated separate goals and invoice pages while preserving monthly/annual goal functionality in dashboard
+- 2025-06-27: Removed goal-tracker.tsx, invoice-generator.tsx, and simple-goals.tsx component files from application
+- 2025-06-27: Updated navigation to remove goals tab from app header and bottom navigation
+- 2025-06-27: Cleaned up all invoice references from profile component, replacing with tax report messaging
+- 2025-06-27: Updated landing page copy to focus on expense tracking instead of goal setting
+- 2025-06-27: Preserved goals API endpoints for dashboard monthly/annual goal functionality as requested
 - 2025-06-27: CRITICAL USER ISOLATION SECURITY FIXES COMPLETE - Eliminated multiple critical vulnerabilities that could break multi-user functionality
 - 2025-06-27: Disabled dangerous admin routes and user switching endpoints by renaming backup files to .DISABLED
 - 2025-06-27: Added security comments to storage layer methods requiring ownership verification before calls

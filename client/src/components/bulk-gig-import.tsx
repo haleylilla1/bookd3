@@ -204,8 +204,6 @@ May 5th promotional event at Mall, $180`;
       // Invalidate all related queries to refresh calendar and dashboard
       queryClient.invalidateQueries({ queryKey: ["/api/gigs"] });
       queryClient.invalidateQueries({ queryKey: ["/api/dashboard/stats"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/goals"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/allocations"] });
       queryClient.invalidateQueries({ queryKey: ["/api/goals/period"] });
       
       setStep('complete');
