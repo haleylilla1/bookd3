@@ -796,6 +796,34 @@ export class DatabaseStorage implements IStorage {
     
     return total;
   }
+
+  async getGigCount(): Promise<number> {
+    const result = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(gigs);
+    return result[0]?.count || 0;
+  }
+
+  async getExpenseCount(): Promise<number> {
+    const result = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(expenses);
+    return result[0]?.count || 0;
+  }
+
+  async getGigCount(): Promise<number> {
+    const result = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(gigs);
+    return result[0]?.count || 0;
+  }
+
+  async getExpenseCount(): Promise<number> {
+    const result = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(expenses);
+    return result[0]?.count || 0;
+  }
 }
 
 export const storage = new DatabaseStorage();
