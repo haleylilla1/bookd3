@@ -14,7 +14,7 @@ import { Plus, Bell, Briefcase } from "lucide-react";
 export type Screen = "calendar" | "dashboard" | "resume" | "profile" | "gig-form" | "settings";
 
 export default function Home() {
-  const [currentScreen, setCurrentScreen] = useState<Screen>("dashboard");
+  const [currentScreen, setCurrentScreen] = useState<Screen>("calendar");
   const queryClient = useQueryClient();
   const { user } = useAuth();
 

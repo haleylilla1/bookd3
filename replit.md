@@ -21,6 +21,7 @@ Giggy is a comprehensive gig worker companion app with advanced features includi
 - Maintain simple, clean interface design
 
 ## Recent Changes
+- 2025-06-27: NAVIGATION ORDER UPDATED - Changed bottom navigation to Calendar → Dashboard → Profile → Import with Calendar as default screen
 - 2025-06-27: GOALS AND INVOICE PAGES COMPLETELY REMOVED - Eliminated separate goals and invoice pages while preserving monthly/annual goal functionality in dashboard
 - 2025-06-27: Removed goal-tracker.tsx, invoice-generator.tsx, and simple-goals.tsx component files from application
 - 2025-06-27: Updated navigation to remove goals tab from app header and bottom navigation
