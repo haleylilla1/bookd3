@@ -112,6 +112,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
             <button onclick="lookupUser()">Search User</button>
             <div id="result" style="margin-top: 15px;"></div>
         </div>
+        
+        <div class="stat">
+            <h3>🛠️ Support Access</h3>
+            <p><strong>⚠️ Admin Only:</strong> Access user accounts for troubleshooting</p>
+            <input type="number" id="impersonateUserId" placeholder="Enter user ID">
+            <input type="text" id="supportReason" placeholder="Reason (e.g., 'fixing login issue')" style="width: 300px;">
+            <button onclick="impersonateUser()" style="background: #dc3545;">Access Account</button>
+            <button onclick="endImpersonation()" style="background: #28a745;">End Support Session</button>
+            <div id="impersonationStatus" style="margin-top: 10px;"></div>
+        </div>
     </div>
 
     <script>
@@ -198,6 +208,70 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         // Load initial active user count
         loadActiveUsers();
+
+        async function impersonateUser() {
+            const userId = document.getElementById('impersonateUserId').value;
+            const reason = document.getElementById('supportReason').value;
+            
+            if (!userId || !reason) {
+                alert('Please enter both User ID and reason for access');
+                return;
+            }
+            
+            if (!confirm('⚠️ This will log you into the user\\'s account. Continue?')) {
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/admin/impersonate?key=giggy-admin-2025', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ userId: parseInt(userId), reason })
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok) {
+                    document.getElementById('impersonationStatus').innerHTML = 
+                        '<div style="background: #fff3cd; padding: 10px; border-radius: 5px; border: 1px solid #ffeaa7;">' +
+                        '<strong>🛠️ Support Session Active</strong><br>' +
+                        'User: ' + result.user.email + ' (ID: ' + result.user.id + ')<br>' +
+                        'Reason: ' + reason + '<br>' +
+                        '<a href="' + result.accessUrl + '" target="_blank" style="color: #007bff;">→ Open User Account</a>' +
+                        '</div>';
+                } else {
+                    document.getElementById('impersonationStatus').innerHTML = 
+                        '<p style="color: red;">Error: ' + result.error + '</p>';
+                }
+            } catch (error) {
+                document.getElementById('impersonationStatus').innerHTML = 
+                    '<p style="color: red;">Network error</p>';
+            }
+        }
+
+        async function endImpersonation() {
+            try {
+                const response = await fetch('/api/admin/end-impersonation?key=giggy-admin-2025', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok) {
+                    document.getElementById('impersonationStatus').innerHTML = 
+                        '<p style="color: green;">✅ Support session ended</p>';
+                    document.getElementById('impersonateUserId').value = '';
+                    document.getElementById('supportReason').value = '';
+                } else {
+                    document.getElementById('impersonationStatus').innerHTML = 
+                        '<p style="color: red;">Error: ' + result.error + '</p>';
+                }
+            } catch (error) {
+                document.getElementById('impersonationStatus').innerHTML = 
+                    '<p style="color: red;">Network error</p>';
+            }
+        }
     </script>
 </body>
 </html>
@@ -272,6 +346,103 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Active users error:', error);
       res.status(500).json({ error: 'Failed to fetch active users' });
+    }
+  });
+
+  // Admin User Impersonation (Support Access)
+  app.post('/api/admin/impersonate', async (req, res) => {
+    if (!isAdminRequest(req)) {
+      return res.status(404).json({ error: 'Not Found' });
+    }
+
+    try {
+      const { userId, reason } = req.body;
+      
+      if (!userId || !reason) {
+        return res.status(400).json({ error: 'User ID and reason required' });
+      }
+
+      // Verify user exists
+      const user = await storage.getUser(parseInt(userId));
+      if (!user) {
+        return res.status(404).json({ error: 'User not found' });
+      }
+
+      // Log the admin impersonation for audit trail
+      await storage.logAudit(
+        null, // Admin action, no specific user
+        'ADMIN_IMPERSONATE',
+        'users',
+        user.id,
+        null,
+        { adminReason: reason, targetUser: user.email },
+        req.ip,
+        req.get('User-Agent')
+      );
+
+      // Create admin session with user context
+      (req.session as any).adminImpersonation = {
+        originalAdmin: true,
+        targetUserId: user.id,
+        targetUserEmail: user.email,
+        reason: reason,
+        startTime: new Date(),
+        sessionId: Math.random().toString(36).substring(7)
+      };
+
+      // Set user in session for app access
+      (req.session as any).userId = user.id;
+
+      res.json({ 
+        success: true, 
+        message: 'Impersonation started',
+        user: {
+          id: user.id,
+          email: user.email,
+          name: user.name
+        },
+        accessUrl: '/?admin_support=true'
+      });
+
+    } catch (error) {
+      console.error('Admin impersonation error:', error);
+      res.status(500).json({ error: 'Failed to start impersonation' });
+    }
+  });
+
+  // End Admin Impersonation
+  app.post('/api/admin/end-impersonation', async (req, res) => {
+    if (!(req.session as any).adminImpersonation) {
+      return res.status(400).json({ error: 'No active impersonation' });
+    }
+
+    try {
+      const impersonation = (req.session as any).adminImpersonation;
+      
+      // Log end of impersonation
+      await storage.logAudit(
+        null,
+        'ADMIN_END_IMPERSONATE',
+        'users',
+        impersonation.targetUserId,
+        null,
+        { 
+          duration: Date.now() - impersonation.startTime.getTime(),
+          reason: impersonation.reason 
+        },
+        req.ip,
+        req.get('User-Agent')
+      );
+
+      // Clear impersonation
+      delete (req.session as any).adminImpersonation;
+      delete (req.session as any).userId;
+
+      res.json({ success: true, message: 'Impersonation ended' });
+
+    } catch (error) {
+      console.error('End impersonation error:', error);
+      res.status(500).json({ error: 'Failed to end impersonation' });
     }
   });
 
