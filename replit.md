@@ -21,6 +21,10 @@ Giggy is a comprehensive gig worker companion app with advanced features includi
 - Maintain simple, clean interface design
 
 ## Recent Changes
+- 2025-06-29: AI IMPORT FEATURE REMOVED FOR MVP FOCUS - Completely eliminated bulk gig import functionality to prioritize core calendar and dashboard features
+- 2025-06-29: Removed /import page, bulk-gig-import component, and all AI/OpenAI integration for simpler, more reliable MVP
+- 2025-06-29: Updated navigation to remove import buttons from header and bottom navigation for streamlined user experience
+- 2025-06-29: Authentication system completely stabilized with database schema fixes enabling reliable user login
 - 2025-06-29: ADMIN DASHBOARD OPTIMIZATION COMPLETE - Simplified admin interface with instant loading and real-time system health monitoring
 - 2025-06-29: CRITICAL ADMIN STATS FIX - Applied multi-day gig grouping logic to admin user lookup preventing inflated earnings and gig counts
 - 2025-06-29: REAL-TIME ACTIVE USER TRACKING - Added detailed active user monitoring showing who's been active, what they did, and when

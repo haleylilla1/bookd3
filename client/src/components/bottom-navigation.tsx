@@ -1,7 +1,6 @@
 import { Button } from "@/components/ui/button";
-import { Calendar, PieChart, User, Upload } from "lucide-react";
+import { Calendar, PieChart, User } from "lucide-react";
 import type { Screen } from "@/pages/home";
-import { useLocation } from "wouter";
 
 interface BottomNavigationProps {
   currentScreen: Screen;
@@ -9,7 +8,6 @@ interface BottomNavigationProps {
 }
 
 export default function BottomNavigation({ currentScreen, onScreenChange }: BottomNavigationProps) {
-  const [, setLocation] = useLocation();
   
   const navItems = [
     { id: "calendar" as const, label: "Calendar", icon: Calendar },
@@ -40,16 +38,7 @@ export default function BottomNavigation({ currentScreen, onScreenChange }: Bott
           );
         })}
         
-        {/* Import Button */}
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => setLocation('/import')}
-          className="flex flex-col items-center space-y-1 p-1 text-blue-600"
-        >
-          <Upload className="w-4 h-4" />
-          <span className="text-xs font-medium">Import</span>
-        </Button>
+
       </div>
     </nav>
   );
