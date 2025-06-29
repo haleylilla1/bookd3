@@ -89,9 +89,16 @@ export function setupAuthRoutes(app: any) {
   app.post('/api/auth/login', async (req: any, res: any) => {
     try {
       const { email, password } = req.body;
+      
+      if (!email || !password) {
+        return res.status(400).json({ message: "Email and password are required" });
+      }
+      
+      console.log('Login attempt for:', email);
       const user = await storage.validatePassword(email, password);
       
       if (!user) {
+        console.log('Invalid credentials for:', email);
         return res.status(401).json({ message: "Invalid credentials" });
       }
       
@@ -103,11 +110,13 @@ export function setupAuthRoutes(app: any) {
         sameSite: 'lax'
       });
       
+      console.log('Login successful for:', email);
       res.json({ 
         message: "Login successful", 
         user: { id: user.id, name: user.name, email: user.email }
       });
     } catch (error) {
+      console.error('Login error:', error);
       res.status(500).json({ message: "Login failed" });
     }
   });
