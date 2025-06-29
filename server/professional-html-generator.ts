@@ -184,7 +184,7 @@ export async function generateProfessionalHTML(options: ReportOptions): Promise<
         <div class="page">
             <h2 style="font-size: 24px; margin-bottom: 30px; text-align: center;">MILEAGE SUMMARY</h2>
             
-            ${data.gigs.some(g => parseFloat(g.mileage || '0') > 0) ? `
+            ${data.gigs.some(g => parseFloat(String(g.mileage || 0)) > 0) ? `
             <div style="margin: 40px 0;">
                 <table style="width: 100%; border-collapse: collapse; font-family: monospace;">
                     <thead>
@@ -425,20 +425,11 @@ async function prepareReportData(options: ReportOptions): Promise<ReportData> {
   }
 
   // Get data
-  console.log(`PDF Report - Getting gigs for user ${options.userId} from ${startDate} to ${endDate}`);
   const gigs = await storage.getGigsByDateRange(options.userId, startDate, endDate);
-  console.log(`PDF Report - Found ${gigs.length} gigs:`, gigs.map(g => `${g.id}: ${g.eventName} - ${g.date}`));
   const expenses = await storage.getExpensesByDateRange(options.userId, startDate, endDate);
   
   // Group multi-day gigs to prevent double counting
   const groupedGigs = groupMultiDayGigs(gigs);
-  console.log(`PDF Report - After grouping: ${groupedGigs.length} gigs:`, groupedGigs.map(g => `${g.id}: ${g.eventName} - ${g.date} - $${g.actualPay}`));
-  console.log('Multi-day consolidation check:');
-  groupedGigs.forEach(g => {
-    if (g.date.includes(' - ')) {
-      console.log(`  - CONSOLIDATED: ${g.eventName} (${g.clientName}) ${g.date} = $${g.actualPay}`);
-    }
-  });
   
   // Filter completed gigs for income calculations
   const completedGigs = groupedGigs.filter(g => g.status === 'completed' || g.actualPay);
