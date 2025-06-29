@@ -380,28 +380,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
         req.get('User-Agent')
       );
 
-      // Create admin session with user context
-      (req.session as any).adminImpersonation = {
-        originalAdmin: true,
-        targetUserId: user.id,
-        targetUserEmail: user.email,
+      // Generate a secure impersonation token
+      const impersonationToken = Buffer.from(JSON.stringify({
+        userId: user.id,
+        email: user.email,
         reason: reason,
-        startTime: new Date(),
-        sessionId: Math.random().toString(36).substring(7)
-      };
-
-      // Set user in session for app access
-      (req.session as any).userId = user.id;
+        timestamp: Date.now(),
+        adminKey: 'giggy-admin-2025'
+      })).toString('base64');
 
       res.json({ 
         success: true, 
-        message: 'Impersonation started',
+        message: 'Impersonation access granted',
         user: {
           id: user.id,
           email: user.email,
           name: user.name
         },
-        accessUrl: '/?admin_support=true'
+        accessUrl: `/?admin_impersonate=${impersonationToken}`,
+        token: impersonationToken
       });
 
     } catch (error) {
@@ -410,39 +407,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // End Admin Impersonation
-  app.post('/api/admin/end-impersonation', async (req, res) => {
-    if (!(req.session as any).adminImpersonation) {
-      return res.status(400).json({ error: 'No active impersonation' });
-    }
-
+  // Validate Admin Impersonation Token
+  app.get('/api/admin/validate-impersonation', async (req, res) => {
     try {
-      const impersonation = (req.session as any).adminImpersonation;
+      const { token } = req.query;
       
-      // Log end of impersonation
-      await storage.logAudit(
-        null,
-        'ADMIN_END_IMPERSONATE',
-        'users',
-        impersonation.targetUserId,
-        null,
-        { 
-          duration: Date.now() - impersonation.startTime.getTime(),
-          reason: impersonation.reason 
+      if (!token) {
+        return res.status(400).json({ error: 'Token required' });
+      }
+
+      // Decode and validate token
+      const tokenData = JSON.parse(Buffer.from(token as string, 'base64').toString());
+      
+      // Check if token is valid (within 1 hour)
+      const tokenAge = Date.now() - tokenData.timestamp;
+      if (tokenAge > 3600000) { // 1 hour
+        return res.status(401).json({ error: 'Impersonation token expired' });
+      }
+
+      // Verify admin key
+      if (tokenData.adminKey !== 'giggy-admin-2025') {
+        return res.status(401).json({ error: 'Invalid admin token' });
+      }
+
+      // Get user data
+      const user = await storage.getUser(tokenData.userId);
+      if (!user) {
+        return res.status(404).json({ error: 'User not found' });
+      }
+
+      res.json({
+        valid: true,
+        user: {
+          id: user.id,
+          email: user.email,
+          name: user.name
         },
-        req.ip,
-        req.get('User-Agent')
-      );
-
-      // Clear impersonation
-      delete (req.session as any).adminImpersonation;
-      delete (req.session as any).userId;
-
-      res.json({ success: true, message: 'Impersonation ended' });
+        reason: tokenData.reason
+      });
 
     } catch (error) {
-      console.error('End impersonation error:', error);
-      res.status(500).json({ error: 'Failed to end impersonation' });
+      console.error('Token validation error:', error);
+      res.status(400).json({ error: 'Invalid token format' });
     }
   });
 
