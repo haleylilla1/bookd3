@@ -21,6 +21,10 @@ Giggy is a comprehensive gig worker companion app with advanced features includi
 - Maintain simple, clean interface design
 
 ## Recent Changes
+- 2025-06-29: REPORT NAMING UPDATED - Simplified report system with single income report per period instead of professional tax reports
+- 2025-06-29: Removed "Quick Report" option and renamed reports to "Monthly Income Report" and "Annual Income Report" 
+- 2025-06-29: MONTHLY GOAL SAVING FIXED - Resolved API endpoint mismatch preventing monthly goals from persisting correctly
+- 2025-06-29: Fixed goal retrieval query to properly fetch from monthlyGoals/yearlyGoals tables instead of old goals table
 - 2025-06-29: AI IMPORT FEATURE REMOVED FOR MVP FOCUS - Completely eliminated bulk gig import functionality to prioritize core calendar and dashboard features
 - 2025-06-29: Removed /import page, bulk-gig-import component, and all AI/OpenAI integration for simpler, more reliable MVP
 - 2025-06-29: Updated navigation to remove import buttons from header and bottom navigation for streamlined user experience
