@@ -13,16 +13,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Admin Dashboard Route
   app.get('/admin', (req, res) => {
-    console.log('Admin route accessed with query:', req.query);
-    console.log('Admin key from query:', req.query.key);
-    console.log('Admin key from headers:', req.headers['x-admin-key']);
-    
     if (!isAdminRequest(req)) {
-      console.log('Admin access denied - invalid key');
       return res.status(404).send('Not Found');
     }
-    
-    console.log('Admin access granted');
     
     // Return simple admin dashboard HTML directly
     res.setHeader('Content-Type', 'text/html');
