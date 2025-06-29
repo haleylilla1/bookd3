@@ -6,14 +6,16 @@ import { setupAuthRoutes, requireAuth } from "./simple-auth";
 export async function registerRoutes(app: Express): Promise<Server> {
   // Admin monitoring endpoints - must be first, before auth middleware
   const isAdminRequest = (req: any): boolean => {
-    const adminKey = req.headers['x-admin-key'];
+    const adminKey = req.query.key || req.headers['x-admin-key']; // Support both query param and header
     const validAdminKey = process.env.ADMIN_ACCESS_KEY || 'giggy-admin-2025';
     return adminKey === validAdminKey;
   };
 
   // Admin Dashboard Route
   app.get('/admin', (req, res) => {
-    console.log('Admin route accessed with headers:', req.headers);
+    console.log('Admin route accessed with query:', req.query);
+    console.log('Admin key from query:', req.query.key);
+    console.log('Admin key from headers:', req.headers['x-admin-key']);
     
     if (!isAdminRequest(req)) {
       console.log('Admin access denied - invalid key');
@@ -133,16 +135,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
     <script>
         const ADMIN_KEY = 'giggy-admin-2025';
-        const adminHeaders = {
-            'Content-Type': 'application/json',
-            'X-Admin-Key': ADMIN_KEY
-        };
         
         async function loadSystemHealth() {
             try {
-                const response = await fetch('/api/admin/health', {
-                    headers: adminHeaders
-                });
+                const response = await fetch('/api/admin/health?key=' + ADMIN_KEY);
                 
                 if (response.ok) {
                     const health = await response.json();
@@ -157,9 +153,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         async function loadAnalytics() {
             try {
-                const response = await fetch('/api/admin/analytics', {
-                    headers: adminHeaders
-                });
+                const response = await fetch('/api/admin/analytics?key=' + ADMIN_KEY);
                 
                 if (response.ok) {
                     const analytics = await response.json();
@@ -186,10 +180,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 const params = new URLSearchParams();
                 if (email) params.append('email', email);
                 if (userId) params.append('id', userId);
+                params.append('key', ADMIN_KEY);
                 
-                const response = await fetch('/api/admin/user-lookup?' + params, {
-                    headers: adminHeaders
-                });
+                const response = await fetch('/api/admin/user-lookup?' + params);
                 
                 if (response.ok) {
                     const user = await response.json();
