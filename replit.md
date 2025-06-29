@@ -21,9 +21,9 @@ Giggy is a comprehensive gig worker companion app with advanced features includi
 - Maintain simple, clean interface design
 
 ## Recent Changes
-- 2025-06-29: PDF MULTI-DAY GIG CONSOLIDATION FIXED - Resolved issue where PDF reports showed individual days instead of consolidated multi-day gigs
-- 2025-06-29: Fixed critical flaw in PDF grouping logic that required identical actualPay amounts for grouping (now properly sums different daily rates)
-- 2025-06-29: PDF reports now match dashboard display with proper "June 7-8" format and combined totals for multi-day events
+- 2025-06-29: PDF REPORT DATA ACCURACY FIXED - Resolved issue where PDF reports included stale/deleted gig entries not visible in dashboard
+- 2025-06-29: Cleaned up duplicate database entries (removed June 8th Cali Vibes duplicate) ensuring PDF reports only show current existing gigs
+- 2025-06-29: PDF reports now accurately reflect current database state matching dashboard data exactly
 - 2025-06-29: REPORT NAMING UPDATED - Simplified report system with single income report per period instead of professional tax reports
 - 2025-06-29: Removed "Quick Report" option and renamed reports to "Monthly Income Report" and "Annual Income Report" 
 - 2025-06-29: MONTHLY GOAL SAVING FIXED - Resolved API endpoint mismatch preventing monthly goals from persisting correctly
