@@ -425,7 +425,9 @@ async function prepareReportData(options: ReportOptions): Promise<ReportData> {
   }
 
   // Get data
+  console.log(`PDF Report - Getting gigs for user ${options.userId} from ${startDate} to ${endDate}`);
   const gigs = await storage.getGigsByDateRange(options.userId, startDate, endDate);
+  console.log(`PDF Report - Found ${gigs.length} gigs:`, gigs.map(g => `${g.id}: ${g.eventName} - ${g.date}`));
   const expenses = await storage.getExpensesByDateRange(options.userId, startDate, endDate);
   
   // Group multi-day gigs to prevent double counting
