@@ -88,8 +88,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         <div class="stat">
             <h3>📈 Platform Analytics</h3>
             <p><strong>Total Users:</strong> ${userCount}</p>
-            <p><strong>Active Users (24h):</strong> ${Math.floor(userCount * 0.3)}</p>
+            <p><strong>Active Users (24h):</strong> <span id="activeCount">Loading...</span> <button onclick="toggleActiveUsers()" style="font-size: 12px; padding: 2px 6px;">Show Details</button></p>
             <p><strong>Error Rate:</strong> <span style="color: #28a745;">0.1%</span></p>
+        </div>
+        
+        <div class="stat" id="activeUsersSection" style="display: none;">
+            <h3>👥 Active Users (Last 24h)</h3>
+            <div id="activeUsersList">Loading...</div>
         </div>
         
         <div class="stat">
@@ -152,6 +157,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 document.getElementById('result').innerHTML = '<p style="color: red;">Network error</p>';
             }
         }
+
+        async function loadActiveUsers() {
+            try {
+                const response = await fetch('/api/admin/active-users?key=giggy-admin-2025');
+                const activeUsers = await response.json();
+                
+                document.getElementById('activeCount').textContent = activeUsers.length;
+                
+                if (activeUsers.length === 0) {
+                    document.getElementById('activeUsersList').innerHTML = '<p style="color: #666;">No active users in the last 24 hours</p>';
+                    return;
+                }
+                
+                const usersHTML = activeUsers.map(user => 
+                    '<div style="padding: 10px; border: 1px solid #ddd; margin: 5px 0; background: #f9f9f9; border-radius: 3px;">' +
+                    '<strong>' + (user.name || 'No name') + '</strong><br>' +
+                    '<span style="color: #666;">' + user.email + '</span><br>' +
+                    '<small>ID: ' + user.id + ' | ' + user.activityType + '</small><br>' +
+                    '<small style="color: #888;">Last active: ' + new Date(user.lastActivity).toLocaleString() + '</small>' +
+                    '</div>'
+                ).join('');
+                
+                document.getElementById('activeUsersList').innerHTML = usersHTML;
+            } catch (error) {
+                document.getElementById('activeCount').textContent = 'Error';
+                document.getElementById('activeUsersList').innerHTML = '<p style="color: red;">Failed to load active users</p>';
+            }
+        }
+
+        function toggleActiveUsers() {
+            const section = document.getElementById('activeUsersSection');
+            if (section.style.display === 'none') {
+                section.style.display = 'block';
+                loadActiveUsers();
+            } else {
+                section.style.display = 'none';
+            }
+        }
+
+        // Load initial active user count
+        loadActiveUsers();
     </script>
 </body>
 </html>
@@ -211,6 +257,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Admin analytics error:', error);
       res.status(500).json({ error: 'Failed to fetch analytics' });
+    }
+  });
+
+  // Active Users API
+  app.get('/api/admin/active-users', async (req, res) => {
+    if (!isAdminRequest(req)) {
+      return res.status(404).json({ error: 'Not Found' });
+    }
+
+    try {
+      const activeUsers = await storage.getActiveUsers24h();
+      res.json(activeUsers);
+    } catch (error) {
+      console.error('Active users error:', error);
+      res.status(500).json({ error: 'Failed to fetch active users' });
     }
   });
 
