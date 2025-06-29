@@ -287,139 +287,7 @@ export default function Dashboard() {
     updateGoalMutation.mutate({ goalAmount: goalAmount.trim() });
   };
 
-  const handleDownloadPDF = async () => {
-    try {
-      console.log('Starting PDF download...');
-      
-      const year = currentDate.getFullYear();
-      const month = currentDate.getMonth() + 1;
-      
-      const params = new URLSearchParams({
-        period: selectedPeriod,
-        year: year.toString()
-      });
-      
-      if (selectedPeriod === 'monthly') {
-        params.append('month', month.toString());
-      }
-      
-      console.log('Requesting PDF with params:', params.toString());
-      
-      // Enhanced mobile detection for universal compatibility
-      const isMobile = /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini|Mobile|mobile|CriOS/i.test(navigator.userAgent) ||
-                       (typeof window.orientation !== 'undefined') ||
-                       (window.innerWidth <= 768);
-      
-      if (isMobile) {
-        // Mobile device - skip fetch/blob entirely, navigate directly to PDF URL
-        console.log('Mobile device detected, using direct URL navigation');
-        const pdfUrl = `/api/reports/pdf?${params.toString()}`;
-        
-        // First verify the PDF generates successfully with a HEAD request
-        const testResponse = await fetch(pdfUrl, { 
-          method: 'HEAD', 
-          credentials: 'include' 
-        });
-        
-        if (!testResponse.ok) {
-          throw new Error(`Failed to generate PDF report: ${testResponse.status} ${testResponse.statusText}`);
-        }
-        
-        // For mobile, create a persistent link the user can click
-        console.log('Creating mobile PDF link');
-        
-        // Store the PDF URL for mobile access
-        sessionStorage.setItem('pdfUrl', pdfUrl);
-        sessionStorage.setItem('pdfFilename', `freelancer-report-${year}${selectedPeriod === 'monthly' ? `-${month}` : ''}.pdf`);
-        
-        // Update state to show the mobile PDF button
-        setMobilePdfReady(true);
-        
-        // Show success message with special mobile handling
-        toast({
-          title: "PDF Ready!",
-          description: "Tap the green 'View PDF' button below to open your report.",
-          duration: 10000, // Show longer for mobile users
-        });
-        
-      } else {
-        // Desktop - use traditional blob approach
-        console.log('Desktop device, using blob download');
-        
-        const response = await fetch(`/api/reports/pdf?${params.toString()}`, {
-          method: 'GET',
-          credentials: 'include',
-          headers: {
-            'Accept': 'application/pdf',
-          }
-        });
-        
-        console.log('PDF response status:', response.status);
-        
-        if (!response.ok) {
-          const errorText = await response.text();
-          console.error('PDF response error:', errorText);
-          throw new Error(`Failed to generate PDF report: ${response.status} ${response.statusText}`);
-        }
-        
-        const blob = await response.blob();
-        console.log('PDF blob size:', blob.size, 'type:', blob.type);
-        
-        if (blob.size === 0) {
-          throw new Error('PDF file is empty');
-        }
-        
-        // Desktop download
-        const url = window.URL.createObjectURL(blob);
-        const filename = selectedPeriod === 'monthly' 
-          ? `freelancer-report-${year}-${month}.pdf`
-          : `freelancer-report-${year}.pdf`;
-        
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = filename;
-        a.style.display = 'none';
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        
-        setTimeout(() => {
-          window.URL.revokeObjectURL(url);
-        }, 1000);
-      }
-      
-      // Different success messages for mobile vs desktop
-      if (navigator.userAgent.match(/Android|iPhone|iPad|iPod|BlackBerry|IEMobile/i)) {
-        // Mobile user already got custom message above
-        return;
-      } else {
-        toast({
-          title: "PDF Downloaded",
-          description: "Your CPA-ready report has been downloaded successfully.",
-        });
-      }
-    } catch (error) {
-      console.error('PDF download error:', error);
-      
-      // More specific error messages
-      let errorMessage = "Failed to generate PDF report. Please try again.";
-      if (error instanceof Error) {
-        if (error.message.includes('401')) {
-          errorMessage = "Please log in again to download the report.";
-        } else if (error.message.includes('empty')) {
-          errorMessage = "PDF generation failed - no data available.";
-        } else if (error.message.includes('Failed to fetch')) {
-          errorMessage = "Network error - please check your connection.";
-        }
-      }
-      
-      toast({
-        title: "Download Failed",
-        description: errorMessage,
-        variant: "destructive",
-      });
-    }
-  };
+
 
   const handleDownloadProfessionalPDF = async () => {
     try {
@@ -474,8 +342,8 @@ export default function Dashboard() {
         }
         
         toast({
-          title: "Professional Report Opened",
-          description: "Your comprehensive tax report has been opened in a new tab.",
+          title: `${selectedPeriod === 'monthly' ? 'Monthly' : 'Annual'} Income Report Opened`,
+          description: "Your comprehensive income report has been opened in a new tab.",
           duration: 5000,
         });
         
@@ -685,16 +553,6 @@ export default function Dashboard() {
       {/* Export Options */}
       <div className="flex justify-end mb-4 gap-2 flex-wrap">
         <Button
-          variant="outline"
-          size="sm"
-          onClick={handleDownloadPDF}
-          className="flex items-center gap-2"
-        >
-          <FileText className="w-4 h-4" />
-          Quick Report
-        </Button>
-        
-        <Button
           variant="default"
           size="sm"
           onClick={handleDownloadProfessionalPDF}
@@ -702,7 +560,7 @@ export default function Dashboard() {
           className="flex items-center gap-2 bg-green-600 hover:bg-green-700"
         >
           <FileText className="w-4 h-4" />
-          Professional Tax Report
+          {selectedPeriod === 'monthly' ? 'Monthly Income Report' : 'Annual Income Report'}
         </Button>
         
         {/* Mobile PDF View Button - only show if PDF is ready and on mobile */}
@@ -741,7 +599,7 @@ export default function Dashboard() {
             className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white"
           >
             <Eye className="w-4 h-4" />
-            View PDF
+            {selectedPeriod === 'monthly' ? 'View Monthly Report' : 'View Annual Report'}
           </Button>
         )}
       </div>
