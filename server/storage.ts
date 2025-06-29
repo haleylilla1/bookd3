@@ -863,7 +863,7 @@ export class DatabaseStorage implements IStorage {
           email: users.email
         })
         .from(users)
-        .where(sql`${users.id} = ANY(${activeUserIds})`);
+        .where(sql`${users.id} IN (${activeUserIds.join(',')})`);
       
       // Combine user info with activity info and sort by most recent activity
       return activeUsers.map(user => {
