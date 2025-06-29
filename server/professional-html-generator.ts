@@ -432,6 +432,13 @@ async function prepareReportData(options: ReportOptions): Promise<ReportData> {
   
   // Group multi-day gigs to prevent double counting
   const groupedGigs = groupMultiDayGigs(gigs);
+  console.log(`PDF Report - After grouping: ${groupedGigs.length} gigs:`, groupedGigs.map(g => `${g.id}: ${g.eventName} - ${g.date} - $${g.actualPay}`));
+  console.log('Multi-day consolidation check:');
+  groupedGigs.forEach(g => {
+    if (g.date.includes(' - ')) {
+      console.log(`  - CONSOLIDATED: ${g.eventName} (${g.clientName}) ${g.date} = $${g.actualPay}`);
+    }
+  });
   
   // Filter completed gigs for income calculations
   const completedGigs = groupedGigs.filter(g => g.status === 'completed' || g.actualPay);
@@ -514,40 +521,56 @@ async function prepareReportData(options: ReportOptions): Promise<ReportData> {
 }
 
 function groupMultiDayGigs(gigs: Gig[]): Gig[] {
+  const parseGigDate = (dateStr: string) => new Date(dateStr + 'T00:00:00.000Z');
+  const sortedGigs = [...gigs].sort((a, b) => parseGigDate(a.date).getTime() - parseGigDate(b.date).getTime());
   const grouped: Gig[] = [];
   const processed = new Set<number>();
-
-  for (const gig of gigs) {
-    if (processed.has(gig.id)) continue;
-
-    const multiDayGroup = gigs.filter(g => 
-      g.eventName === gig.eventName && 
-      g.clientName === gig.clientName &&
-      g.actualPay === gig.actualPay &&
-      Math.abs(new Date(g.date).getTime() - new Date(gig.date).getTime()) <= 7 * 24 * 60 * 60 * 1000
-    );
-
-    if (multiDayGroup.length > 1) {
-      // Create consolidated gig entry
-      const dates = multiDayGroup.map(g => new Date(g.date)).sort((a, b) => a.getTime() - b.getTime());
-      const startDate = dates[0].toLocaleDateString();
-      const endDate = dates[dates.length - 1].toLocaleDateString();
+  
+  for (let i = 0; i < sortedGigs.length; i++) {
+    if (processed.has(sortedGigs[i].id)) continue;
+    
+    const currentGig = sortedGigs[i];
+    const similarGigs = [currentGig];
+    processed.add(currentGig.id);
+    
+    for (let j = i + 1; j < sortedGigs.length; j++) {
+      const nextGig = sortedGigs[j];
+      if (processed.has(nextGig.id)) continue;
       
-      const consolidatedGig = {
-        ...gig,
-        date: `${startDate} - ${endDate}`,
-        mileage: multiDayGroup.reduce((sum, g) => sum + parseFloat(g.mileage || '0'), 0).toString(),
-        parkingExpense: multiDayGroup.reduce((sum, g) => sum + parseFloat(g.parkingExpense || '0'), 0).toString(),
-        otherExpenses: multiDayGroup.reduce((sum, g) => sum + parseFloat(g.otherExpenses || '0'), 0).toString()
-      };
+      const lastGigDate = parseGigDate(similarGigs[similarGigs.length - 1].date);
+      const nextDate = parseGigDate(nextGig.date);
+      const dayDiff = (nextDate.getTime() - lastGigDate.getTime()) / (1000 * 60 * 60 * 24);
       
-      grouped.push(consolidatedGig);
-      multiDayGroup.forEach(g => processed.add(g.id));
+      if (nextGig.eventName === currentGig.eventName &&
+          nextGig.clientName === currentGig.clientName &&
+          nextGig.gigType === currentGig.gigType &&
+          dayDiff > 0 && dayDiff <= 7) {
+        similarGigs.push(nextGig);
+        processed.add(nextGig.id);
+      }
+    }
+    
+    if (similarGigs.length > 1) {
+      // Multi-day gig - sum the amounts and create date range
+      const totalActualPay = similarGigs.reduce((sum, g) => sum + parseFloat(g.actualPay || '0'), 0);
+      const totalTips = similarGigs.reduce((sum, g) => sum + parseFloat(g.tips || '0'), 0);
+      const totalMileage = similarGigs.reduce((sum, g) => sum + parseFloat(g.mileage || '0'), 0);
+      const totalParking = similarGigs.reduce((sum, g) => sum + parseFloat(g.parkingExpense || '0'), 0);
+      const totalOtherExpenses = similarGigs.reduce((sum, g) => sum + parseFloat(g.otherExpenses || '0'), 0);
+      
+      grouped.push({
+        ...similarGigs[0],
+        date: `${similarGigs[0].date} - ${similarGigs[similarGigs.length - 1].date}`,
+        actualPay: totalActualPay.toFixed(2),
+        tips: totalTips.toFixed(2),
+        mileage: Math.round(totalMileage),
+        parkingExpense: totalParking.toFixed(2),
+        otherExpenses: totalOtherExpenses.toFixed(2)
+      });
     } else {
-      grouped.push(gig);
-      processed.add(gig.id);
+      grouped.push(currentGig);
     }
   }
-
+  
   return grouped;
 }
