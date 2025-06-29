@@ -12,7 +12,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   };
 
   // Admin Dashboard Route
-  app.get('/admin', (req, res) => {
+  app.get('/admin', async (req, res) => {
     if (!isAdminRequest(req)) {
       return res.status(404).send('Not Found');
     }
@@ -25,7 +25,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userListHTML = users.map(user => {
         const name = (user.firstName || '') + ' ' + (user.lastName || '');
         const displayName = name.trim() || 'No name';
-        const joinDate = new Date(user.createdAt).toLocaleDateString();
+        const joinDate = user.createdAt ? new Date(user.createdAt.toString()).toLocaleDateString() : 'Unknown';
         
         return `
           <div style="padding: 15px; border: 1px solid #ddd; margin: 10px 0; background: white; border-radius: 5px; cursor: pointer;" 
