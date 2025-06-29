@@ -551,21 +551,10 @@ function groupMultiDayGigs(gigs: Gig[]): Gig[] {
     }
     
     if (similarGigs.length > 1) {
-      // Multi-day gig - sum the amounts and create date range
-      const totalActualPay = similarGigs.reduce((sum, g) => sum + parseFloat(g.actualPay || '0'), 0);
-      const totalTips = similarGigs.reduce((sum, g) => sum + parseFloat(g.tips || '0'), 0);
-      const totalMileage = similarGigs.reduce((sum, g) => sum + parseFloat(g.mileage || '0'), 0);
-      const totalParking = similarGigs.reduce((sum, g) => sum + parseFloat(g.parkingExpense || '0'), 0);
-      const totalOtherExpenses = similarGigs.reduce((sum, g) => sum + parseFloat(g.otherExpenses || '0'), 0);
-      
+      // Multi-day gig - Use only first entry's amount (same as dashboard logic)
       grouped.push({
-        ...similarGigs[0],
-        date: `${similarGigs[0].date} - ${similarGigs[similarGigs.length - 1].date}`,
-        actualPay: totalActualPay.toFixed(2),
-        tips: totalTips.toFixed(2),
-        mileage: Math.round(totalMileage),
-        parkingExpense: totalParking.toFixed(2),
-        otherExpenses: totalOtherExpenses.toFixed(2)
+        ...similarGigs[0], // Use first entry data completely
+        date: `${similarGigs[0].date} - ${similarGigs[similarGigs.length - 1].date}`
       });
     } else {
       grouped.push(currentGig);
