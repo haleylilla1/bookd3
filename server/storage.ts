@@ -804,10 +804,18 @@ export class DatabaseStorage implements IStorage {
 
   async getUserGigCount(userId: number): Promise<number> {
     const result = await db
-      .select({ count: count() })
+      .select({ 
+        date: gigs.date,
+        eventName: gigs.eventName,
+        clientName: gigs.clientName,
+        gigType: gigs.gigType
+      })
       .from(gigs)
       .where(eq(gigs.userId, userId));
-    return result[0]?.count || 0;
+    
+    // Group multi-day gigs to get accurate count
+    const groupedGigs = this.groupMultiDayGigs(result);
+    return groupedGigs.length;
   }
 
   async getUserExpenseCount(userId: number): Promise<number> {
@@ -822,19 +830,72 @@ export class DatabaseStorage implements IStorage {
     const result = await db
       .select({ 
         actualPay: gigs.actualPay,
-        expectedPay: gigs.expectedPay 
+        expectedPay: gigs.expectedPay,
+        date: gigs.date,
+        eventName: gigs.eventName,
+        clientName: gigs.clientName,
+        gigType: gigs.gigType
       })
       .from(gigs)
       .where(eq(gigs.userId, userId));
     
+    // Group multi-day gigs to prevent double-counting
+    const groupedGigs = this.groupMultiDayGigs(result);
+    
     let total = 0;
-    result.forEach(row => {
+    groupedGigs.forEach(gig => {
       // Use actual pay if available, otherwise expected pay
-      const earning = row.actualPay || row.expectedPay || 0;
+      const earning = gig.actualPay || gig.expectedPay || 0;
       total += parseFloat(earning.toString());
     });
     
     return total;
+  }
+
+  private groupMultiDayGigs(gigs: any[]): any[] {
+    if (gigs.length === 0) return [];
+    
+    // Sort by event name, client, gig type, and date
+    const sorted = [...gigs].sort((a, b) => {
+      const aKey = `${a.eventName}-${a.clientName}-${a.gigType}`;
+      const bKey = `${b.eventName}-${b.clientName}-${b.gigType}`;
+      if (aKey !== bKey) return aKey.localeCompare(bKey);
+      return new Date(a.date).getTime() - new Date(b.date).getTime();
+    });
+
+    const grouped = [];
+    let currentGroup = [sorted[0]];
+
+    for (let i = 1; i < sorted.length; i++) {
+      const current = sorted[i];
+      const previous = sorted[i - 1];
+
+      // Check if this gig belongs to the same multi-day event
+      const sameEvent = current.eventName === previous.eventName &&
+                       current.clientName === previous.clientName &&
+                       current.gigType === previous.gigType;
+
+      if (sameEvent) {
+        const currentDate = new Date(current.date);
+        const previousDate = new Date(previous.date);
+        const daysDiff = Math.abs(currentDate.getTime() - previousDate.getTime()) / (1000 * 60 * 60 * 24);
+
+        // If dates are consecutive (within 7 days), it's part of the same event
+        if (daysDiff <= 7) {
+          currentGroup.push(current);
+          continue;
+        }
+      }
+
+      // Start a new group - use the first entry (original amounts)
+      grouped.push(currentGroup[0]);
+      currentGroup = [current];
+    }
+
+    // Don't forget the last group
+    grouped.push(currentGroup[0]);
+
+    return grouped;
   }
 
   async getGigCount(): Promise<number> {
