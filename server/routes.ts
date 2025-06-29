@@ -712,10 +712,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!userId) {
         return res.status(401).json({ message: "Authentication required" });
       }
-      const goals = await storage.getGoalsByUser(userId);
-      res.json(goals);
+      
+      const { period, date } = req.query;
+      
+      if (!period || !date) {
+        return res.status(400).json({ message: "Period and date are required" });
+      }
+      
+      if (period === 'monthly') {
+        const dateObj = new Date(date as string);
+        const goal = await storage.getMonthlyGoal(userId, dateObj.getMonth() + 1, dateObj.getFullYear());
+        res.json(goal || null);
+      } else if (period === 'annual') {
+        const year = new Date(date as string).getFullYear();
+        const goal = await storage.getYearlyGoal(userId, year);
+        res.json(goal || null);
+      } else {
+        res.status(400).json({ message: "Invalid period" });
+      }
     } catch (error) {
-      res.status(500).json({ message: "Failed to get goals" });
+      console.error("Get goal error:", error);
+      res.status(500).json({ message: "Failed to get goal" });
     }
   });
 
@@ -729,18 +746,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { period, date } = req.params;
       const { goalAmount } = req.body;
       
+      console.log(`Setting ${period} goal for user ${userId}:`, { period, date, goalAmount });
+      
+      if (!goalAmount || isNaN(parseFloat(goalAmount))) {
+        return res.status(400).json({ message: "Valid goal amount is required" });
+      }
+      
       if (period === 'monthly') {
         const dateObj = new Date(date);
-        const goal = await storage.setMonthlyGoal(userId, dateObj.getMonth() + 1, dateObj.getFullYear(), goalAmount);
+        const month = dateObj.getMonth() + 1;
+        const year = dateObj.getFullYear();
+        console.log(`Setting monthly goal: month=${month}, year=${year}, amount=${goalAmount}`);
+        const goal = await storage.setMonthlyGoal(userId, month, year, goalAmount);
+        console.log('Monthly goal saved:', goal);
         res.json(goal);
       } else if (period === 'annual') {
         const year = new Date(date).getFullYear();
+        console.log(`Setting annual goal: year=${year}, amount=${goalAmount}`);
         const goal = await storage.setYearlyGoal(userId, year, goalAmount);
+        console.log('Annual goal saved:', goal);
         res.json(goal);
       } else {
         res.status(400).json({ message: "Invalid period" });
       }
     } catch (error) {
+      console.error("Set goal error:", error);
       res.status(500).json({ message: "Failed to set goal" });
     }
   });
