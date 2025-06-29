@@ -223,6 +223,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                     const userListHTML = users.map(user => {
                         const name = (user.firstName || '') + ' ' + (user.lastName || '');
                         const displayName = name.trim() || 'No name';
+                        const joinDate = new Date(user.createdAt).toLocaleDateString();
                         
                         return '<div style="padding: 12px; border-bottom: 1px solid #ddd; cursor: pointer; transition: background 0.2s;" ' +
                                'onmouseover="this.style.background=\'#e9ecef\'" ' +
@@ -231,8 +232,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                                '<div style="font-weight: bold; color: #007bff;">' + displayName + '</div>' +
                                '<div style="color: #666; font-size: 14px;">' + user.email + '</div>' +
                                '<div style="color: #888; font-size: 12px;">ID: ' + user.id + ' | ' +
-                               'Gigs: ' + user.gigCount + ' | ' +
-                               'Earnings: $' + user.totalEarnings.toFixed(2) + ' | ' +
+                               'Joined: ' + joinDate + ' | ' +
                                'Tier: ' + user.subscriptionTier + '</div>' +
                                '</div>';
                     }).join('');
@@ -423,23 +423,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const users = await storage.getAllUsers();
       
-      // Return limited, safe user data for each user
-      const safeUsers = await Promise.all(users.map(async (user) => {
-        const gigCount = await storage.getUserGigCount(user.id);
-        const expenseCount = await storage.getUserExpenseCount(user.id);
-        const totalEarnings = await storage.getUserTotalEarnings(user.id);
-        
-        return {
-          id: user.id,
-          email: user.email,
-          firstName: user.firstName,
-          lastName: user.lastName,
-          createdAt: user.createdAt,
-          subscriptionTier: user.subscriptionTier || 'Trial',
-          gigCount,
-          expenseCount,
-          totalEarnings: totalEarnings || 0
-        };
+      // Return simple user data without expensive queries
+      const safeUsers = users.map((user) => ({
+        id: user.id,
+        email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        createdAt: user.createdAt,
+        subscriptionTier: user.subscriptionTier || 'Trial'
       }));
 
       res.json({ users: safeUsers, total: safeUsers.length });
