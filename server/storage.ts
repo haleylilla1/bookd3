@@ -134,6 +134,13 @@ export interface IStorage {
     expensesAdded24h: number;
     reportsGenerated24h: number;
   }>;
+  getActiveUsers24h(): Promise<Array<{
+    id: number;
+    name: string | null;
+    email: string;
+    lastActivity: Date;
+    activityType: string;
+  }>>;
   getSystemStats(): Promise<{
     errorRate: number;
     avgResponseTime: number;
@@ -786,6 +793,93 @@ export class DatabaseStorage implements IStorage {
         expensesAdded24h: 0,
         reportsGenerated24h: 0
       };
+    }
+  }
+
+  async getActiveUsers24h(): Promise<Array<{
+    id: number;
+    name: string | null;
+    email: string;
+    lastActivity: Date;
+    activityType: string;
+  }>> {
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    
+    try {
+      // Get users who created gigs in last 24h with their latest activity
+      const gigActivities = await db
+        .select({
+          userId: gigs.userId,
+          lastActivity: sql<Date>`MAX(${gigs.createdAt})`,
+          activityCount: count()
+        })
+        .from(gigs)
+        .where(gte(gigs.createdAt, yesterday))
+        .groupBy(gigs.userId);
+      
+      // Get users who created expenses in last 24h with their latest activity
+      const expenseActivities = await db
+        .select({
+          userId: expenses.userId,
+          lastActivity: sql<Date>`MAX(${expenses.createdAt})`,
+          activityCount: count()
+        })
+        .from(expenses)
+        .where(gte(expenses.createdAt, yesterday))
+        .groupBy(expenses.userId);
+      
+      // Combine and deduplicate user activities
+      const userActivityMap = new Map();
+      
+      gigActivities.forEach(activity => {
+        const existing = userActivityMap.get(activity.userId);
+        if (!existing || new Date(activity.lastActivity) > new Date(existing.lastActivity)) {
+          userActivityMap.set(activity.userId, {
+            ...activity,
+            activityType: `created ${activity.activityCount} gig${activity.activityCount > 1 ? 's' : ''}`
+          });
+        }
+      });
+      
+      expenseActivities.forEach(activity => {
+        const existing = userActivityMap.get(activity.userId);
+        if (!existing || new Date(activity.lastActivity) > new Date(existing.lastActivity)) {
+          userActivityMap.set(activity.userId, {
+            ...activity,
+            activityType: `added ${activity.activityCount} expense${activity.activityCount > 1 ? 's' : ''}`
+          });
+        }
+      });
+      
+      // Get user details for active users
+      const activeUserIds = Array.from(userActivityMap.keys());
+      if (activeUserIds.length === 0) return [];
+      
+      const activeUsers = await db
+        .select({
+          id: users.id,
+          name: users.name,
+          email: users.email
+        })
+        .from(users)
+        .where(sql`${users.id} = ANY(${activeUserIds})`);
+      
+      // Combine user info with activity info and sort by most recent activity
+      return activeUsers.map(user => {
+        const activity = userActivityMap.get(user.id);
+        return {
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          lastActivity: activity.lastActivity,
+          activityType: activity.activityType
+        };
+      }).sort((a, b) => new Date(b.lastActivity).getTime() - new Date(a.lastActivity).getTime());
+      
+    } catch (error) {
+      console.error('Error getting active users:', error);
+      return [];
     }
   }
 
