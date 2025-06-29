@@ -17,164 +17,82 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return res.status(404).send('Not Found');
     }
     
-    // Return simple admin dashboard HTML directly
-    res.setHeader('Content-Type', 'text/html');
-    res.send(`
+    // Create a SUPER SIMPLE admin dashboard that works
+    try {
+      const users = await storage.getAllUsers();
+      const userCount = users.length;
+      
+      const userListHTML = users.map(user => {
+        const name = (user.firstName || '') + ' ' + (user.lastName || '');
+        const displayName = name.trim() || 'No name';
+        const joinDate = new Date(user.createdAt).toLocaleDateString();
+        
+        return `
+          <div style="padding: 15px; border: 1px solid #ddd; margin: 10px 0; background: white; border-radius: 5px; cursor: pointer;" 
+               onclick="showUser(${user.id}, '${user.email}')">
+            <strong>${displayName}</strong><br>
+            <span style="color: #666;">${user.email}</span><br>
+            <small>ID: ${user.id} | Joined: ${joinDate} | Tier: ${user.subscriptionTier}</small>
+          </div>
+        `;
+      }).join('');
+
+      res.setHeader('Content-Type', 'text/html');
+      res.send(`
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Giggy Admin Dashboard</title>
+    <title>Giggy Admin</title>
     <style>
-        body { font-family: Arial, sans-serif; padding: 20px; background: #f5f5f5; }
-        .container { max-width: 1200px; margin: 0 auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-        .header { text-align: center; margin-bottom: 40px; color: #333; }
-        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; margin-bottom: 30px; }
-        .stat-card { background: #f8f9fa; padding: 20px; border-radius: 8px; border-left: 4px solid #007bff; }
-        .stat-card h3 { margin: 0 0 10px 0; color: #007bff; font-size: 14px; text-transform: uppercase; }
-        .stat-card .value { font-size: 24px; font-weight: bold; color: #333; margin-bottom: 5px; }
-        .stat-card .label { color: #666; font-size: 12px; }
-        .section { margin-bottom: 30px; }
-        .section h2 { color: #333; margin-bottom: 20px; }
-        .user-lookup { display: flex; gap: 10px; margin-bottom: 20px; }
-        .user-lookup input { flex: 1; padding: 10px; border: 1px solid #ddd; border-radius: 4px; }
-        .btn { background: #007bff; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; }
-        .btn:hover { background: #0056b3; }
-        .user-result { background: #f8f9fa; padding: 20px; border-radius: 8px; margin-top: 15px; }
-        .logs { background: #1a1a1a; color: #00ff00; padding: 20px; border-radius: 8px; font-family: monospace; max-height: 300px; overflow-y: auto; }
-        .status-healthy { color: #28a745; }
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .container { max-width: 800px; margin: 0 auto; }
+        .stat { background: #f5f5f5; padding: 15px; margin: 10px 0; border-radius: 5px; }
+        .users { max-height: 500px; overflow-y: auto; }
+        input, button { padding: 10px; margin: 5px; }
+        button { background: #007bff; color: white; border: none; border-radius: 3px; cursor: pointer; }
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="header">
-            <h1>🎯 Giggy Admin Dashboard</h1>
-            <p>Real-time system monitoring and user management</p>
+        <h1>🎯 Giggy Admin Dashboard</h1>
+        
+        <div class="stat">
+            <h3>📊 Statistics</h3>
+            <p><strong>Total Users:</strong> ${userCount}</p>
+            <p><strong>Server Status:</strong> RUNNING</p>
+            <p><strong>Last Updated:</strong> ${new Date().toLocaleString()}</p>
         </div>
         
-        <div class="section">
-            <h2><span class="status-healthy">●</span> System Health</h2>
-            <div class="stats-grid" id="healthStats">
-                <div class="stat-card">
-                    <h3>System Status</h3>
-                    <div class="value">HEALTHY</div>
-                    <div class="label">Overall Status</div>
-                </div>
-                <div class="stat-card">
-                    <h3>Server Uptime</h3>
-                    <div class="value" id="uptime">Loading...</div>
-                    <div class="label">Time Online</div>
-                </div>
-                <div class="stat-card">
-                    <h3>Memory Usage</h3>
-                    <div class="value" id="memory">Loading...</div>
-                    <div class="label">Heap Memory</div>
-                </div>
-                <div class="stat-card">
-                    <h3>Last Updated</h3>
-                    <div class="value" id="timestamp">Now</div>
-                    <div class="label">Refresh Time</div>
-                </div>
+        <div class="stat">
+            <h3>👥 All Users (${userCount} total)</h3>
+            <p><em>Click any user to see details</em></p>
+            <div class="users">
+                ${userListHTML}
             </div>
         </div>
         
-        <div class="section">
-            <h2>📊 Platform Analytics</h2>
-            <div class="stats-grid" id="analyticsStats">
-                <div class="stat-card">
-                    <h3>Total Users</h3>
-                    <div class="value" id="totalUsers">Loading...</div>
-                    <div class="label">Registered Users</div>
-                </div>
-                <div class="stat-card">
-                    <h3>Active Users (24h)</h3>
-                    <div class="value" id="activeUsers">Loading...</div>
-                    <div class="label">Recent Activity</div>
-                </div>
-                <div class="stat-card">
-                    <h3>Gigs Created (24h)</h3>
-                    <div class="value" id="gigsCreated">Loading...</div>
-                    <div class="label">New Gigs</div>
-                </div>
-                <div class="stat-card">
-                    <h3>Error Rate</h3>
-                    <div class="value" id="errorRate">0.5%</div>
-                    <div class="label">System Errors</div>
-                </div>
-            </div>
-        </div>
-        
-        <div class="section">
-            <h2>👥 All Users</h2>
-            <div style="margin-bottom: 20px;">
-                <button class="btn" onclick="loadUserList()" style="margin-right: 10px;">Refresh User List</button>
-                <span id="userCount" style="color: #666; font-size: 14px;">Loading users...</span>
-            </div>
-            <div id="userList" style="max-height: 400px; overflow-y: auto; border: 1px solid #ddd; border-radius: 4px; background: #f9f9f9;"></div>
-        </div>
-        
-        <div class="section">
-            <h2>👤 User Lookup</h2>
-            <div class="user-lookup">
-                <input type="email" id="userEmail" placeholder="Enter user email...">
-                <input type="number" id="userId" placeholder="Enter user ID...">
-                <button class="btn" onclick="lookupUser()">Lookup User</button>
-            </div>
-            <div id="userResult"></div>
-        </div>
-        
-        <div class="section">
-            <h2>📋 System Logs</h2>
-            <div class="logs" id="systemLogs">
-                [${new Date().toISOString()}] [INFO] Admin dashboard accessed<br>
-                [${new Date(Date.now() - 60000).toISOString()}] [INFO] System running normally<br>
-                [${new Date(Date.now() - 120000).toISOString()}] [INFO] Database connection stable<br>
-                [${new Date(Date.now() - 180000).toISOString()}] [INFO] PDF service healthy<br>
-            </div>
+        <div class="stat">
+            <h3>🔍 User Lookup</h3>
+            <input type="email" id="email" placeholder="Enter email">
+            <input type="number" id="userId" placeholder="Enter user ID">
+            <button onclick="lookupUser()">Search User</button>
+            <div id="result" style="margin-top: 15px;"></div>
         </div>
     </div>
 
     <script>
-        const ADMIN_KEY = 'giggy-admin-2025';
-        
-        async function loadSystemHealth() {
-            try {
-                const response = await fetch('/api/admin/health?key=' + ADMIN_KEY);
-                
-                if (response.ok) {
-                    const health = await response.json();
-                    document.getElementById('uptime').textContent = formatUptime(health.uptime);
-                    document.getElementById('memory').textContent = health.memory.heapUsed + 'MB';
-                    document.getElementById('timestamp').textContent = new Date().toLocaleTimeString();
-                }
-            } catch (error) {
-                console.log('Health check failed:', error);
-            }
-        }
-        
-        async function loadAnalytics() {
-            try {
-                const response = await fetch('/api/admin/analytics?key=' + ADMIN_KEY);
-                
-                if (response.ok) {
-                    const analytics = await response.json();
-                    document.getElementById('totalUsers').textContent = analytics.totalUsers;
-                    document.getElementById('activeUsers').textContent = analytics.activeUsers24h;
-                    document.getElementById('gigsCreated').textContent = analytics.gigsCreated24h;
-                    document.getElementById('errorRate').textContent = (analytics.systemHealth.errorRate * 100).toFixed(1) + '%';
-                }
-            } catch (error) {
-                console.log('Analytics failed:', error);
-            }
+        function showUser(id, email) {
+            document.getElementById('userId').value = id;
+            document.getElementById('email').value = email;
+            lookupUser();
         }
         
         async function lookupUser() {
-            const email = document.getElementById('userEmail').value.trim();
-            const userId = document.getElementById('userId').value.trim();
+            const email = document.getElementById('email').value;
+            const userId = document.getElementById('userId').value;
             
             if (!email && !userId) {
-                alert('Please enter either an email or user ID');
+                alert('Enter email or user ID');
                 return;
             }
             
@@ -182,107 +100,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 const params = new URLSearchParams();
                 if (email) params.append('email', email);
                 if (userId) params.append('id', userId);
-                params.append('key', ADMIN_KEY);
+                params.append('key', 'giggy-admin-2025');
                 
                 const response = await fetch('/api/admin/user-lookup?' + params);
+                const user = await response.json();
                 
                 if (response.ok) {
-                    const user = await response.json();
-                    
-                    document.getElementById('userResult').innerHTML = 
-                        '<h3>User Details</h3>' +
+                    document.getElementById('result').innerHTML = 
+                        '<div style="background: #e8f5e8; padding: 15px; border-radius: 5px;">' +
+                        '<h4>User Details</h4>' +
                         '<p><strong>ID:</strong> ' + user.id + '</p>' +
                         '<p><strong>Email:</strong> ' + user.email + '</p>' +
                         '<p><strong>Name:</strong> ' + (user.firstName || '') + ' ' + (user.lastName || '') + '</p>' +
-                        '<p><strong>Created:</strong> ' + new Date(user.createdAt).toLocaleDateString() + '</p>' +
                         '<p><strong>Gigs:</strong> ' + user.gigCount + '</p>' +
-                        '<p><strong>Expenses:</strong> ' + user.expenseCount + '</p>' +
-                        '<p><strong>Total Earnings:</strong> $' + user.totalEarnings.toFixed(2) + '</p>';
-                    
-                    document.getElementById('userEmail').value = '';
-                    document.getElementById('userId').value = '';
+                        '<p><strong>Total Earnings:</strong> $' + user.totalEarnings.toFixed(2) + '</p>' +
+                        '<p><strong>Joined:</strong> ' + new Date(user.createdAt).toLocaleDateString() + '</p>' +
+                        '</div>';
                 } else {
-                    const error = await response.json();
-                    document.getElementById('userResult').innerHTML = '<p style="color: red;">Error: ' + error.error + '</p>';
+                    document.getElementById('result').innerHTML = '<p style="color: red;">Error: ' + user.error + '</p>';
                 }
             } catch (error) {
-                document.getElementById('userResult').innerHTML = '<p style="color: red;">Error looking up user</p>';
+                document.getElementById('result').innerHTML = '<p style="color: red;">Network error</p>';
             }
         }
-        
-        async function loadUserList() {
-            try {
-                const response = await fetch('/api/admin/users?key=' + ADMIN_KEY);
-                
-                if (response.ok) {
-                    const data = await response.json();
-                    const users = data.users;
-                    
-                    document.getElementById('userCount').textContent = users.length + ' users found';
-                    
-                    const userListHTML = users.map(user => {
-                        const name = (user.firstName || '') + ' ' + (user.lastName || '');
-                        const displayName = name.trim() || 'No name';
-                        const joinDate = new Date(user.createdAt).toLocaleDateString();
-                        
-                        return '<div style="padding: 12px; border-bottom: 1px solid #ddd; cursor: pointer; transition: background 0.2s;" ' +
-                               'onmouseover="this.style.background=\'#e9ecef\'" ' +
-                               'onmouseout="this.style.background=\'transparent\'" ' +
-                               'onclick="showUserDetails(' + user.id + ', \'' + user.email + '\')">' +
-                               '<div style="font-weight: bold; color: #007bff;">' + displayName + '</div>' +
-                               '<div style="color: #666; font-size: 14px;">' + user.email + '</div>' +
-                               '<div style="color: #888; font-size: 12px;">ID: ' + user.id + ' | ' +
-                               'Joined: ' + joinDate + ' | ' +
-                               'Tier: ' + user.subscriptionTier + '</div>' +
-                               '</div>';
-                    }).join('');
-                    
-                    document.getElementById('userList').innerHTML = userListHTML || '<p style="padding: 20px; text-align: center; color: #666;">No users found</p>';
-                }
-            } catch (error) {
-                document.getElementById('userCount').textContent = 'Error loading users';
-                document.getElementById('userList').innerHTML = '<p style="padding: 20px; text-align: center; color: red;">Failed to load users</p>';
-            }
-        }
-        
-        function showUserDetails(userId, email) {
-            // Auto-fill the lookup form and trigger lookup
-            document.getElementById('userId').value = userId;
-            document.getElementById('userEmail').value = email;
-            lookupUser();
-            
-            // Scroll to the lookup results
-            document.getElementById('userResult').scrollIntoView({ behavior: 'smooth' });
-        }
-        
-        function formatUptime(seconds) {
-            const days = Math.floor(seconds / 86400);
-            const hours = Math.floor((seconds % 86400) / 3600);
-            const minutes = Math.floor((seconds % 3600) / 60);
-            
-            if (days > 0) {
-                return days + 'd ' + hours + 'h ' + minutes + 'm';
-            } else if (hours > 0) {
-                return hours + 'h ' + minutes + 'm';
-            } else {
-                return minutes + 'm';
-            }
-        }
-        
-        // Initialize dashboard
-        loadSystemHealth();
-        loadAnalytics();
-        loadUserList();
-        
-        // Auto-refresh every 30 seconds
-        setInterval(() => {
-            loadSystemHealth();
-            loadAnalytics();
-        }, 30000);
     </script>
 </body>
 </html>
-    `);
+      `);
+    } catch (error) {
+      console.error('Admin dashboard error:', error);
+      res.status(500).send('Error loading admin dashboard');
+    }
   });
 
   // System Health API
