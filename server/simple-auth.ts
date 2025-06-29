@@ -32,12 +32,46 @@ export function getSession(sessionId: string): { userId: number } | null {
   return { userId: session.userId };
 }
 
+export function validateAdminImpersonationToken(token: string): { userId: number } | null {
+  try {
+    // Decode the base64 token
+    const tokenData = JSON.parse(Buffer.from(token, 'base64').toString());
+    
+    // Check if token is valid (within 1 hour)
+    const tokenAge = Date.now() - tokenData.timestamp;
+    if (tokenAge > 3600000) { // 1 hour
+      return null;
+    }
+
+    // Verify admin key
+    if (tokenData.adminKey !== 'giggy-admin-2025') {
+      return null;
+    }
+
+    return { userId: tokenData.userId };
+  } catch (error) {
+    return null;
+  }
+}
+
 export function destroySession(sessionId: string): void {
   sessions.delete(sessionId);
 }
 
 // Simple auth middleware with bulletproof user isolation
 export function requireAuth(req: any, res: any, next: any) {
+  // Check for admin impersonation token first
+  const adminToken = req.query.admin_impersonate;
+  if (adminToken) {
+    const adminSession = validateAdminImpersonationToken(adminToken);
+    if (adminSession) {
+      req.userId = adminSession.userId;
+      req.isAdminImpersonation = true;
+      return next();
+    }
+  }
+
+  // Standard session-based authentication
   const sessionId = req.cookies?.sessionId;
   const session = sessionId ? getSession(sessionId) : null;
   
