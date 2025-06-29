@@ -151,38 +151,14 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getAllUsers(): Promise<User[]> {
+    // Fast query with only essential fields for admin dashboard
     const allUsers = await db.select({
       id: users.id,
-      name: users.name,
       email: users.email,
-      phone: users.phone,
-      title: users.title,
-      defaultTaxPercentage: users.defaultTaxPercentage,
-      customGigTypes: users.customGigTypes,
-      homeAddress: users.homeAddress,
-      businessName: users.businessName,
-      businessAddress: users.businessAddress,
-      businessPhone: users.businessPhone,
-      businessEmail: users.businessEmail,
-      replitId: users.replitId,
-      googleId: users.googleId,
-      passwordHash: users.passwordHash,
       firstName: users.firstName,
       lastName: users.lastName,
-      profileImageUrl: users.profileImageUrl,
-      isActive: users.isActive,
-      isDeleted: users.isDeleted,
-      deletedAt: users.deletedAt,
-      emailVerified: users.emailVerified,
-      onboardingCompleted: users.onboardingCompleted,
-      notificationPreferences: users.notificationPreferences,
-      workPreferences: users.workPreferences,
-      trialStartDate: users.trialStartDate,
-      trialEndDate: users.trialEndDate,
-      subscriptionStatus: users.subscriptionStatus,
       subscriptionTier: users.subscriptionTier,
       createdAt: users.createdAt,
-      updatedAt: users.updatedAt,
     }).from(users).orderBy(desc(users.createdAt));
     return allUsers as User[];
   }
