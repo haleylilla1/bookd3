@@ -356,8 +356,8 @@ export default function Dashboard() {
         window.open(pdfUrl, '_blank');
         
         toast({
-          title: "Professional Report Opened",
-          description: "Your comprehensive tax report has been opened in a new tab.",
+          title: `${selectedPeriod === 'monthly' ? 'Monthly' : 'Annual'} Income Report Opened`,
+          description: "Your comprehensive income report has been opened in a new tab.",
         });
       }
       
