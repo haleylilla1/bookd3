@@ -20,8 +20,7 @@ import {
   Crown,
   Calendar,
   Target,
-  BarChart3,
-  Upload
+  BarChart3
 } from "lucide-react";
 
 interface AppHeaderProps {
@@ -85,15 +84,7 @@ export default function AppHeader({ currentScreen, onScreenChange }: AppHeaderPr
               Calendar
             </Button>
 
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setLocation('/import')}
-              className="gap-2 border-blue-200 text-blue-700 hover:bg-blue-50"
-            >
-              <Upload className="w-4 h-4" />
-              Import Gigs
-            </Button>
+
           </nav>
         </div>
 
