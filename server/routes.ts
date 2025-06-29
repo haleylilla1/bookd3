@@ -106,6 +106,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         </div>
         
         <div class="section">
+            <h2>👥 All Users</h2>
+            <div style="margin-bottom: 20px;">
+                <button class="btn" onclick="loadUserList()" style="margin-right: 10px;">Refresh User List</button>
+                <span id="userCount" style="color: #666; font-size: 14px;">Loading users...</span>
+            </div>
+            <div id="userList" style="max-height: 400px; overflow-y: auto; border: 1px solid #ddd; border-radius: 4px; background: #f9f9f9;"></div>
+        </div>
+        
+        <div class="section">
             <h2>👤 User Lookup</h2>
             <div class="user-lookup">
                 <input type="email" id="userEmail" placeholder="Enter user email...">
@@ -201,6 +210,51 @@ export async function registerRoutes(app: Express): Promise<Server> {
             }
         }
         
+        async function loadUserList() {
+            try {
+                const response = await fetch('/api/admin/users?key=' + ADMIN_KEY);
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    const users = data.users;
+                    
+                    document.getElementById('userCount').textContent = users.length + ' users found';
+                    
+                    const userListHTML = users.map(user => {
+                        const name = (user.firstName || '') + ' ' + (user.lastName || '');
+                        const displayName = name.trim() || 'No name';
+                        
+                        return '<div style="padding: 12px; border-bottom: 1px solid #ddd; cursor: pointer; transition: background 0.2s;" ' +
+                               'onmouseover="this.style.background=\'#e9ecef\'" ' +
+                               'onmouseout="this.style.background=\'transparent\'" ' +
+                               'onclick="showUserDetails(' + user.id + ', \'' + user.email + '\')">' +
+                               '<div style="font-weight: bold; color: #007bff;">' + displayName + '</div>' +
+                               '<div style="color: #666; font-size: 14px;">' + user.email + '</div>' +
+                               '<div style="color: #888; font-size: 12px;">ID: ' + user.id + ' | ' +
+                               'Gigs: ' + user.gigCount + ' | ' +
+                               'Earnings: $' + user.totalEarnings.toFixed(2) + ' | ' +
+                               'Tier: ' + user.subscriptionTier + '</div>' +
+                               '</div>';
+                    }).join('');
+                    
+                    document.getElementById('userList').innerHTML = userListHTML || '<p style="padding: 20px; text-align: center; color: #666;">No users found</p>';
+                }
+            } catch (error) {
+                document.getElementById('userCount').textContent = 'Error loading users';
+                document.getElementById('userList').innerHTML = '<p style="padding: 20px; text-align: center; color: red;">Failed to load users</p>';
+            }
+        }
+        
+        function showUserDetails(userId, email) {
+            // Auto-fill the lookup form and trigger lookup
+            document.getElementById('userId').value = userId;
+            document.getElementById('userEmail').value = email;
+            lookupUser();
+            
+            // Scroll to the lookup results
+            document.getElementById('userResult').scrollIntoView({ behavior: 'smooth' });
+        }
+        
         function formatUptime(seconds) {
             const days = Math.floor(seconds / 86400);
             const hours = Math.floor((seconds % 86400) / 3600);
@@ -218,6 +272,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Initialize dashboard
         loadSystemHealth();
         loadAnalytics();
+        loadUserList();
         
         // Auto-refresh every 30 seconds
         setInterval(() => {
@@ -318,7 +373,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         firstName: user.firstName,
         lastName: user.lastName,
         createdAt: user.createdAt,
-        lastLoginAt: user.lastLoginAt,
         subscriptionTier: user.subscriptionTier || 'Trial',
         gigCount,
         expenseCount,
@@ -358,6 +412,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
     ];
 
     res.json({ logs });
+  });
+
+  // All Users API (Privacy-Safe List)
+  app.get('/api/admin/users', async (req, res) => {
+    if (!isAdminRequest(req)) {
+      return res.status(404).json({ error: 'Not Found' });
+    }
+
+    try {
+      const users = await storage.getAllUsers();
+      
+      // Return limited, safe user data for each user
+      const safeUsers = await Promise.all(users.map(async (user) => {
+        const gigCount = await storage.getUserGigCount(user.id);
+        const expenseCount = await storage.getUserExpenseCount(user.id);
+        const totalEarnings = await storage.getUserTotalEarnings(user.id);
+        
+        return {
+          id: user.id,
+          email: user.email,
+          firstName: user.firstName,
+          lastName: user.lastName,
+          createdAt: user.createdAt,
+          subscriptionTier: user.subscriptionTier || 'Trial',
+          gigCount,
+          expenseCount,
+          totalEarnings: totalEarnings || 0
+        };
+      }));
+
+      res.json({ users: safeUsers, total: safeUsers.length });
+    } catch (error) {
+      console.error('Admin users list error:', error);
+      res.status(500).json({ error: 'Failed to fetch users' });
+    }
   });
 
   // Setup simple authentication
