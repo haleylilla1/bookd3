@@ -46,6 +46,16 @@ export default function Dashboard() {
   // Fetch period-specific goal
   const { data: currentGoal, refetch: refetchGoal } = useQuery<{ goalAmount: string; id: number }>({
     queryKey: ["/api/goals/period", selectedPeriod, currentDate.toISOString()],
+    queryFn: async () => {
+      const response = await fetch(`/api/goals/period?period=${selectedPeriod}&date=${currentDate.toISOString()}`, {
+        credentials: "include",
+      });
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      const data = await response.json();
+      return data;
+    },
     retry: 1,
   });
 
