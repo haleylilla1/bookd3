@@ -7,6 +7,7 @@ import ResumeBuilder from "@/components/resume-builder";
 import Profile from "@/components/profile";
 import BottomNavigation from "@/components/bottom-navigation";
 import AppHeader from "@/components/app-header";
+import DesktopSidebar from "@/components/desktop-sidebar";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Plus, Bell, Briefcase } from "lucide-react";
@@ -44,30 +45,40 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* App Header */}
-      <AppHeader currentScreen={currentScreen} onScreenChange={setCurrentScreen} />
+      {/* Desktop Sidebar */}
+      <DesktopSidebar currentScreen={currentScreen} onScreenChange={setCurrentScreen} />
 
-      {/* Main Content */}
-      <main className="screen-content">
-        {renderScreen()}
-      </main>
+      {/* Mobile Layout */}
+      <div className="lg:ml-64">
+        {/* App Header - Hidden on desktop */}
+        <div className="lg:hidden">
+          <AppHeader currentScreen={currentScreen} onScreenChange={setCurrentScreen} />
+        </div>
 
-      {/* Floating Action Button */}
-      {currentScreen !== "gig-form" && (
-        <Button
-          onClick={() => setCurrentScreen("gig-form")}
-          className="fixed bottom-20 right-4 px-4 py-3 rounded-full shadow-lg hover:scale-105 transition-all duration-200 bg-primary hover:bg-primary/90 text-white font-medium"
-        >
-          <Plus className="w-4 h-4 mr-2" />
-          Add Gig
-        </Button>
-      )}
+        {/* Main Content */}
+        <main className="screen-content lg:min-h-screen lg:p-6">
+          {renderScreen()}
+        </main>
 
-      {/* Bottom Navigation */}
-      <BottomNavigation 
-        currentScreen={currentScreen} 
-        onScreenChange={setCurrentScreen} 
-      />
+        {/* Floating Action Button - Hidden on desktop (button is in sidebar) */}
+        {currentScreen !== "gig-form" && (
+          <Button
+            onClick={() => setCurrentScreen("gig-form")}
+            className="fixed bottom-20 right-4 px-4 py-3 rounded-full shadow-lg hover:scale-105 transition-all duration-200 bg-primary hover:bg-primary/90 text-white font-medium lg:hidden"
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            Add Gig
+          </Button>
+        )}
+
+        {/* Bottom Navigation - Hidden on desktop */}
+        <div className="lg:hidden">
+          <BottomNavigation 
+            currentScreen={currentScreen} 
+            onScreenChange={setCurrentScreen} 
+          />
+        </div>
+      </div>
     </div>
   );
 }
