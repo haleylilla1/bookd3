@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { setupAuthRoutes, requireAuth } from "./simple-auth";
+import { setupAuth, requireAuth, getCurrentUserId } from "./auth";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Admin monitoring endpoints - must be first, before auth middleware
@@ -555,16 +555,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Setup simple authentication
-  setupAuthRoutes(app);
+  // Setup authentication with Google OAuth support
+  setupAuth(app);
 
   // Secure helper to get user ID with validation
   const getUserId = (req: any): number => {
-    const userId = req.userId;
-    if (!userId || userId <= 0) {
-      throw new Error("Invalid user ID");
-    }
-    return userId;
+    return getCurrentUserId(req);
   };
 
   // User profile endpoints
