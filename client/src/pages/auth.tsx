@@ -210,7 +210,7 @@ export default function AuthPage() {
       <div className="w-full max-w-md space-y-6">
         {/* Branding */}
         <div className="text-center">
-          <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-2">Giggy</h1>
+          <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-2">Bookd</h1>
           <p className="text-gray-600 dark:text-gray-300 text-lg">Work different.</p>
         </div>
 

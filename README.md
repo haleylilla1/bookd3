@@ -1,14 +1,14 @@
-# Giggy - Premier Gig Worker Companion
+# Bookd - Premier Gig Worker Companion
 
 **Work different.**
 
 ## Project Status: Production Ready
 
-Giggy is a comprehensive financial management platform built specifically for gig workers, featuring unified authentication, mobile-optimized interface, and enterprise-grade security. Ready for deployment with custom domain support.
+Bookd is a comprehensive financial management platform built specifically for gig workers, featuring unified authentication, mobile-optimized interface, and enterprise-grade security. Ready for deployment with custom domain support.
 
 ## Platform Overview
 
-Purpose-built for live-service gig workers including brand ambassadors, freelance catering staff, bartenders, and event professionals. Giggy solves the unique challenges of event-based freelance work with intelligent automation and mobile-first design.
+Purpose-built for live-service gig workers including brand ambassadors, freelance catering staff, bartenders, and event professionals. Bookd solves the unique challenges of event-based freelance work with intelligent automation and mobile-first design.
 
 ## Key Capabilities
 
