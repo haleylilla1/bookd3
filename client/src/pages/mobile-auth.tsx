@@ -146,7 +146,7 @@ export default function MobileAuthPage() {
       <div className="w-full max-w-sm">
         {/* Simple Branding */}
         <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-blue-600 mb-2">Giggy</h1>
+          <h1 className="text-4xl font-bold text-blue-600 mb-2">bookd</h1>
           <p className="text-gray-600">Work different.</p>
         </div>
 
