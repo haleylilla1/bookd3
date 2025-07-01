@@ -137,7 +137,7 @@ export default function AuthPage() {
         }
         
         toast({
-          title: isLogin ? "Welcome back!" : "Welcome to Giggy!",
+          title: isLogin ? "Welcome back!" : "Welcome to Bookd!",
           description: isLogin 
             ? "You've been successfully logged in." 
             : "Your account has been created successfully.",
