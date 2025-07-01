@@ -1,7 +1,7 @@
-# Giggy Admin Access Guide
+# Bookd Admin Access Guide
 
 ## Overview
-This guide provides comprehensive information about the secure admin monitoring system built into Giggy. The admin dashboard allows you to safely monitor user activity, system health, and platform analytics while maintaining user privacy.
+This guide provides comprehensive information about the secure admin monitoring system built into Bookd. The admin dashboard allows you to safely monitor user activity, system health, and platform analytics while maintaining user privacy.
 
 ## 🔐 Secure Access
 
@@ -14,7 +14,7 @@ The admin system uses header-based authentication for security:
 
 **Required Header**:
 ```
-X-Admin-Key: giggy-admin-2025
+X-Admin-Key: bookd-admin-2025
 ```
 
 **Browser Access**:
@@ -22,7 +22,7 @@ For browser access, you can use a browser extension or developer tools to add th
 
 **Recommended Browser Extension**: 
 - Install "ModHeader" or "Header Editor" extension
-- Add header: `X-Admin-Key: giggy-admin-2025`
+- Add header: `X-Admin-Key: bookd-admin-2025`
 - Navigate to the admin URL
 
 ## 📊 Admin Dashboard Features

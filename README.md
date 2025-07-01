@@ -182,4 +182,4 @@ Purpose-built for live-service gig workers including brand ambassadors, freelanc
 - **Database Reliability**: 15+ normalized tables with comprehensive data integrity
 - **API Robustness**: 35+ endpoints with proper error handling and validation
 
-Giggy transforms chaotic gig work into organized, profitable career management with industry-leading mileage tracking capabilities and enterprise-grade reliability.
+Bookd transforms chaotic gig work into organized, profitable career management with industry-leading mileage tracking capabilities and enterprise-grade reliability.

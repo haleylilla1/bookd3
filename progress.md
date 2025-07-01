@@ -1,4 +1,4 @@
-# Giggy Development Progress
+# Bookd Development Progress
 
 ## Project Status: Production Ready ✅
 
