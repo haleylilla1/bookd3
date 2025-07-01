@@ -5,8 +5,8 @@
 ### Quick Access Method
 Navigate directly to the admin URL with key parameter:
 
-**Development:** `http://localhost:5000/admin?key=giggy-admin-2025`
-**Production:** `https://your-domain.com/admin?key=giggy-admin-2025`
+**Development:** `http://localhost:5000/admin?key=bookd-admin-2025`
+**Production:** `https://your-domain.com/admin?key=bookd-admin-2025`
 
 ### One-Click Bookmark
 Save the URL above as a bookmark for instant admin access.
@@ -30,13 +30,13 @@ If the query parameter doesn't work for some reason, the old header method is st
 
 ### Browser Extension Method (Backup)
 1. Install "ModHeader" or "Header Editor" browser extension
-2. Add header: `X-Admin-Key: giggy-admin-2025`
+2. Add header: `X-Admin-Key: bookd-admin-2025`
 3. Visit: `/admin` (without query parameter)
 
 ## Troubleshooting
 - **"Not Found" error**: Check the key parameter is correct
 - **Data not loading**: Check browser console for errors  
-- **Dashboard blank**: Verify URL includes `?key=giggy-admin-2025`
+- **Dashboard blank**: Verify URL includes `?key=bookd-admin-2025`
 
 ---
 **Security Note**: Keep the admin key secure and never share publicly.
