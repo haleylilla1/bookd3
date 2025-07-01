@@ -3,5 +3,8 @@ build = "npm run build"
 run = "npm start"
 deploymentTarget = "autoscale"
 
+[[domains]]
+domain = "bookdtools.com"
+
 [nix]
 channel = "stable-23_11"

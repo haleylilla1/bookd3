@@ -109,7 +109,8 @@ export function setupAuthRoutes(app: any) {
           httpOnly: true,
           secure: process.env.NODE_ENV === 'production',
           maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
-          sameSite: 'lax'
+          sameSite: 'lax',
+          domain: process.env.NODE_ENV === 'production' ? '.bookdtools.com' : undefined
         });
         
         console.log('Quick access login for:', email);
@@ -131,7 +132,8 @@ export function setupAuthRoutes(app: any) {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
         maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
-        sameSite: 'lax'
+        sameSite: 'lax',
+        domain: process.env.NODE_ENV === 'production' ? '.bookdtools.com' : undefined
       });
       
       console.log('Login successful for:', email);
@@ -156,7 +158,8 @@ export function setupAuthRoutes(app: any) {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
         maxAge: 30 * 24 * 60 * 60 * 1000,
-        sameSite: 'lax'
+        sameSite: 'lax',
+        domain: process.env.NODE_ENV === 'production' ? '.bookdtools.com' : undefined
       });
       
       res.json({ 
@@ -174,7 +177,9 @@ export function setupAuthRoutes(app: any) {
     if (sessionId) {
       destroySession(sessionId);
     }
-    res.clearCookie('sessionId');
+    res.clearCookie('sessionId', {
+      domain: process.env.NODE_ENV === 'production' ? '.bookdtools.com' : undefined
+    });
     res.json({ message: "Logout successful" });
   });
 
