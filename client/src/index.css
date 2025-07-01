@@ -136,6 +136,14 @@
   padding-bottom: 80px;
 }
 
+/* Desktop layout adjustments */
+@media (min-width: 1024px) {
+  .screen-content {
+    padding-bottom: 0;
+    background-color: transparent;
+  }
+}
+
 .nav-item.active {
   color: var(--primary);
 }

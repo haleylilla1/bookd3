@@ -501,7 +501,7 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="p-4">
+    <div className="p-4 lg:p-8 lg:max-w-6xl lg:mx-auto">
       {/* Time Period Selector */}
       <div className="flex bg-gray-100 p-1 rounded-lg mb-4">
         <Button 
