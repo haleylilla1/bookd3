@@ -1,7 +1,7 @@
-# Giggy Project Context
+# Bookd Project Context
 
 ## Overview
-Giggy is a comprehensive gig worker companion app with advanced features including AI-powered bulk import, Google Maps mileage tracking, and professional resume generation. Currently in production-ready state with dramatically simplified authentication system and full financial tracking capabilities.
+Bookd is a comprehensive gig worker companion app with advanced features including AI-powered bulk import, Google Maps mileage tracking, and professional resume generation. Currently in production-ready state with dramatically simplified authentication system and full financial tracking capabilities.
 
 ## Current Status
 - MULTI-DAY GIG LOGIC PERFECTED: Dashboard and calendar now use identical consolidation logic preventing double-counting
