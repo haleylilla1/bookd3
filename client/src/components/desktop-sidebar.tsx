@@ -20,11 +20,6 @@ export default function DesktopSidebar({ currentScreen, onScreenChange }: Deskto
       label: "Dashboard",
     },
     {
-      id: "resume" as Screen,
-      icon: FileText,
-      label: "Resume",
-    },
-    {
       id: "profile" as Screen,
       icon: User,
       label: "Profile",
