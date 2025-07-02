@@ -87,9 +87,7 @@ function App() {
       <QueryClientProvider client={queryClient}>
         <TooltipProvider>
           <Toaster />
-          <div className="mobile-app">
-            <Router />
-          </div>
+          <Router />
         </TooltipProvider>
       </QueryClientProvider>
     </ErrorBoundary>
