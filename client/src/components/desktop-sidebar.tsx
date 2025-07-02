@@ -32,7 +32,7 @@ export default function DesktopSidebar({ currentScreen, onScreenChange }: Deskto
   ];
 
   return (
-    <div className="hidden lg:flex flex-col w-64 bg-white border-r border-gray-200 h-screen fixed left-0 top-0 z-10">
+    <div className="hidden lg:flex flex-col w-64 bg-white border-r border-gray-200 h-screen fixed left-0 top-0 desktop-sidebar">
       {/* Logo/Header */}
       <div className="p-6 border-b border-gray-200">
         <h1 className="text-2xl font-bold text-gray-900">Bookd</h1>
