@@ -501,7 +501,7 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="p-4 lg:p-0 w-full">
+    <div className="p-4 lg:p-0 w-full space-y-6">
       {/* Time Period Selector */}
       <div className="flex bg-gray-100 p-1 rounded-lg mb-4">
         <Button 
@@ -605,7 +605,7 @@ export default function Dashboard() {
       </div>
 
       {/* Main Earnings Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
         {/* Actual Earnings */}
         <Card 
           className="cursor-pointer hover:shadow-md transition-shadow"
@@ -650,7 +650,7 @@ export default function Dashboard() {
       </div>
 
       {/* Additional Stats Grid */}
-      <div className="grid grid-cols-3 gap-3 mb-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
         {/* Tax Estimate */}
         <Card 
           className="cursor-pointer hover:shadow-md transition-shadow"

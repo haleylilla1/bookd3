@@ -345,7 +345,7 @@ export default function CalendarView() {
   }
 
   return (
-    <div className="p-4 lg:p-0 w-full">
+    <div className="p-4 lg:p-0 w-full space-y-6">
       {/* Month Navigation */}
       <div className="flex items-center justify-between mb-6 bg-gray-50 p-3 rounded-lg">
         <Button
@@ -385,7 +385,7 @@ export default function CalendarView() {
       <Card className="mb-6">
         <CardContent className="p-4">
           {/* Calendar Header */}
-          <div className="grid grid-cols-7 gap-1 mb-2">
+          <div className="grid grid-cols-7 gap-2 lg:gap-3 mb-2">
             {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
               <div key={day} className="text-center text-sm font-medium text-gray-500 py-3">
                 {day}
@@ -394,7 +394,7 @@ export default function CalendarView() {
           </div>
           
           {/* Calendar Days */}
-          <div className="grid grid-cols-7 gap-1">
+          <div className="grid grid-cols-7 gap-2 lg:gap-3">
             {calendarDays.map((date: Date, index: number) => {
               const isCurrentMonth = date.getMonth() === currentDate.getMonth();
               const isToday = date.toDateString() === new Date().toDateString();
@@ -406,7 +406,7 @@ export default function CalendarView() {
                   key={index}
                   onClick={() => handleDayClick(date)}
                   className={`
-                    aspect-square p-2 text-sm relative transition-all duration-200 rounded-lg min-h-[48px]
+                    aspect-square p-2 text-sm relative transition-all duration-200 rounded-lg min-h-[48px] lg:min-h-[60px] lg:p-3
                     ${isCurrentMonth 
                       ? hasGigs 
                         ? 'hover:bg-blue-50 cursor-pointer border border-transparent hover:border-blue-200 hover:shadow-sm' 
