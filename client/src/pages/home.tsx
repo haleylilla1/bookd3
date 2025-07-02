@@ -56,10 +56,8 @@ export default function Home() {
         </div>
 
         {/* Main Content */}
-        <main className="screen-content lg:min-h-screen lg:p-8 lg:max-w-6xl lg:mx-auto">
-          <div className="w-full">
-            {renderScreen()}
-          </div>
+        <main className="screen-content main-content-area">
+          {renderScreen()}
         </main>
 
         {/* Floating Action Button - Hidden on desktop (button is in sidebar) */}
