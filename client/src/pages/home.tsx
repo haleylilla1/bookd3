@@ -48,7 +48,7 @@ export default function Home() {
       {/* Desktop Sidebar */}
       <DesktopSidebar currentScreen={currentScreen} onScreenChange={setCurrentScreen} />
 
-      {/* Mobile Layout */}
+      {/* Main Content Area */}
       <div className="lg:ml-64">
         {/* App Header - Hidden on desktop */}
         <div className="lg:hidden">
@@ -56,8 +56,10 @@ export default function Home() {
         </div>
 
         {/* Main Content */}
-        <main className="screen-content lg:min-h-screen lg:p-6">
-          {renderScreen()}
+        <main className="screen-content lg:min-h-screen lg:p-8 lg:max-w-6xl lg:mx-auto">
+          <div className="w-full">
+            {renderScreen()}
+          </div>
         </main>
 
         {/* Floating Action Button - Hidden on desktop (button is in sidebar) */}

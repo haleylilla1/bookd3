@@ -345,7 +345,7 @@ export default function CalendarView() {
   }
 
   return (
-    <div className="p-4">
+    <div className="p-4 lg:p-0 w-full">
       {/* Month Navigation */}
       <div className="flex items-center justify-between mb-6 bg-gray-50 p-3 rounded-lg">
         <Button

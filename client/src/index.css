@@ -81,6 +81,26 @@
     pointer-events: auto !important;
     touch-action: manipulation !important;
   }
+
+  /* Desktop layout improvements */
+  @media (min-width: 1024px) {
+    .screen-content {
+      padding: 2rem;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    
+    /* Ensure proper z-index layering */
+    .desktop-sidebar {
+      z-index: 50;
+    }
+    
+    /* Prevent content overlap */
+    .main-content-area {
+      position: relative;
+      z-index: 10;
+    }
+  }
 }
 
 .success {
