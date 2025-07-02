@@ -6,5 +6,8 @@ deploymentTarget = "autoscale"
 [[domains]]
 domain = "bookdtools.com"
 
+[[domains]]
+domain = "www.bookdtools.com"
+
 [nix]
 channel = "stable-23_11"
