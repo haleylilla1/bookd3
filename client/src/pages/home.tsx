@@ -3,7 +3,6 @@ import { useQueryClient } from "@tanstack/react-query";
 import CalendarView from "@/components/calendar-view";
 import GigForm from "@/components/gig-form";
 import Dashboard from "@/components/dashboard";
-import ResumeBuilder from "@/components/resume-builder";
 import Profile from "@/components/profile";
 import BottomNavigation from "@/components/bottom-navigation";
 import AppHeader from "@/components/app-header";
@@ -12,7 +11,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Plus, Bell, Briefcase } from "lucide-react";
 
-export type Screen = "calendar" | "dashboard" | "resume" | "profile" | "gig-form" | "settings";
+export type Screen = "calendar" | "dashboard" | "profile" | "gig-form" | "settings";
 
 export default function Home() {
   const [currentScreen, setCurrentScreen] = useState<Screen>("calendar");
@@ -30,8 +29,6 @@ export default function Home() {
         return <CalendarView />;
       case "dashboard":
         return <Dashboard />;
-      case "resume":
-        return <ResumeBuilder />;
       case "profile":
         return <Profile />;
       case "gig-form":
