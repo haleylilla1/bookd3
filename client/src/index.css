@@ -2,30 +2,6 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Mobile-first app styling */
-.mobile-app {
-  max-width: 430px;
-  margin: 0 auto;
-  min-height: 100vh;
-  background-color: white;
-  position: relative;
-  box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
-}
-
-/* Ensure mobile-first approach */
-html, body {
-  margin: 0;
-  padding: 0;
-  background-color: #f5f5f5;
-}
-
-@media (max-width: 430px) {
-  .mobile-app {
-    max-width: 100%;
-    box-shadow: none;
-  }
-}
-
 :root {
   --background: hsl(0, 0%, 100%);
   --foreground: hsl(20, 14.3%, 4.1%);
