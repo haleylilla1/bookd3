@@ -1,7 +1,7 @@
 # Bookd Project Context
 
 ## Overview
-Bookd is a comprehensive gig worker companion app with advanced features including AI-powered bulk import, Google Maps mileage tracking, and professional resume generation. Currently in production-ready state with dramatically simplified authentication system and full financial tracking capabilities.
+Bookd is a mobile-first gig worker companion app with comprehensive financial tracking and calendar-based gig management. Optimized exclusively for mobile devices with simple authentication and professional PDF report generation. Currently deployed to bookdtools.com in production-ready state.
 
 ## Current Status
 - MULTI-DAY GIG LOGIC PERFECTED: Dashboard and calendar now use identical consolidation logic preventing double-counting
@@ -21,6 +21,10 @@ Bookd is a comprehensive gig worker companion app with advanced features includi
 - Maintain simple, clean interface design
 
 ## Recent Changes
+- 2025-07-02: MOBILE-ONLY APPROACH ADOPTED - Completely abandoned desktop development after repeated grid layout failures
+- 2025-07-02: Desktop calendar consistently failed with overlapping dates and unreadable text despite multiple fix attempts
+- 2025-07-02: User decision: Focus exclusively on mobile-first experience eliminating all desktop-specific styling
+- 2025-07-02: Bookd now maintains single responsive design optimized only for mobile devices and small screens
 - 2025-07-02: DOMAIN DEPLOYMENT IN PROGRESS - bookdtools.com successfully configured and loading Bookd app
 - 2025-07-02: Fixed Google OAuth authentication system working properly with custom domain
 - 2025-07-02: DNS configuration challenges with Squarespace limitations - app accessible but redirect shows full Replit URL
