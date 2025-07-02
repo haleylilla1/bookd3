@@ -383,18 +383,19 @@ export default function CalendarView() {
 
       {/* Calendar Grid */}
       <Card className="mb-6">
-        <CardContent className="p-4">
+        <CardContent className="p-4 lg:p-6">
           {/* Calendar Header */}
-          <div className="grid grid-cols-7 gap-2 lg:gap-3 mb-2">
+          <div className="grid grid-cols-7 gap-1 mb-4">
             {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
-              <div key={day} className="text-center text-sm font-medium text-gray-500 py-3">
+              <div key={day} className="text-center text-sm font-medium text-gray-500 py-2 border-b border-gray-100">
                 {day}
               </div>
             ))}
           </div>
           
           {/* Calendar Days */}
-          <div className="grid grid-cols-7 gap-2 lg:gap-3">
+          <div className="grid grid-cols-7 gap-1 auto-rows-fr"
+               style={{ gridTemplateRows: 'repeat(6, minmax(60px, 1fr))' }}>
             {calendarDays.map((date: Date, index: number) => {
               const isCurrentMonth = date.getMonth() === currentDate.getMonth();
               const isToday = date.toDateString() === new Date().toDateString();
@@ -406,14 +407,14 @@ export default function CalendarView() {
                   key={index}
                   onClick={() => handleDayClick(date)}
                   className={`
-                    aspect-square p-2 text-sm relative transition-all duration-200 rounded-lg min-h-[48px] lg:min-h-[60px] lg:p-3
+                    h-16 w-full p-2 text-sm relative transition-all duration-200 rounded-md border border-gray-100
                     ${isCurrentMonth 
                       ? hasGigs 
-                        ? 'hover:bg-blue-50 cursor-pointer border border-transparent hover:border-blue-200 hover:shadow-sm' 
+                        ? 'hover:bg-blue-50 cursor-pointer hover:border-blue-200 hover:shadow-sm bg-white' 
                         : isToday
-                          ? 'text-blue-600 font-semibold hover:bg-blue-50'
-                          : 'text-gray-700 hover:bg-gray-50'
-                      : 'text-gray-300'
+                          ? 'text-blue-600 font-semibold hover:bg-blue-50 bg-white'
+                          : 'text-gray-700 hover:bg-gray-50 bg-white'
+                      : 'text-gray-300 bg-gray-50'
                     }
                     ${!hasGigs && isCurrentMonth ? 'cursor-default' : ''}
                   `}
