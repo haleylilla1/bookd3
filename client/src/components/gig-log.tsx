@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -302,8 +302,18 @@ function GigEditForm({ gig, onSave, onCancel, isLoading }: GigEditFormProps) {
     status: gig.status,
     duties: gig.duties || "",
     paymentMethod: gig.paymentMethod || "",
-    taxPercentage: (gig.taxPercentage !== null && gig.taxPercentage !== undefined) ? gig.taxPercentage : ((user as any)?.defaultTaxPercentage || 23),
+    taxPercentage: (gig.taxPercentage !== null && gig.taxPercentage !== undefined) ? gig.taxPercentage : 23,
   });
+
+  // Update tax percentage when user data loads
+  useEffect(() => {
+    if (user && (gig.taxPercentage === null || gig.taxPercentage === undefined)) {
+      setFormData(prev => ({
+        ...prev,
+        taxPercentage: (user as any)?.defaultTaxPercentage || 23
+      }));
+    }
+  }, [user, gig.taxPercentage]);
 
 
 
