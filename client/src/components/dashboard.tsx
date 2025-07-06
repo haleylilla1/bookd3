@@ -210,7 +210,9 @@ export default function Dashboard() {
     const estimatedTax = completedGroupedGigs.reduce((sum, gig) => {
       const income = safeParseFloat(gig.actualPay) + safeParseFloat(gig.tips);
       const gigTaxRate = (gig.taxPercentage !== null && gig.taxPercentage !== undefined) ? gig.taxPercentage : userTaxRate;
-      return sum + (income * gigTaxRate / 100);
+      const taxAmount = income * gigTaxRate / 100;
+      console.log(`Gig: ${gig.eventName}, Income: $${income}, Tax Rate: ${gigTaxRate}%, Tax: $${taxAmount.toFixed(2)}`);
+      return sum + taxAmount;
     }, 0);
 
     return {
@@ -849,7 +851,7 @@ export default function Dashboard() {
                   </div>
                 </div>
                 <div className="text-xs text-gray-600 mb-2">
-                  Taxable: ${gig.taxableIncome.toFixed(2)} × {gig.taxRate}%
+                  Gross Income: ${gig.taxableIncome.toFixed(2)} × {gig.taxRate}%
                 </div>
                 <Badge variant="secondary" className="text-xs">
                   {gig.gigType}
