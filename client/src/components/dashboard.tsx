@@ -206,30 +206,22 @@ export default function Dashboard() {
     // Use user's default tax rate (23%), but allow per-gig overrides (including 0% for under-the-table)
     const userTaxRate = user?.defaultTaxPercentage || 23;
     
-    // Calculate tax estimate using grouped gigs to prevent double-counting
-    const estimatedTax = completedGroupedGigs.reduce((sum, gig) => {
-      const income = safeParseFloat(gig.actualPay) + safeParseFloat(gig.tips);
-      // For multi-day gigs, we need to aggregate expenses from all related days
-      let totalExpenses = 0;
-      if (gig.isMultiDay) {
-        // Find all gigs in the multi-day sequence for accurate expense calculation
-        const relatedGigs = currentPeriodGigs.filter(originalGig => 
-          originalGig.eventName === gig.eventName &&
-          originalGig.clientName === gig.clientName &&
-          originalGig.gigType === gig.gigType
-        );
-        totalExpenses = relatedGigs.reduce((expSum, relatedGig) => {
-          return expSum + safeParseFloat(relatedGig.parkingExpense) + 
-                 safeParseFloat(relatedGig.otherExpenses) + 
-                 ((relatedGig.mileage || 0) * 0.67);
-        }, 0);
-      } else {
-        totalExpenses = safeParseFloat(gig.parkingExpense) + safeParseFloat(gig.otherExpenses) + ((gig.mileage || 0) * 0.67);
-      }
-      const taxableIncome = Math.max(0, income - totalExpenses);
-      const gigTaxRate = (gig.taxPercentage !== null && gig.taxPercentage !== undefined) ? gig.taxPercentage : userTaxRate;
-      return sum + (taxableIncome * gigTaxRate / 100);
-    }, 0);
+    // Calculate tax estimate using individual completed gigs (same logic as PDF and tax breakdown)
+    const estimatedTax = currentPeriodGigs
+      .filter(gig => gig.status === "completed")
+      .reduce((sum, gig) => {
+        const actualPay = safeParseFloat(gig.actualPay);
+        const tips = safeParseFloat(gig.tips);
+        const income = actualPay + tips;
+        const parkingExpense = safeParseFloat(gig.parkingExpense);
+        const otherExpenses = safeParseFloat(gig.otherExpenses);
+        const mileageDeduction = (gig.mileage || 0) * 0.67;
+        const totalExpenses = parkingExpense + otherExpenses + mileageDeduction;
+        const taxableIncome = Math.max(0, income - totalExpenses);
+        const gigTaxRate = (gig.taxPercentage !== null && gig.taxPercentage !== undefined) ? gig.taxPercentage : userTaxRate;
+        const estimatedTax = (taxableIncome * gigTaxRate) / 100;
+        return sum + estimatedTax;
+      }, 0);
 
     return {
       actualEarnings: Math.round(actualEarnings * 100) / 100,

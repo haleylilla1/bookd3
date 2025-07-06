@@ -257,19 +257,6 @@ export async function generateProfessionalHTML(options: ReportOptions): Promise<
             `}
         </div>
 
-        <!-- Summary Totals Page - Matching Exact Format -->
-        <div class="page">
-            <h2 style="font-size: 24px; margin-bottom: 30px; text-align: center;">SUMMARY TOTALS</h2>
-            
-            <div style="margin: 40px 0; font-size: 18px; line-height: 2;">
-                <p><strong>Total Income: $${data.totalIncome.toFixed(2)}</strong></p>
-                <p><strong>Total Expenses: $${data.totalExpenses.toFixed(2)}</strong></p>
-                <p><strong>Total Mileage: ${Math.round(data.totalMileage)} miles</strong></p>
-                <p><strong>Mileage Value: $${data.mileageValue.toFixed(2)}</strong></p>
-                <p><strong>Net Income: $${data.netIncome.toFixed(2)}</strong></p>
-                <p><strong>Estimated Taxes: $${data.estimatedTaxes.toFixed(2)}</strong></p>
-            </div>
-        </div>
 
 
         <!-- Detailed Tax Estimates Page -->
@@ -379,6 +366,20 @@ export async function generateProfessionalHTML(options: ReportOptions): Promise<
                     <p>No business expenses were recorded for this period.</p>
                 </div>
             `}
+        </div>
+
+        <!-- Summary Totals Page - Matching Exact Format -->
+        <div class="page">
+            <h2 style="font-size: 24px; margin-bottom: 30px; text-align: center;">SUMMARY TOTALS</h2>
+            
+            <div style="margin: 40px 0; font-size: 18px; line-height: 2;">
+                <p><strong>Total Income: $${data.totalIncome.toFixed(2)}</strong></p>
+                <p><strong>Total Expenses: $${data.totalExpenses.toFixed(2)}</strong></p>
+                <p><strong>Total Mileage: ${Math.round(data.totalMileage)} miles</strong></p>
+                <p><strong>Mileage Value: $${data.mileageValue.toFixed(2)}</strong></p>
+                <p><strong>Net Income: $${data.netIncome.toFixed(2)}</strong></p>
+                <p><strong>Estimated Taxes: $${data.estimatedTaxes.toFixed(2)}</strong></p>
+            </div>
         </div>
 
         <!-- Tax Due Dates Page -->
