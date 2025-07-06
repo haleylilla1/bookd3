@@ -279,7 +279,7 @@ export class ProfessionalPDFGenerator {
     this.addLine(`Gross Income: $${data.totalIncome.toFixed(2)}`);
     this.addLine(`Business Expenses: $${(data.totalExpenses + data.mileageValue).toFixed(2)}`);
     this.addLine(`Net Income: $${data.netIncome.toFixed(2)}`);
-    this.addLine(`Estimated Taxes (${data.taxPercentage}%): $${data.estimatedTaxes.toFixed(2)}`);
+    this.addLine(`Estimated Taxes (${data.taxPercentage}% effective): $${data.estimatedTaxes.toFixed(2)}`);
     this.addLine(`After-Tax Income: $${data.afterTaxIncome.toFixed(2)}`);
     
     this.addSpacing(30);
@@ -400,7 +400,7 @@ export class ProfessionalPDFGenerator {
     this.addSpacing(5);
     this.doc.setFont('helvetica', 'normal');
     this.addLine('TAX ESTIMATES:');
-    this.addLine(`  Tax Rate: ${data.taxPercentage}%`);
+    this.addLine(`  Effective Tax Rate: ${data.taxPercentage}%`);
     this.addLine(`  Estimated Federal/State Taxes: $${data.estimatedTaxes.toFixed(2)}`);
     
     this.addSpacing(5);
@@ -429,6 +429,12 @@ export class ProfessionalPDFGenerator {
     this.doc.setFontSize(10);
     this.doc.setFont('helvetica', 'italic');
     this.addLine('Note: These are estimates. Consult a tax professional for accurate calculations.');
+    
+    this.addSpacing(10);
+    this.doc.setFontSize(9);
+    this.doc.setFont('helvetica', 'normal');
+    this.addLine('Tax calculations use each gig\'s individual tax rate setting.');
+    this.addLine('The effective rate shown reflects the weighted average across all gigs.');
   }
 
   private addExpenseSummary(data: ReportData): void {
