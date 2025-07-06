@@ -206,29 +206,11 @@ export default function Dashboard() {
     // Use user's default tax rate (23%), but allow per-gig overrides (including 0% for under-the-table)
     const userTaxRate = user?.defaultTaxPercentage || 23;
     
-    // Calculate tax estimate using grouped gigs to prevent double-counting multi-day events
+    // Calculate tax estimate using grouped gigs on gross income (not taxable income)
     const estimatedTax = completedGroupedGigs.reduce((sum, gig) => {
       const income = safeParseFloat(gig.actualPay) + safeParseFloat(gig.tips);
-      // For multi-day gigs, we need to aggregate expenses from all related days
-      let totalExpenses = 0;
-      if (gig.isMultiDay) {
-        // Find all gigs in the multi-day sequence for accurate expense calculation
-        const relatedGigs = currentPeriodGigs.filter(originalGig => 
-          originalGig.eventName === gig.eventName &&
-          originalGig.clientName === gig.clientName &&
-          originalGig.gigType === gig.gigType
-        );
-        totalExpenses = relatedGigs.reduce((expSum, relatedGig) => {
-          return expSum + safeParseFloat(relatedGig.parkingExpense) + 
-                 safeParseFloat(relatedGig.otherExpenses) + 
-                 ((relatedGig.mileage || 0) * 0.67);
-        }, 0);
-      } else {
-        totalExpenses = safeParseFloat(gig.parkingExpense) + safeParseFloat(gig.otherExpenses) + ((gig.mileage || 0) * 0.67);
-      }
-      const taxableIncome = Math.max(0, income - totalExpenses);
       const gigTaxRate = (gig.taxPercentage !== null && gig.taxPercentage !== undefined) ? gig.taxPercentage : userTaxRate;
-      return sum + (taxableIncome * gigTaxRate / 100);
+      return sum + (income * gigTaxRate / 100);
     }, 0);
 
     return {
@@ -436,31 +418,13 @@ export default function Dashboard() {
       const tips = safeParseFloat(gig.tips);
       const income = actualPay + tips;
       
-      // For multi-day gigs, aggregate expenses from all related days
-      let totalExpenses = 0;
-      if (gig.isMultiDay) {
-        const relatedGigs = completedGigs.filter(originalGig => 
-          originalGig.eventName === gig.eventName &&
-          originalGig.clientName === gig.clientName &&
-          originalGig.gigType === gig.gigType
-        );
-        totalExpenses = relatedGigs.reduce((expSum, relatedGig) => {
-          return expSum + safeParseFloat(relatedGig.parkingExpense) + 
-                 safeParseFloat(relatedGig.otherExpenses) + 
-                 ((relatedGig.mileage || 0) * 0.67);
-        }, 0);
-      } else {
-        totalExpenses = safeParseFloat(gig.parkingExpense) + safeParseFloat(gig.otherExpenses) + ((gig.mileage || 0) * 0.67);
-      }
-      
-      const taxableIncome = Math.max(0, income - totalExpenses);
       const taxRate = (gig.taxPercentage !== null && gig.taxPercentage !== undefined) ? gig.taxPercentage : (user?.defaultTaxPercentage || 23);
-      const estimatedTax = (taxableIncome * taxRate) / 100;
+      const estimatedTax = (income * taxRate) / 100;
       
       return {
         ...gig,
         amount: estimatedTax,
-        taxableIncome,
+        taxableIncome: income, // Show gross income as taxable for display
         taxRate
       };
     })
