@@ -356,7 +356,7 @@ export async function generateProfessionalHTML(options: ReportOptions): Promise<
             
             <div style="margin: 30px 0; padding: 20px; background-color: #f0f8ff; border-left: 4px solid #4a90e2;">
                 <p style="font-size: 14px; margin: 0; line-height: 1.5;">
-                    <strong>Calculation Method:</strong> For each gig, taxes are calculated as (Income - Expenses) × Tax Rate. 
+                    <strong>Calculation Method:</strong> For each gig, taxes are calculated as Taxable Income × Tax Rate. 
                     Income includes actual pay and tips. Expenses include parking, other business expenses, and mileage deduction ($0.67/mile).
                     Each gig uses its individual tax rate setting.
                 </p>
