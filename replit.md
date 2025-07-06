@@ -21,6 +21,10 @@ Bookd is a mobile-first gig worker companion app with comprehensive financial tr
 - Maintain simple, clean interface design
 
 ## Recent Changes
+- 2025-07-06: PDF TAX CALCULATION ENHANCEMENT - Updated tax estimates to use individual gig tax rates instead of flat default rate
+- 2025-07-06: Each gig's specific tax percentage now properly reflected in monthly/annual PDF reports
+- 2025-07-06: Weighted average tax rate displayed shows actual blended rate across all gigs in period
+- 2025-07-06: More accurate tax estimates for users who mix 0% (under-table) and standard rate gigs
 - 2025-07-02: MOBILE-ONLY APPROACH ADOPTED - Completely abandoned desktop development after repeated grid layout failures
 - 2025-07-02: Desktop calendar consistently failed with overlapping dates and unreadable text despite multiple fix attempts
 - 2025-07-02: User decision: Focus exclusively on mobile-first experience eliminating all desktop-specific styling

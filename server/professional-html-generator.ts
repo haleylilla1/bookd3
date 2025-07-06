@@ -455,9 +455,28 @@ async function prepareReportData(options: ReportOptions): Promise<ReportData> {
   const mileageValue = totalMileage * MILEAGE_RATE;
   const netIncome = totalIncome - totalExpenses - mileageValue;
   
-  // Tax calculations with safety checks
-  const taxPercentage = Math.max(0, Math.min(100, parseInt(String(user.defaultTaxPercentage || 23))));
-  const estimatedTaxes = Math.max(0, netIncome * (taxPercentage / 100));
+  // Calculate tax estimates based on individual gig tax rates
+  const estimatedTaxes = completedGigs.reduce((sum, gig) => {
+    const actualPay = parseFloat(gig.actualPay || '0');
+    const tips = parseFloat(gig.tips || '0');
+    const gigIncome = actualPay + tips;
+    
+    // Get gig-specific tax rate, fallback to user default
+    const gigTaxRate = parseFloat(String(gig.taxPercentage || user.defaultTaxPercentage || '23'));
+    
+    // Calculate tax on this gig's income portion
+    const gigTaxes = gigIncome * (gigTaxRate / 100);
+    return sum + gigTaxes;
+  }, 0);
+  
+  // Calculate weighted average tax percentage for display
+  const totalIncomeForTax = completedGigs.reduce((sum, gig) => {
+    const actualPay = parseFloat(gig.actualPay || '0');
+    const tips = parseFloat(gig.tips || '0');
+    return sum + actualPay + tips;
+  }, 0);
+  
+  const taxPercentage = totalIncomeForTax > 0 ? Math.round((estimatedTaxes / totalIncomeForTax) * 100 * 100) / 100 : 0;
   const afterTaxIncome = netIncome - estimatedTaxes;
 
   // Prepare receipts data with photos and reimbursement status
