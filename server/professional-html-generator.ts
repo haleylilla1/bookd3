@@ -282,8 +282,7 @@ export async function generateProfessionalHTML(options: ReportOptions): Promise<
             
             <div style="margin: 30px 0; padding: 20px; background-color: #f0f8ff; border-left: 4px solid #4a90e2;">
                 <p style="font-size: 14px; margin: 0; line-height: 1.5;">
-                    <strong>Note:</strong> Tax estimates are calculated using each gig's individual tax rate setting. 
-                    The effective rate of ${data.taxPercentage}% shown reflects the weighted average across all your gigs.
+                    <strong>Note:</strong> Tax estimates are calculated using each gig's individual tax rate setting applied to taxable income (income minus expenses). 
                     These estimates match the calculations shown on your dashboard and are for planning purposes only.
                     Please consult with a tax professional for accurate filing requirements.
                 </p>
@@ -457,28 +456,30 @@ async function prepareReportData(options: ReportOptions): Promise<ReportData> {
   const mileageValue = totalMileage * MILEAGE_RATE;
   const netIncome = totalIncome - totalExpenses - mileageValue;
   
-  // Calculate tax estimates based on individual gig tax rates
+  // Calculate tax estimates based on individual gig tax rates using taxable income (after expenses)
   const estimatedTaxes = completedGigs.reduce((sum, gig) => {
     const actualPay = parseFloat(gig.actualPay || '0');
     const tips = parseFloat(gig.tips || '0');
     const gigIncome = actualPay + tips;
     
+    // Calculate gig-specific expenses (parking + other + mileage)
+    const gigExpenses = parseFloat(gig.parkingExpense || '0') + 
+                       parseFloat(gig.otherExpenses || '0') + 
+                       ((parseInt(String(gig.mileage || 0)) || 0) * MILEAGE_RATE);
+    
+    // Calculate taxable income for this gig (income minus expenses)
+    const taxableIncome = Math.max(0, gigIncome - gigExpenses);
+    
     // Get gig-specific tax rate, fallback to user default
     const gigTaxRate = parseFloat(String(gig.taxPercentage || user.defaultTaxPercentage || '23'));
     
-    // Calculate tax on this gig's income portion
-    const gigTaxes = gigIncome * (gigTaxRate / 100);
+    // Calculate tax on this gig's taxable income
+    const gigTaxes = taxableIncome * (gigTaxRate / 100);
     return sum + gigTaxes;
   }, 0);
   
-  // Calculate weighted average tax percentage for display
-  const totalIncomeForTax = completedGigs.reduce((sum, gig) => {
-    const actualPay = parseFloat(gig.actualPay || '0');
-    const tips = parseFloat(gig.tips || '0');
-    return sum + actualPay + tips;
-  }, 0);
-  
-  const taxPercentage = totalIncomeForTax > 0 ? Math.round((estimatedTaxes / totalIncomeForTax) * 100 * 100) / 100 : 0;
+  // Use user's default tax percentage for display (individual rates used in calculation)
+  const taxPercentage = user.defaultTaxPercentage || 23;
   const afterTaxIncome = netIncome - estimatedTaxes;
 
   // Prepare receipts data with photos and reimbursement status

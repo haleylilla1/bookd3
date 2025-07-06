@@ -121,28 +121,30 @@ export class ProfessionalPDFGenerator {
     const mileageValue = totalMileage * this.MILEAGE_RATE;
     const netIncome = totalIncome - totalExpenses - mileageValue;
     
-    // Calculate tax estimates based on individual gig tax rates
+    // Calculate tax estimates based on individual gig tax rates using taxable income (after expenses)
     const estimatedTaxes = completedGigs.reduce((sum, gig) => {
       const actualPay = parseFloat(gig.actualPay || '0');
       const tips = parseFloat(gig.tips || '0');
       const gigIncome = actualPay + tips;
       
+      // Calculate gig-specific expenses (parking + other + mileage)
+      const gigExpenses = parseFloat(gig.parkingExpense || '0') + 
+                         parseFloat(gig.otherExpenses || '0') + 
+                         ((parseFloat(String(gig.mileage) || '0')) * this.MILEAGE_RATE);
+      
+      // Calculate taxable income for this gig (income minus expenses)
+      const taxableIncome = Math.max(0, gigIncome - gigExpenses);
+      
       // Get gig-specific tax rate, fallback to user default
       const gigTaxRate = parseFloat(String(gig.taxPercentage || user.defaultTaxPercentage || '23'));
       
-      // Calculate tax on this gig's income portion
-      const gigTaxes = gigIncome * (gigTaxRate / 100);
+      // Calculate tax on this gig's taxable income
+      const gigTaxes = taxableIncome * (gigTaxRate / 100);
       return sum + gigTaxes;
     }, 0);
     
-    // Calculate weighted average tax percentage for display
-    const totalIncomeForTax = completedGigs.reduce((sum, gig) => {
-      const actualPay = parseFloat(gig.actualPay || '0');
-      const tips = parseFloat(gig.tips || '0');
-      return sum + actualPay + tips;
-    }, 0);
-    
-    const avgTaxPercentage = totalIncomeForTax > 0 ? (estimatedTaxes / totalIncomeForTax) * 100 : 0;
+    // Use user's default tax percentage for display (individual rates used in calculation)
+    const avgTaxPercentage = user.defaultTaxPercentage || 23;
     const afterTaxIncome = netIncome - estimatedTaxes;
 
     // Prepare receipts data
@@ -433,8 +435,8 @@ export class ProfessionalPDFGenerator {
     this.addSpacing(10);
     this.doc.setFontSize(9);
     this.doc.setFont('helvetica', 'normal');
-    this.addLine('Tax calculations use each gig\'s individual tax rate setting.');
-    this.addLine('The effective rate shown reflects the weighted average across all gigs.');
+    this.addLine('Tax calculations use each gig\'s individual tax rate applied to taxable income.');
+    this.addLine('(Taxable income = income minus expenses for each gig)');
   }
 
   private addExpenseSummary(data: ReportData): void {
