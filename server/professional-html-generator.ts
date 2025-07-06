@@ -289,6 +289,70 @@ export async function generateProfessionalHTML(options: ReportOptions): Promise<
             </div>
         </div>
 
+        <!-- Detailed Tax Estimates Page -->
+        <div class="page">
+            <h2 style="font-size: 24px; margin-bottom: 30px; text-align: center;">DETAILED TAX ESTIMATES BY GIG</h2>
+            
+            <div style="margin: 20px 0;">
+                <table style="width: 100%; border-collapse: collapse;">
+                    <thead>
+                        <tr style="background-color: #f8f9fa;">
+                            <th style="padding: 12px; text-align: left; border-bottom: 2px solid #333; font-weight: bold;">Gig</th>
+                            <th style="padding: 12px; text-align: right; border-bottom: 2px solid #333; font-weight: bold;">Income</th>
+                            <th style="padding: 12px; text-align: right; border-bottom: 2px solid #333; font-weight: bold;">Expenses</th>
+                            <th style="padding: 12px; text-align: right; border-bottom: 2px solid #333; font-weight: bold;">Taxable</th>
+                            <th style="padding: 12px; text-align: center; border-bottom: 2px solid #333; font-weight: bold;">Tax Rate</th>
+                            <th style="padding: 12px; text-align: right; border-bottom: 2px solid #333; font-weight: bold;">Tax Estimate</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${completedGigs.map((gig, index) => {
+                          const actualPay = parseFloat(gig.actualPay || '0');
+                          const tips = parseFloat(gig.tips || '0');
+                          const gigIncome = actualPay + tips;
+                          
+                          const gigExpenses = parseFloat(gig.parkingExpense || '0') + 
+                                           parseFloat(gig.otherExpenses || '0') + 
+                                           ((parseInt(String(gig.mileage || 0)) || 0) * MILEAGE_RATE);
+                          
+                          const taxableIncome = Math.max(0, gigIncome - gigExpenses);
+                          const gigTaxRate = parseFloat(String(gig.taxPercentage || user.defaultTaxPercentage || '23'));
+                          const gigTaxes = taxableIncome * (gigTaxRate / 100);
+                          
+                          return `
+                            <tr style="background-color: ${index % 2 === 0 ? '#fff' : '#f8f9fa'};">
+                                <td style="padding: 12px; border-bottom: 1px solid #ddd;">${gig.eventName || 'Unnamed Event'}</td>
+                                <td style="padding: 12px; text-align: right; border-bottom: 1px solid #ddd;">$${gigIncome.toFixed(2)}</td>
+                                <td style="padding: 12px; text-align: right; border-bottom: 1px solid #ddd;">$${gigExpenses.toFixed(2)}</td>
+                                <td style="padding: 12px; text-align: right; border-bottom: 1px solid #ddd;">$${taxableIncome.toFixed(2)}</td>
+                                <td style="padding: 12px; text-align: center; border-bottom: 1px solid #ddd;">${gigTaxRate}%</td>
+                                <td style="padding: 12px; text-align: right; border-bottom: 1px solid #ddd; font-weight: bold; color: #d63384;">$${gigTaxes.toFixed(2)}</td>
+                            </tr>
+                          `;
+                        }).join('')}
+                        
+                        <!-- Total Row -->
+                        <tr style="background-color: #e8f4f8; font-weight: bold; border-top: 2px solid #333;">
+                            <td style="padding: 15px; border-bottom: 2px solid #333;">TOTAL</td>
+                            <td style="padding: 15px; text-align: right; border-bottom: 2px solid #333;">$${data.totalIncome.toFixed(2)}</td>
+                            <td style="padding: 15px; text-align: right; border-bottom: 2px solid #333;">$${data.totalExpenses.toFixed(2)}</td>
+                            <td style="padding: 15px; text-align: right; border-bottom: 2px solid #333;">$${data.netIncome.toFixed(2)}</td>
+                            <td style="padding: 15px; text-align: center; border-bottom: 2px solid #333;">-</td>
+                            <td style="padding: 15px; text-align: right; border-bottom: 2px solid #333; color: #d63384;">$${data.estimatedTaxes.toFixed(2)}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            
+            <div style="margin: 30px 0; padding: 20px; background-color: #f0f8ff; border-left: 4px solid #4a90e2;">
+                <p style="font-size: 14px; margin: 0; line-height: 1.5;">
+                    <strong>Calculation Method:</strong> For each gig, taxes are calculated as (Income - Expenses) × Tax Rate. 
+                    Income includes actual pay and tips. Expenses include parking, other business expenses, and mileage deduction ($0.67/mile).
+                    Each gig uses its individual tax rate setting.
+                </p>
+            </div>
+        </div>
+
         <!-- Expense Receipts Page -->
         <div class="page">
             <h2 style="font-size: 24px; margin-bottom: 30px; text-align: center;">BUSINESS EXPENSES & RECEIPTS</h2>
