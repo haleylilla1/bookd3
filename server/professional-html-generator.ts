@@ -265,7 +265,7 @@ export async function generateProfessionalHTML(options: ReportOptions): Promise<
                 </div>
                 
                 <div style="display: flex; justify-content: space-between; padding: 15px 0; background-color: #f8f9fa;">
-                    <span><strong>Tax Rate (User Setting):</strong></span>
+                    <span><strong>Effective Tax Rate:</strong></span>
                     <span><strong>${data.taxPercentage}%</strong></span>
                 </div>
                 
@@ -282,8 +282,10 @@ export async function generateProfessionalHTML(options: ReportOptions): Promise<
             
             <div style="margin: 30px 0; padding: 20px; background-color: #f0f8ff; border-left: 4px solid #4a90e2;">
                 <p style="font-size: 14px; margin: 0; line-height: 1.5;">
-                    <strong>Note:</strong> Tax estimates are calculated using your personal tax rate setting of ${data.taxPercentage}% 
-                    and match the calculations shown on your dashboard. These are estimates for planning purposes only.
+                    <strong>Note:</strong> Tax estimates are calculated using each gig's individual tax rate setting. 
+                    The effective rate of ${data.taxPercentage}% shown reflects the weighted average across all your gigs.
+                    These estimates match the calculations shown on your dashboard and are for planning purposes only.
+                    Please consult with a tax professional for accurate filing requirements.
                 </p>
             </div>
         </div>
