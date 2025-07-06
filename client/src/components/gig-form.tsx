@@ -722,7 +722,41 @@ export default function GigForm({ onClose }: GigFormProps) {
                 );
               })()}
 
-              {/* Expenses Toggle */}
+              {/* Estimated Tax */}
+              <div className="bg-gray-50 rounded-lg p-4">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm font-medium text-gray-700">
+                    Estimated Tax ({taxPercentage}%)
+                  </span>
+                  <span className="text-sm font-semibold text-gray-900">
+                    ${taxCalculation}
+                  </span>
+                </div>
+                <FormField
+                  control={form.control}
+                  name="taxPercentage"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormControl>
+                        <Slider
+                          min={0}
+                          max={50}
+                          step={1}
+                          value={[field.value]}
+                          onValueChange={(value) => field.onChange(value[0])}
+                          className="mt-2"
+                        />
+                      </FormControl>
+                      <div className="flex justify-between text-xs text-gray-500 mt-1">
+                        <span>0%</span>
+                        <span>50%</span>
+                      </div>
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              {/* Track Expenses */}
               <div className="border border-gray-200 rounded-lg p-4">
                 <div className="flex items-center justify-between mb-3">
                   <Label>Track Expenses</Label>
@@ -813,60 +847,7 @@ export default function GigForm({ onClose }: GigFormProps) {
                 )}
               </div>
 
-              {/* Key Duties */}
-              <FormField
-                control={form.control}
-                name="duties"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Key Duties (for resume)</FormLabel>
-                    <FormControl>
-                      <Textarea 
-                        placeholder="e.g. Product sampling, customer engagement, setup/breakdown..."
-                        className="h-20 resize-none"
-                        {...field} 
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              {/* Tax Estimate */}
-              <div className="bg-gray-50 rounded-lg p-4">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm font-medium text-gray-700">
-                    Estimated Tax ({taxPercentage}%)
-                  </span>
-                  <span className="text-sm font-semibold text-gray-900">
-                    ${taxCalculation}
-                  </span>
-                </div>
-                <FormField
-                  control={form.control}
-                  name="taxPercentage"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormControl>
-                        <Slider
-                          min={0}
-                          max={50}
-                          step={1}
-                          value={[field.value]}
-                          onValueChange={(value) => field.onChange(value[0])}
-                          className="mt-2"
-                        />
-                      </FormControl>
-                      <div className="flex justify-between text-xs text-gray-500 mt-1">
-                        <span>0%</span>
-                        <span>50%</span>
-                      </div>
-                    </FormItem>
-                  )}
-                />
-              </div>
-
-              {/* Enhanced Mileage Tracking */}
+              {/* Track Mileage */}
               <div className="border border-gray-200 rounded-lg p-4">
                 <div className="flex items-center justify-between mb-3">
                   <Label>Track Mileage</Label>
@@ -1027,6 +1008,25 @@ export default function GigForm({ onClose }: GigFormProps) {
                   </div>
                 )}
               </div>
+
+              {/* Key Duties */}
+              <FormField
+                control={form.control}
+                name="duties"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Key Duties (for resume)</FormLabel>
+                    <FormControl>
+                      <Textarea 
+                        placeholder="e.g. Product sampling, customer engagement, setup/breakdown..."
+                        className="h-20 resize-none"
+                        {...field} 
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
               {/* Notes */}
               <FormField

@@ -47,6 +47,10 @@ Bookd is a mobile-first gig worker companion app with comprehensive financial tr
 - 2025-07-06: SIMPLIFIED AND OPTIMIZED TAX CALCULATIONS - Unified tax logic across dashboard and PDF with minimal, efficient code
 - 2025-07-06: Removed redundant calculations and debugging code, standardized all tax computations to single pattern
 - 2025-07-06: Created shared tax calculation utilities ensuring perfect consistency between all components
+- 2025-07-06: ADDED TAX PERCENTAGE EDITING TO GIG EDIT FORMS - Users can now adjust tax rates when editing gigs in both calendar and gig log views
+- 2025-07-06: Tax Rate field appears in 2-column layout next to Tips field with proper form validation and user defaults
+- 2025-07-06: REORDERED ADD GIG FORM FIELDS - Updated field sequence after Status to: Estimated Tax → Track Expenses → Track Mileage → Key Duties → Notes
+- 2025-07-06: Improved form flow and user experience by grouping related functionality together in logical order
 - 2025-07-02: MOBILE-ONLY APPROACH ADOPTED - Completely abandoned desktop development after repeated grid layout failures
 - 2025-07-02: Desktop calendar consistently failed with overlapping dates and unreadable text despite multiple fix attempts
 - 2025-07-02: User decision: Focus exclusively on mobile-first experience eliminating all desktop-specific styling
