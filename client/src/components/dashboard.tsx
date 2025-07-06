@@ -582,6 +582,13 @@ export default function Dashboard() {
         )}
       </div>
 
+      {/* Interactive Cards Note */}
+      <div className="mb-4">
+        <p className="text-sm text-gray-600 text-center">
+          💡 Tap on each card below to see detailed breakdowns
+        </p>
+      </div>
+
       {/* Main Earnings Stats */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
         {/* Actual Earnings */}
