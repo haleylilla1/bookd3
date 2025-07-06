@@ -54,13 +54,11 @@ export async function generateProfessionalHTML(options: ReportOptions): Promise<
       const tips = parseFloat(gig.tips || '0');
       const gigIncome = actualPay + tips;
       
-      // Debug: Log the actual tax percentage from the database
-      console.log(`PDF Debug - ${gig.eventName}: DB tax_percentage = ${gig.taxPercentage}, user default = ${user.defaultTaxPercentage}`);
-      
-      const gigTaxRate = parseFloat(String(gig.taxPercentage || user.defaultTaxPercentage || '23'));
+      // Use gig-specific tax rate, only fallback to user default if null/undefined
+      const gigTaxRate = (gig.taxPercentage !== null && gig.taxPercentage !== undefined) 
+        ? gig.taxPercentage 
+        : (user.defaultTaxPercentage || 23);
       const gigTaxes = gigIncome * (gigTaxRate / 100);
-      
-      console.log(`PDF Debug - ${gig.eventName}: Final tax rate = ${gigTaxRate}%, Tax = $${gigTaxes.toFixed(2)}`);
       
       return `
         <tr style="background-color: ${index % 2 === 0 ? '#fff' : '#f8f9fa'};">
@@ -483,13 +481,10 @@ async function prepareReportData(options: ReportOptions): Promise<ReportData> {
     const tips = parseFloat(gig.tips || '0');
     const gigIncome = actualPay + tips;
     
-    // Debug: Log raw tax percentage from storage
-    console.log(`Storage Debug - ${gig.eventName}: Raw taxPercentage = ${gig.taxPercentage} (type: ${typeof gig.taxPercentage})`);
-    
-    // Get gig-specific tax rate, fallback to user default
-    const gigTaxRate = parseFloat(String(gig.taxPercentage || user.defaultTaxPercentage || '23'));
-    
-    console.log(`Storage Debug - ${gig.eventName}: Calculated tax rate = ${gigTaxRate}%`);
+    // Get gig-specific tax rate, only fallback to user default if null/undefined
+    const gigTaxRate = (gig.taxPercentage !== null && gig.taxPercentage !== undefined) 
+      ? gig.taxPercentage 
+      : (user.defaultTaxPercentage || 23);
     
     // Calculate tax on gross income (no expense deductions)
     const gigTaxes = gigIncome * (gigTaxRate / 100);
