@@ -472,25 +472,17 @@ async function prepareReportData(options: ReportOptions): Promise<ReportData> {
   const mileageValue = totalMileage * MILEAGE_RATE;
   const netIncome = totalIncome - totalExpenses - mileageValue;
   
-  // Calculate tax estimates based on individual gig tax rates using taxable income (after expenses)
+  // Calculate tax estimates based on individual gig tax rates using gross income (matching dashboard)
   const estimatedTaxes = completedGigs.reduce((sum, gig) => {
     const actualPay = parseFloat(gig.actualPay || '0');
     const tips = parseFloat(gig.tips || '0');
     const gigIncome = actualPay + tips;
     
-    // Calculate gig-specific expenses (parking + other + mileage)
-    const gigExpenses = parseFloat(gig.parkingExpense || '0') + 
-                       parseFloat(gig.otherExpenses || '0') + 
-                       ((parseInt(String(gig.mileage || 0)) || 0) * MILEAGE_RATE);
-    
-    // Calculate taxable income for this gig (income minus expenses)
-    const taxableIncome = Math.max(0, gigIncome - gigExpenses);
-    
     // Get gig-specific tax rate, fallback to user default
     const gigTaxRate = parseFloat(String(gig.taxPercentage || user.defaultTaxPercentage || '23'));
     
-    // Calculate tax on this gig's taxable income
-    const gigTaxes = taxableIncome * (gigTaxRate / 100);
+    // Calculate tax on gross income (no expense deductions)
+    const gigTaxes = gigIncome * (gigTaxRate / 100);
     return sum + gigTaxes;
   }, 0);
   
