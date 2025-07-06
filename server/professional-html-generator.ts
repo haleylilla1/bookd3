@@ -47,15 +47,31 @@ export async function generateProfessionalHTML(options: ReportOptions): Promise<
     // Filter to completed gigs only
     const completedGigs = data.gigs.filter(g => g.status === 'completed');
     
-    // Pre-calculate tax estimates table rows
-    const taxEstimatesRows = completedGigs.map((gig, index) => {
+    // Group multi-day gigs and calculate tax estimates (matching dashboard logic)
+    const groupedGigs = groupMultiDayGigs(completedGigs);
+    const taxEstimatesRows = groupedGigs.map((gig, index) => {
       const actualPay = parseFloat(gig.actualPay || '0');
       const tips = parseFloat(gig.tips || '0');
       const gigIncome = actualPay + tips;
       
-      const gigExpenses = parseFloat(gig.parkingExpense || '0') + 
-                       parseFloat(gig.otherExpenses || '0') + 
-                       ((parseInt(String(gig.mileage || 0)) || 0) * MILEAGE_RATE);
+      // For multi-day gigs, aggregate expenses from all related days
+      let gigExpenses = 0;
+      if (gig.isMultiDay) {
+        const relatedGigs = completedGigs.filter(originalGig => 
+          originalGig.eventName === gig.eventName &&
+          originalGig.clientName === gig.clientName &&
+          originalGig.gigType === gig.gigType
+        );
+        gigExpenses = relatedGigs.reduce((expSum, relatedGig) => {
+          return expSum + parseFloat(relatedGig.parkingExpense || '0') + 
+                 parseFloat(relatedGig.otherExpenses || '0') + 
+                 ((parseInt(String(relatedGig.mileage || 0)) || 0) * MILEAGE_RATE);
+        }, 0);
+      } else {
+        gigExpenses = parseFloat(gig.parkingExpense || '0') + 
+                     parseFloat(gig.otherExpenses || '0') + 
+                     ((parseInt(String(gig.mileage || 0)) || 0) * MILEAGE_RATE);
+      }
       
       const taxableIncome = Math.max(0, gigIncome - gigExpenses);
       const gigTaxRate = parseFloat(String(gig.taxPercentage || user.defaultTaxPercentage || '23'));
