@@ -305,10 +305,7 @@ function GigEditForm({ gig, onSave, onCancel, isLoading }: GigEditFormProps) {
     taxPercentage: (gig.taxPercentage !== null && gig.taxPercentage !== undefined) ? gig.taxPercentage : ((user as any)?.defaultTaxPercentage || 23),
   });
 
-  // Debug logging
-  console.log("Gig Edit Form - Gig tax percentage:", gig.taxPercentage);
-  console.log("Gig Edit Form - User default tax:", (user as any)?.defaultTaxPercentage);
-  console.log("Gig Edit Form - Form tax percentage:", formData.taxPercentage);
+
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
