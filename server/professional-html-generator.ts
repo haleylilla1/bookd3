@@ -486,6 +486,11 @@ async function prepareReportData(options: ReportOptions): Promise<ReportData> {
       ? gig.taxPercentage 
       : (user.defaultTaxPercentage || 23);
     
+    // Debug the exact logic
+    if (gig.eventName === 'IDDBA') {
+      console.log(`IDDBA Debug - taxPercentage: ${gig.taxPercentage}, condition result: ${(gig.taxPercentage !== null && gig.taxPercentage !== undefined)}, final rate: ${gigTaxRate}`);
+    }
+    
     // Calculate tax on gross income (no expense deductions)
     const gigTaxes = gigIncome * (gigTaxRate / 100);
     return sum + gigTaxes;
