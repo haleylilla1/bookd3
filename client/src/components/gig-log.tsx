@@ -264,7 +264,7 @@ export default function GigLog() {
 
       {/* Edit Gig Dialog */}
       <Dialog open={!!editingGig} onOpenChange={() => setEditingGig(null)}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Edit Gig</DialogTitle>
           </DialogHeader>
@@ -304,6 +304,11 @@ function GigEditForm({ gig, onSave, onCancel, isLoading }: GigEditFormProps) {
     paymentMethod: gig.paymentMethod || "",
     taxPercentage: (gig.taxPercentage !== null && gig.taxPercentage !== undefined) ? gig.taxPercentage : ((user as any)?.defaultTaxPercentage || 23),
   });
+
+  // Debug logging
+  console.log("Gig Edit Form - Gig tax percentage:", gig.taxPercentage);
+  console.log("Gig Edit Form - User default tax:", (user as any)?.defaultTaxPercentage);
+  console.log("Gig Edit Form - Form tax percentage:", formData.taxPercentage);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -352,27 +357,28 @@ function GigEditForm({ gig, onSave, onCancel, isLoading }: GigEditFormProps) {
         </div>
       </div>
 
-      <div>
-        <label className="block text-sm font-medium mb-1">Tips Earned</label>
-        <Input
-          type="number"
-          value={formData.tips}
-          onChange={(e) => setFormData({ ...formData, tips: e.target.value })}
-          placeholder="25"
-        />
-      </div>
-
-      <div>
-        <label className="block text-sm font-medium mb-1">Tax Percentage</label>
-        <Input
-          type="number"
-          step="0.1"
-          min="0"
-          max="50"
-          value={formData.taxPercentage}
-          onChange={(e) => setFormData({ ...formData, taxPercentage: parseFloat(e.target.value) || 0 })}
-          placeholder="23.0"
-        />
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <label className="block text-sm font-medium mb-1">Tips Earned</label>
+          <Input
+            type="number"
+            value={formData.tips}
+            onChange={(e) => setFormData({ ...formData, tips: e.target.value })}
+            placeholder="25"
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium mb-1">Tax Rate (%)</label>
+          <Input
+            type="number"
+            step="0.1"
+            min="0"
+            max="50"
+            value={formData.taxPercentage}
+            onChange={(e) => setFormData({ ...formData, taxPercentage: parseFloat(e.target.value) || 0 })}
+            placeholder="23.0"
+          />
+        </div>
       </div>
 
       <div>
