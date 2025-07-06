@@ -285,8 +285,8 @@ export async function generateProfessionalHTML(options: ReportOptions): Promise<
             
             <div style="margin: 30px 0; padding: 20px; background-color: #f0f8ff; border-left: 4px solid #4a90e2;">
                 <p style="font-size: 14px; margin: 0; line-height: 1.5;">
-                    <strong>Calculation Method:</strong> For each gig, taxes are calculated using the gig's individual tax rate applied to taxable income (income minus business expenses). 
-                    Income includes actual pay and tips. Each gig uses its individual tax rate setting.
+                    <strong>Calculation Method:</strong> For each gig, taxes are calculated using the gig's individual tax rate applied to gross income. 
+                    Income includes actual pay and tips. Each gig uses its individual tax rate setting. These are taxes on gross income before business expense deductions.
                 </p>
             </div>
         </div>
