@@ -210,9 +210,7 @@ export default function Dashboard() {
     const estimatedTax = completedGroupedGigs.reduce((sum, gig) => {
       const income = safeParseFloat(gig.actualPay) + safeParseFloat(gig.tips);
       const gigTaxRate = (gig.taxPercentage !== null && gig.taxPercentage !== undefined) ? gig.taxPercentage : userTaxRate;
-      const taxAmount = income * gigTaxRate / 100;
-      console.log(`Gig: ${gig.eventName}, Income: $${income}, Tax Rate: ${gigTaxRate}%, Tax: $${taxAmount.toFixed(2)}`);
-      return sum + taxAmount;
+      return sum + (income * gigTaxRate / 100);
     }, 0);
 
     return {
