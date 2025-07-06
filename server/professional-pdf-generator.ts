@@ -165,7 +165,7 @@ export class ProfessionalPDFGenerator {
           date: gig.date,
           type: 'other',
           amount: parseFloat(gig.otherExpenses || '0'),
-          description: gig.expenseDescription || 'Other business expense',
+          description: 'Other business expense',
           gigName: gig.eventName || 'Unnamed Event',
           clientName: gig.clientName || 'Direct Client'
         });
@@ -216,7 +216,7 @@ export class ProfessionalPDFGenerator {
         const consolidatedGig = {
           ...gig,
           date: `${startDate} - ${endDate}`,
-          mileage: multiDayGroup.reduce((sum, g) => sum + parseFloat(g.mileage || '0'), 0).toString(),
+          mileage: multiDayGroup.reduce((sum, g) => sum + parseFloat(g.mileage?.toString() || '0'), 0),
           parkingExpense: multiDayGroup.reduce((sum, g) => sum + parseFloat(g.parkingExpense || '0'), 0).toString(),
           otherExpenses: multiDayGroup.reduce((sum, g) => sum + parseFloat(g.otherExpenses || '0'), 0).toString()
         };
