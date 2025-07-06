@@ -628,19 +628,24 @@ export default function Dashboard() {
       </div>
 
       {/* Additional Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
         {/* Tax Estimate */}
         <Card 
           className="cursor-pointer hover:shadow-md transition-shadow"
           onClick={() => setShowTaxBreakdown(true)}
         >
-          <CardContent className="p-4">
-            <div className="text-center">
-              <Calculator className="w-6 h-6 text-red-500 mx-auto mb-2" />
-              <p className="text-xs font-medium text-gray-600 mb-1">Tax Estimate</p>
-              <p className="text-lg font-bold text-red-600">
-                ${periodStats.estimatedTax.toFixed(2)}
-              </p>
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">Tax Estimate</p>
+                <p className="text-2xl font-bold text-red-600">
+                  ${periodStats.estimatedTax.toFixed(2)}
+                </p>
+                <p className="text-xs text-gray-500 mt-1">
+                  From {periodStats.completedGigs} completed gigs
+                </p>
+              </div>
+              <Calculator className="w-8 h-8 text-red-500" />
             </div>
           </CardContent>
         </Card>
@@ -650,13 +655,18 @@ export default function Dashboard() {
           className="cursor-pointer hover:shadow-md transition-shadow"
           onClick={() => setShowTipsBreakdown(true)}
         >
-          <CardContent className="p-4">
-            <div className="text-center">
-              <PiggyBank className="w-6 h-6 text-purple-500 mx-auto mb-2" />
-              <p className="text-xs font-medium text-gray-600 mb-1">Tips Earned</p>
-              <p className="text-lg font-bold text-purple-600">
-                ${periodStats.totalTips.toFixed(2)}
-              </p>
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">Tips Earned</p>
+                <p className="text-2xl font-bold text-purple-600">
+                  ${periodStats.totalTips.toFixed(2)}
+                </p>
+                <p className="text-xs text-gray-500 mt-1">
+                  Cash and card tips
+                </p>
+              </div>
+              <PiggyBank className="w-8 h-8 text-purple-500" />
             </div>
           </CardContent>
         </Card>
@@ -666,13 +676,18 @@ export default function Dashboard() {
           className="cursor-pointer hover:shadow-md transition-shadow"
           onClick={() => setShowExpensesBreakdown(true)}
         >
-          <CardContent className="p-4">
-            <div className="text-center">
-              <Receipt className="w-6 h-6 text-orange-500 mx-auto mb-2" />
-              <p className="text-xs font-medium text-gray-600 mb-1">Expenses</p>
-              <p className="text-lg font-bold text-orange-600">
-                ${periodStats.totalExpenses.toFixed(2)}
-              </p>
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">Expenses</p>
+                <p className="text-2xl font-bold text-orange-600">
+                  ${periodStats.totalExpenses.toFixed(2)}
+                </p>
+                <p className="text-xs text-gray-500 mt-1">
+                  Mileage and business costs
+                </p>
+              </div>
+              <Receipt className="w-8 h-8 text-orange-500" />
             </div>
           </CardContent>
         </Card>
