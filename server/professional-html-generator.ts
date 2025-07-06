@@ -40,6 +40,39 @@ export async function generateProfessionalHTML(options: ReportOptions): Promise<
     const data = await prepareReportData(options);
     const MILEAGE_RATE = 0.67; // 2024 IRS rate
     
+    // Get user data for tax calculations
+    const user = await storage.getUser(options.userId);
+    if (!user) throw new Error('User not found');
+    
+    // Filter to completed gigs only
+    const completedGigs = data.gigs.filter(g => g.status === 'completed');
+    
+    // Pre-calculate tax estimates table rows
+    const taxEstimatesRows = completedGigs.map((gig, index) => {
+      const actualPay = parseFloat(gig.actualPay || '0');
+      const tips = parseFloat(gig.tips || '0');
+      const gigIncome = actualPay + tips;
+      
+      const gigExpenses = parseFloat(gig.parkingExpense || '0') + 
+                       parseFloat(gig.otherExpenses || '0') + 
+                       ((parseInt(String(gig.mileage || 0)) || 0) * MILEAGE_RATE);
+      
+      const taxableIncome = Math.max(0, gigIncome - gigExpenses);
+      const gigTaxRate = parseFloat(String(gig.taxPercentage || user.defaultTaxPercentage || '23'));
+      const gigTaxes = taxableIncome * (gigTaxRate / 100);
+      
+      return `
+        <tr style="background-color: ${index % 2 === 0 ? '#fff' : '#f8f9fa'};">
+            <td style="padding: 12px; border-bottom: 1px solid #ddd;">${gig.eventName || 'Unnamed Event'}</td>
+            <td style="padding: 12px; text-align: right; border-bottom: 1px solid #ddd;">$${gigIncome.toFixed(2)}</td>
+            <td style="padding: 12px; text-align: right; border-bottom: 1px solid #ddd;">$${gigExpenses.toFixed(2)}</td>
+            <td style="padding: 12px; text-align: right; border-bottom: 1px solid #ddd;">$${taxableIncome.toFixed(2)}</td>
+            <td style="padding: 12px; text-align: center; border-bottom: 1px solid #ddd;">${gigTaxRate}%</td>
+            <td style="padding: 12px; text-align: right; border-bottom: 1px solid #ddd; font-weight: bold; color: #d63384;">$${gigTaxes.toFixed(2)}</td>
+        </tr>
+      `;
+    }).join('');
+    
     // Safe calculation with error handling
     const parkingTotal = data.gigs.reduce((sum, g) => {
       const expense = parseFloat(String(g.parkingExpense || 0));
@@ -306,30 +339,7 @@ export async function generateProfessionalHTML(options: ReportOptions): Promise<
                         </tr>
                     </thead>
                     <tbody>
-                        ${completedGigs.map((gig, index) => {
-                          const actualPay = parseFloat(gig.actualPay || '0');
-                          const tips = parseFloat(gig.tips || '0');
-                          const gigIncome = actualPay + tips;
-                          
-                          const gigExpenses = parseFloat(gig.parkingExpense || '0') + 
-                                           parseFloat(gig.otherExpenses || '0') + 
-                                           ((parseInt(String(gig.mileage || 0)) || 0) * MILEAGE_RATE);
-                          
-                          const taxableIncome = Math.max(0, gigIncome - gigExpenses);
-                          const gigTaxRate = parseFloat(String(gig.taxPercentage || user.defaultTaxPercentage || '23'));
-                          const gigTaxes = taxableIncome * (gigTaxRate / 100);
-                          
-                          return `
-                            <tr style="background-color: ${index % 2 === 0 ? '#fff' : '#f8f9fa'};">
-                                <td style="padding: 12px; border-bottom: 1px solid #ddd;">${gig.eventName || 'Unnamed Event'}</td>
-                                <td style="padding: 12px; text-align: right; border-bottom: 1px solid #ddd;">$${gigIncome.toFixed(2)}</td>
-                                <td style="padding: 12px; text-align: right; border-bottom: 1px solid #ddd;">$${gigExpenses.toFixed(2)}</td>
-                                <td style="padding: 12px; text-align: right; border-bottom: 1px solid #ddd;">$${taxableIncome.toFixed(2)}</td>
-                                <td style="padding: 12px; text-align: center; border-bottom: 1px solid #ddd;">${gigTaxRate}%</td>
-                                <td style="padding: 12px; text-align: right; border-bottom: 1px solid #ddd; font-weight: bold; color: #d63384;">$${gigTaxes.toFixed(2)}</td>
-                            </tr>
-                          `;
-                        }).join('')}
+                        ${taxEstimatesRows}
                         
                         <!-- Total Row -->
                         <tr style="background-color: #e8f4f8; font-weight: bold; border-top: 2px solid #333;">
