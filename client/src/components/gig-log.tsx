@@ -290,6 +290,8 @@ interface GigEditFormProps {
 }
 
 function GigEditForm({ gig, onSave, onCancel, isLoading }: GigEditFormProps) {
+  const { data: user } = useQuery({ queryKey: ["/api/user"] });
+  
   const [formData, setFormData] = useState({
     clientName: gig.clientName,
     gigType: gig.gigType,
@@ -300,6 +302,7 @@ function GigEditForm({ gig, onSave, onCancel, isLoading }: GigEditFormProps) {
     status: gig.status,
     duties: gig.duties || "",
     paymentMethod: gig.paymentMethod || "",
+    taxPercentage: (gig.taxPercentage !== null && gig.taxPercentage !== undefined) ? gig.taxPercentage : ((user as any)?.defaultTaxPercentage || 23),
   });
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -356,6 +359,19 @@ function GigEditForm({ gig, onSave, onCancel, isLoading }: GigEditFormProps) {
           value={formData.tips}
           onChange={(e) => setFormData({ ...formData, tips: e.target.value })}
           placeholder="25"
+        />
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium mb-1">Tax Percentage</label>
+        <Input
+          type="number"
+          step="0.1"
+          min="0"
+          max="50"
+          value={formData.taxPercentage}
+          onChange={(e) => setFormData({ ...formData, taxPercentage: parseFloat(e.target.value) || 0 })}
+          placeholder="23.0"
         />
       </div>
 
