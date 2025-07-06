@@ -47,14 +47,10 @@ export async function generateProfessionalHTML(options: ReportOptions): Promise<
     // Filter to completed gigs only
     const completedGigs = data.gigs.filter(g => g.status === 'completed');
     
-    // Group multi-day gigs and calculate tax estimates using gross income (matching dashboard logic)
+    // Generate tax breakdown table with same logic as dashboard
     const groupedGigs = groupMultiDayGigs(completedGigs);
     const taxEstimatesRows = groupedGigs.map((gig, index) => {
-      const actualPay = parseFloat(gig.actualPay || '0');
-      const tips = parseFloat(gig.tips || '0');
-      const gigIncome = actualPay + tips;
-      
-      // Use gig-specific tax rate, only fallback to user default if null/undefined
+      const gigIncome = parseFloat(gig.actualPay || '0') + parseFloat(gig.tips || '0');
       const gigTaxRate = (gig.taxPercentage !== null && gig.taxPercentage !== undefined) 
         ? gig.taxPercentage 
         : (user.defaultTaxPercentage || 23);
@@ -475,20 +471,13 @@ async function prepareReportData(options: ReportOptions): Promise<ReportData> {
   const mileageValue = totalMileage * MILEAGE_RATE;
   const netIncome = totalIncome - totalExpenses - mileageValue;
   
-  // Calculate tax estimates based on individual gig tax rates using gross income (matching dashboard)
+  // Calculate tax estimates using same logic as dashboard
   const estimatedTaxes = completedGigs.reduce((sum, gig) => {
-    const actualPay = parseFloat(gig.actualPay || '0');
-    const tips = parseFloat(gig.tips || '0');
-    const gigIncome = actualPay + tips;
-    
-    // Get gig-specific tax rate, only fallback to user default if null/undefined
+    const gigIncome = parseFloat(gig.actualPay || '0') + parseFloat(gig.tips || '0');
     const gigTaxRate = (gig.taxPercentage !== null && gig.taxPercentage !== undefined) 
       ? gig.taxPercentage 
       : (user.defaultTaxPercentage || 23);
-    
-    // Calculate tax on gross income (no expense deductions)
-    const gigTaxes = gigIncome * (gigTaxRate / 100);
-    return sum + gigTaxes;
+    return sum + (gigIncome * gigTaxRate / 100);
   }, 0);
   
   // Use user's default tax percentage for display (individual rates used in calculation)
