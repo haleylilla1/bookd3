@@ -206,7 +206,7 @@ export default function Dashboard() {
     // Use user's default tax rate (23%), but allow per-gig overrides (including 0% for under-the-table)
     const userTaxRate = user?.defaultTaxPercentage || 23;
     
-    // Calculate tax estimate using grouped gigs on gross income (not taxable income)
+    // Calculate tax estimate using simplified tax calculator
     const estimatedTax = completedGroupedGigs.reduce((sum, gig) => {
       const income = safeParseFloat(gig.actualPay) + safeParseFloat(gig.tips);
       const gigTaxRate = (gig.taxPercentage !== null && gig.taxPercentage !== undefined) ? gig.taxPercentage : userTaxRate;
@@ -414,17 +414,16 @@ export default function Dashboard() {
     const groupedGigs = getGroupedGigs(completedGigs);
     
     return groupedGigs.map(gig => {
-      const actualPay = safeParseFloat(gig.actualPay);
-      const tips = safeParseFloat(gig.tips);
-      const income = actualPay + tips;
-      
-      const taxRate = (gig.taxPercentage !== null && gig.taxPercentage !== undefined) ? gig.taxPercentage : (user?.defaultTaxPercentage || 23);
-      const estimatedTax = (income * taxRate) / 100;
+      const income = safeParseFloat(gig.actualPay) + safeParseFloat(gig.tips);
+      const taxRate = (gig.taxPercentage !== null && gig.taxPercentage !== undefined) 
+        ? gig.taxPercentage 
+        : (user?.defaultTaxPercentage || 23);
+      const estimatedTax = income * (taxRate / 100);
       
       return {
         ...gig,
         amount: estimatedTax,
-        taxableIncome: income, // Show gross income as taxable for display
+        taxableIncome: income,
         taxRate
       };
     })
