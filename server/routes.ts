@@ -778,17 +778,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Mobile debugging endpoint
+  app.post("/api/debug/mobile-error", async (req, res) => {
+    if (process.env.NODE_ENV === 'development') {
+      console.log('📱 Mobile Debug Report:', {
+        timestamp: new Date().toISOString(),
+        ...req.body
+      });
+    }
+    res.json({ status: 'logged' });
+  });
+
   // Calculate distance with Google Maps API
   app.post("/api/calculate-distance", requireAuth, async (req, res) => {
     try {
       const { startAddress, endAddress, waypoints = [], roundTrip = false } = req.body;
       
+      // Enhanced logging for mobile debugging
+      console.log('Distance calculation request:', {
+        startAddress: startAddress?.substring(0, 50),
+        endAddress: endAddress?.substring(0, 50),
+        waypoints: waypoints?.length || 0,
+        roundTrip,
+        userAgent: req.headers['user-agent']?.substring(0, 100)
+      });
+      
       if (!startAddress || !endAddress) {
+        console.log('Missing addresses error');
         return res.status(400).json({ error: "Starting and ending addresses are required" });
       }
 
       const apiKey = process.env.VITE_GOOGLE_MAPS_API_KEY;
       if (!apiKey) {
+        console.log('Google Maps API key missing');
         return res.status(500).json({ error: "Google Maps API key not configured" });
       }
 
@@ -805,10 +827,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         const url = `https://maps.googleapis.com/maps/api/distancematrix/json?origins=${origin}&destinations=${destination}&units=imperial&key=${apiKey}`;
         
-        const response = await fetch(url);
+        const response = await fetch(url, {
+          timeout: 15000, // 15 second timeout for mobile networks
+          headers: {
+            'User-Agent': 'Bookd-App/1.0'
+          }
+        });
+        
+        if (!response.ok) {
+          console.log('Google Maps API HTTP error:', response.status, response.statusText);
+          return res.status(500).json({ error: `Google Maps API request failed: ${response.status}` });
+        }
+        
         const data = await response.json();
+        console.log('Google Maps API response status:', data.status);
 
         if (data.status !== 'OK') {
+          console.log('Google Maps API error details:', data);
           return res.status(500).json({ error: `Google Maps API error: ${data.status}` });
         }
 
@@ -844,7 +879,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
     } catch (error) {
       console.error("Distance calculation error:", error);
-      res.status(500).json({ error: "Failed to calculate distance" });
+      
+      // Enhanced error handling for mobile debugging
+      if (error instanceof Error) {
+        console.error("Error details:", {
+          message: error.message,
+          stack: error.stack,
+          name: error.name
+        });
+        
+        // Provide specific error messages for common mobile issues
+        if (error.message.includes('timeout') || error.message.includes('TIMEOUT')) {
+          return res.status(500).json({ 
+            error: "Network timeout - please check your internet connection and try again",
+            code: "TIMEOUT"
+          });
+        }
+        
+        if (error.message.includes('fetch') || error.message.includes('network')) {
+          return res.status(500).json({ 
+            error: "Network error - please check your internet connection",
+            code: "NETWORK_ERROR"
+          });
+        }
+      }
+      
+      res.status(500).json({ 
+        error: "Failed to calculate distance. Please try again.",
+        code: "CALCULATION_ERROR"
+      });
     }
   });
 

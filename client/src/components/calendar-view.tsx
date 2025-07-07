@@ -802,7 +802,7 @@ function GigEditForm({ gig, onSave, onCancel, isLoading }: GigEditFormProps) {
   const [isCalculatingMileage, setIsCalculatingMileage] = useState(false);
 
   const handleCalculateMileage = async () => {
-    // Validate inputs
+    // Enhanced mobile validation
     if (!formData.startingAddress?.trim() || !formData.endingAddress?.trim()) {
       toast({
         title: "Missing Addresses",
@@ -812,9 +812,23 @@ function GigEditForm({ gig, onSave, onCancel, isLoading }: GigEditFormProps) {
       return;
     }
 
+    // Check network connectivity for mobile
+    if (!navigator.onLine) {
+      toast({
+        title: "No Internet Connection",
+        description: "Please check your internet connection and try again.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsCalculatingMileage(true);
     
     try {
+      // Enhanced mobile network handling with timeout
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 20000); // 20 second timeout
+      
       const response = await fetch("/api/calculate-distance", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -823,14 +837,28 @@ function GigEditForm({ gig, onSave, onCancel, isLoading }: GigEditFormProps) {
           endAddress: formData.endingAddress.trim(),
           waypoints: formData.stops.filter(stop => stop?.trim()),
           roundTrip: formData.includeRoundtrip
-        })
+        }),
+        signal: controller.signal,
+        cache: 'no-cache',
+        credentials: 'include'
       });
 
-      if (!response.ok) throw new Error("Failed to calculate distance");
+      clearTimeout(timeoutId);
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        let errorData;
+        try {
+          errorData = JSON.parse(errorText);
+        } catch {
+          errorData = { error: `HTTP ${response.status}: ${response.statusText}` };
+        }
+        throw new Error(errorData.error || "Failed to calculate distance");
+      }
       
       const result = await response.json();
       
-      if (result.status === 'success') {
+      if (result.status === 'success' && typeof result.distanceMiles === 'number') {
         const roundedDistance = Math.ceil(result.distanceMiles);
         setFormData(prev => ({ 
           ...prev, 
@@ -843,14 +871,30 @@ function GigEditForm({ gig, onSave, onCancel, isLoading }: GigEditFormProps) {
           description: `${roundedDistance} miles total${formData.includeRoundtrip ? ' including round trip' : ''}.`,
         });
       } else {
-        throw new Error(result.error || "Failed to calculate distance");
+        throw new Error(result.error || "Invalid response from distance service");
       }
       
     } catch (error) {
       console.error("Mileage calculation error:", error);
+      
+      // Enhanced mobile error messages
+      let errorMessage = "Failed to calculate mileage. Please check your addresses and try again.";
+      
+      if (error instanceof Error) {
+        if (error.name === 'AbortError') {
+          errorMessage = "Calculation timeout. Please check your internet connection and try again.";
+        } else if (error.message.includes('timeout') || error.message.includes('Timeout')) {
+          errorMessage = "Calculation timeout. Please check your internet connection and try again.";
+        } else if (error.message.includes('network') || error.message.includes('fetch')) {
+          errorMessage = "Network error. Please check your internet connection.";
+        } else if (error.message.includes('Invalid response')) {
+          errorMessage = "Invalid address. Please check your addresses and try again.";
+        }
+      }
+      
       toast({
         title: "Calculation Failed",
-        description: "Failed to calculate mileage. Please check your addresses and try again.",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {

@@ -58,19 +58,37 @@ export async function calculateDistance(
   }
 
   try {
+    // Enhanced mobile network handling
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 20000); // 20 second timeout for mobile
+    
     const response = await fetch('/api/calculate-distance', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        origin,
-        destination
-      })
+        startAddress: origin,
+        endAddress: destination
+      }),
+      signal: controller.signal,
+      // Mobile-specific options
+      cache: 'no-cache',
+      mode: 'same-origin',
+      credentials: 'include'
     });
 
+    clearTimeout(timeoutId);
+
     if (!response.ok) {
-      const errorData = await response.json();
+      const errorText = await response.text();
+      let errorData;
+      try {
+        errorData = JSON.parse(errorText);
+      } catch {
+        errorData = { error: `HTTP ${response.status}: ${response.statusText}` };
+      }
+      
       return {
         distanceMiles: 0,
         travelTimeMinutes: 0,
@@ -80,12 +98,45 @@ export async function calculateDistance(
     }
 
     const data = await response.json();
+    
+    // Validate response data
+    if (data.status !== 'success' || typeof data.distanceMiles !== 'number') {
+      return {
+        distanceMiles: 0,
+        travelTimeMinutes: 0,
+        status: 'error',
+        error: data.error || 'Invalid response from distance service'
+      };
+    }
+    
     return {
       distanceMiles: data.distanceMiles,
-      travelTimeMinutes: data.travelTimeMinutes,
+      travelTimeMinutes: data.travelTimeMinutes || 0,
       status: 'success'
     };
   } catch (error) {
+    console.error('Distance calculation error:', error);
+    
+    if (error instanceof Error) {
+      if (error.name === 'AbortError') {
+        return {
+          distanceMiles: 0,
+          travelTimeMinutes: 0,
+          status: 'error',
+          error: 'Request timeout - please check your internet connection'
+        };
+      }
+      
+      if (error.message.includes('fetch')) {
+        return {
+          distanceMiles: 0,
+          travelTimeMinutes: 0,
+          status: 'error',
+          error: 'Network error - please check your internet connection'
+        };
+      }
+    }
+    
     return {
       distanceMiles: 0,
       travelTimeMinutes: 0,
