@@ -10,9 +10,16 @@ You need to provide Squarespace with these DNS records to point directly to your
 
 ### DNS Records for Squarespace
 
-**For Root Domain (bookd.tools):**
+**For Root Domain (bookd.tools) - Option 1 (Preferred):**
 ```
-Type: CNAME
+Type: A
+Name: @
+Value: [REPLIT-IP-ADDRESS]
+```
+
+**For Root Domain (bookd.tools) - Option 2 (If A record doesn't work):**
+```
+Type: ALIAS or ANAME
 Name: @
 Value: [YOUR-REPLIT-DEPLOYMENT-URL].replit.app
 ```
@@ -71,7 +78,30 @@ After DNS propagation (15 minutes to 2 hours):
 4. **Wait for DNS propagation** (15 minutes to 2 hours)
 5. **Test** by visiting `bookd.tools` in a private/incognito window
 
+### Root Domain Solutions
+
+**Problem:** Squarespace often blocks CNAME records for root domains (@)
+
+**Solution 1 - A Record (Most Compatible):**
+1. Find Replit's IP address by running: `nslookup [your-deployment-url].replit.app`
+2. Use that IP address in an A record for @
+
+**Solution 2 - ALIAS/ANAME Record:**
+- Some registrars support ALIAS or ANAME records for root domains
+- Try changing "CNAME" to "ALIAS" or "ANAME" for the @ record
+
+**Solution 3 - Domain Forwarding Workaround:**
+If DNS doesn't work, configure:
+- Root domain (@): Forward to `www.bookd.tools`
+- WWW subdomain: CNAME to your Replit deployment
+
 ### Troubleshooting
+
+**Root Domain Error Solutions:**
+1. **Try A Record instead:** Use Replit's IP address
+2. **Try ALIAS Record:** Change record type from CNAME to ALIAS
+3. **Contact Squarespace:** Ask them specifically about root domain CNAME limitations
+4. **Alternative:** Set up domain forwarding from @ to www
 
 **If it's still not working after 2 hours:**
 - Double-check the CNAME values match your exact deployment URL
@@ -79,7 +109,7 @@ After DNS propagation (15 minutes to 2 hours):
 - Contact Squarespace support to confirm the DNS records are correct
 
 **DNS Propagation Check:**
-- Use tools like `https://dnschecker.org` to verify your CNAME records are live
+- Use tools like `https://dnschecker.org` to verify your records are live
 
 ---
 
