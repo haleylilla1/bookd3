@@ -110,7 +110,7 @@ export function setupAuthRoutes(app: any) {
           secure: process.env.NODE_ENV === 'production',
           maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
           sameSite: 'lax',
-          domain: process.env.NODE_ENV === 'production' ? '.bookdtools.com' : undefined
+          domain: process.env.NODE_ENV === 'production' ? '.bookd.tools' : undefined
         });
         
         console.log('Quick access login for:', email);
@@ -133,7 +133,7 @@ export function setupAuthRoutes(app: any) {
         secure: process.env.NODE_ENV === 'production',
         maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
         sameSite: 'lax',
-        domain: process.env.NODE_ENV === 'production' ? '.bookdtools.com' : undefined
+        domain: process.env.NODE_ENV === 'production' ? '.bookd.tools' : undefined
       });
       
       console.log('Login successful for:', email);
@@ -159,7 +159,7 @@ export function setupAuthRoutes(app: any) {
         secure: process.env.NODE_ENV === 'production',
         maxAge: 30 * 24 * 60 * 60 * 1000,
         sameSite: 'lax',
-        domain: process.env.NODE_ENV === 'production' ? '.bookdtools.com' : undefined
+        domain: process.env.NODE_ENV === 'production' ? '.bookd.tools' : undefined
       });
       
       res.json({ 
@@ -178,7 +178,7 @@ export function setupAuthRoutes(app: any) {
       destroySession(sessionId);
     }
     res.clearCookie('sessionId', {
-      domain: process.env.NODE_ENV === 'production' ? '.bookdtools.com' : undefined
+      domain: process.env.NODE_ENV === 'production' ? '.bookd.tools' : undefined
     });
     res.json({ message: "Logout successful" });
   });

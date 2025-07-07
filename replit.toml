@@ -4,10 +4,10 @@ run = "npm start"
 deploymentTarget = "autoscale"
 
 [[domains]]
-domain = "bookdtools.com"
+domain = "bookd.tools"
 
 [[domains]]
-domain = "www.bookdtools.com"
+domain = "www.bookd.tools"
 
 [nix]
 channel = "stable-23_11"
