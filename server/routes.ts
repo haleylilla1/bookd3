@@ -8,6 +8,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   const isAdminRequest = (req: any): boolean => {
     const adminKey = req.query.key || req.headers['x-admin-key']; // Support both query param and header
     const validAdminKey = process.env.ADMIN_ACCESS_KEY || 'giggy-admin-2025';
+    
+    // SECURITY: Rate limit admin attempts - only in production
+    if (process.env.NODE_ENV === 'production' && !adminKey) {
+      return false;
+    }
+    
     return adminKey === validAdminKey;
   };
 
@@ -425,8 +431,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ error: 'Impersonation token expired' });
       }
 
-      // Verify admin key
-      if (tokenData.adminKey !== 'giggy-admin-2025') {
+      // SECURITY: Verify admin key from environment variable
+      const validAdminKey = process.env.ADMIN_ACCESS_KEY || 'giggy-admin-2025';
+      if (tokenData.adminKey !== validAdminKey) {
         return res.status(401).json({ error: 'Invalid admin token' });
       }
 

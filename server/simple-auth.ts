@@ -8,12 +8,9 @@ const sessions = new Map<string, { userId: number; expires: number }>();
 console.log("Simple Auth - Session store initialized at:", new Date().toISOString());
 
 export function generateSessionId(): string {
-  // More secure session ID generation with higher entropy
-  const part1 = Math.random().toString(36).substring(2);
-  const part2 = Math.random().toString(36).substring(2);
-  const part3 = Date.now().toString(36);
-  const part4 = Math.random().toString(36).substring(2);
-  return part1 + part2 + part3 + part4;
+  // SECURITY: Use cryptographically secure random for session IDs
+  const crypto = require('crypto');
+  return crypto.randomBytes(32).toString('hex');
 }
 
 export function createSession(userId: number): string {
@@ -43,8 +40,9 @@ export function validateAdminImpersonationToken(token: string): { userId: number
       return null;
     }
 
-    // Verify admin key
-    if (tokenData.adminKey !== 'giggy-admin-2025') {
+    // SECURITY: Verify admin key from environment variable
+    const validAdminKey = process.env.ADMIN_ACCESS_KEY || 'giggy-admin-2025';
+    if (tokenData.adminKey !== validAdminKey) {
       return null;
     }
 
@@ -96,29 +94,7 @@ export function setupAuthRoutes(app: any) {
       
       console.log('Login attempt for:', email);
       
-      // Quick access for testing - bypass password for known users
-      if (email === 'test@demo.com' || email === 'quick@access.com') {
-        let user = await storage.getUserByEmail(email);
-        if (!user) {
-          // Create quick access user
-          user = await storage.createUserWithPassword(email, 'demo123', 'Demo User');
-        }
-        
-        const sessionId = createSession(user.id);
-        res.cookie('sessionId', sessionId, {
-          httpOnly: true,
-          secure: process.env.NODE_ENV === 'production',
-          maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
-          sameSite: 'lax',
-          domain: process.env.NODE_ENV === 'production' ? '.bookd.tools' : undefined
-        });
-        
-        console.log('Quick access login for:', email);
-        return res.json({ 
-          message: "Login successful", 
-          user: { id: user.id, name: user.name, email: user.email }
-        });
-      }
+      // SECURITY: All users must provide valid password - no bypasses allowed
       
       const user = await storage.validatePassword(email, password);
       
@@ -177,9 +153,15 @@ export function setupAuthRoutes(app: any) {
     if (sessionId) {
       destroySession(sessionId);
     }
+    
+    // Clear cookie with proper security settings
     res.clearCookie('sessionId', {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
       domain: process.env.NODE_ENV === 'production' ? '.bookd.tools' : undefined
     });
+    
     res.json({ message: "Logout successful" });
   });
 
