@@ -18,6 +18,7 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import type { InsertGig, User } from "@shared/schema";
 import { calculateDistance } from "@/lib/distance";
+import { logMobileError, validateMobileEnvironment } from "@/utils/mobile-debug";
 import ReceiptUpload from "@/components/receipt-upload";
 
 // Simplified schema - removed redundant fields and validations
@@ -228,6 +229,21 @@ export default function GigForm({ onClose }: GigFormProps) {
 
 
   const handleCalculateMileage = async () => {
+    // Enhanced mobile environment validation
+    const envCheck = validateMobileEnvironment();
+    if (!envCheck.valid) {
+      console.log('Mobile environment issues detected:', envCheck.issues);
+      
+      if (envCheck.issues.some(issue => issue.includes('offline'))) {
+        toast({
+          title: "No Internet Connection",
+          description: "Please check your internet connection and try again.",
+          variant: "destructive",
+        });
+        return;
+      }
+    }
+
     // Validate inputs
     if (!startingAddress?.trim() || !endingAddress?.trim()) {
       toast({
@@ -299,9 +315,28 @@ export default function GigForm({ onClose }: GigFormProps) {
       
     } catch (error) {
       console.error("Mileage calculation error:", error);
+      
+      // Log detailed mobile debug info
+      logMobileError('Mileage Calculation', error);
+      
+      // Enhanced mobile error messages
+      let errorMessage = "Failed to calculate mileage. Please check your addresses and try again.";
+      
+      if (error instanceof Error) {
+        if (error.message.includes('timeout') || error.message.includes('Timeout')) {
+          errorMessage = "Calculation timeout. Please check your internet connection and try again.";
+        } else if (error.message.includes('network') || error.message.includes('fetch')) {
+          errorMessage = "Network error. Please check your internet connection.";
+        } else if (error.message.includes('Invalid response')) {
+          errorMessage = "Invalid address. Please check your addresses and try again.";
+        } else if (error.message.includes('AbortError')) {
+          errorMessage = "Request cancelled due to timeout. Please try again.";
+        }
+      }
+      
       toast({
         title: "Calculation Failed",
-        description: error instanceof Error ? error.message : "Failed to calculate mileage. Please check your addresses and try again.",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {
