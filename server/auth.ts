@@ -1,7 +1,6 @@
 import type { Express } from "express";
 import passport from "passport";
 import { Strategy as LocalStrategy } from "passport-local";
-import { Strategy as GoogleStrategy } from "passport-google-oauth20";
 import session from "express-session";
 import connectPgSimple from "connect-pg-simple";
 import { storage } from "./storage";
@@ -51,30 +50,7 @@ function setupStrategies() {
     }
   ));
 
-  // Google strategy
-  if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
-    passport.use(new GoogleStrategy({
-      clientID: process.env.GOOGLE_CLIENT_ID,
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-      callbackURL: "/api/auth/google/callback"
-    }, async (accessToken, refreshToken, profile, done) => {
-      try {
-        const user = await storage.upsertUserByGoogleId(
-          profile.id,
-          {
-            name: profile.displayName || profile.name?.givenName + " " + profile.name?.familyName || "Google User",
-            email: profile.emails?.[0]?.value ?? undefined,
-            googleId: profile.id,
-          }
-        );
-        await storage.logAudit(user.id, 'LOGIN_GOOGLE', 'users', user.id, null, null);
-        return done(null, user);
-      } catch (error) {
-        console.error("Google auth error:", error);
-        return done(error);
-      }
-    }));
-  }
+  // Google OAuth removed - using simple email/password authentication only
 
   // Serialization
   passport.serializeUser((user: any, done) => {
@@ -116,23 +92,7 @@ export function setupAuth(app: Express) {
 }
 
 function setupAuthRoutes(app: Express) {
-  // Google OAuth
-  app.get('/api/auth/google', 
-    passport.authenticate('google', { scope: ['profile', 'email'] })
-  );
-
-  app.get('/api/auth/google/callback',
-    passport.authenticate('google', { 
-      failureRedirect: '/login?error=google_auth_failed',
-      failureFlash: false 
-    }),
-    (req, res) => {
-      console.log('Google auth successful');
-      res.redirect('/');
-    }
-  );
-
-  // Local auth
+  // Email/password authentication only
   app.post('/api/auth/login', (req, res, next) => {
     console.log('Login attempt:', req.body.email);
     
