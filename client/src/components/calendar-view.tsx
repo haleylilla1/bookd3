@@ -55,10 +55,35 @@ export default function CalendarView() {
     retry: 2,
   });
 
+  // Automatically update gig statuses when calendar loads
+  useEffect(() => {
+    if (gigs.length > 0) {
+      updateGigStatusesMutation.mutate();
+    }
+  }, [gigs.length]); // Only run when gigs are initially loaded
+
   const { data: user } = useQuery({
     queryKey: ["/api/user"],
     staleTime: 10 * 60 * 1000, // Cache for 10 minutes
     retry: 1,
+  });
+
+  // Mutation to automatically update gig statuses
+  const updateGigStatusesMutation = useMutation({
+    mutationFn: async () => {
+      const response = await apiRequest("POST", "/api/gigs/update-statuses", {});
+      return response.json();
+    },
+    onSuccess: (data) => {
+      if (data.updatedCount > 0) {
+        console.log(`${data.updatedCount} gigs updated to pending payment`);
+        // Refetch gigs to show updated statuses
+        queryClient.invalidateQueries({ queryKey: ["/api/gigs"] });
+      }
+    },
+    onError: (error) => {
+      console.error("Failed to update gig statuses:", error);
+    },
   });
 
   const updateGigMutation = useMutation({
