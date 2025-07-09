@@ -119,14 +119,28 @@ export function AuthForm({ onSuccess }: AuthFormProps) {
 
   const resetRequestMutation = useMutation({
     mutationFn: async (data: ResetRequestData) => {
-      return apiRequest('POST', '/api/auth/reset-password-request', data);
+      const response = await apiRequest('POST', '/api/auth/reset-password-request', data);
+      return response.json();
     },
     onSuccess: (data: any) => {
       toast({
         title: "Reset link sent",
-        description: "Check your email for the reset link"
+        description: data.developmentResetUrl ? "Development reset link available in console" : "Check your email for the reset link"
       });
-      // Email is now sent, no need to switch modes automatically
+      
+      // In development, show the reset URL in console and optionally auto-navigate
+      if (data.developmentResetUrl) {
+        console.log('🔗 Development Reset Link:', data.developmentResetUrl);
+        
+        // Auto-navigate to reset page in development
+        const url = new URL(data.developmentResetUrl);
+        const token = url.searchParams.get('reset_token');
+        if (token) {
+          setResetToken(token);
+          setMode('reset-password');
+          resetPasswordForm.setValue('token', token);
+        }
+      }
     },
     onError: (error: any) => {
       toast({
