@@ -24,6 +24,10 @@ Bookd is a mobile-first gig worker companion app with comprehensive financial tr
 - Maintain simple, clean interface design
 
 ## Recent Changes
+- 2025-07-09: AUTOMATIC STATUS UPDATE SYSTEM - Upcoming gigs automatically change to "pending payment" when their dates pass
+- 2025-07-09: Enhanced calendar and dashboard to automatically update gig statuses on load ensuring accurate gig tracking
+- 2025-07-09: Added API endpoint /api/gigs/update-statuses to handle automatic status transitions from upcoming to pending payment
+- 2025-07-09: Improved user experience by eliminating manual status updates for passed gigs
 - 2025-07-09: SMART ACTUAL PAY FALLBACK SYSTEM - Completed gigs without actual pay amount now automatically use expected pay for earnings calculations
 - 2025-07-09: Enhanced dashboard logic to prevent completed gigs from disappearing from actual earnings when actual pay field is empty
 - 2025-07-09: Updated all earnings calculations (actual, projected, tax estimates, breakdowns) to use expected pay as fallback for completed gigs

@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -37,11 +37,36 @@ export default function Dashboard() {
     queryKey: ["/api/user"],
   });
 
+  // Mutation to automatically update gig statuses
+  const updateGigStatusesMutation = useMutation({
+    mutationFn: async () => {
+      const response = await apiRequest("POST", "/api/gigs/update-statuses", {});
+      return response.json();
+    },
+    onSuccess: (data) => {
+      if (data.updatedCount > 0) {
+        console.log(`${data.updatedCount} gigs updated to pending payment`);
+        // Refetch gigs to show updated statuses
+        queryClient.invalidateQueries({ queryKey: ["/api/gigs"] });
+      }
+    },
+    onError: (error) => {
+      console.error("Failed to update gig statuses:", error);
+    },
+  });
+
   // Fetch gigs for calculations
   const { data: gigs = [], isLoading: gigsLoading } = useQuery<Gig[]>({
     queryKey: ["/api/gigs"],
     retry: 1,
   });
+
+  // Automatically update gig statuses when dashboard loads
+  useEffect(() => {
+    if (gigs.length > 0) {
+      updateGigStatusesMutation.mutate();
+    }
+  }, [gigs.length]); // Only run when gigs are initially loaded
 
   // Fetch period-specific goal
   const { data: currentGoal, refetch: refetchGoal } = useQuery<{ goalAmount: string; id: number }>({

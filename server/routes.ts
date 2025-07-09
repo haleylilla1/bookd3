@@ -660,6 +660,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Auto-update gig statuses from upcoming to pending payment
+  app.post("/api/gigs/update-statuses", requireAuth, async (req, res) => {
+    try {
+      const userId = getUserId(req);
+      const gigs = await storage.getGigsByUser(userId);
+      
+      const now = new Date();
+      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      
+      let updatedCount = 0;
+      
+      // Check each gig and update status if needed
+      for (const gig of gigs) {
+        if (gig.status === 'upcoming') {
+          const gigDate = new Date(gig.date + 'T00:00:00');
+          
+          // If the gig date has passed, change status to pending_payment
+          if (gigDate < today) {
+            await storage.updateGig(gig.id, { status: 'pending_payment' });
+            updatedCount++;
+          }
+        }
+      }
+      
+      res.json({ 
+        message: `Updated ${updatedCount} gigs to pending payment`,
+        updatedCount 
+      });
+    } catch (error) {
+      console.error("Update gig statuses error:", error);
+      res.status(500).json({ message: "Failed to update gig statuses" });
+    }
+  });
+
   // Get all gigs
   app.get("/api/gigs", requireAuth, async (req, res) => {
     try {
