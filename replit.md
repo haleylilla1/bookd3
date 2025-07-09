@@ -24,6 +24,10 @@ Bookd is a mobile-first gig worker companion app with comprehensive financial tr
 - Maintain simple, clean interface design
 
 ## Recent Changes
+- 2025-07-09: SMART ACTUAL PAY FALLBACK SYSTEM - Completed gigs without actual pay amount now automatically use expected pay for earnings calculations
+- 2025-07-09: Enhanced dashboard logic to prevent completed gigs from disappearing from actual earnings when actual pay field is empty
+- 2025-07-09: Updated all earnings calculations (actual, projected, tax estimates, breakdowns) to use expected pay as fallback for completed gigs
+- 2025-07-09: Improved user experience by automatically assuming expected pay equals actual pay when users forget to fill actual pay field
 - 2025-07-09: GOOGLE OAUTH AUTHENTICATION REMOVED - Completely eliminated Google login functionality due to user login issues, simplified to email/password authentication only
 - 2025-07-09: Authentication system now uses only simple email/password login with enhanced reliability and mobile optimization
 - 2025-07-09: Removed passport-google-oauth20 package and all Google OAuth routes, storage methods, and frontend components
