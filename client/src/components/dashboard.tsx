@@ -560,57 +560,64 @@ export default function Dashboard() {
       </div>
 
       {/* Export Options */}
-      <div className="flex justify-center mb-4 gap-2 flex-wrap">
-        <Button
-          variant="default"
-          size="sm"
-          onClick={handleDownloadProfessionalPDF}
-          disabled={isGeneratingPDF}
-          className="flex items-center gap-2 bg-green-600 hover:bg-green-700"
-        >
-          <FileText className="w-4 h-4" />
-          {selectedPeriod === 'monthly' ? 'Monthly Income Report' : 'Annual Income Report'}
-        </Button>
-        
-        {/* Mobile PDF View Button - only show if PDF is ready and on mobile */}
-        {mobilePdfReady && (/Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini|Mobile|mobile|CriOS/i.test(navigator.userAgent) || 
-                           (typeof window.orientation !== 'undefined') || 
-                           (window.innerWidth <= 768)) && (
+      <div className="mb-4">
+        <div className="text-center mb-3">
+          <p className="text-sm text-gray-600">
+            💼 Generate a comprehensive income report with earnings, expenses, and tax details
+          </p>
+        </div>
+        <div className="flex justify-center gap-2 flex-wrap">
           <Button
             variant="default"
             size="sm"
-            onClick={() => {
-              const pdfUrl = sessionStorage.getItem('pdfUrl');
-              if (pdfUrl) {
-                // Try multiple approaches for maximum compatibility
-                try {
-                  // Method 1: Try window.open first
-                  const newWindow = window.open(pdfUrl, '_blank');
-                  
-                  // Method 2: If popup blocked, create a temporary link
-                  if (!newWindow || newWindow.closed || typeof newWindow.closed === 'undefined') {
-                    console.log('Popup blocked, using link method');
-                    const link = document.createElement('a');
-                    link.href = pdfUrl;
-                    link.target = '_blank';
-                    link.rel = 'noopener noreferrer';
-                    document.body.appendChild(link);
-                    link.click();
-                    document.body.removeChild(link);
-                  }
-                } catch (error) {
-                  // Method 3: Fallback to same-tab navigation
-                  console.log('All methods failed, using location.href');
-                  window.location.href = pdfUrl;
-                }
-              }
-            }}
-            className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white"
+            onClick={handleDownloadProfessionalPDF}
+            disabled={isGeneratingPDF}
+            className="flex items-center gap-2 bg-green-600 hover:bg-green-700"
           >
-            <Eye className="w-4 h-4" />
-            {selectedPeriod === 'monthly' ? 'View Monthly Report' : 'View Annual Report'}
+            <FileText className="w-4 h-4" />
+            {selectedPeriod === 'monthly' ? 'Monthly Income Report' : 'Annual Income Report'}
           </Button>
-        )}
+        
+          {/* Mobile PDF View Button - only show if PDF is ready and on mobile */}
+          {mobilePdfReady && (/Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini|Mobile|mobile|CriOS/i.test(navigator.userAgent) || 
+                             (typeof window.orientation !== 'undefined') || 
+                             (window.innerWidth <= 768)) && (
+            <Button
+              variant="default"
+              size="sm"
+              onClick={() => {
+                const pdfUrl = sessionStorage.getItem('pdfUrl');
+                if (pdfUrl) {
+                  // Try multiple approaches for maximum compatibility
+                  try {
+                    // Method 1: Try window.open first
+                    const newWindow = window.open(pdfUrl, '_blank');
+                    
+                    // Method 2: If popup blocked, create a temporary link
+                    if (!newWindow || newWindow.closed || typeof newWindow.closed === 'undefined') {
+                      console.log('Popup blocked, using link method');
+                      const link = document.createElement('a');
+                      link.href = pdfUrl;
+                      link.target = '_blank';
+                      link.rel = 'noopener noreferrer';
+                      document.body.appendChild(link);
+                      link.click();
+                      document.body.removeChild(link);
+                    }
+                  } catch (error) {
+                    // Method 3: Fallback to same-tab navigation
+                    console.log('All methods failed, using location.href');
+                    window.location.href = pdfUrl;
+                  }
+                }
+              }}
+              className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white"
+            >
+              <Eye className="w-4 h-4" />
+              {selectedPeriod === 'monthly' ? 'View Monthly Report' : 'View Annual Report'}
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* Interactive Cards Note */}
