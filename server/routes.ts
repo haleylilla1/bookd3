@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { setupAuth, requireAuth, getCurrentUserId } from "./auth";
+import { setupAuthRoutes, requireAuth } from "./unified-auth";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Force HTTPS redirect and add security headers in production
@@ -580,12 +580,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Setup authentication with Google OAuth support
-  setupAuth(app);
+  // Setup authentication routes
+  setupAuthRoutes(app);
 
   // Secure helper to get user ID with validation
   const getUserId = (req: any): number => {
-    return getCurrentUserId(req);
+    return req.userId;
   };
 
   // User profile endpoints
