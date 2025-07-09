@@ -4,6 +4,17 @@ import { storage } from "./storage";
 import { setupAuth, requireAuth, getCurrentUserId } from "./auth";
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Force HTTPS redirect in production
+  if (process.env.NODE_ENV === 'production') {
+    app.use((req, res, next) => {
+      if (req.header('x-forwarded-proto') !== 'https') {
+        res.redirect(`https://${req.header('host')}${req.url}`);
+      } else {
+        next();
+      }
+    });
+  }
+
   // Admin monitoring endpoints - must be first, before auth middleware
   const isAdminRequest = (req: any): boolean => {
     const adminKey = req.query.key || req.headers['x-admin-key']; // Support both query param and header
