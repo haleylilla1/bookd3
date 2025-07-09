@@ -42,7 +42,7 @@ import {
 } from "@shared/schema";
 import bcrypt from "bcryptjs";
 import { db } from "./db";
-import { eq, and, gte, lte, desc, count, sql } from "drizzle-orm";
+import { eq, and, gte, lte, desc, count, sql, inArray } from "drizzle-orm";
 
 export interface IStorage {
   // User operations
@@ -796,7 +796,7 @@ export class DatabaseStorage implements IStorage {
           email: users.email
         })
         .from(users)
-        .where(sql`${users.id} IN (${activeUserIds.join(',')})`);
+        .where(inArray(users.id, activeUserIds));
       
       // Combine user info with activity info and sort by most recent activity
       return activeUsers.map(user => {
