@@ -67,10 +67,7 @@ export function AuthForm({ onSuccess }: AuthFormProps) {
 
   const loginMutation = useMutation({
     mutationFn: async (data: LoginData) => {
-      return apiRequest('/api/auth/login', {
-        method: 'POST',
-        body: JSON.stringify(data)
-      });
+      return apiRequest('POST', '/api/auth/login', data);
     },
     onSuccess: () => {
       toast({
@@ -90,10 +87,7 @@ export function AuthForm({ onSuccess }: AuthFormProps) {
 
   const registerMutation = useMutation({
     mutationFn: async (data: RegisterData) => {
-      return apiRequest('/api/auth/register', {
-        method: 'POST',
-        body: JSON.stringify(data)
-      });
+      return apiRequest('POST', '/api/auth/register', data);
     },
     onSuccess: () => {
       toast({
@@ -113,10 +107,7 @@ export function AuthForm({ onSuccess }: AuthFormProps) {
 
   const resetRequestMutation = useMutation({
     mutationFn: async (data: ResetRequestData) => {
-      return apiRequest('/api/auth/reset-password-request', {
-        method: 'POST',
-        body: JSON.stringify(data)
-      });
+      return apiRequest('POST', '/api/auth/reset-password-request', data);
     },
     onSuccess: (data: any) => {
       toast({
@@ -139,10 +130,7 @@ export function AuthForm({ onSuccess }: AuthFormProps) {
 
   const resetPasswordMutation = useMutation({
     mutationFn: async (data: ResetPasswordData) => {
-      return apiRequest('/api/auth/reset-password', {
-        method: 'POST',
-        body: JSON.stringify(data)
-      });
+      return apiRequest('POST', '/api/auth/reset-password', data);
     },
     onSuccess: () => {
       toast({
@@ -181,7 +169,7 @@ export function AuthForm({ onSuccess }: AuthFormProps) {
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <CardTitle className="text-2xl font-bold">
-            {mode === 'login' && 'Welcome to Bookd'}
+            {mode === 'login' && 'bookd'}
             {mode === 'register' && 'Create Account'}
             {mode === 'reset-request' && 'Reset Password'}
             {mode === 'reset-password' && 'Set New Password'}
