@@ -35,6 +35,9 @@ Bookd is a mobile-first gig worker companion app with comprehensive financial tr
 - 2025-07-09: GOOGLE OAUTH AUTHENTICATION REMOVED - Completely eliminated Google login functionality due to user login issues, simplified to email/password authentication only
 - 2025-07-09: Authentication system now uses only simple email/password login with enhanced reliability and mobile optimization
 - 2025-07-09: Removed passport-google-oauth20 package and all Google OAuth routes, storage methods, and frontend components
+- 2025-07-09: DASHBOARD UI ENHANCEMENT - Added helpful message above income report buttons explaining they generate comprehensive reports
+- 2025-07-09: Fixed all DialogContent accessibility warnings by adding proper DialogDescription components to calendar and dashboard modals
+- 2025-07-09: Enhanced code quality with comprehensive React Hook compliance and optimized automatic status updates using ref-based tracking
 - 2025-07-09: Enhanced SSL certificate verification with health check endpoint and comprehensive Safari troubleshooting guide
 - 2025-07-09: BOOKD.TOOLS DOMAIN DEPLOYMENT SUCCESSFUL - Live production deployment with SSL certificate and secure HTTPS redirects
 - 2025-07-09: DNS configuration completed with Squarespace: A records for @ and www, TXT verification record properly configured

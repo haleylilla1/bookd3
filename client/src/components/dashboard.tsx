@@ -563,7 +563,7 @@ export default function Dashboard() {
       <div className="mb-4">
         <div className="text-center mb-3">
           <p className="text-sm text-gray-600">
-            💼 Generate a comprehensive income report with earnings, expenses, and tax details
+            Generate a comprehensive income report with earnings, expenses, and tax details
           </p>
         </div>
         <div className="flex justify-center gap-2 flex-wrap">
