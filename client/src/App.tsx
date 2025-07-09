@@ -7,8 +7,7 @@ import ErrorBoundary from "@/components/error-boundary";
 import { useState, useEffect } from "react";
 import Home from "@/pages/home";
 import Profile from "@/pages/profile";
-import MobileAuthPage from "@/pages/mobile-auth";
-import SimpleLanding from "@/components/simple-landing";
+import { AuthForm } from "@/components/auth-form";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -20,7 +19,7 @@ function Router() {
     
     async function checkAuth() {
       try {
-        const response = await fetch("/api/user", {
+        const response = await fetch("/api/auth/user", {
           credentials: "include",
           headers: {
             'Accept': 'application/json',
@@ -72,8 +71,12 @@ function Router() {
         </>
       ) : (
         <>
-          <Route path="/login" component={MobileAuthPage} />
-          <Route path="/" component={MobileAuthPage} />
+          <Route path="/login">
+            <AuthForm onSuccess={() => window.location.reload()} />
+          </Route>
+          <Route path="/">
+            <AuthForm onSuccess={() => window.location.reload()} />
+          </Route>
         </>
       )}
       <Route component={NotFound} />
