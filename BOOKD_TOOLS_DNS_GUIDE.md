@@ -1,117 +1,127 @@
 # Bookd.tools Domain Setup Guide
 
-## Problem: URL Forwarding vs. Proper DNS
+## Step-by-Step Domain Connection Process
 
-Currently, your Squarespace domain `bookd.tools` is doing **URL forwarding** (redirect) instead of proper DNS configuration. This is why users see the full Replit URL instead of staying on `bookd.tools`.
+### **Step 1: Initiate Domain Connection in Replit**
 
-## Solution: Proper DNS Configuration
+1. **Access Your Replit Workspace**
+   - Go to your Replit workspace where Bookd is hosted
+   - Navigate to the "Deployments" tab in the sidebar
 
-You need to provide Squarespace with these DNS records to point directly to your Replit deployment:
+2. **Start Custom Domain Setup**
+   - Click on "Deploy" (blue button)
+   - Select "Custom Domain" option
+   - Enter your domain: `bookd.tools`
 
-### DNS Records for Squarespace
+3. **Generate DNS Records**
+   - Replit will generate your unique IP address and TXT verification record
+   - You'll receive something like:
+     ```
+     A Record (for @): 216.24.57.X
+     A Record (for www): 216.24.57.X
+     TXT Record: replit-domain-verification=abc123...
+     ```
 
-**For Root Domain (bookd.tools) - Option 1 (Preferred):**
-```
-Type: A
-Name: @
-Value: [REPLIT-IP-ADDRESS]
-```
+### **Step 2: Configure DNS Records with Squarespace**
 
-**For Root Domain (bookd.tools) - Option 2 (If A record doesn't work):**
-```
-Type: ALIAS or ANAME
-Name: @
-Value: [YOUR-REPLIT-DEPLOYMENT-URL].replit.app
-```
+After Replit generates your records, configure these in Squarespace:
 
-**For WWW Subdomain (www.bookd.tools):**
-```
-Type: CNAME
-Name: www
-Value: [YOUR-REPLIT-DEPLOYMENT-URL].replit.app
-```
+#### **A Records (Required)**
+1. **Root Domain (@)**
+   - Type: A
+   - Host: @
+   - Value: [IP address from Replit]
+   - TTL: 300 (5 minutes)
 
-### Finding Your Replit Deployment URL
+2. **WWW Subdomain**
+   - Type: A
+   - Host: www
+   - Value: [IP address from Replit]
+   - TTL: 300 (5 minutes)
 
-1. Go to your Replit workspace
-2. Click the "Deploy" tab
-3. Look for your deployment URL - it will be something like:
-   - `workspace-haleylilla.replit.app` (current development)
-   - Or your actual deployment URL when you deploy
+#### **TXT Verification Record (Required)**
+- Type: TXT
+- Host: @
+- Value: [TXT verification string from Replit]
+- TTL: 300 (5 minutes)
 
-### Step-by-Step Instructions for Squarespace
+### **Step 3: Complete Domain Verification**
 
-1. **Log into Squarespace**
-2. **Go to Settings > Domains**
-3. **Click on bookd.tools**
-4. **Find "DNS Settings" or "Advanced DNS"**
-5. **Add these two CNAME records:**
-   - **Record 1:**
-     - Type: CNAME
-     - Host/Name: @ (or leave blank for root domain)
-     - Value: [your-replit-deployment-url].replit.app
-   - **Record 2:**
-     - Type: CNAME
-     - Host/Name: www
-     - Value: [your-replit-deployment-url].replit.app
+1. **Wait for DNS Propagation**
+   - DNS changes take 5-60 minutes to propagate
+   - You can check propagation status using tools like whatsmydns.net
 
-### Configuration Completed in Your App
+2. **Verify in Replit**
+   - Return to your Replit deployment settings
+   - Click "Verify Domain" button
+   - Replit will confirm the DNS records are properly configured
 
-✅ **Domain Settings Updated:**
-- `replit.toml` configured for `bookd.tools` and `www.bookd.tools`
-- Cookie domains updated to `.bookd.tools` for proper session handling
-- Authentication system ready for the new domain
+3. **Deploy to Custom Domain**
+   - Once verified, click "Deploy"
+   - Your app will be accessible at `https://bookd.tools`
 
-### Expected Result
+### **Step 4: Update Application Configuration**
 
-After DNS propagation (15 minutes to 2 hours):
-- Users type `bookd.tools` → see `bookd.tools` in their browser
-- Users type `www.bookd.tools` → see `www.bookd.tools` in their browser
-- No more redirects showing Replit URLs
-- SSL certificate automatically provided by Replit
+The app is already configured for the bookd.tools domain with:
+- Secure cookie settings for `.bookd.tools`
+- HTTPS-ready authentication
+- 30-day session persistence
+- Mobile-optimized design
 
-### Next Steps
+### **Step 5: Post-Deployment Testing**
 
-1. **Deploy your app** from Replit (if not already done)
-2. **Get your deployment URL** from the Replit deploy tab
-3. **Add the DNS records** to Squarespace using the deployment URL
-4. **Wait for DNS propagation** (15 minutes to 2 hours)
-5. **Test** by visiting `bookd.tools` in a private/incognito window
+After deployment, verify:
+1. **Domain Access**: `https://bookd.tools` loads correctly
+2. **WWW Redirect**: `https://www.bookd.tools` redirects to main domain
+3. **Authentication**: Login/logout works properly
+4. **Mobile Compatibility**: Test on your phone
+5. **SSL Certificate**: Confirm HTTPS is active
 
-### Root Domain Solutions
+### **Expected Timeline**
 
-**Problem:** Squarespace often blocks CNAME records for root domains (@)
+- **DNS Configuration**: 5-10 minutes
+- **DNS Propagation**: 5-60 minutes  
+- **SSL Certificate**: 1-24 hours
+- **Full Functionality**: Within 2 hours
 
-**Solution 1 - A Record (Most Compatible):**
-1. Find Replit's IP address by running: `nslookup [your-deployment-url].replit.app`
-2. Use that IP address in an A record for @
+### **Troubleshooting Common Issues**
 
-**Solution 2 - ALIAS/ANAME Record:**
-- Some registrars support ALIAS or ANAME records for root domains
-- Try changing "CNAME" to "ALIAS" or "ANAME" for the @ record
+#### **"Domain Not Verified" Error**
+- Check DNS propagation using online tools
+- Ensure TXT record is exactly as provided by Replit
+- Wait additional time for DNS propagation
 
-**Solution 3 - Domain Forwarding Workaround:**
-If DNS doesn't work, configure:
-- Root domain (@): Forward to `www.bookd.tools`
-- WWW subdomain: CNAME to your Replit deployment
+#### **"SSL Certificate Pending"**
+- Normal for first 24 hours after domain verification
+- HTTP will redirect to HTTPS once certificate is issued
+- No action needed - automatic process
 
-### Troubleshooting
+#### **Authentication Issues**
+- Clear browser cache and cookies
+- Try incognito/private browsing mode
+- Check that cookies are enabled
 
-**Root Domain Error Solutions:**
-1. **Try A Record instead:** Use Replit's IP address
-2. **Try ALIAS Record:** Change record type from CNAME to ALIAS
-3. **Contact Squarespace:** Ask them specifically about root domain CNAME limitations
-4. **Alternative:** Set up domain forwarding from @ to www
+### **Current Status**
 
-**If it's still not working after 2 hours:**
-- Double-check the CNAME values match your exact deployment URL
-- Try clearing your browser cache or use incognito mode
-- Contact Squarespace support to confirm the DNS records are correct
+✅ **Application**: Ready for custom domain deployment  
+✅ **DNS Configuration**: Prepared for bookd.tools  
+✅ **SSL Support**: Automatic certificate generation  
+✅ **Mobile Optimization**: Fully responsive design  
+⏳ **Domain Connection**: Waiting for Replit setup initiation  
 
-**DNS Propagation Check:**
-- Use tools like `https://dnschecker.org` to verify your records are live
+### **Next Steps**
 
----
+1. **Initiate domain connection in Replit Deployments**
+2. **Copy the generated IP address and TXT record**
+3. **Configure DNS records in Squarespace**
+4. **Verify domain in Replit**
+5. **Deploy to custom domain**
 
-**Status:** Ready for DNS configuration
-**Next Action:** Add CNAME records to Squarespace DNS settings
+### **Important Notes**
+
+- **Current URL**: `giggy-platform-haleylilla.replit.app` (internal development URL)
+- **Target URL**: `https://bookd.tools` (production URL)
+- **DNS Provider**: Squarespace (your domain registrar)
+- **Deployment Platform**: Replit Autoscale
+
+Once you initiate the domain connection in Replit, you'll get the specific IP address and TXT record that Squarespace needs for the DNS configuration.
