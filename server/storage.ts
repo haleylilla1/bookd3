@@ -49,12 +49,10 @@ export interface IStorage {
   getUser(id: number): Promise<User | undefined>;
   getAllUsers(): Promise<User[]>;
   getUserByReplitId(replitId: string): Promise<User | undefined>;
-  getUserByGoogleId(googleId: string): Promise<User | undefined>;
   getUserByEmail(email: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
   updateUser(id: number, user: Partial<InsertUser>): Promise<User | undefined>;
   upsertUserByReplitId(replitId: string, userData: Partial<User>): Promise<User>;
-  upsertUserByGoogleId(googleId: string, userData: Partial<User>): Promise<User>;
   createUserWithPassword(email: string, password: string, name: string): Promise<User>;
   validatePassword(email: string, password: string): Promise<User | null>;
   
@@ -197,10 +195,7 @@ export class DatabaseStorage implements IStorage {
     return user;
   }
 
-  async getUserByGoogleId(googleId: string): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.googleId, googleId));
-    return user;
-  }
+  // Google OAuth methods removed - using simple email/password authentication only
 
   async upsertUserByReplitId(replitId: string, userData: Partial<User>): Promise<User> {
     const existingUser = await this.getUserByReplitId(replitId);
@@ -232,37 +227,7 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  async upsertUserByGoogleId(googleId: string, userData: Partial<User>): Promise<User> {
-    const existingUser = await this.getUserByGoogleId(googleId);
-    
-    if (existingUser) {
-      const [updatedUser] = await db
-        .update(users)
-        .set({
-          ...userData,
-          updatedAt: new Date(),
-        })
-        .where(eq(users.googleId, googleId))
-        .returning();
-      return updatedUser;
-    } else {
-      const [newUser] = await db
-        .insert(users)
-        .values({
-          googleId,
-          name: userData.name || 'New User',
-          email: userData.email || 'user@example.com',
-          firstName: userData.firstName,
-          lastName: userData.lastName,
-          profileImageUrl: userData.profileImageUrl,
-          trialStartDate: new Date(),
-          trialEndDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days
-          ...userData,
-        })
-        .returning();
-      return newUser;
-    }
-  }
+  // Google OAuth upsert method removed - using simple email/password authentication only
 
   async createUserWithPassword(email: string, password: string, name: string): Promise<User> {
     const hashedPassword = await bcrypt.hash(password, 10);
