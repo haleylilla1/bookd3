@@ -17,7 +17,7 @@ import ReceiptUpload from "@/components/receipt-upload";
 
 // Utility function to parse dates consistently across timezones (same as dashboard)
 const parseGigDate = (dateString: string): Date => {
-  return new Date(dateString + 'T00:00:00');
+  return new Date(dateString + 'T00:00:00.000Z');
 };
 
 // Color mapping for gig status
@@ -208,7 +208,7 @@ export default function CalendarView() {
     });
 
     // Apply grouping to filtered gigs
-    const sortedGigs = [...filtered].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+    const sortedGigs = [...filtered].sort((a, b) => parseGigDate(a.date).getTime() - parseGigDate(b.date).getTime());
     const grouped: (Gig & { isMultiDay?: boolean; startDate?: string; endDate?: string; gigIds?: number[] })[] = [];
     const processed = new Set<number>();
     
@@ -225,8 +225,8 @@ export default function CalendarView() {
         if (processed.has(nextGig.id)) continue;
         
         // Use consistent UTC date parsing to avoid timezone issues
-        const lastGigDate = new Date(similarGigs[similarGigs.length - 1].date + 'T00:00:00.000Z');
-        const nextDate = new Date(nextGig.date + 'T00:00:00.000Z');
+        const lastGigDate = parseGigDate(similarGigs[similarGigs.length - 1].date);
+        const nextDate = parseGigDate(nextGig.date);
         
         // Calculate days difference - must be positive (forward in time) and <= 7 days
         const dayDiff = (nextDate.getTime() - lastGigDate.getTime()) / (1000 * 60 * 60 * 24);
@@ -259,7 +259,7 @@ export default function CalendarView() {
       }
     }
     
-    return grouped.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    return grouped.sort((a, b) => parseGigDate(b.date).getTime() - parseGigDate(a.date).getTime());
   }, [gigs, filterStatus, searchQuery]);
 
   const getStatusColor = (status: string) => {
