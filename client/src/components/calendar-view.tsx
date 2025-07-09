@@ -1,11 +1,11 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Edit2, Trash2, Filter, Calendar, DollarSign, Clock, ChevronLeft, ChevronRight, Car, Calculator } from "lucide-react";
 import { formatCurrency, formatDate } from "@/lib/utils";
@@ -45,6 +45,7 @@ export default function CalendarView() {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [showDayGigs, setShowDayGigs] = useState(false);
+  const hasUpdatedStatusesRef = useRef(false);
 
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -54,13 +55,6 @@ export default function CalendarView() {
     staleTime: 5 * 60 * 1000, // Cache for 5 minutes
     retry: 2,
   });
-
-  // Automatically update gig statuses when calendar loads
-  useEffect(() => {
-    if (gigs.length > 0) {
-      updateGigStatusesMutation.mutate();
-    }
-  }, [gigs.length]); // Only run when gigs are initially loaded
 
   const { data: user } = useQuery({
     queryKey: ["/api/user"],
@@ -85,6 +79,14 @@ export default function CalendarView() {
       console.error("Failed to update gig statuses:", error);
     },
   });
+
+  // Automatically update gig statuses when calendar loads (once per session)
+  useEffect(() => {
+    if (gigs.length > 0 && !hasUpdatedStatusesRef.current) {
+      hasUpdatedStatusesRef.current = true;
+      updateGigStatusesMutation.mutate();
+    }
+  }, [gigs.length]); // Only run when gigs are initially loaded
 
   const updateGigMutation = useMutation({
     mutationFn: async (gigData: { id: number; data: Partial<Gig> }) => {
@@ -711,6 +713,9 @@ export default function CalendarView() {
                 day: 'numeric' 
               })}
             </DialogTitle>
+            <DialogDescription>
+              View and manage all gigs scheduled for this date.
+            </DialogDescription>
           </DialogHeader>
           <div className="max-h-96 overflow-y-auto">
             {selectedDate && getGigsForDate(selectedDate).length > 0 ? (
@@ -824,6 +829,9 @@ export default function CalendarView() {
         <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Edit Gig</DialogTitle>
+            <DialogDescription>
+              Update gig information, payments, and expense tracking.
+            </DialogDescription>
           </DialogHeader>
           {editingGig && (
             <GigEditForm
