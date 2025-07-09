@@ -3,6 +3,7 @@ import { db } from './db';
 import { users, userSessions, passwordResetTokens } from '@shared/schema';
 import { eq, and, gt } from 'drizzle-orm';
 import crypto from 'crypto';
+import { MailService } from '@sendgrid/mail';
 
 // Generate secure session ID
 export function generateSessionId(): string {
@@ -13,6 +14,56 @@ export function generateSessionId(): string {
 export function generateResetToken(): string {
   return crypto.randomBytes(32).toString('hex');
 }
+
+// Email service for password reset
+class EmailService {
+  private static mail = new MailService();
+  
+  static initialize() {
+    if (process.env.SENDGRID_API_KEY) {
+      this.mail.setApiKey(process.env.SENDGRID_API_KEY);
+    }
+  }
+  
+  static async sendPasswordResetEmail(email: string, token: string): Promise<boolean> {
+    if (!process.env.SENDGRID_API_KEY) {
+      console.log('SendGrid API key not configured, skipping email send');
+      return false;
+    }
+    
+    try {
+      const resetUrl = `${process.env.NODE_ENV === 'production' ? 'https://bookd.tools' : 'http://localhost:5000'}/?reset_token=${token}`;
+      
+      await this.mail.send({
+        to: email,
+        from: 'noreply@bookd.tools', // This should be a verified sender in SendGrid
+        subject: 'Reset Your Bookd Password',
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+            <h2 style="color: #333;">Reset Your Bookd Password</h2>
+            <p>You requested a password reset for your Bookd account.</p>
+            <p>Click the link below to reset your password:</p>
+            <a href="${resetUrl}" style="background-color: #007bff; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; display: inline-block;">Reset Password</a>
+            <p>Or copy and paste this link into your browser:</p>
+            <p style="color: #666; word-break: break-all;">${resetUrl}</p>
+            <p>This link will expire in 1 hour.</p>
+            <p>If you didn't request this password reset, please ignore this email.</p>
+            <hr style="border: 1px solid #eee; margin: 20px 0;">
+            <p style="color: #666; font-size: 12px;">This is an automated message from Bookd. Please do not reply to this email.</p>
+          </div>
+        `
+      });
+      
+      return true;
+    } catch (error) {
+      console.error('Failed to send password reset email:', error);
+      return false;
+    }
+  }
+}
+
+// Initialize email service
+EmailService.initialize();
 
 // Database-backed session management
 export class SessionManager {
@@ -103,7 +154,7 @@ export class SessionManager {
 
 // Password reset functionality
 export class PasswordReset {
-  // Create password reset token
+  // Create password reset token and send email
   static async createResetToken(email: string): Promise<string | null> {
     try {
       // Find user by email
@@ -128,6 +179,15 @@ export class PasswordReset {
         expiresAt,
         used: false
       });
+
+      // Send reset email
+      const emailSent = await EmailService.sendPasswordResetEmail(email, token);
+      
+      if (emailSent) {
+        console.log(`Password reset email sent to ${email}`);
+      } else {
+        console.log(`Failed to send password reset email to ${email}`);
+      }
 
       return token;
     } catch (error) {
@@ -443,8 +503,7 @@ export function setupAuthRoutes(app: any) {
       
       // Always return success to prevent email enumeration
       res.json({ 
-        message: "If an account with that email exists, a reset link has been sent",
-        token: token // In production, this would be sent via email
+        message: "If an account with that email exists, a reset link has been sent to your email"
       });
     } catch (error) {
       console.error('Password reset request error:', error);
