@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -44,6 +44,18 @@ export function AuthForm({ onSuccess }: AuthFormProps) {
   const [mode, setMode] = useState<'login' | 'register' | 'reset-request' | 'reset-password'>('login');
   const [resetToken, setResetToken] = useState('');
   const { toast } = useToast();
+  
+  // Check for reset token in URL on mount
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const token = urlParams.get('reset_token');
+    
+    if (token) {
+      setResetToken(token);
+      setMode('reset-password');
+      resetPasswordForm.setValue('token', token);
+    }
+  }, []);
 
   const loginForm = useForm<LoginData>({
     resolver: zodResolver(loginSchema),
@@ -114,10 +126,7 @@ export function AuthForm({ onSuccess }: AuthFormProps) {
         title: "Reset link sent",
         description: "Check your email for the reset link"
       });
-      if (data.token) {
-        setResetToken(data.token);
-        setMode('reset-password');
-      }
+      // Email is now sent, no need to switch modes automatically
     },
     onError: (error: any) => {
       toast({
