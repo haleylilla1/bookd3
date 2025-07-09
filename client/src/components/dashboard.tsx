@@ -179,8 +179,10 @@ export default function Dashboard() {
     const upcomingGroupedGigs = groupedGigs.filter(gig => gig.status !== "completed");
     
     // Calculate earnings from grouped gigs (no double-counting)
+    // Use actualPay if available, otherwise fall back to expectedPay for completed gigs
     const actualEarnings = completedGroupedGigs.reduce((sum, gig) => {
-      return sum + safeParseFloat(gig.actualPay) + safeParseFloat(gig.tips);
+      const payAmount = gig.actualPay ? safeParseFloat(gig.actualPay) : safeParseFloat(gig.expectedPay);
+      return sum + payAmount + safeParseFloat(gig.tips);
     }, 0);
     
     const totalTips = completedGroupedGigs.reduce((sum, gig) => {
@@ -197,7 +199,8 @@ export default function Dashboard() {
     
     const projectedEarnings = groupedGigs.reduce((sum, gig) => {
       if (gig.status === "completed") {
-        return sum + safeParseFloat(gig.actualPay) + safeParseFloat(gig.tips);
+        const payAmount = gig.actualPay ? safeParseFloat(gig.actualPay) : safeParseFloat(gig.expectedPay);
+        return sum + payAmount + safeParseFloat(gig.tips);
       } else {
         return sum + safeParseFloat(gig.expectedPay);
       }
@@ -208,7 +211,8 @@ export default function Dashboard() {
     
     // Calculate tax estimate using simplified tax calculator
     const estimatedTax = completedGroupedGigs.reduce((sum, gig) => {
-      const income = safeParseFloat(gig.actualPay) + safeParseFloat(gig.tips);
+      const payAmount = gig.actualPay ? safeParseFloat(gig.actualPay) : safeParseFloat(gig.expectedPay);
+      const income = payAmount + safeParseFloat(gig.tips);
       const gigTaxRate = (gig.taxPercentage !== null && gig.taxPercentage !== undefined) ? gig.taxPercentage : userTaxRate;
       return sum + (income * gigTaxRate / 100);
     }, 0);
@@ -372,13 +376,13 @@ export default function Dashboard() {
     
     return groupedGigs
       .map(gig => {
-        const actualPay = safeParseFloat(gig.actualPay);
+        const payAmount = gig.actualPay ? safeParseFloat(gig.actualPay) : safeParseFloat(gig.expectedPay);
         const tips = safeParseFloat(gig.tips);
-        const totalAmount = actualPay + tips;
+        const totalAmount = payAmount + tips;
         return {
           ...gig,
           amount: totalAmount,
-          actualPay,
+          actualPay: payAmount,
           tips
         };
       })
@@ -394,9 +398,9 @@ export default function Dashboard() {
       .map(gig => {
         let amount = 0;
         if (gig.status === "completed") {
-          const actualPay = safeParseFloat(gig.actualPay);
+          const payAmount = gig.actualPay ? safeParseFloat(gig.actualPay) : safeParseFloat(gig.expectedPay);
           const tips = safeParseFloat(gig.tips);
-          amount = actualPay + tips;
+          amount = payAmount + tips;
         } else {
           amount = safeParseFloat(gig.expectedPay);
         }
