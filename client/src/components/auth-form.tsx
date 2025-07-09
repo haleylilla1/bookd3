@@ -391,12 +391,11 @@ export function AuthForm({ onSuccess }: AuthFormProps) {
                   control={resetPasswordForm.control}
                   name="token"
                   render={({ field }) => (
-                    <FormItem>
+                    <FormItem className="hidden">
                       <FormLabel>Reset Token</FormLabel>
                       <FormControl>
                         <Input 
-                          type="text" 
-                          placeholder="Enter reset token"
+                          type="hidden" 
                           {...field}
                           value={resetToken || field.value}
                         />
