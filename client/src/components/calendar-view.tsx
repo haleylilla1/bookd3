@@ -715,7 +715,16 @@ export default function CalendarView() {
                           size="sm"
                           variant="outline"
                           onClick={() => {
-                            setEditingGig(gig);
+                            // Find the grouped gig in filteredGigs to get multi-day properties
+                            const groupedGig = filteredGigs.find(g => 
+                              g.id === gig.id || (g.gigIds && g.gigIds.includes(gig.id))
+                            );
+                            
+                            if (groupedGig) {
+                              setEditingGig(groupedGig);
+                            } else {
+                              setEditingGig(gig);
+                            }
                             setShowDayGigs(false);
                           }}
                           className="h-8 w-8 p-0"
