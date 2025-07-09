@@ -1,9 +1,9 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
@@ -29,6 +29,7 @@ export default function Dashboard() {
   const [showTipsBreakdown, setShowTipsBreakdown] = useState(false);
   const [showExpensesBreakdown, setShowExpensesBreakdown] = useState(false);
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
+  const hasUpdatedStatusesRef = useRef(false);
   
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -61,9 +62,10 @@ export default function Dashboard() {
     retry: 1,
   });
 
-  // Automatically update gig statuses when dashboard loads
+  // Automatically update gig statuses when dashboard loads (once per session)
   useEffect(() => {
-    if (gigs.length > 0) {
+    if (gigs.length > 0 && !hasUpdatedStatusesRef.current) {
+      hasUpdatedStatusesRef.current = true;
       updateGigStatusesMutation.mutate();
     }
   }, [gigs.length]); // Only run when gigs are initially loaded
@@ -800,6 +802,9 @@ export default function Dashboard() {
         <DialogContent className="max-w-md max-h-[80vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Actual Earnings Breakdown</DialogTitle>
+            <DialogDescription>
+              View detailed breakdown of completed gigs and their actual earnings.
+            </DialogDescription>
           </DialogHeader>
           <div className="space-y-3">
             {getActualEarningsBreakdown().map((gig, index) => (
@@ -836,6 +841,9 @@ export default function Dashboard() {
         <DialogContent className="max-w-md max-h-[80vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Projected Earnings Breakdown</DialogTitle>
+            <DialogDescription>
+              View detailed breakdown of all gigs including completed and upcoming.
+            </DialogDescription>
           </DialogHeader>
           <div className="space-y-3">
             {getProjectedEarningsBreakdown().map((gig, index) => (
@@ -882,6 +890,9 @@ export default function Dashboard() {
         <DialogContent className="max-w-md max-h-[80vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Tax Estimate Breakdown</DialogTitle>
+            <DialogDescription>
+              View detailed tax calculations for each gig based on income and tax rates.
+            </DialogDescription>
           </DialogHeader>
           <div className="space-y-3">
             {getTaxBreakdown().map((gig, index) => (
@@ -918,6 +929,9 @@ export default function Dashboard() {
         <DialogContent className="max-w-md max-h-[80vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Tips Earned Breakdown</DialogTitle>
+            <DialogDescription>
+              View detailed breakdown of tips earned from completed gigs.
+            </DialogDescription>
           </DialogHeader>
           <div className="space-y-3">
             {getTipsBreakdown().map((gig, index) => (
@@ -951,6 +965,9 @@ export default function Dashboard() {
         <DialogContent className="max-w-md max-h-[80vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Expenses Breakdown</DialogTitle>
+            <DialogDescription>
+              View detailed breakdown of expenses including parking, other costs, and mileage deductions.
+            </DialogDescription>
           </DialogHeader>
           <div className="space-y-3">
             {getExpensesBreakdown().map((gig, index) => (
