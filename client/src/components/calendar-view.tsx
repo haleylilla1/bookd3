@@ -321,11 +321,53 @@ export default function CalendarView() {
 
     console.log("Saving gig edit:", updatePayload); // Debug log
     
-    // Use the existing mutation
-    updateGigMutation.mutate({
-      id: editingGig.id,
-      data: updatePayload,
-    });
+    // Handle multi-day gigs: update all gigs in the series
+    if (editingGig.isMultiDay && editingGig.gigIds && editingGig.gigIds.length > 0) {
+      // For multi-day gigs, update all gigs in the series
+      console.log("Updating multi-day gig series:", editingGig.gigIds);
+      
+      // Create a custom mutation handler for multi-day updates
+      const updateMultiDayGigs = async () => {
+        try {
+          // Update all gigs in the series sequentially
+          for (const gigId of editingGig.gigIds!) {
+            const response = await apiRequest("PUT", `/api/gigs/${gigId}`, updatePayload);
+            if (!response.ok) {
+              throw new Error(`Failed to update gig ${gigId}`);
+            }
+          }
+          
+          // Success - invalidate queries and show success message
+          queryClient.invalidateQueries({ queryKey: ["/api/gigs"] });
+          queryClient.invalidateQueries({ queryKey: ["/api/dashboard/stats"] });
+          
+          toast({
+            title: "Multi-day gig updated",
+            description: `Updated ${editingGig.gigIds!.length} days of ${editingGig.eventName}`,
+          });
+          
+          setEditingGig(null);
+          console.log("All multi-day gigs updated successfully");
+          
+        } catch (error) {
+          console.error("Error updating multi-day gigs:", error);
+          toast({
+            title: "Update failed",
+            description: "Some gigs may not have been updated. Please try again.",
+            variant: "destructive",
+          });
+        }
+      };
+      
+      // Execute multi-day update
+      updateMultiDayGigs();
+    } else {
+      // Single day gig - use normal mutation
+      updateGigMutation.mutate({
+        id: editingGig.id,
+        data: updatePayload,
+      });
+    }
   };
 
   if (isLoading) {
