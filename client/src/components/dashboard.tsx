@@ -108,6 +108,19 @@ export default function Dashboard() {
     },
   });
 
+  // UTC date parsing function to avoid timezone issues
+  const parseGigDate = (dateString: string): Date => {
+    // Use UTC parsing to match server-side logic
+    return new Date(dateString + 'T00:00:00.000Z');
+  };
+
+  // Safe numeric parsing function
+  const safeParseFloat = (value: string | null | undefined): number => {
+    if (!value) return 0;
+    const parsed = parseFloat(value);
+    return isNaN(parsed) || !isFinite(parsed) ? 0 : Math.max(0, parsed);
+  };
+
   // Simple period filtering - let calculations handle multi-day logic naturally
   const currentPeriodGigs = useMemo(() => {
     if (!gigs || gigs.length === 0) return [];
@@ -126,19 +139,6 @@ export default function Dashboard() {
       }
     });
   }, [gigs, selectedPeriod, currentDate]);
-
-  // Safe numeric parsing function
-  const safeParseFloat = (value: string | null | undefined): number => {
-    if (!value) return 0;
-    const parsed = parseFloat(value);
-    return isNaN(parsed) || !isFinite(parsed) ? 0 : Math.max(0, parsed);
-  };
-
-  // UTC date parsing function to avoid timezone issues
-  const parseGigDate = (dateString: string): Date => {
-    // Use UTC parsing to match server-side logic
-    return new Date(dateString + 'T00:00:00.000Z');
-  };
 
   // Helper function to group multi-day gigs (prevents double-counting)
   const getGroupedGigs = (gigs: Gig[]): (Gig & { isMultiDay?: boolean; startDate?: string; endDate?: string })[] => {
