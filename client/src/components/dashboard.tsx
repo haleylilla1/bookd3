@@ -113,7 +113,7 @@ export default function Dashboard() {
     if (!gigs || gigs.length === 0) return [];
     
     return gigs.filter(gig => {
-      const gigDate = new Date(gig.date + 'T00:00:00.000Z');
+      const gigDate = parseGigDate(gig.date);
       const currentUtcDate = new Date(currentDate.getTime() - currentDate.getTimezoneOffset() * 60000);
       
       if (isNaN(gigDate.getTime())) return false;
@@ -132,6 +132,12 @@ export default function Dashboard() {
     if (!value) return 0;
     const parsed = parseFloat(value);
     return isNaN(parsed) || !isFinite(parsed) ? 0 : Math.max(0, parsed);
+  };
+
+  // UTC date parsing function to avoid timezone issues
+  const parseGigDate = (dateString: string): Date => {
+    // Use UTC parsing to match server-side logic
+    return new Date(dateString + 'T00:00:00.000Z');
   };
 
   // Helper function to group multi-day gigs (prevents double-counting)

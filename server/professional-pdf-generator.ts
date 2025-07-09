@@ -121,25 +121,19 @@ export class ProfessionalPDFGenerator {
     const mileageValue = totalMileage * this.MILEAGE_RATE;
     const netIncome = totalIncome - totalExpenses - mileageValue;
     
-    // Calculate tax estimates based on individual gig tax rates using taxable income (after expenses)
+    // Calculate tax estimates based on individual gig tax rates using gross income (matching dashboard logic)
     const estimatedTaxes = completedGigs.reduce((sum, gig) => {
       const actualPay = parseFloat(gig.actualPay || '0');
       const tips = parseFloat(gig.tips || '0');
       const gigIncome = actualPay + tips;
       
-      // Calculate gig-specific expenses (parking + other + mileage)
-      const gigExpenses = parseFloat(gig.parkingExpense || '0') + 
-                         parseFloat(gig.otherExpenses || '0') + 
-                         ((parseFloat(String(gig.mileage) || '0')) * this.MILEAGE_RATE);
-      
-      // Calculate taxable income for this gig (income minus expenses)
-      const taxableIncome = Math.max(0, gigIncome - gigExpenses);
-      
       // Get gig-specific tax rate, fallback to user default
-      const gigTaxRate = parseFloat(String(gig.taxPercentage || user.defaultTaxPercentage || '23'));
+      const gigTaxRate = (gig.taxPercentage !== null && gig.taxPercentage !== undefined) 
+        ? gig.taxPercentage 
+        : (user.defaultTaxPercentage || 23);
       
-      // Calculate tax on this gig's taxable income
-      const gigTaxes = taxableIncome * (gigTaxRate / 100);
+      // Calculate tax on this gig's gross income (no expense deductions from tax calculation)
+      const gigTaxes = gigIncome * (gigTaxRate / 100);
       return sum + gigTaxes;
     }, 0);
     
@@ -435,8 +429,8 @@ export class ProfessionalPDFGenerator {
     this.addSpacing(10);
     this.doc.setFontSize(9);
     this.doc.setFont('helvetica', 'normal');
-    this.addLine('Tax calculations use each gig\'s individual tax rate applied to taxable income.');
-    this.addLine('(Taxable income = income minus expenses for each gig)');
+    this.addLine('Tax calculations use each gig\'s individual tax rate applied to gross income.');
+    this.addLine('(Gross income = base pay + tips, no expense deductions from tax calculation)');
   }
 
   private addExpenseSummary(data: ReportData): void {

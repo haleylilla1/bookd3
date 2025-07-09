@@ -674,7 +674,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Check each gig and update status if needed
       for (const gig of gigs) {
         if (gig.status === 'upcoming') {
-          const gigDate = new Date(gig.date + 'T00:00:00');
+          const gigDate = new Date(gig.date + 'T00:00:00.000Z');
           
           // If the gig date has passed, change status to pending_payment
           if (gigDate < today) {
