@@ -36,7 +36,7 @@ class EmailService {
       
       await this.mail.send({
         to: email,
-        from: 'noreply@bookd.tools', // This should be a verified sender in SendGrid
+        from: 'test@example.com', // Use a simple test sender
         subject: 'Reset Your Bookd Password',
         html: `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
@@ -57,6 +57,12 @@ class EmailService {
       return true;
     } catch (error) {
       console.error('Failed to send password reset email:', error);
+      
+      // Log detailed error for debugging
+      if (error.response) {
+        console.error('SendGrid error response:', error.response.body);
+      }
+      
       return false;
     }
   }
@@ -180,13 +186,19 @@ export class PasswordReset {
         used: false
       });
 
-      // Send reset email
+      // Send reset email (attempt in production, fallback in development)
       const emailSent = await EmailService.sendPasswordResetEmail(email, token);
       
       if (emailSent) {
         console.log(`Password reset email sent to ${email}`);
       } else {
         console.log(`Failed to send password reset email to ${email}`);
+        
+        // In development, show the reset URL in logs for testing
+        if (process.env.NODE_ENV !== 'production') {
+          const resetUrl = `${process.env.NODE_ENV === 'production' ? 'https://bookd.tools' : 'http://localhost:5000'}/?reset_token=${token}`;
+          console.log(`\n🔗 DEVELOPMENT RESET LINK: ${resetUrl}\n`);
+        }
       }
 
       return token;
@@ -502,9 +514,18 @@ export function setupAuthRoutes(app: any) {
       const token = await PasswordReset.createResetToken(email);
       
       // Always return success to prevent email enumeration
-      res.json({ 
-        message: "If an account with that email exists, a reset link has been sent to your email"
-      });
+      // In development, include the reset URL for testing
+      if (process.env.NODE_ENV !== 'production' && token) {
+        const resetUrl = `${process.env.NODE_ENV === 'production' ? 'https://bookd.tools' : 'http://localhost:5000'}/?reset_token=${token}`;
+        res.json({ 
+          message: "If an account with that email exists, a reset link has been sent to your email",
+          developmentResetUrl: resetUrl
+        });
+      } else {
+        res.json({ 
+          message: "If an account with that email exists, a reset link has been sent to your email"
+        });
+      }
     } catch (error) {
       console.error('Password reset request error:', error);
       res.status(500).json({ message: "Password reset request failed" });
