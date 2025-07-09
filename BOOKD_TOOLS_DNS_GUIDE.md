@@ -18,9 +18,9 @@
    - You'll receive something like:
      ```
      A Record (for @): 216.24.57.X
-     A Record (for www): 216.24.57.X
      TXT Record: replit-domain-verification=abc123...
      ```
+   - **Important**: Use the SAME IP address for both @ and www records
 
 ### **Step 2: Configure DNS Records with Squarespace**
 
@@ -33,11 +33,13 @@ After Replit generates your records, configure these in Squarespace:
    - Value: [IP address from Replit]
    - TTL: 300 (5 minutes)
 
-2. **WWW Subdomain**
+2. **WWW Subdomain** (YOU NEED TO ADD THIS MANUALLY)
    - Type: A
    - Host: www
-   - Value: [IP address from Replit]
+   - Value: [SAME IP address from Replit]
    - TTL: 300 (5 minutes)
+
+**Note**: Replit only shows you one IP address, but you need to create TWO A records using the same IP - one for @ and one for www.
 
 #### **TXT Verification Record (Required)**
 - Type: TXT
