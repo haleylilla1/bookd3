@@ -4,11 +4,18 @@ import { storage } from "./storage";
 import { setupAuth, requireAuth, getCurrentUserId } from "./auth";
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // Force HTTPS redirect in production
+  // Force HTTPS redirect and add security headers in production
   if (process.env.NODE_ENV === 'production') {
     app.use((req, res, next) => {
+      // Add security headers for better SSL handling
+      res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
+      res.setHeader('X-Content-Type-Options', 'nosniff');
+      res.setHeader('X-Frame-Options', 'DENY');
+      res.setHeader('X-XSS-Protection', '1; mode=block');
+      
+      // Force HTTPS redirect
       if (req.header('x-forwarded-proto') !== 'https') {
-        res.redirect(`https://${req.header('host')}${req.url}`);
+        res.redirect(301, `https://${req.header('host')}${req.url}`);
       } else {
         next();
       }
@@ -798,6 +805,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     }
     res.json({ status: 'logged' });
+  });
+
+  // Health check endpoint for SSL verification
+  app.get('/health', (req, res) => {
+    res.json({
+      status: 'healthy',
+      timestamp: new Date().toISOString(),
+      ssl: req.secure || req.header('x-forwarded-proto') === 'https',
+      domain: req.get('host')
+    });
   });
 
   // Calculate distance with Google Maps API
