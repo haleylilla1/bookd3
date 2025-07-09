@@ -283,11 +283,12 @@ export default function CalendarView() {
       updatePayload.date = updatedData.startDate;
     }
     
-    // Safe numeric conversions
+    // Safe numeric conversions - preserve exact string values
     const safeParseFloat = (value: string | number | undefined): string | null => {
       if (value === "" || value === null || value === undefined) return null;
-      const parsed = parseFloat(String(value));
-      return isNaN(parsed) ? null : parsed.toString();
+      const stringValue = String(value);
+      const parsed = parseFloat(stringValue);
+      return isNaN(parsed) ? null : stringValue;
     };
     
     updatePayload.expectedPay = safeParseFloat(updatedData.expectedPay);
