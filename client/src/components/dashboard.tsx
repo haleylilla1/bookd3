@@ -77,11 +77,44 @@ export default function Dashboard() {
     console.log('Dashboard gigs state:', { 
       gigsCount: gigs?.length || 0, 
       gigsLoading, 
-      gigsError,
+      gigsError: gigsError?.message || gigsError,
       userAuthenticated: !!user,
-      cookies: document.cookie
+      cookies: document.cookie,
+      hasSessionCookie: document.cookie.includes('sessionId')
     });
+    if (gigsError) {
+      console.error('Gigs query error details:', gigsError);
+    }
   }, [gigs, gigsLoading, gigsError, user]);
+
+  // Add manual test of gigs API
+  useEffect(() => {
+    if (user && !gigs?.length) {
+      console.log('🔍 Testing direct gigs API call...');
+      fetch('/api/gigs', {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+          'Accept': 'application/json',
+          'Cache-Control': 'no-cache'
+        }
+      })
+      .then(response => {
+        console.log('Direct API response status:', response.status);
+        if (response.ok) {
+          return response.json();
+        } else {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+      })
+      .then(data => {
+        console.log('✅ Direct API call successful:', data?.length || 0, 'gigs');
+      })
+      .catch(error => {
+        console.error('❌ Direct API call failed:', error);
+      });
+    }
+  }, [user, gigs?.length]);
 
   // Automatically update gig statuses when dashboard loads (once per session)
   useEffect(() => {
