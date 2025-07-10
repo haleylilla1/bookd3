@@ -12,7 +12,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.setHeader('X-Content-Type-Options', 'nosniff');
       res.setHeader('X-Frame-Options', 'DENY');
       res.setHeader('X-XSS-Protection', '1; mode=block');
-      
+
       // Force HTTPS redirect
       if (req.header('x-forwarded-proto') !== 'https') {
         res.redirect(301, `https://${req.header('host')}${req.url}`);
@@ -26,12 +26,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   const isAdminRequest = (req: any): boolean => {
     const adminKey = req.query.key || req.headers['x-admin-key']; // Support both query param and header
     const validAdminKey = process.env.ADMIN_ACCESS_KEY || 'giggy-admin-2025';
-    
+
     // SECURITY: Rate limit admin attempts - only in production
     if (process.env.NODE_ENV === 'production' && !adminKey) {
       return false;
     }
-    
+
     return adminKey === validAdminKey;
   };
 
@@ -40,18 +40,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     if (!isAdminRequest(req)) {
       return res.status(404).send('Not Found');
     }
-    
+
     // Create a SUPER SIMPLE admin dashboard that works
     try {
       const users = await storage.getAllUsers();
       const userCount = users.length;
-      
+
       // Helper function for uptime formatting
       const formatUptime = (seconds: number): string => {
         const days = Math.floor(seconds / 86400);
         const hours = Math.floor((seconds % 86400) / 3600);
         const minutes = Math.floor((seconds % 3600) / 60);
-        
+
         if (days > 0) {
           return `${days}d ${hours}h ${minutes}m`;
         } else if (hours > 0) {
@@ -60,18 +60,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return `${minutes}m`;
         }
       };
-      
+
       // Get real-time system health
       const processMemory = process.memoryUsage();
       const uptime = process.uptime();
       const uptimeFormatted = formatUptime(uptime);
       const memoryMB = Math.round(processMemory.heapUsed / 1024 / 1024);
-      
+
       const userListHTML = users.map(user => {
         const name = (user.firstName || '') + ' ' + (user.lastName || '');
         const displayName = name.trim() || 'No name';
         const joinDate = user.createdAt ? new Date(user.createdAt.toString()).toLocaleDateString() : 'Unknown';
-        
+
         return `
           <div style="padding: 15px; border: 1px solid #ddd; margin: 10px 0; background: white; border-radius: 5px; cursor: pointer;" 
                onclick="showUser(${user.id}, '${user.email}')">
@@ -100,27 +100,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
 <body>
     <div class="container">
         <h1>🎯 Giggy Admin Dashboard</h1>
-        
+
         <div class="stat">
             <h3>📊 System Health</h3>
             <p><strong>Server Status:</strong> <span style="color: #28a745;">HEALTHY</span></p>
             <p><strong>Uptime:</strong> ${uptimeFormatted}</p>
-            <p><strong>Memory Usage:</strong> ${memoryMB}MB</p>
+            <p><strong>Memory Usage:</strong> ${memoryMB}</p>
             <p><strong>Last Updated:</strong> ${new Date().toLocaleString()}</p>
         </div>
-        
+
         <div class="stat">
             <h3>📈 Platform Analytics</h3>
             <p><strong>Total Users:</strong> ${userCount}</p>
             <p><strong>Active Users (24h):</strong> <span id="activeCount">Loading...</span> <button onclick="toggleActiveUsers()" style="font-size: 12px; padding: 2px 6px;">Show Details</button></p>
             <p><strong>Error Rate:</strong> <span style="color: #28a745;">0.1%</span></p>
         </div>
-        
+
         <div class="stat" id="activeUsersSection" style="display: none;">
             <h3>👥 Active Users (Last 24h)</h3>
             <div id="activeUsersList">Loading...</div>
         </div>
-        
+
         <div class="stat">
             <h3>👥 All Users (${userCount} total)</h3>
             <p><em>Click any user to see details</em></p>
@@ -128,7 +128,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 ${userListHTML}
             </div>
         </div>
-        
+
         <div class="stat">
             <h3>🔍 User Lookup</h3>
             <input type="email" id="email" placeholder="Enter email">
@@ -136,7 +136,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             <button onclick="lookupUser()">Search User</button>
             <div id="result" style="margin-top: 15px;"></div>
         </div>
-        
+
         <div class="stat">
             <h3>🛠️ Support Access</h3>
             <p><strong>⚠️ Admin Only:</strong> Access user accounts for troubleshooting</p>
@@ -154,25 +154,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
             document.getElementById('email').value = email;
             lookupUser();
         }
-        
+
         async function lookupUser() {
             const email = document.getElementById('email').value;
             const userId = document.getElementById('userId').value;
-            
+
             if (!email && !userId) {
                 alert('Enter email or user ID');
                 return;
             }
-            
+
             try {
                 const params = new URLSearchParams();
                 if (email) params.append('email', email);
                 if (userId) params.append('id', userId);
                 params.append('key', 'giggy-admin-2025');
-                
+
                 const response = await fetch('/api/admin/user-lookup?' + params);
                 const user = await response.json();
-                
+
                 if (response.ok) {
                     document.getElementById('result').innerHTML = 
                         '<div style="background: #e8f5e8; padding: 15px; border-radius: 5px;">' +
@@ -196,14 +196,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
             try {
                 const response = await fetch('/api/admin/active-users?key=giggy-admin-2025');
                 const activeUsers = await response.json();
-                
+
                 document.getElementById('activeCount').textContent = activeUsers.length;
-                
+
                 if (activeUsers.length === 0) {
                     document.getElementById('activeUsersList').innerHTML = '<p style="color: #666;">No active users in the last 24 hours</p>';
                     return;
                 }
-                
+
                 const usersHTML = activeUsers.map(user => 
                     '<div style="padding: 10px; border: 1px solid #ddd; margin: 5px 0; background: #f9f9f9; border-radius: 3px;">' +
                     '<strong>' + (user.name || 'No name') + '</strong><br>' +
@@ -212,7 +212,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                     '<small style="color: #888;">Last active: ' + new Date(user.lastActivity).toLocaleString() + '</small>' +
                     '</div>'
                 ).join('');
-                
+
                 document.getElementById('activeUsersList').innerHTML = usersHTML;
             } catch (error) {
                 document.getElementById('activeCount').textContent = 'Error';
@@ -236,25 +236,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
         async function impersonateUser() {
             const userId = document.getElementById('impersonateUserId').value;
             const reason = document.getElementById('supportReason').value;
-            
+
             if (!userId || !reason) {
                 alert('Please enter both User ID and reason for access');
                 return;
             }
-            
+
             if (!confirm('⚠️ This will log you into the user\\'s account. Continue?')) {
                 return;
             }
-            
+
             try {
                 const response = await fetch('/api/admin/impersonate?key=giggy-admin-2025', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ userId: parseInt(userId), reason })
                 });
-                
+
                 const result = await response.json();
-                
+
                 if (response.ok) {
                     document.getElementById('impersonationStatus').innerHTML = 
                         '<div style="background: #fff3cd; padding: 10px; border-radius: 5px; border: 1px solid #ffeaa7;">' +
@@ -279,9 +279,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' }
                 });
-                
+
                 const result = await response.json();
-                
+
                 if (response.ok) {
                     document.getElementById('impersonationStatus').innerHTML = 
                         '<p style="color: green;">✅ Support session ended</p>';
@@ -314,7 +314,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
     const processMemory = process.memoryUsage();
     const uptime = process.uptime();
-    
+
     res.json({
       status: 'healthy',
       uptime: Math.floor(uptime),
@@ -339,7 +339,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userCount = await storage.getUserCount();
       const gigCount = await storage.getGigCount();
       const expenseCount = await storage.getExpenseCount();
-      
+
       res.json({
         totalUsers: userCount,
         activeUsers24h: Math.floor(userCount * 0.3), // Estimate active users
@@ -381,7 +381,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
     try {
       const { userId, reason } = req.body;
-      
+
       if (!userId || !reason) {
         return res.status(400).json({ error: 'User ID and reason required' });
       }
@@ -435,14 +435,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/admin/validate-impersonation', async (req, res) => {
     try {
       const { token } = req.query;
-      
+
       if (!token) {
         return res.status(400).json({ error: 'Token required' });
       }
 
       // Decode and validate token
       const tokenData = JSON.parse(Buffer.from(token as string, 'base64').toString());
-      
+
       // Check if token is valid (within 1 hour)
       const tokenAge = Date.now() - tokenData.timestamp;
       if (tokenAge > 3600000) { // 1 hour
@@ -485,7 +485,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
     try {
       const { email, id } = req.query;
-      
+
       if (!email && !id) {
         return res.status(400).json({ error: 'Email or ID required' });
       }
@@ -562,7 +562,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
     try {
       const users = await storage.getAllUsers();
-      
+
       // Return simple user data without expensive queries
       const safeUsers = users.map((user) => ({
         id: user.id,
@@ -583,10 +583,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // CRITICAL SECURITY: Block ALL authentication when reset token is present
   app.use('*', async (req: any, res: any, next: any) => {
     const resetToken = req.query.reset_token;
-    
+
     if (resetToken) {
       console.log('🚫 CRITICAL SECURITY: Reset token detected - BLOCKING ALL AUTHENTICATION:', resetToken);
-      
+
       // Immediately destroy any existing session
       const sessionId = req.cookies?.sessionId;
       if (sessionId) {
@@ -597,11 +597,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
           console.error('Session destruction error:', error);
         }
       }
-      
+
       // Clear ALL cookies aggressively
       const cookieNames = ['sessionId', 'connect.sid', 'session', 'giggy.session'];
       const domains = [undefined, '.bookd.tools', 'bookd.tools', '.localhost', 'localhost'];
-      
+
       cookieNames.forEach(name => {
         domains.forEach(domain => {
           const options: any = { 
@@ -615,13 +615,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
           res.clearCookie(name, options);
         });
       });
-      
+
       // CRITICAL: Mark this request to block all authentication attempts
       req.RESET_TOKEN_PRESENT = true;
       req.BLOCK_AUTH = true;
       req.user = null;
       req.userId = null;
-      
+
       // Set security headers
       res.set({
         'Cache-Control': 'no-cache, no-store, must-revalidate, private',
@@ -631,7 +631,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         'X-Auth-Blocked': 'true'
       });
     }
-    
+
     next();
   });
 
@@ -672,7 +672,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         businessPhone,
         businessEmail
       } = req.body;
-      
+
       const updateData: any = {};
       if (name !== undefined) updateData.name = name;
       if (email !== undefined) updateData.email = email;
@@ -683,12 +683,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (businessAddress !== undefined) updateData.businessAddress = businessAddress;
       if (businessPhone !== undefined) updateData.businessPhone = businessPhone;
       if (businessEmail !== undefined) updateData.businessEmail = businessEmail;
-      
+
       const updatedUser = await storage.updateUser(userId, updateData);
       if (!updatedUser) {
         return res.status(404).json({ message: "User not found" });
       }
-      
+
       res.json(updatedUser);
     } catch (error) {
       console.error("Update user error:", error);
@@ -701,11 +701,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = getUserId(req);
       const gigs = await storage.getGigsByUser(userId);
-      
+
       const monthlyEarnings = gigs
         .filter(g => g.status === 'completed' && g.actualPay)
         .reduce((sum, g) => sum + parseFloat(g.actualPay || '0'), 0);
-      
+
       res.json({ monthlyEarnings, totalTips: 0, totalExpenses: 0 });
     } catch (error) {
       if (error instanceof Error && error.message === "Invalid user ID") {
@@ -720,17 +720,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = getUserId(req);
       const gigs = await storage.getGigsByUser(userId);
-      
+
       const now = new Date();
       const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-      
+
       let updatedCount = 0;
-      
+
       // Check each gig and update status if needed
       for (const gig of gigs) {
         if (gig.status === 'upcoming') {
           const gigDate = new Date(gig.date + 'T00:00:00.000Z');
-          
+
           // If the gig date has passed, change status to pending_payment
           if (gigDate < today) {
             await storage.updateGig(gig.id, { status: 'pending_payment' });
@@ -738,7 +738,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
         }
       }
-      
+
       res.json({ 
         message: `Updated ${updatedCount} gigs to pending payment`,
         updatedCount 
@@ -777,13 +777,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = getUserId(req);
       const gigId = parseInt(req.params.id);
-      
+
       // Verify ownership
       const existingGig = await storage.getGig(gigId);
       if (!existingGig || existingGig.userId !== userId) {
         return res.status(404).json({ message: "Gig not found" });
       }
-      
+
       const updatedGig = await storage.updateGig(gigId, req.body);
       res.json(updatedGig);
     } catch (error) {
@@ -796,18 +796,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = getUserId(req);
       const gigId = parseInt(req.params.id);
-      
+
       // Verify ownership
       const existingGig = await storage.getGig(gigId);
       if (!existingGig || existingGig.userId !== userId) {
         return res.status(404).json({ message: "Gig not found" });
       }
-      
+
       const success = await storage.deleteGig(gigId);
       if (!success) {
         return res.status(500).json({ message: "Failed to delete gig" });
       }
-      
+
       res.json({ message: "Gig deleted successfully" });
     } catch (error) {
       console.error("Delete gig error:", error);
@@ -822,13 +822,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!userId) {
         return res.status(401).json({ message: "Authentication required" });
       }
-      
+
       const { period, date } = req.query;
-      
+
       if (!period || !date) {
         return res.status(400).json({ message: "Period and date are required" });
       }
-      
+
       if (period === 'monthly') {
         const dateObj = new Date(date as string);
         const goal = await storage.getMonthlyGoal(userId, dateObj.getMonth() + 1, dateObj.getFullYear());
@@ -852,16 +852,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!userId) {
         return res.status(401).json({ message: "Authentication required" });
       }
-      
+
       const { period, date } = req.params;
       const { goalAmount } = req.body;
-      
+
       console.log(`Setting ${period} goal for user ${userId}:`, { period, date, goalAmount });
-      
+
       if (!goalAmount || isNaN(parseFloat(goalAmount))) {
         return res.status(400).json({ message: "Valid goal amount is required" });
       }
-      
+
       if (period === 'monthly') {
         const dateObj = new Date(date);
         const month = dateObj.getMonth() + 1;
@@ -910,7 +910,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/calculate-distance", requireAuth, async (req, res) => {
     try {
       const { startAddress, endAddress, waypoints = [], roundTrip = false } = req.body;
-      
+
       // Enhanced logging for mobile debugging
       console.log('Distance calculation request:', {
         startAddress: startAddress?.substring(0, 50),
@@ -919,7 +919,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         roundTrip,
         userAgent: req.headers['user-agent']?.substring(0, 100)
       });
-      
+
       if (!startAddress || !endAddress) {
         console.log('Missing addresses error');
         return res.status(400).json({ error: "Starting and ending addresses are required" });
@@ -936,26 +936,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Build route: start -> waypoints -> end
       const routePoints = [startAddress.trim(), ...waypoints.filter((w: any) => w?.trim()), endAddress.trim()];
-      
+
       // Calculate distance for each segment
       for (let i = 0; i < routePoints.length - 1; i++) {
         const origin = encodeURIComponent(routePoints[i]);
         const destination = encodeURIComponent(routePoints[i + 1]);
-        
+
         const url = `https://maps.googleapis.com/maps/api/distancematrix/json?origins=${origin}&destinations=${destination}&units=imperial&key=${apiKey}`;
-        
+
         const response = await fetch(url, {
           timeout: 15000, // 15 second timeout for mobile networks
           headers: {
             'User-Agent': 'Bookd-App/1.0'
           }
         });
-        
+
         if (!response.ok) {
           console.log('Google Maps API HTTP error:', response.status, response.statusText);
           return res.status(500).json({ error: `Google Maps API request failed: ${response.status}` });
         }
-        
+
         const data = await response.json();
         console.log('Google Maps API response status:', data.status);
 
@@ -965,7 +965,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
 
         const element = data.rows[0]?.elements[0];
-        
+
         if (!element || element.status !== 'OK') {
           return res.status(500).json({ error: `Could not calculate distance between ${routePoints[i]} and ${routePoints[i + 1]}` });
         }
@@ -973,7 +973,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Convert meters to miles (1 meter = 0.000621371 miles)
         const segmentMiles = element.distance.value * 0.000621371;
         const segmentMinutes = element.duration.value / 60;
-        
+
         totalDistance += segmentMiles;
         totalTime += segmentMinutes;
       }
@@ -993,10 +993,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         distanceMiles,
         travelTimeMinutes
       });
-      
+
     } catch (error) {
       console.error("Distance calculation error:", error);
-      
+
       // Enhanced error handling for mobile debugging
       if (error instanceof Error) {
         console.error("Error details:", {
@@ -1004,7 +1004,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           stack: error.stack,
           name: error.name
         });
-        
+
         // Provide specific error messages for common mobile issues
         if (error.message.includes('timeout') || error.message.includes('TIMEOUT')) {
           return res.status(500).json({ 
@@ -1012,7 +1012,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             code: "TIMEOUT"
           });
         }
-        
+
         if (error.message.includes('fetch') || error.message.includes('network')) {
           return res.status(500).json({ 
             error: "Network error - please check your internet connection",
@@ -1020,7 +1020,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           });
         }
       }
-      
+
       res.status(500).json({ 
         error: "Failed to calculate distance. Please try again.",
         code: "CALCULATION_ERROR"
@@ -1060,18 +1060,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = getUserId(req);
       const expenseId = parseInt(req.params.id);
-      
+
       // Verify ownership
       const existingExpense = await storage.getExpense(expenseId);
       if (!existingExpense || existingExpense.userId !== userId) {
         return res.status(404).json({ message: "Expense not found" });
       }
-      
+
       const success = await storage.deleteExpense(expenseId);
       if (!success) {
         return res.status(500).json({ message: "Failed to delete expense" });
       }
-      
+
       res.json({ message: "Expense deleted successfully" });
     } catch (error) {
       res.status(500).json({ message: "Failed to delete expense" });
@@ -1120,17 +1120,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         userId: req.userId,
         userAgent: req.get('User-Agent')
       });
-      
+
       const userId = getUserId(req);
       console.log('User ID retrieved:', userId);
-      
+
       // Verify user exists to prevent errors
       const userExists = await storage.getUser(userId);
       if (!userExists) {
         console.log('User not found in database:', userId);
         return res.status(404).json({ message: 'User not found' });
       }
-      
+
       const { period, year, month, professional } = req.query;
 
       if (!period || !year) {
@@ -1146,7 +1146,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Check if professional report is requested
       if (professional === 'true') {
         const { generateProfessionalHTML } = await import('./professional-html-generator');
-        
+
         const htmlContent = await generateProfessionalHTML({
           userId,
           period: period as 'monthly' | 'annual',
@@ -1163,13 +1163,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
         res.setHeader('Pragma', 'no-cache');
         res.setHeader('Expires', '0');
-        
+
         return res.send(htmlContent);
       }
-      
+
       // Original quick report format
       const { generateHTMLPDF } = await import('./html-pdf-generator');
-      
+
       const htmlContent = await generateHTMLPDF(
         userId,
         period as 'monthly' | 'annual',
@@ -1186,12 +1186,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
       res.setHeader('Pragma', 'no-cache');
       res.setHeader('Expires', '0');
-      
+
       res.send(htmlContent);
     } catch (error: any) {
       console.error('Error generating PDF report:', error);
       console.error('Error stack:', error?.stack);
-      
+
       // Return more specific error information for debugging
       if (error instanceof Error) {
         res.status(500).json({ 
@@ -1204,9 +1204,74 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
     }
   });
+  
+  // AuthService import should be inside the function to prevent circular dependency issues.
+  async function getAuthService() {
+      return await import('./unified-auth');
+  }
+  
+  // PasswordReset import should be inside the function to prevent circular dependency issues.
+  async function getPasswordReset() {
+      return await import('./password-reset');
+  }
 
+  // Reset password routes
+  app.post('/api/auth/validate-reset-token', async (req: any, res: any) => {
+    try {
+      const { token } = req.body;
 
+      if (!token) {
+        return res.status(400).json({ message: "Token is required" });
+      }
 
+      const { PasswordReset } = await getPasswordReset();
+      const tokenData = await PasswordReset.validateResetToken(token);
+
+      if (!tokenData) {
+        return res.status(400).json({ message: "Invalid or expired reset token" });
+      }
+
+      // Get user info for the token
+      const { AuthService } = await getAuthService();
+      const user = await AuthService.getUserById(tokenData.userId);
+      if (!user) {
+        return res.status(400).json({ message: "User not found" });
+      }
+
+      res.json({ 
+        valid: true,
+        user: {
+          id: user.id,
+          email: user.email,
+          name: user.name
+        }
+      });
+    } catch (error) {
+      console.error('Reset token validation error:', error);
+      res.status(500).json({ message: "Token validation failed" });
+    }
+  });
+
+  app.post('/api/auth/reset-password', async (req: any, res: any) => {
+    try {
+      const { token, newPassword } = req.body;
+
+      if (!token || !newPassword) {
+        return res.status(400).json({ message: "Token and new password are required" });
+      }
+      const { PasswordReset } = await getPasswordReset();
+      const success = await PasswordReset.resetPassword(token, newPassword);
+
+      if (!success) {
+        return res.status(400).json({ message: "Invalid or expired reset token" });
+      }
+
+      res.json({ message: "Password reset successful" });
+    } catch (error) {
+      console.error('Password reset error:', error);
+      res.status(500).json({ message: "Password reset failed" });
+    }
+  });
 
   const httpServer = createServer(app);
   return httpServer;

@@ -80,11 +80,47 @@ export function AuthForm({ onSuccess }: AuthFormProps) {
         console.log('Logout requests completed (expected to fail during reset)');
       });
 
-      // Set the form to password reset mode
-      setMode('reset-password');
-
-      // Populate the token field securely
-      resetPasswordForm.setValue('token', token);
+      // CRITICAL: Validate token and get user info before showing form
+      fetch("/api/auth/validate-reset-token", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token })
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.valid) {
+          console.log('✅ Token validated for user:', data.user.email);
+          
+          // Set the form to password reset mode
+          setMode('reset-password');
+          
+          // Populate the token field securely
+          resetPasswordForm.setValue('token', token);
+          
+          // Show user info in toast for confirmation
+          toast({
+            title: "Password Reset",
+            description: `Resetting password for ${data.user.email}`,
+          });
+        } else {
+          console.log('❌ Invalid token');
+          toast({
+            title: "Invalid Reset Link",
+            description: "This reset link is invalid or has expired.",
+            variant: "destructive",
+          });
+          setMode('login');
+        }
+      })
+      .catch(error => {
+        console.error('Token validation failed:', error);
+        toast({
+          title: "Reset Link Error",
+          description: "Could not validate reset link. Please try again.",
+          variant: "destructive",
+        });
+        setMode('login');
+      });
 
       // Clean the URL to prevent token exposure
       const newUrl = new URL(window.location.href);

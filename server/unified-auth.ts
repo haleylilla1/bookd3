@@ -237,20 +237,50 @@ export class PasswordReset {
   // Reset password using token
   static async resetPassword(token: string, newPassword: string): Promise<boolean> {
     try {
-      // Validate token
-      const tokenData = await this.validateResetToken(token);
-      if (!tokenData) {
+      // CRITICAL: Validate token and get user info in single transaction
+      const [resetToken] = await db
+        .select({
+          userId: passwordResetTokens.userId,
+          userEmail: users.email,
+          userName: users.name
+        })
+        .from(passwordResetTokens)
+        .innerJoin(users, eq(passwordResetTokens.userId, users.id))
+        .where(
+          and(
+            eq(passwordResetTokens.token, token),
+            eq(passwordResetTokens.used, false),
+            gt(passwordResetTokens.expiresAt, new Date())
+          )
+        )
+        .limit(1);
+
+      if (!resetToken) {
+        console.log('❌ Invalid or expired reset token:', token);
         return false;
       }
+
+      console.log('✅ Valid reset token for user:', resetToken.userEmail);
 
       // Hash new password
       const passwordHash = await bcrypt.hash(newPassword, 10);
 
-      // Update user password
-      await db
+      // CRITICAL: Update password for the specific user from token
+      const [updatedUser] = await db
         .update(users)
-        .set({ passwordHash })
-        .where(eq(users.id, tokenData.userId));
+        .set({ 
+          passwordHash,
+          lastLoginAt: new Date() // Update last login to current time
+        })
+        .where(eq(users.id, resetToken.userId))
+        .returning({ id: users.id, email: users.email });
+
+      if (!updatedUser) {
+        console.log('❌ Failed to update user password');
+        return false;
+      }
+
+      console.log('✅ Password updated for user:', updatedUser.email);
 
       // Mark token as used
       await db
@@ -258,8 +288,10 @@ export class PasswordReset {
         .set({ used: true })
         .where(eq(passwordResetTokens.token, token));
 
-      // Destroy all sessions for this user (force re-login)
-      await SessionManager.destroyUserSessions(tokenData.userId);
+      // CRITICAL: Destroy ALL sessions for this specific user
+      await SessionManager.destroyUserSessions(resetToken.userId);
+
+      console.log('✅ All sessions destroyed for user:', resetToken.userId);
 
       return true;
     } catch (error) {
