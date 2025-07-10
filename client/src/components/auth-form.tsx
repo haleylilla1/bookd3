@@ -51,67 +51,59 @@ export function AuthForm({ onSuccess }: AuthFormProps) {
     const token = urlParams.get('reset_token');
 
     if (token) {
-      console.log('🔑 SECURITY: Reset token detected - entering secure reset mode:', token);
+      console.log('🔑 RESET TOKEN DETECTED - COMPLETE AUTHENTICATION LOCKDOWN');
+      console.log('🔑 Token:', token);
 
-      // NUCLEAR OPTION: Destroy ALL possible authentication data
-      // Clear all cookies with every possible combination
-      const cookieNames = ['sessionId', 'connect.sid', 'session', 'giggy.session', 'auth', 'token', 'user'];
-      const domains = ['', '.bookd.tools', 'bookd.tools', '.localhost', 'localhost'];
-      const paths = ['/', '/auth', '/api'];
-      
-      // Multiple clearing attempts with different strategies
-      cookieNames.forEach(name => {
+      // IMMEDIATELY activate reset mode globally
+      window.RESET_MODE_ACTIVE = true;
+      setResetToken(token);
+
+      // NUCLEAR OPTION: Completely destroy all authentication
+      const allCookieNames = [
+        'sessionId', 'connect.sid', 'session', 'giggy.session', 
+        'auth', 'token', 'user', 'login', 'sess', 'sid'
+      ];
+
+      allCookieNames.forEach(name => {
+        // Clear with every possible domain and path combination
+        const domains = ['', '.bookd.tools', 'bookd.tools', '.localhost', 'localhost'];
+        const paths = ['/', '/api', '/auth'];
+
         domains.forEach(domain => {
           paths.forEach(path => {
-            const domainPart = domain ? `; domain=${domain}` : '';
-            const pathPart = `; path=${path}`;
-            // Clear with different expiration formats
-            document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC${pathPart}${domainPart}`;
-            document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT${pathPart}${domainPart}`;
-            document.cookie = `${name}=; max-age=0${pathPart}${domainPart}`;
+            document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=${path}; ${domain ? `domain=${domain};` : ''}`;
           });
         });
       });
-      
-      // Additional cookie clearing with split method
-      document.cookie.split(";").forEach(function(c) { 
-        const eqPos = c.indexOf("=");
-        const name = eqPos > -1 ? c.substr(0, eqPos) : c;
-        document.cookie = name + "=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/";
-        document.cookie = name + "=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/;domain=.bookd.tools";
-        document.cookie = name + "=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/;domain=bookd.tools";
-      });
-      
+
+      // Clear all storage
       localStorage.clear();
       sessionStorage.clear();
+      if (window.localStorage) window.localStorage.clear();
+      if (window.sessionStorage) window.sessionStorage.clear();
 
-      // Force multiple logout attempts for security
-      Promise.all([
-        fetch("/api/auth/logout", { method: "POST", credentials: "include" }),
-        fetch("/api/auth/logout", { method: "POST", credentials: "omit" }),
-        fetch("/api/auth/logout", { method: "POST", credentials: "same-origin" })
-      ]).catch(() => {
-        console.log('Logout requests completed (expected to fail during reset)');
-      });
+      // Force logout with aggressive approach
+      fetch("/api/auth/logout", { 
+        method: "POST", 
+        credentials: "include",
+        headers: { 'X-Reset-Mode': 'true' }
+      }).catch(() => console.log('Logout completed'));
 
-      // CRITICAL: Validate token and get user info before showing form
+      // Validate token ONLY
       fetch("/api/auth/validate-reset-token", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          'X-Reset-Mode': 'true'
+        },
         body: JSON.stringify({ token })
       })
       .then(response => response.json())
       .then(data => {
         if (data.valid) {
           console.log('✅ Token validated for user:', data.user.email);
-          
-          // Set the form to password reset mode
           setMode('reset-password');
-          
-          // Populate the token field securely
           resetPasswordForm.setValue('token', token);
-          
-          // Show user info in toast for confirmation
           toast({
             title: "Password Reset",
             description: `Resetting password for ${data.user.email}`,
@@ -123,6 +115,7 @@ export function AuthForm({ onSuccess }: AuthFormProps) {
             description: "This reset link is invalid or has expired.",
             variant: "destructive",
           });
+          window.RESET_MODE_ACTIVE = false;
           setMode('login');
         }
       })
@@ -133,13 +126,12 @@ export function AuthForm({ onSuccess }: AuthFormProps) {
           description: "Could not validate reset link. Please try again.",
           variant: "destructive",
         });
+        window.RESET_MODE_ACTIVE = false;
         setMode('login');
       });
-
-      // Clean the URL to prevent token exposure
-      const newUrl = new URL(window.location.href);
-      newUrl.searchParams.delete('reset_token');
-      window.history.replaceState({}, '', newUrl.toString());
+    } else {
+      // Clear reset mode if no token
+      window.RESET_MODE_ACTIVE = false;
     }
   }, []);
 

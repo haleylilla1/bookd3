@@ -386,21 +386,25 @@ export class AuthService {
 
 // Auth middleware
 export function requireAuth(req: any, res: any, next: any) {
-  // CRITICAL SECURITY: Block authentication if reset token is present
-  const resetToken = req.query.reset_token || req.body.reset_token || req.RESET_TOKEN_PRESENT || req.BLOCK_AUTH;
+  // NUCLEAR OPTION: Block authentication if ANY reset indicator is present
+  const resetToken = req.query.reset_token || req.body.reset_token || 
+                     req.RESET_TOKEN_PRESENT || req.BLOCK_AUTH ||
+                     req.headers['x-reset-mode'] === 'true';
   
   if (resetToken) {
-    console.log('🚫 SECURITY BLOCK: Reset token detected - completely blocking authentication');
-    console.log('🚫 Request details:', { path: req.path, url: req.url });
+    console.log('🚫 COMPLETE AUTH BLOCK: Reset mode detected');
+    console.log('🚫 Blocking path:', req.path);
     
-    // Clear any existing session data from request
+    // COMPLETELY clear any session data
     req.user = null;
     req.userId = null;
+    req.session = null;
     
     return res.status(401).json({ 
-      message: "Password reset in progress - authentication blocked",
+      message: "COMPLETE AUTHENTICATION BLOCK - Password reset in progress",
       resetMode: true,
-      blockAuth: true
+      blocked: true,
+      path: req.path
     });
   }
   

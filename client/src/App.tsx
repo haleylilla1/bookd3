@@ -19,50 +19,70 @@ function Router() {
 
     async function checkAuth() {
       try {
-        // IMMEDIATE check for reset token - highest priority
+        // ABSOLUTE FIRST PRIORITY: Check for reset token and completely block authentication
         const urlParams = new URLSearchParams(window.location.search);
         const resetToken = urlParams.get('reset_token');
 
         if (resetToken) {
-          console.log('🚫 CRITICAL SECURITY: Reset token detected - PREVENTING AUTO-LOGIN:', resetToken);
-          console.log('🚫 Current URL:', window.location.href);
+          console.log('🚫 RESET TOKEN DETECTED - COMPLETELY BLOCKING ALL AUTHENTICATION');
+          console.log('🚫 Token:', resetToken);
+          console.log('🚫 URL:', window.location.href);
 
-          // IMMEDIATELY block any authentication attempts
+          // IMMEDIATELY set loading to false and user to null
           if (mounted) {
             setUser(null);
             setIsLoading(false);
           }
 
-          // Aggressively clear ALL authentication data
-          document.cookie.split(";").forEach(function(c) { 
-            document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date(0).toUTCString() + ";path=/"); 
-          });
+          // NUCLEAR OPTION: Completely destroy all authentication state
+          // Clear ALL cookies with every possible combination
+          const allCookieNames = [
+            'sessionId', 'connect.sid', 'session', 'giggy.session', 
+            'auth', 'token', 'user', 'login', 'sess', 'sid'
+          ];
           
-          // Clear with specific cookie names and domains
-          const cookieNames = ['sessionId', 'connect.sid', 'session', 'giggy.session'];
-          cookieNames.forEach(name => {
-            document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`;
-            document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=.bookd.tools;`;
-            document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=bookd.tools;`;
+          allCookieNames.forEach(name => {
+            // Clear with every possible domain and path combination
+            const domains = ['', '.bookd.tools', 'bookd.tools', '.localhost', 'localhost'];
+            const paths = ['/', '/api', '/auth'];
+            
+            domains.forEach(domain => {
+              paths.forEach(path => {
+                document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=${path}; ${domain ? `domain=${domain};` : ''}`;
+              });
+            });
           });
-          
+
+          // Clear storage
           localStorage.clear();
           sessionStorage.clear();
 
-          // Force server-side session destruction
-          try {
-            await fetch("/api/auth/logout", {
-              method: "POST",
-              credentials: "include",
-            });
-          } catch (logoutError) {
-            console.log('Logout request failed (expected during reset):', logoutError);
+          // Clear any cached auth data in memory
+          if (window.localStorage) {
+            window.localStorage.clear();
+          }
+          if (window.sessionStorage) {
+            window.sessionStorage.clear();
           }
 
-          return; // CRITICAL: Exit immediately to prevent any login
+          // COMPLETELY PREVENT any auth API calls
+          window.RESET_MODE_ACTIVE = true;
+          
+          console.log('🚫 ALL AUTHENTICATION BLOCKED - RESET MODE ACTIVE');
+          return; // STOP COMPLETELY - do not proceed with any auth checks
         }
 
-        // Only check authentication if NO reset token
+        // ONLY proceed with auth check if NO reset token AND not in reset mode
+        if (window.RESET_MODE_ACTIVE) {
+          console.log('🚫 Reset mode still active - blocking auth check');
+          if (mounted) {
+            setUser(null);
+            setIsLoading(false);
+          }
+          return;
+        }
+
+        // Normal authentication check (only when no reset token)
         const response = await fetch("/api/auth/user", {
           credentials: "include",
           headers: {
@@ -80,7 +100,7 @@ function Router() {
           setIsLoading(false);
         }
       } catch (error) {
-        console.log("Auth check failed (normal for logged out users):", error);
+        console.log("Auth check failed:", error);
         if (mounted) {
           setUser(null);
           setIsLoading(false);

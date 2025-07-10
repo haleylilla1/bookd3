@@ -580,8 +580,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // CRITICAL SECURITY: Block ALL authentication when reset token is present - ABSOLUTE FIRST PRIORITY
-  app.use('*', async (req: any, res: any, next: any) => {
+  // NUCLEAR OPTION: Complete authentication blocker - this overrides EVERYTHING
+  app.use(async (req: any, res: any, next: any) => {
     const resetToken = req.query.reset_token || req.body.reset_token;
 
     if (resetToken) {
@@ -600,12 +600,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
-      // BLOCK any API requests that might auto-authenticate
-      if (req.path.startsWith('/api/auth/user') || req.path.startsWith('/api/user')) {
-        console.log('🚫 BLOCKING AUTH API REQUEST during reset');
+      // COMPLETELY BLOCK any authentication-related requests
+      if (req.path.startsWith('/api/auth/user') || 
+          req.path.startsWith('/api/user') || 
+          req.path.startsWith('/api/dashboard') ||
+          req.path.startsWith('/api/gigs') ||
+          req.path.startsWith('/api/expenses') ||
+          req.path.startsWith('/api/goals')) {
+        console.log('🚫 BLOCKING ALL AUTHENTICATED API REQUESTS during reset');
         return res.status(401).json({ 
-          message: "Authentication blocked during password reset",
-          resetMode: true 
+          message: "All authentication blocked during password reset",
+          resetMode: true,
+          blocked: true
         });
       }
 
