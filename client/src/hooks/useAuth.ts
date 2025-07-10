@@ -7,18 +7,15 @@ export function useAuth() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
+  // Check if we have a reset token - if so, completely disable this hook
+  const urlParams = new URLSearchParams(window.location.search);
+  const resetToken = urlParams.get('reset_token');
+
   const { data: user, isLoading, error } = useQuery<User>({
     queryKey: ["/api/auth/user"],
+    enabled: !resetToken, // Completely disable query when reset token present
     queryFn: async () => {
       try {
-        // Check if we have a reset token - if so, skip authentication
-        const urlParams = new URLSearchParams(window.location.search);
-        const resetToken = urlParams.get('reset_token');
-        
-        if (resetToken) {
-          console.log('🚫 Reset token detected, skipping authentication check');
-          return null;
-        }
         
         const response = await fetch("/api/auth/user", {
           credentials: "include",
@@ -101,6 +98,20 @@ export function useAuth() {
       });
     },
   });
+
+  // When reset token is present, override all auth states
+  if (resetToken) {
+    console.log('🚫 useAuth disabled due to reset token:', resetToken);
+    return {
+      user: null,
+      isLoading: false,
+      isAuthenticated: false,
+      logout: () => logoutMutation.mutate(),
+      exportData: () => exportDataMutation.mutate(),
+      isLoggingOut: logoutMutation.isPending,
+      isExporting: exportDataMutation.isPending,
+    };
+  }
 
   return {
     user,
