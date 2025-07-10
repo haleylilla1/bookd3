@@ -128,18 +128,12 @@ export function AuthForm({ onSuccess }: AuthFormProps) {
         description: data.developmentResetUrl ? "Development reset link available in console" : "Check your email for the reset link"
       });
       
-      // In development, show the reset URL in console and optionally auto-navigate
+      // In development, show the reset URL in console for manual testing
       if (data.developmentResetUrl) {
         console.log('🔗 Development Reset Link:', data.developmentResetUrl);
         
-        // Auto-navigate to reset page in development
-        const url = new URL(data.developmentResetUrl);
-        const token = url.searchParams.get('reset_token');
-        if (token) {
-          setResetToken(token);
-          setMode('reset-password');
-          resetPasswordForm.setValue('token', token);
-        }
+        // Note: Auto-navigation removed - user should click email link or console link
+        // This allows testing of the actual email flow
       }
     },
     onError: (error: any) => {
