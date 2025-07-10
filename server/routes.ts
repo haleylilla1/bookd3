@@ -141,17 +141,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         </div>
 
         <div class="stat">
-            <h3>🛠️ Support Access</h3>
-            <p><strong>⚠️ Admin Only:</strong> Access user accounts for troubleshooting</p>
-            <input type="number" id="impersonateUserId" placeholder="Enter user ID">
-            <input type="text" id="supportReason" placeholder="Reason (e.g., 'fixing login issue')" style="width: 300px;">
-            <button onclick="impersonateUser()" style="background: #dc3545;">Access Account</button>
-            <button onclick="endImpersonation()" style="background: #28a745;">End Support Session</button>
-            <div id="impersonationStatus" style="margin-top: 10px;"></div>
+            <h3>🛠️ System Information</h3>
+            <p><strong>Security:</strong> User impersonation system permanently removed</p>
+            <p><strong>Authentication:</strong> Database-backed sessions with secure tokens</p>
+            <p><strong>Admin Access:</strong> Environment-variable protected endpoints only</p>
         </div>
     </div>
 
     <script>
+        const adminKey = '${process.env.ADMIN_ACCESS_KEY || 'secure-admin-key'}';
+        
         function showUser(id, email) {
             document.getElementById('userId').value = id;
             document.getElementById('email').value = email;
@@ -235,6 +234,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         // Load initial active user count
         loadActiveUsers();
+        
+        // SECURITY: All impersonation functions removed for production security
     </script>
 </body>
 </html>
@@ -312,65 +313,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // SECURITY: Admin impersonation system disabled for production security
-  app.post('/api/admin/impersonate', async (req, res) => {
-    // SECURITY: Impersonation disabled in production to prevent unauthorized access
-    if (process.env.NODE_ENV === 'production') {
-      return res.status(404).json({ error: 'Not Found' });
-    }
 
-    if (!isAdminRequest(req)) {
-      return res.status(404).json({ error: 'Not Found' });
-    }
 
-    return res.status(503).json({ error: 'Impersonation feature disabled for security' });
-  });
-
-  // Validate Admin Impersonation Token
-  app.get('/api/admin/validate-impersonation', async (req, res) => {
-    try {
-      const { token } = req.query;
-
-      if (!token) {
-        return res.status(400).json({ error: 'Token required' });
-      }
-
-      // Decode and validate token
-      const tokenData = JSON.parse(Buffer.from(token as string, 'base64').toString());
-
-      // Check if token is valid (within 1 hour)
-      const tokenAge = Date.now() - tokenData.timestamp;
-      if (tokenAge > 3600000) { // 1 hour
-        return res.status(401).json({ error: 'Impersonation token expired' });
-      }
-
-      // SECURITY: Verify admin key from environment variable
-      const validAdminKey = process.env.ADMIN_ACCESS_KEY;
-      if (!validAdminKey || tokenData.adminKey !== validAdminKey) {
-        return res.status(401).json({ error: 'Invalid admin token' });
-      }
-
-      // Get user data
-      const user = await storage.getUser(tokenData.userId);
-      if (!user) {
-        return res.status(404).json({ error: 'User not found' });
-      }
-
-      res.json({
-        valid: true,
-        user: {
-          id: user.id,
-          email: user.email,
-          name: user.name
-        },
-        reason: tokenData.reason
-      });
-
-    } catch (error) {
-      console.error('Token validation error:', error);
-      res.status(400).json({ error: 'Invalid token format' });
-    }
-  });
 
   // User Lookup API (Limited Safe Data Only)
   app.get('/api/admin/user-lookup', async (req, res) => {
