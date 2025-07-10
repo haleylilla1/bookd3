@@ -72,49 +72,7 @@ export default function Dashboard() {
     retry: 1,
   });
 
-  // Debug logging
-  useEffect(() => {
-    console.log('Dashboard gigs state:', { 
-      gigsCount: gigs?.length || 0, 
-      gigsLoading, 
-      gigsError: gigsError?.message || gigsError,
-      userAuthenticated: !!user,
-      cookies: document.cookie,
-      hasSessionCookie: document.cookie.includes('sessionId')
-    });
-    if (gigsError) {
-      console.error('Gigs query error details:', gigsError);
-    }
-  }, [gigs, gigsLoading, gigsError, user]);
 
-  // Add manual test of gigs API
-  useEffect(() => {
-    if (user && !gigs?.length) {
-      console.log('🔍 Testing direct gigs API call...');
-      fetch('/api/gigs', {
-        method: 'GET',
-        credentials: 'include',
-        headers: {
-          'Accept': 'application/json',
-          'Cache-Control': 'no-cache'
-        }
-      })
-      .then(response => {
-        console.log('Direct API response status:', response.status);
-        if (response.ok) {
-          return response.json();
-        } else {
-          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-        }
-      })
-      .then(data => {
-        console.log('✅ Direct API call successful:', data?.length || 0, 'gigs');
-      })
-      .catch(error => {
-        console.error('❌ Direct API call failed:', error);
-      });
-    }
-  }, [user, gigs?.length]);
 
   // Automatically update gig statuses when dashboard loads (once per session)
   useEffect(() => {
@@ -569,21 +527,18 @@ export default function Dashboard() {
     );
   }
 
-  // Show debug info when no data is loading
-  if (!gigsLoading && !gigs?.length) {
+  // Show message when no gigs are found
+  if (!gigsLoading && !gigs?.length && user) {
     return (
-      <div className="p-4">
-        <div className="text-center space-y-4">
-          <h2 className="text-xl font-semibold text-gray-600">Dashboard Debug</h2>
-          <div className="text-sm text-gray-500 space-y-2">
-            <p>User: {user?.email || 'Not authenticated'}</p>
-            <p>Gigs Count: {gigs?.length || 0}</p>
-            <p>Has Session Cookie: {document.cookie.includes('sessionId') ? 'Yes' : 'No'}</p>
-            <p>Cookies: {document.cookie || 'None'}</p>
-            <p>Loading State: {gigsLoading ? 'Loading' : 'Complete'}</p>
-            <p>Error: {gigsError ? JSON.stringify(gigsError) : 'None'}</p>
-          </div>
-        </div>
+      <div className="p-4 text-center space-y-4">
+        <h2 className="text-xl font-semibold text-gray-600">Welcome to Bookd!</h2>
+        <p className="text-gray-500">You haven't added any gigs yet. Start tracking your work by adding your first gig!</p>
+        <Button 
+          onClick={() => window.location.href = '/'}
+          variant="default"
+        >
+          Add Your First Gig
+        </Button>
       </div>
     );
   }
