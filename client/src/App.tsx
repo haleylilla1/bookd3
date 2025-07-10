@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { Route, Switch } from 'wouter';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from '@/components/ui/toaster';
 import HomePage from '@/pages/home';
@@ -15,7 +15,7 @@ const queryClient = new QueryClient({
   },
 });
 
-function Router() {
+function AppRouter() {
   const [user, setUser] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -96,20 +96,23 @@ function Router() {
 
   // User is authenticated, show main app
   return (
-    <BrowserRouter>
-      <Routes>
-        <Route path="/" element={<HomePage />} />
-        <Route path="/home" element={<Navigate to="/" replace />} />
-        <Route path="*" element={<NotFound />} />
-      </Routes>
-    </BrowserRouter>
+    <Switch>
+      <Route path="/" component={HomePage} />
+      <Route path="/home">
+        {() => {
+          window.location.href = '/';
+          return null;
+        }}
+      </Route>
+      <Route component={NotFound} />
+    </Switch>
   );
 }
 
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <Router />
+      <AppRouter />
       <Toaster />
     </QueryClientProvider>
   );
