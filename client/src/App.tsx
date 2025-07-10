@@ -25,6 +25,7 @@ function Router() {
         
         if (resetToken) {
           // For reset tokens, skip authentication check and show auth form
+          console.log('🔄 Reset token detected, skipping auth check:', resetToken);
           if (mounted) {
             setUser(null);
             setIsLoading(false);
