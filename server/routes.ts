@@ -598,21 +598,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
-      // Clear ALL cookies aggressively
-      const cookieNames = ['sessionId', 'connect.sid', 'session', 'giggy.session'];
-      const domains = [undefined, '.bookd.tools', 'bookd.tools', '.localhost', 'localhost'];
-
+      // Clear ALL cookies aggressively with multiple attempts
+      const cookieNames = ['sessionId', 'connect.sid', 'session', 'giggy.session', 'auth', 'token'];
+      
+      // Clear with different path and domain combinations
       cookieNames.forEach(name => {
-        domains.forEach(domain => {
-          const options: any = { 
-            path: '/',
-            httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
-            sameSite: 'strict',
-            expires: new Date(0) // Force immediate expiration
-          };
-          if (domain) options.domain = domain;
-          res.clearCookie(name, options);
+        // Clear with default options
+        res.clearCookie(name);
+        
+        // Clear with specific options for different scenarios
+        res.clearCookie(name, { path: '/' });
+        res.clearCookie(name, { path: '/', domain: '.bookd.tools' });
+        res.clearCookie(name, { path: '/', domain: 'bookd.tools' });
+        res.clearCookie(name, { 
+          path: '/',
+          httpOnly: true,
+          secure: process.env.NODE_ENV === 'production',
+          sameSite: 'strict'
+        });
+        
+        // Force expire with past date
+        res.cookie(name, '', { 
+          expires: new Date(0),
+          path: '/',
+          httpOnly: true,
+          secure: process.env.NODE_ENV === 'production',
+          sameSite: 'strict'
         });
       });
 
@@ -622,13 +633,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       req.user = null;
       req.userId = null;
 
-      // Set security headers
+      // Set security headers to prevent caching
       res.set({
         'Cache-Control': 'no-cache, no-store, must-revalidate, private',
         'Pragma': 'no-cache',
         'Expires': '0',
         'X-Reset-Mode': 'true',
-        'X-Auth-Blocked': 'true'
+        'X-Auth-Blocked': 'true',
+        'Set-Cookie': 'sessionId=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; HttpOnly'
       });
     }
 

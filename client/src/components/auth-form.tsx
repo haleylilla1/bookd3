@@ -53,20 +53,33 @@ export function AuthForm({ onSuccess }: AuthFormProps) {
     if (token) {
       console.log('🔑 SECURITY: Reset token detected - entering secure reset mode:', token);
 
-      // CRITICAL: Immediately destroy all authentication data
-      document.cookie.split(";").forEach(function(c) { 
-        document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date(0).toUTCString() + ";path=/"); 
-      });
-      
-      // Aggressively clear cookies with all possible domain variations
-      const cookieNames = ['sessionId', 'connect.sid', 'session', 'giggy.session'];
+      // NUCLEAR OPTION: Destroy ALL possible authentication data
+      // Clear all cookies with every possible combination
+      const cookieNames = ['sessionId', 'connect.sid', 'session', 'giggy.session', 'auth', 'token', 'user'];
       const domains = ['', '.bookd.tools', 'bookd.tools', '.localhost', 'localhost'];
+      const paths = ['/', '/auth', '/api'];
       
+      // Multiple clearing attempts with different strategies
       cookieNames.forEach(name => {
         domains.forEach(domain => {
-          const domainPart = domain ? `; domain=${domain}` : '';
-          document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/${domainPart}`;
+          paths.forEach(path => {
+            const domainPart = domain ? `; domain=${domain}` : '';
+            const pathPart = `; path=${path}`;
+            // Clear with different expiration formats
+            document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC${pathPart}${domainPart}`;
+            document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT${pathPart}${domainPart}`;
+            document.cookie = `${name}=; max-age=0${pathPart}${domainPart}`;
+          });
         });
+      });
+      
+      // Additional cookie clearing with split method
+      document.cookie.split(";").forEach(function(c) { 
+        const eqPos = c.indexOf("=");
+        const name = eqPos > -1 ? c.substr(0, eqPos) : c;
+        document.cookie = name + "=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/";
+        document.cookie = name + "=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/;domain=.bookd.tools";
+        document.cookie = name + "=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/;domain=bookd.tools";
       });
       
       localStorage.clear();
@@ -75,7 +88,8 @@ export function AuthForm({ onSuccess }: AuthFormProps) {
       // Force multiple logout attempts for security
       Promise.all([
         fetch("/api/auth/logout", { method: "POST", credentials: "include" }),
-        fetch("/api/auth/logout", { method: "POST", credentials: "omit" })
+        fetch("/api/auth/logout", { method: "POST", credentials: "omit" }),
+        fetch("/api/auth/logout", { method: "POST", credentials: "same-origin" })
       ]).catch(() => {
         console.log('Logout requests completed (expected to fail during reset)');
       });

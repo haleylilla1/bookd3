@@ -15,12 +15,21 @@ export function useAuth() {
     queryKey: ["/api/auth/user"],
     enabled: !resetToken, // Completely disable query when reset token present
     queryFn: async () => {
+      // SECURITY: Double-check for reset token before making auth request
+      const currentUrlParams = new URLSearchParams(window.location.search);
+      const currentResetToken = currentUrlParams.get('reset_token');
+      
+      if (currentResetToken) {
+        console.log('🚫 Auth query blocked due to reset token:', currentResetToken);
+        throw new Error('Auth blocked during password reset');
+      }
+      
       try {
-        
         const response = await fetch("/api/auth/user", {
           credentials: "include",
           headers: {
             'Accept': 'application/json',
+            'X-Reset-Mode': resetToken ? 'true' : 'false',
           },
         });
         
@@ -39,10 +48,10 @@ export function useAuth() {
       }
     },
     retry: false,
-    staleTime: 10 * 60 * 1000, // 10 minutes
-    refetchOnMount: true,
-    refetchOnWindowFocus: true,
-    refetchOnReconnect: true,
+    staleTime: resetToken ? 0 : 10 * 60 * 1000, // No caching during reset
+    refetchOnMount: !resetToken,
+    refetchOnWindowFocus: !resetToken,
+    refetchOnReconnect: !resetToken,
     throwOnError: false,
   });
 
