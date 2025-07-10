@@ -569,6 +569,25 @@ export default function Dashboard() {
     );
   }
 
+  // Show debug info when no data is loading
+  if (!gigsLoading && !gigs?.length) {
+    return (
+      <div className="p-4">
+        <div className="text-center space-y-4">
+          <h2 className="text-xl font-semibold text-gray-600">Dashboard Debug</h2>
+          <div className="text-sm text-gray-500 space-y-2">
+            <p>User: {user?.email || 'Not authenticated'}</p>
+            <p>Gigs Count: {gigs?.length || 0}</p>
+            <p>Has Session Cookie: {document.cookie.includes('sessionId') ? 'Yes' : 'No'}</p>
+            <p>Cookies: {document.cookie || 'None'}</p>
+            <p>Loading State: {gigsLoading ? 'Loading' : 'Complete'}</p>
+            <p>Error: {gigsError ? JSON.stringify(gigsError) : 'None'}</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="p-4 lg:p-0 w-full space-y-6">
       {/* Time Period Selector */}
