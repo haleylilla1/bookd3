@@ -32,7 +32,7 @@ class EmailService {
     }
     
     try {
-      const resetUrl = `${process.env.NODE_ENV === 'production' ? 'https://bookd.tools' : 'http://localhost:5000'}/?reset_token=${token}`;
+      const resetUrl = `${process.env.NODE_ENV === 'production' ? 'https://bookd.tools' : 'https://workspace.haleylilla.repl.co'}/?reset_token=${token}`;
       
       await this.mail.send({
         to: email,
@@ -196,7 +196,7 @@ export class PasswordReset {
         
         // In development, show the reset URL in logs for testing
         if (process.env.NODE_ENV !== 'production') {
-          const resetUrl = `${process.env.NODE_ENV === 'production' ? 'https://bookd.tools' : 'http://localhost:5000'}/?reset_token=${token}`;
+          const resetUrl = `${process.env.NODE_ENV === 'production' ? 'https://bookd.tools' : 'https://workspace.haleylilla.repl.co'}/?reset_token=${token}`;
           console.log(`\n🔗 DEVELOPMENT RESET LINK: ${resetUrl}\n`);
         }
       }
@@ -516,7 +516,7 @@ export function setupAuthRoutes(app: any) {
       // Always return success to prevent email enumeration
       // In development, include the reset URL for testing
       if (process.env.NODE_ENV !== 'production' && token) {
-        const resetUrl = `${process.env.NODE_ENV === 'production' ? 'https://bookd.tools' : 'http://localhost:5000'}/?reset_token=${token}`;
+        const resetUrl = `${process.env.NODE_ENV === 'production' ? 'https://bookd.tools' : 'https://workspace.haleylilla.repl.co'}/?reset_token=${token}`;
         res.json({ 
           message: "If an account with that email exists, a reset link has been sent to your email",
           developmentResetUrl: resetUrl
