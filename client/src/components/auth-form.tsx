@@ -51,6 +51,7 @@ export function AuthForm({ onSuccess }: AuthFormProps) {
     const token = urlParams.get('reset_token');
     
     if (token) {
+      console.log('🔐 AuthForm detected reset token, switching to reset mode:', token);
       setResetToken(token);
       setMode('reset-password');
       resetPasswordForm.setValue('token', token);
