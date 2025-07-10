@@ -580,8 +580,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // NUCLEAR OPTION: Complete authentication blocker - this overrides EVERYTHING
-  app.use(async (req: any, res: any, next: any) => {
+  // NUCLEAR OPTION: Complete authentication blocker - MUST BE FIRST
+  app.use('*', async (req: any, res: any, next: any) => {
     const resetToken = req.query.reset_token || req.body.reset_token;
 
     if (resetToken) {
@@ -589,29 +589,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log('🚫 Request URL:', req.url);
       console.log('🚫 Request path:', req.path);
 
-      // IMMEDIATELY destroy any existing session
+      // NUCLEAR SESSION DESTRUCTION
       const sessionId = req.cookies?.sessionId;
       if (sessionId) {
-        console.log('🗂️ EMERGENCY: Destroying session for security:', sessionId);
+        console.log('🗂️ NUCLEAR SESSION DESTRUCTION:', sessionId);
         try {
+          // Destroy session in database
           await SessionManager.destroySession(sessionId);
+          
+          // Clear all possible cookie variations
+          res.clearCookie('sessionId');
+          res.clearCookie('sessionId', { path: '/' });
+          res.clearCookie('sessionId', { path: '/', domain: '.bookd.tools' });
+          res.clearCookie('sessionId', { path: '/', domain: 'bookd.tools' });
+          res.clearCookie('sessionId', { 
+            path: '/',
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'strict'
+          });
         } catch (error) {
-          console.error('Session destruction error:', error);
+          console.error('Nuclear session destruction error:', error);
         }
       }
 
-      // COMPLETELY BLOCK any authentication-related requests
+      // NUCLEAR API BLOCKING - Block ALL authentication endpoints
       if (req.path.startsWith('/api/auth/user') || 
           req.path.startsWith('/api/user') || 
           req.path.startsWith('/api/dashboard') ||
           req.path.startsWith('/api/gigs') ||
           req.path.startsWith('/api/expenses') ||
-          req.path.startsWith('/api/goals')) {
-        console.log('🚫 BLOCKING ALL AUTHENTICATED API REQUESTS during reset');
+          req.path.startsWith('/api/goals') ||
+          req.path.startsWith('/api/test-auth') ||
+          req.path.includes('auth') ||
+          req.path.includes('session')) {
+        console.log('🚫 NUCLEAR API BLOCKING during reset - Path:', req.path);
         return res.status(401).json({ 
-          message: "All authentication blocked during password reset",
+          message: "NUCLEAR AUTHENTICATION BLOCK - All auth endpoints disabled during password reset",
           resetMode: true,
-          blocked: true
+          blocked: true,
+          path: req.path,
+          timestamp: new Date().toISOString()
         });
       }
 

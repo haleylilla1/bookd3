@@ -24,15 +24,20 @@ function Router() {
         const resetToken = urlParams.get('reset_token');
 
         if (resetToken) {
-          console.log('🚫 RESET TOKEN DETECTED - COMPLETELY BLOCKING ALL AUTHENTICATION');
+          console.log('🚫 NUCLEAR RESET TOKEN DETECTED - COMPLETE AUTHENTICATION SHUTDOWN');
           console.log('🚫 Token:', resetToken);
           console.log('🚫 URL:', window.location.href);
+          console.log('🚫 User Agent:', navigator.userAgent);
 
-          // IMMEDIATELY set loading to false and user to null
+          // NUCLEAR OPTION: Immediately block everything
           if (mounted) {
             setUser(null);
             setIsLoading(false);
           }
+
+          // GLOBAL AUTHENTICATION SHUTDOWN
+          window.NUCLEAR_RESET_MODE = true;
+          window.AUTHENTICATION_DISABLED = true;
 
           // NUCLEAR OPTION: Completely destroy all authentication state
           // Clear ALL cookies with every possible combination
@@ -72,9 +77,9 @@ function Router() {
           return; // STOP COMPLETELY - do not proceed with any auth checks
         }
 
-        // ONLY proceed with auth check if NO reset token AND not in reset mode
-        if (window.RESET_MODE_ACTIVE) {
-          console.log('🚫 Reset mode still active - blocking auth check');
+        // NUCLEAR PROTECTION: No auth checks if reset mode is active
+        if (window.RESET_MODE_ACTIVE || window.NUCLEAR_RESET_MODE || window.AUTHENTICATION_DISABLED) {
+          console.log('🚫 NUCLEAR RESET MODE - All authentication permanently disabled');
           if (mounted) {
             setUser(null);
             setIsLoading(false);

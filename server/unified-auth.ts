@@ -384,7 +384,7 @@ export class AuthService {
   }
 }
 
-// Auth middleware
+// Auth middleware with NUCLEAR reset token protection
 export function requireAuth(req: any, res: any, next: any) {
   // NUCLEAR OPTION: Block authentication if ANY reset indicator is present
   const resetToken = req.query.reset_token || req.body.reset_token || 
@@ -392,19 +392,26 @@ export function requireAuth(req: any, res: any, next: any) {
                      req.headers['x-reset-mode'] === 'true';
   
   if (resetToken) {
-    console.log('🚫 COMPLETE AUTH BLOCK: Reset mode detected');
-    console.log('🚫 Blocking path:', req.path);
+    console.log('🚫 NUCLEAR AUTH LOCKDOWN: Reset token detected:', resetToken);
+    console.log('🚫 Completely blocking path:', req.path);
+    console.log('🚫 Request method:', req.method);
     
-    // COMPLETELY clear any session data
+    // NUCLEAR OPTION: Destroy ALL authentication immediately
     req.user = null;
     req.userId = null;
     req.session = null;
     
+    // Clear ALL cookies with nuclear approach
+    res.clearCookie('sessionId', { path: '/' });
+    res.clearCookie('sessionId', { path: '/', domain: '.bookd.tools' });
+    res.clearCookie('sessionId', { path: '/', domain: 'bookd.tools' });
+    
     return res.status(401).json({ 
-      message: "COMPLETE AUTHENTICATION BLOCK - Password reset in progress",
+      message: "NUCLEAR AUTHENTICATION LOCKDOWN - All auth blocked during reset",
       resetMode: true,
       blocked: true,
-      path: req.path
+      path: req.path,
+      resetToken: resetToken ? 'present' : 'none'
     });
   }
   
