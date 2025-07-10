@@ -580,17 +580,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Special middleware for reset tokens - force logout before any other processing
+  // CRITICAL SECURITY: Block ALL authentication when reset token is present
   app.use('*', async (req: any, res: any, next: any) => {
     const resetToken = req.query.reset_token;
     
     if (resetToken) {
-      console.log('🚫 SERVER: Reset token detected, forcing complete session destruction:', resetToken);
+      console.log('🚫 CRITICAL SECURITY: Reset token detected - BLOCKING ALL AUTHENTICATION:', resetToken);
       
-      // Destroy session in database if it exists
+      // Immediately destroy any existing session
       const sessionId = req.cookies?.sessionId;
       if (sessionId) {
-        console.log('🗂️ Destroying database session:', sessionId);
+        console.log('🗂️ EMERGENCY: Destroying session for security:', sessionId);
         try {
           await SessionManager.destroySession(sessionId);
         } catch (error) {
@@ -598,7 +598,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       
-      // Clear ALL possible session cookies with multiple domain variations
+      // Clear ALL cookies aggressively
       const cookieNames = ['sessionId', 'connect.sid', 'session', 'giggy.session'];
       const domains = [undefined, '.bookd.tools', 'bookd.tools', '.localhost', 'localhost'];
       
@@ -608,28 +608,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
             path: '/',
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
-            sameSite: 'strict'
+            sameSite: 'strict',
+            expires: new Date(0) // Force immediate expiration
           };
           if (domain) options.domain = domain;
           res.clearCookie(name, options);
         });
       });
       
-      // Set response headers to prevent caching and force refresh
+      // CRITICAL: Mark this request to block all authentication attempts
+      req.RESET_TOKEN_PRESENT = true;
+      req.BLOCK_AUTH = true;
+      req.user = null;
+      req.userId = null;
+      
+      // Set security headers
       res.set({
         'Cache-Control': 'no-cache, no-store, must-revalidate, private',
         'Pragma': 'no-cache',
         'Expires': '0',
         'X-Reset-Mode': 'true',
-        'X-Session-Cleared': 'true'
+        'X-Auth-Blocked': 'true'
       });
-      
-      // Mark this request as having a reset token for requireAuth middleware
-      req.hasResetToken = true;
-      
-      // Remove user from request object to prevent any authentication
-      req.user = null;
-      req.userId = null;
     }
     
     next();

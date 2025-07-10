@@ -354,10 +354,11 @@ export class AuthService {
 
 // Auth middleware
 export function requireAuth(req: any, res: any, next: any) {
-  // If this is a password reset request, deny authentication completely
-  const resetToken = req.query.reset_token || req.body.reset_token || req.hasResetToken;
+  // CRITICAL SECURITY: Block authentication if reset token is present
+  const resetToken = req.query.reset_token || req.body.reset_token || req.RESET_TOKEN_PRESENT || req.BLOCK_AUTH;
+  
   if (resetToken) {
-    console.log('🚫 Password reset token detected, completely blocking authentication');
+    console.log('🚫 SECURITY BLOCK: Reset token detected - completely blocking authentication');
     
     // Clear any existing session data from request
     req.user = null;
@@ -365,7 +366,8 @@ export function requireAuth(req: any, res: any, next: any) {
     
     return res.status(401).json({ 
       message: "Password reset in progress - authentication blocked",
-      resetMode: true 
+      resetMode: true,
+      blockAuth: true
     });
   }
   

@@ -51,38 +51,42 @@ export function AuthForm({ onSuccess }: AuthFormProps) {
     const token = urlParams.get('reset_token');
 
     if (token) {
-      console.log('🔑 RESET TOKEN DETECTED IN AUTH FORM:', token);
+      console.log('🔑 SECURITY: Reset token detected - entering secure reset mode:', token);
 
-      // Force complete logout first - be more aggressive
+      // CRITICAL: Immediately destroy all authentication data
       document.cookie.split(";").forEach(function(c) { 
-        document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/"); 
+        document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date(0).toUTCString() + ";path=/"); 
       });
       
-      // Clear cookies with different domain variations
+      // Aggressively clear cookies with all possible domain variations
       const cookieNames = ['sessionId', 'connect.sid', 'session', 'giggy.session'];
+      const domains = ['', '.bookd.tools', 'bookd.tools', '.localhost', 'localhost'];
+      
       cookieNames.forEach(name => {
-        document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`;
-        document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=.bookd.tools;`;
-        document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=bookd.tools;`;
+        domains.forEach(domain => {
+          const domainPart = domain ? `; domain=${domain}` : '';
+          document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/${domainPart}`;
+        });
       });
       
       localStorage.clear();
       sessionStorage.clear();
 
-      // Force server-side logout
-      fetch("/api/auth/logout", {
-        method: "POST",
-        credentials: "include",
-      }).catch(() => {
-        console.log('Server logout failed (expected during reset)');
+      // Force multiple logout attempts for security
+      Promise.all([
+        fetch("/api/auth/logout", { method: "POST", credentials: "include" }),
+        fetch("/api/auth/logout", { method: "POST", credentials: "omit" })
+      ]).catch(() => {
+        console.log('Logout requests completed (expected to fail during reset)');
       });
 
+      // Set the form to password reset mode
       setMode('reset-password');
 
-      // Auto-populate the hidden token field
+      // Populate the token field securely
       resetPasswordForm.setValue('token', token);
 
-      // Clear the URL parameter for cleaner UX
+      // Clean the URL to prevent token exposure
       const newUrl = new URL(window.location.href);
       newUrl.searchParams.delete('reset_token');
       window.history.replaceState({}, '', newUrl.toString());

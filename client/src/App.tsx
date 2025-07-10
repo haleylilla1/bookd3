@@ -24,22 +24,31 @@ function Router() {
         const resetToken = urlParams.get('reset_token');
 
         if (resetToken) {
-          console.log('🚫 RESET TOKEN DETECTED - BLOCKING ALL AUTHENTICATION:', resetToken);
+          console.log('🚫 CRITICAL SECURITY: Reset token detected - PREVENTING AUTO-LOGIN:', resetToken);
 
-          // Immediately force logout state
+          // IMMEDIATELY block any authentication attempts
           if (mounted) {
             setUser(null);
             setIsLoading(false);
           }
 
-          // Clear all cookies and storage
+          // Aggressively clear ALL authentication data
           document.cookie.split(";").forEach(function(c) { 
-            document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/"); 
+            document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date(0).toUTCString() + ";path=/"); 
           });
+          
+          // Clear with specific cookie names and domains
+          const cookieNames = ['sessionId', 'connect.sid', 'session', 'giggy.session'];
+          cookieNames.forEach(name => {
+            document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`;
+            document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=.bookd.tools;`;
+            document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=bookd.tools;`;
+          });
+          
           localStorage.clear();
           sessionStorage.clear();
 
-          // Force a server-side logout to ensure session is destroyed
+          // Force server-side session destruction
           try {
             await fetch("/api/auth/logout", {
               method: "POST",
@@ -49,7 +58,7 @@ function Router() {
             console.log('Logout request failed (expected during reset):', logoutError);
           }
 
-          return; // EXIT IMMEDIATELY - no auth check
+          return; // CRITICAL: Exit immediately to prevent any login
         }
 
         // Only check authentication if NO reset token
