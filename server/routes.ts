@@ -4,16 +4,14 @@ import { storage } from "./storage";
 import { setupAuthRoutes, requireAuth, SessionManager } from "./unified-auth";
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // Force HTTPS redirect and add security headers in production
+  // Force HTTPS redirect in production
   if (process.env.NODE_ENV === 'production') {
     app.use((req, res, next) => {
-      // Add security headers for better SSL handling
       res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
       res.setHeader('X-Content-Type-Options', 'nosniff');
       res.setHeader('X-Frame-Options', 'DENY');
       res.setHeader('X-XSS-Protection', '1; mode=block');
 
-      // Force HTTPS redirect
       if (req.header('x-forwarded-proto') !== 'https') {
         res.redirect(301, `https://${req.header('host')}${req.url}`);
       } else {
@@ -689,7 +687,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     next();
   });
 
-  // Setup authentication routes
+  // Setup authentication routes FIRST
   setupAuthRoutes(app);
 
   // Secure helper to get user ID with validation
