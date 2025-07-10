@@ -754,7 +754,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = getUserId(req);
       const gigs = await storage.getGigsByUser(userId);
 
-      const monthlyEarnings = gigs
+      // Group multi-day gigs to prevent double-counting
+      const groupedGigs = groupMultiDayGigs(gigs);
+
+      const monthlyEarnings = groupedGigs
         .filter(g => g.status === 'completed' && g.actualPay)
         .reduce((sum, g) => sum + parseFloat(g.actualPay || '0'), 0);
 
@@ -808,6 +811,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const gigs = await storage.getGigsByUser(userId);
       res.json(gigs);
     } catch (error) {
+      console.error("Get gigs error:", error);
       res.status(500).json({ message: "Failed to get gigs" });
     }
   });
@@ -1257,6 +1261,70 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Multi-day gig grouping function
+  function groupMultiDayGigs(gigs: any[]): any[] {
+    const grouped: any[] = [];
+    const processed = new Set<number>();
+
+    for (const gig of gigs) {
+      if (processed.has(gig.id)) continue;
+
+      // Find consecutive gigs with same client and event
+      const relatedGigs = gigs.filter(g => 
+        g.clientName === gig.clientName && 
+        g.eventName === gig.eventName &&
+        g.gigType === gig.gigType &&
+        !processed.has(g.id)
+      );
+
+      if (relatedGigs.length > 1) {
+        // Sort by date
+        relatedGigs.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+        
+        // Check if dates are consecutive
+        let isConsecutive = true;
+        for (let i = 1; i < relatedGigs.length; i++) {
+          const prevDate = new Date(relatedGigs[i - 1].date);
+          const currDate = new Date(relatedGigs[i].date);
+          const diffTime = currDate.getTime() - prevDate.getTime();
+          const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+          
+          if (diffDays !== 1) {
+            isConsecutive = false;
+            break;
+          }
+        }
+
+        if (isConsecutive) {
+          // Create grouped gig with first gig's details
+          const firstGig = relatedGigs[0];
+          const lastGig = relatedGigs[relatedGigs.length - 1];
+          
+          grouped.push({
+            ...firstGig,
+            date: firstGig.date,
+            endDate: lastGig.date,
+            isMultiDay: true,
+            dayCount: relatedGigs.length
+          });
+
+          // Mark all related gigs as processed
+          relatedGigs.forEach(g => processed.add(g.id));
+        } else {
+          // Not consecutive, add individual gig
+          grouped.push(gig);
+          processed.add(gig.id);
+        }
+      } else {
+        // Single gig
+        grouped.push(gig);
+        processed.add(gig.id);
+      }
+    }
+
+    return grouped;
+  }
+
   // Setup authentication routes from unified-auth
   setupAuthRoutes(app);
 
