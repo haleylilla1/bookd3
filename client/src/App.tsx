@@ -39,6 +39,16 @@ function Router() {
           localStorage.clear();
           sessionStorage.clear();
 
+          // Force a server-side logout to ensure session is destroyed
+          try {
+            await fetch("/api/auth/logout", {
+              method: "POST",
+              credentials: "include",
+            });
+          } catch (logoutError) {
+            console.log('Logout request failed (expected during reset):', logoutError);
+          }
+
           return; // EXIT IMMEDIATELY - no auth check
         }
 

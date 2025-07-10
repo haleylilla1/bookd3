@@ -581,16 +581,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Special middleware for reset tokens - force logout before any other processing
-  app.use('*', (req: any, res: any, next: any) => {
+  app.use('*', async (req: any, res: any, next: any) => {
     const resetToken = req.query.reset_token;
     
     if (resetToken) {
-      console.log('🚫 SERVER: Reset token detected, forcing session destruction:', resetToken);
+      console.log('🚫 SERVER: Reset token detected, forcing complete session destruction:', resetToken);
       
       // Destroy session in database if it exists
       const sessionId = req.cookies?.sessionId;
       if (sessionId) {
-        SessionManager.destroySession(sessionId).catch(console.error);
+        console.log('🗂️ Destroying database session:', sessionId);
+        try {
+          await SessionManager.destroySession(sessionId);
+        } catch (error) {
+          console.error('Session destruction error:', error);
+        }
       }
       
       // Clear ALL possible session cookies with multiple domain variations
@@ -599,7 +604,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       cookieNames.forEach(name => {
         domains.forEach(domain => {
-          const options: any = { path: '/' };
+          const options: any = { 
+            path: '/',
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'strict'
+          };
           if (domain) options.domain = domain;
           res.clearCookie(name, options);
         });
@@ -610,11 +620,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         'Cache-Control': 'no-cache, no-store, must-revalidate, private',
         'Pragma': 'no-cache',
         'Expires': '0',
-        'X-Reset-Mode': 'true'
+        'X-Reset-Mode': 'true',
+        'X-Session-Cleared': 'true'
       });
       
       // Mark this request as having a reset token for requireAuth middleware
       req.hasResetToken = true;
+      
+      // Remove user from request object to prevent any authentication
+      req.user = null;
+      req.userId = null;
     }
     
     next();

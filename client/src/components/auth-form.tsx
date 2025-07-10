@@ -51,14 +51,31 @@ export function AuthForm({ onSuccess }: AuthFormProps) {
     const token = urlParams.get('reset_token');
 
     if (token) {
-      console.log('🔑 RESET TOKEN DETECTED IN URL:', token);
+      console.log('🔑 RESET TOKEN DETECTED IN AUTH FORM:', token);
 
-      // Force complete logout first
+      // Force complete logout first - be more aggressive
       document.cookie.split(";").forEach(function(c) { 
         document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/"); 
       });
+      
+      // Clear cookies with different domain variations
+      const cookieNames = ['sessionId', 'connect.sid', 'session', 'giggy.session'];
+      cookieNames.forEach(name => {
+        document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`;
+        document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=.bookd.tools;`;
+        document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=bookd.tools;`;
+      });
+      
       localStorage.clear();
       sessionStorage.clear();
+
+      // Force server-side logout
+      fetch("/api/auth/logout", {
+        method: "POST",
+        credentials: "include",
+      }).catch(() => {
+        console.log('Server logout failed (expected during reset)');
+      });
 
       setMode('reset-password');
 
