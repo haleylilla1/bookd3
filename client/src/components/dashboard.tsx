@@ -34,9 +34,19 @@ export default function Dashboard() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const { data: user } = useQuery<User>({
-    queryKey: ["/api/user"],
+  const { data: user, isLoading: userLoading, error: userError } = useQuery<User>({
+    queryKey: ["/api/auth/user"],
+    retry: 1,
   });
+
+  // Debug user authentication
+  useEffect(() => {
+    console.log('User auth state:', { 
+      user: user?.email || 'null', 
+      userLoading, 
+      userError 
+    });
+  }, [user, userLoading, userError]);
 
   // Mutation to automatically update gig statuses
   const updateGigStatusesMutation = useMutation({
@@ -57,10 +67,21 @@ export default function Dashboard() {
   });
 
   // Fetch gigs for calculations
-  const { data: gigs = [], isLoading: gigsLoading } = useQuery<Gig[]>({
+  const { data: gigs = [], isLoading: gigsLoading, error: gigsError } = useQuery<Gig[]>({
     queryKey: ["/api/gigs"],
     retry: 1,
   });
+
+  // Debug logging
+  useEffect(() => {
+    console.log('Dashboard gigs state:', { 
+      gigsCount: gigs?.length || 0, 
+      gigsLoading, 
+      gigsError,
+      userAuthenticated: !!user,
+      cookies: document.cookie
+    });
+  }, [gigs, gigsLoading, gigsError, user]);
 
   // Automatically update gig statuses when dashboard loads (once per session)
   useEffect(() => {
