@@ -24,8 +24,13 @@ function Router() {
         const resetToken = urlParams.get('reset_token');
         
         if (resetToken) {
-          // For reset tokens, skip authentication check and show auth form
-          console.log('🔄 Reset token detected, skipping auth check:', resetToken);
+          // For reset tokens, clear any existing session and show auth form
+          console.log('🔄 Reset token detected, clearing cookies and skipping auth check:', resetToken);
+          
+          // Clear session cookie on client side
+          document.cookie = 'sessionId=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=.bookd.tools;';
+          document.cookie = 'sessionId=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+          
           if (mounted) {
             setUser(null);
             setIsLoading(false);
