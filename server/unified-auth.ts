@@ -36,7 +36,7 @@ class EmailService {
       
       await this.mail.send({
         to: email,
-        from: 'your-verified-email@example.com', // Replace with your verified SendGrid sender
+        from: 'haleylilla@gmail.com', // Verified SendGrid sender
         subject: 'Reset Your Bookd Password',
         html: `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
