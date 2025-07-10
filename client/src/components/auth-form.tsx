@@ -44,12 +44,12 @@ export function AuthForm({ onSuccess }: AuthFormProps) {
   const [mode, setMode] = useState<'login' | 'register' | 'reset-request' | 'reset-password'>('login');
   const [resetToken, setResetToken] = useState('');
   const { toast } = useToast();
-  
+
   // Check for reset token in URL on mount
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const token = urlParams.get('reset_token');
-    
+
     if (token) {
       console.log('🔐 AuthForm detected reset token, switching to reset mode:', token);
       setResetToken(token);
@@ -128,11 +128,11 @@ export function AuthForm({ onSuccess }: AuthFormProps) {
         title: "Reset link sent",
         description: data.developmentResetUrl ? "Development reset link available in console" : "Check your email for the reset link"
       });
-      
+
       // In development, show the reset URL in console for manual testing
       if (data.developmentResetUrl) {
         console.log('🔗 Development Reset Link:', data.developmentResetUrl);
-        
+
         // Note: Auto-navigation removed - user should click email link or console link
         // This allows testing of the actual email flow
       }

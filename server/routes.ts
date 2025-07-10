@@ -581,7 +581,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Special middleware for reset tokens - force logout before any other processing
-  app.get('*', (req: any, res: any, next: any) => {
+  app.use('*', (req: any, res: any, next: any) => {
     const resetToken = req.query.reset_token;
     
     if (resetToken) {
@@ -593,19 +593,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
         SessionManager.destroySession(sessionId).catch(console.error);
       }
       
-      // Clear ALL possible session cookies
-      const cookieNames = ['sessionId', 'connect.sid', 'session'];
+      // Clear ALL possible session cookies with multiple domain variations
+      const cookieNames = ['sessionId', 'connect.sid', 'session', 'giggy.session'];
+      const domains = [undefined, '.bookd.tools', 'bookd.tools', '.localhost', 'localhost'];
+      
       cookieNames.forEach(name => {
-        res.clearCookie(name, { path: '/' });
-        res.clearCookie(name, { path: '/', domain: '.bookd.tools' });
-        res.clearCookie(name, { path: '/', domain: 'bookd.tools' });
+        domains.forEach(domain => {
+          const options: any = { path: '/' };
+          if (domain) options.domain = domain;
+          res.clearCookie(name, options);
+        });
       });
       
-      // Set response headers to prevent caching
+      // Set response headers to prevent caching and force refresh
       res.set({
-        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Cache-Control': 'no-cache, no-store, must-revalidate, private',
         'Pragma': 'no-cache',
-        'Expires': '0'
+        'Expires': '0',
+        'X-Reset-Mode': 'true'
       });
     }
     

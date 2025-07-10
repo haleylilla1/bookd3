@@ -16,32 +16,32 @@ function Router() {
 
   useEffect(() => {
     let mounted = true;
-    
+
     async function checkAuth() {
       try {
         // IMMEDIATE check for reset token - highest priority
         const urlParams = new URLSearchParams(window.location.search);
         const resetToken = urlParams.get('reset_token');
-        
+
         if (resetToken) {
           console.log('🚫 RESET TOKEN DETECTED - BLOCKING ALL AUTHENTICATION:', resetToken);
-          
+
           // Immediately force logout state
           if (mounted) {
             setUser(null);
             setIsLoading(false);
           }
-          
+
           // Clear all cookies and storage
           document.cookie.split(";").forEach(function(c) { 
             document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/"); 
           });
           localStorage.clear();
           sessionStorage.clear();
-          
+
           return; // EXIT IMMEDIATELY - no auth check
         }
-        
+
         // Only check authentication if NO reset token
         const response = await fetch("/api/auth/user", {
           credentials: "include",
@@ -49,7 +49,7 @@ function Router() {
             'Accept': 'application/json',
           },
         });
-        
+
         if (mounted) {
           if (response.ok) {
             const userData = await response.json();
@@ -69,7 +69,7 @@ function Router() {
     }
 
     checkAuth();
-    
+
     return () => {
       mounted = false;
     };
