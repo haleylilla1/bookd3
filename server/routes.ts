@@ -20,13 +20,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   }
 
-  // Admin monitoring endpoints - must be first, before auth middleware
+  // Admin monitoring endpoints - SECURE: Environment-based admin access only
   const isAdminRequest = (req: any): boolean => {
-    const adminKey = req.query.key || req.headers['x-admin-key']; // Support both query param and header
-    const validAdminKey = process.env.ADMIN_ACCESS_KEY || 'giggy-admin-2025';
+    // SECURITY: Admin access disabled in production unless specific environment variable is set
+    if (process.env.NODE_ENV === 'production' && !process.env.ADMIN_ACCESS_ENABLED) {
+      return false;
+    }
 
-    // SECURITY: Rate limit admin attempts - only in production
-    if (process.env.NODE_ENV === 'production' && !adminKey) {
+    const adminKey = req.query.key || req.headers['x-admin-key'];
+    const validAdminKey = process.env.ADMIN_ACCESS_KEY;
+
+    // SECURITY: Require environment-based admin key, no fallback defaults
+    if (!validAdminKey || !adminKey) {
       return false;
     }
 
@@ -166,7 +171,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 const params = new URLSearchParams();
                 if (email) params.append('email', email);
                 if (userId) params.append('id', userId);
-                params.append('key', 'giggy-admin-2025');
+                params.append('key', adminKey);
 
                 const response = await fetch('/api/admin/user-lookup?' + params);
                 const user = await response.json();
@@ -192,7 +197,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         async function loadActiveUsers() {
             try {
-                const response = await fetch('/api/admin/active-users?key=giggy-admin-2025');
+                const response = await fetch('/api/admin/active-users?key=' + adminKey);
                 const activeUsers = await response.json();
 
                 document.getElementById('activeCount').textContent = activeUsers.length;
@@ -230,70 +235,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         // Load initial active user count
         loadActiveUsers();
-
-        async function impersonateUser() {
-            const userId = document.getElementById('impersonateUserId').value;
-            const reason = document.getElementById('supportReason').value;
-
-            if (!userId || !reason) {
-                alert('Please enter both User ID and reason for access');
-                return;
-            }
-
-            if (!confirm('⚠️ This will log you into the user\\'s account. Continue?')) {
-                return;
-            }
-
-            try {
-                const response = await fetch('/api/admin/impersonate?key=giggy-admin-2025', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ userId: parseInt(userId), reason })
-                });
-
-                const result = await response.json();
-
-                if (response.ok) {
-                    document.getElementById('impersonationStatus').innerHTML = 
-                        '<div style="background: #fff3cd; padding: 10px; border-radius: 5px; border: 1px solid #ffeaa7;">' +
-                        '<strong>🛠️ Support Session Active</strong><br>' +
-                        'User: ' + result.user.email + ' (ID: ' + result.user.id + ')<br>' +
-                        'Reason: ' + reason + '<br>' +
-                        '<a href="' + result.accessUrl + '" target="_blank" style="color: #007bff;">→ Open User Account</a>' +
-                        '</div>';
-                } else {
-                    document.getElementById('impersonationStatus').innerHTML = 
-                        '<p style="color: red;">Error: ' + result.error + '</p>';
-                }
-            } catch (error) {
-                document.getElementById('impersonationStatus').innerHTML = 
-                    '<p style="color: red;">Network error</p>';
-            }
-        }
-
-        async function endImpersonation() {
-            try {
-                const response = await fetch('/api/admin/end-impersonation?key=giggy-admin-2025', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' }
-                });
-
-                const result = await response.json();
-
-                if (response.ok) {
-                    document.getElementById('impersonationStatus').innerHTML = 
-                        '<p style="color: green;">✅ Support session ended</p>';
-                    document.getElementById('impersonateUserId').value = '';
-                    document.getElementById('supportReason').value = '';
-                } else {
-                    document.getElementById('impersonationStatus').innerHTML = 
-                        '<p style="color: red;">Error: ' + result.error + '</p>';
-                }
-            } catch (error) {
-                document.getElementById('impersonationStatus').innerHTML = 
-                    '<p style="color: red;">Network error</p>';
-            }
-        }
     </script>
 </body>
 </html>
@@ -371,62 +312,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Admin User Impersonation (Support Access)
+  // SECURITY: Admin impersonation system disabled for production security
   app.post('/api/admin/impersonate', async (req, res) => {
+    // SECURITY: Impersonation disabled in production to prevent unauthorized access
+    if (process.env.NODE_ENV === 'production') {
+      return res.status(404).json({ error: 'Not Found' });
+    }
+
     if (!isAdminRequest(req)) {
       return res.status(404).json({ error: 'Not Found' });
     }
 
-    try {
-      const { userId, reason } = req.body;
-
-      if (!userId || !reason) {
-        return res.status(400).json({ error: 'User ID and reason required' });
-      }
-
-      // Verify user exists
-      const user = await storage.getUser(parseInt(userId));
-      if (!user) {
-        return res.status(404).json({ error: 'User not found' });
-      }
-
-      // Log the admin impersonation for audit trail
-      await storage.logAudit(
-        null, // Admin action, no specific user
-        'ADMIN_IMPERSONATE',
-        'users',
-        user.id,
-        null,
-        { adminReason: reason, targetUser: user.email },
-        req.ip,
-        req.get('User-Agent')
-      );
-
-      // Generate a secure impersonation token
-      const impersonationToken = Buffer.from(JSON.stringify({
-        userId: user.id,
-        email: user.email,
-        reason: reason,
-        timestamp: Date.now(),
-        adminKey: 'giggy-admin-2025'
-      })).toString('base64');
-
-      res.json({ 
-        success: true, 
-        message: 'Impersonation access granted',
-        user: {
-          id: user.id,
-          email: user.email,
-          name: user.name
-        },
-        accessUrl: `/?admin_impersonate=${impersonationToken}`,
-        token: impersonationToken
-      });
-
-    } catch (error) {
-      console.error('Admin impersonation error:', error);
-      res.status(500).json({ error: 'Failed to start impersonation' });
-    }
+    return res.status(503).json({ error: 'Impersonation feature disabled for security' });
   });
 
   // Validate Admin Impersonation Token
@@ -448,8 +345,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // SECURITY: Verify admin key from environment variable
-      const validAdminKey = process.env.ADMIN_ACCESS_KEY || 'giggy-admin-2025';
-      if (tokenData.adminKey !== validAdminKey) {
+      const validAdminKey = process.env.ADMIN_ACCESS_KEY;
+      if (!validAdminKey || tokenData.adminKey !== validAdminKey) {
         return res.status(401).json({ error: 'Invalid admin token' });
       }
 
@@ -578,110 +475,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // NUCLEAR OPTION: Complete authentication blocker - MUST BE FIRST
+  // CLEAN: Password reset token handling
   app.use('*', async (req: any, res: any, next: any) => {
     const resetToken = req.query.reset_token || req.body.reset_token;
 
     if (resetToken) {
-      console.log('🚫 CRITICAL SECURITY: Reset token detected - BLOCKING ALL AUTHENTICATION:', resetToken);
-      console.log('🚫 Request URL:', req.url);
-      console.log('🚫 Request path:', req.path);
-
-      // NUCLEAR SESSION DESTRUCTION
+      // Clear existing session for password reset
       const sessionId = req.cookies?.sessionId;
       if (sessionId) {
-        console.log('🗂️ NUCLEAR SESSION DESTRUCTION:', sessionId);
         try {
-          // Destroy session in database
           await SessionManager.destroySession(sessionId);
-          
-          // Clear all possible cookie variations
-          res.clearCookie('sessionId');
-          res.clearCookie('sessionId', { path: '/' });
-          res.clearCookie('sessionId', { path: '/', domain: '.bookd.tools' });
-          res.clearCookie('sessionId', { path: '/', domain: 'bookd.tools' });
-          res.clearCookie('sessionId', { 
-            path: '/',
+          res.clearCookie('sessionId', {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
-            sameSite: 'strict'
+            sameSite: 'lax'
           });
         } catch (error) {
-          console.error('Nuclear session destruction error:', error);
+          console.error('Session cleanup error:', error);
         }
       }
 
-      // NUCLEAR API BLOCKING - Block ALL authentication endpoints
-      if (req.path.startsWith('/api/auth/user') || 
-          req.path.startsWith('/api/user') || 
-          req.path.startsWith('/api/dashboard') ||
-          req.path.startsWith('/api/gigs') ||
-          req.path.startsWith('/api/expenses') ||
-          req.path.startsWith('/api/goals') ||
-          req.path.startsWith('/api/test-auth') ||
-          req.path.includes('auth') ||
-          req.path.includes('session')) {
-        console.log('🚫 NUCLEAR API BLOCKING during reset - Path:', req.path);
-        return res.status(401).json({ 
-          message: "NUCLEAR AUTHENTICATION BLOCK - All auth endpoints disabled during password reset",
-          resetMode: true,
-          blocked: true,
-          path: req.path,
-          timestamp: new Date().toISOString()
-        });
-      }
-
-      // Clear ALL cookies aggressively with multiple attempts
-      const cookieNames = ['sessionId', 'connect.sid', 'session', 'giggy.session', 'auth', 'token'];
-      
-      // Clear with different path and domain combinations
-      cookieNames.forEach(name => {
-        // Clear with default options
-        res.clearCookie(name);
-        
-        // Clear with specific options for different scenarios
-        res.clearCookie(name, { path: '/' });
-        res.clearCookie(name, { path: '/', domain: '.bookd.tools' });
-        res.clearCookie(name, { path: '/', domain: 'bookd.tools' });
-        res.clearCookie(name, { 
-          path: '/',
-          httpOnly: true,
-          secure: process.env.NODE_ENV === 'production',
-          sameSite: 'strict'
-        });
-        
-        // Force expire with past date
-        res.cookie(name, '', { 
-          expires: new Date(0),
-          path: '/',
-          httpOnly: true,
-          secure: process.env.NODE_ENV === 'production',
-          sameSite: 'strict'
-        });
-      });
-
-      // CRITICAL: Mark this request to block all authentication attempts
+      // Mark request as password reset mode
       req.RESET_TOKEN_PRESENT = true;
-      req.BLOCK_AUTH = true;
       req.user = null;
       req.userId = null;
-
-      // Set security headers to prevent caching
-      res.set({
-        'Cache-Control': 'no-cache, no-store, must-revalidate, private',
-        'Pragma': 'no-cache',
-        'Expires': '0',
-        'X-Reset-Mode': 'true',
-        'X-Auth-Blocked': 'true',
-        'Set-Cookie': 'sessionId=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; HttpOnly'
-      });
-
-      // For frontend requests, also redirect to ensure clean state
-      if (req.path === '/' && req.method === 'GET') {
-        // Remove the reset token from URL and redirect to clean auth form
-        const cleanUrl = req.protocol + '://' + req.get('host') + '/';
-        return res.redirect(cleanUrl);
-      }
     }
 
     next();
