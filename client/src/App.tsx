@@ -25,11 +25,21 @@ function Router() {
         
         if (resetToken) {
           // For reset tokens, clear any existing session and show auth form
-          console.log('🔄 Reset token detected, clearing cookies and skipping auth check:', resetToken);
+          console.log('🔄 Reset token detected, clearing all cookies and forcing logout:', resetToken);
           
-          // Clear session cookie on client side
-          document.cookie = 'sessionId=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=.bookd.tools;';
-          document.cookie = 'sessionId=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+          // Clear ALL possible session cookies
+          const cookiesToClear = ['sessionId', 'connect.sid', 'session'];
+          const domains = ['', '.bookd.tools', 'bookd.tools'];
+          
+          cookiesToClear.forEach(cookieName => {
+            domains.forEach(domain => {
+              document.cookie = `${cookieName}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; ${domain ? `domain=${domain};` : ''}`;
+            });
+          });
+          
+          // Also clear localStorage and sessionStorage
+          localStorage.clear();
+          sessionStorage.clear();
           
           if (mounted) {
             setUser(null);
