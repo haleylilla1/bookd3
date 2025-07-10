@@ -11,6 +11,15 @@ export function useAuth() {
     queryKey: ["/api/auth/user"],
     queryFn: async () => {
       try {
+        // Check if we have a reset token - if so, skip authentication
+        const urlParams = new URLSearchParams(window.location.search);
+        const resetToken = urlParams.get('reset_token');
+        
+        if (resetToken) {
+          console.log('🚫 Reset token detected, skipping authentication check');
+          return null;
+        }
+        
         const response = await fetch("/api/auth/user", {
           credentials: "include",
           headers: {
