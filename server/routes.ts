@@ -580,8 +580,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // CRITICAL SECURITY: Block ALL authentication when reset token is present
-  app.use('*', async (req: any, res: any, next: any) => {
+  // CRITICAL SECURITY: Block ALL authentication when reset token is present - MUST BE FIRST
+  app.use(async (req: any, res: any, next: any) => {
     const resetToken = req.query.reset_token;
 
     if (resetToken) {
@@ -642,6 +642,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         'X-Auth-Blocked': 'true',
         'Set-Cookie': 'sessionId=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; HttpOnly'
       });
+
+      // For frontend requests, also redirect to ensure clean state
+      if (req.path === '/' && req.method === 'GET') {
+        // Remove the reset token from URL and redirect to clean auth form
+        const cleanUrl = req.protocol + '://' + req.get('host') + '/';
+        return res.redirect(cleanUrl);
+      }
     }
 
     next();
@@ -1227,28 +1234,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return await import('./password-reset');
   }
 
-  // Reset password routes
+  // Reset password routes - BYPASS ALL AUTH
   app.post('/api/auth/validate-reset-token', async (req: any, res: any) => {
     try {
+      console.log('🔑 Reset token validation request received');
+      
       const { token } = req.body;
 
       if (!token) {
         return res.status(400).json({ message: "Token is required" });
       }
 
-      const { PasswordReset } = await getPasswordReset();
+      // BYPASS: Directly use PasswordReset class from unified-auth
       const tokenData = await PasswordReset.validateResetToken(token);
 
       if (!tokenData) {
+        console.log('❌ Invalid reset token provided');
         return res.status(400).json({ message: "Invalid or expired reset token" });
       }
 
-      // Get user info for the token
-      const { AuthService } = await getAuthService();
+      // Get user info for the token - BYPASS auth service
       const user = await AuthService.getUserById(tokenData.userId);
       if (!user) {
+        console.log('❌ User not found for valid token');
         return res.status(400).json({ message: "User not found" });
       }
+
+      console.log('✅ Reset token validated for user:', user.email);
 
       res.json({ 
         valid: true,
@@ -1266,18 +1278,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/auth/reset-password', async (req: any, res: any) => {
     try {
+      console.log('🔑 Password reset request received');
+      
       const { token, newPassword } = req.body;
 
       if (!token || !newPassword) {
         return res.status(400).json({ message: "Token and new password are required" });
       }
-      const { PasswordReset } = await getPasswordReset();
+
+      // BYPASS: Directly use PasswordReset class from unified-auth
       const success = await PasswordReset.resetPassword(token, newPassword);
 
       if (!success) {
+        console.log('❌ Password reset failed - invalid token');
         return res.status(400).json({ message: "Invalid or expired reset token" });
       }
 
+      console.log('✅ Password reset successful');
       res.json({ message: "Password reset successful" });
     } catch (error) {
       console.error('Password reset error:', error);
