@@ -24,6 +24,11 @@ Bookd is a mobile-first gig worker companion app with comprehensive financial tr
 - Maintain simple, clean interface design
 
 ## Recent Changes
+- 2025-07-10: REACT QUERY CLIENT BUG FIXED - Resolved "Missing queryFn" error preventing gig data from loading in dashboard
+- 2025-07-10: Fixed conflicting QueryClient instances by using unified queryClient from lib/queryClient.ts
+- 2025-07-10: Dashboard now successfully loads all 35 gigs with proper authentication and data display
+- 2025-07-10: Eliminated authentication cookie issues - frontend now properly communicates with backend APIs
+- 2025-07-10: Multi-day gig calculation and authentication system confirmed working correctly in production
 - 2025-07-09: COMPLETE EMAIL-BASED PASSWORD RESET SYSTEM IMPLEMENTED - Professional SendGrid integration with secure token-based reset process
 - 2025-07-09: Added development mode fallback for email issues with auto-navigation to reset form and console logging
 - 2025-07-09: Enhanced password reset with 1-hour token expiration, professional email templates, and seamless user experience
