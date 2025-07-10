@@ -1,3 +1,4 @@
+
 import bcrypt from 'bcryptjs';
 import { db } from './db';
 import { users, userSessions, passwordResetTokens } from '@shared/schema';
@@ -36,7 +37,7 @@ class EmailService {
       
       await this.mail.send({
         to: email,
-        from: 'haleylilla@gmail.com', // Verified SendGrid sender
+        from: 'haleylilla@gmail.com',
         subject: 'Reset Your Bookd Password',
         html: `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
@@ -48,8 +49,6 @@ class EmailService {
             <p style="color: #666; word-break: break-all;">${resetUrl}</p>
             <p>This link will expire in 1 hour.</p>
             <p>If you didn't request this password reset, please ignore this email.</p>
-            <hr style="border: 1px solid #eee; margin: 20px 0;">
-            <p style="color: #666; font-size: 12px;">This is an automated message from Bookd. Please do not reply to this email.</p>
           </div>
         `
       });
@@ -57,23 +56,15 @@ class EmailService {
       return true;
     } catch (error) {
       console.error('Failed to send password reset email:', error);
-      
-      // Log detailed error for debugging
-      if (error.response) {
-        console.error('SendGrid error response:', error.response.body);
-      }
-      
       return false;
     }
   }
 }
 
-// Initialize email service
 EmailService.initialize();
 
 // Database-backed session management
 export class SessionManager {
-  // Create a new session
   static async createSession(userId: number, ipAddress?: string, userAgent?: string): Promise<string> {
     const sessionId = generateSessionId();
     const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // 30 days
@@ -95,8 +86,9 @@ export class SessionManager {
     }
   }
 
-  // Validate session and return user ID
   static async validateSession(sessionId: string): Promise<{ userId: number } | null> {
+    if (!sessionId) return null;
+    
     try {
       const [session] = await db
         .select()
@@ -110,10 +102,7 @@ export class SessionManager {
         )
         .limit(1);
 
-      if (!session) {
-        return null;
-      }
-
+      if (!session) return null;
       return { userId: session.userId };
     } catch (error) {
       console.error('Session validation error:', error);
@@ -121,8 +110,9 @@ export class SessionManager {
     }
   }
 
-  // Destroy a session
   static async destroySession(sessionId: string): Promise<void> {
+    if (!sessionId) return;
+    
     try {
       await db
         .update(userSessions)
@@ -133,19 +123,6 @@ export class SessionManager {
     }
   }
 
-  // Clean up expired sessions
-  static async cleanupExpiredSessions(): Promise<void> {
-    try {
-      await db
-        .update(userSessions)
-        .set({ isActive: false })
-        .where(gt(new Date(), userSessions.expiresAt));
-    } catch (error) {
-      console.error('Failed to cleanup expired sessions:', error);
-    }
-  }
-
-  // Destroy all sessions for a user (useful for logout all devices)
   static async destroyUserSessions(userId: number): Promise<void> {
     try {
       await db
@@ -160,10 +137,8 @@ export class SessionManager {
 
 // Password reset functionality
 export class PasswordReset {
-  // Create password reset token and send email
   static async createResetToken(email: string): Promise<string | null> {
     try {
-      // Find user by email
       const [user] = await db
         .select()
         .from(users)
@@ -171,14 +146,12 @@ export class PasswordReset {
         .limit(1);
 
       if (!user) {
-        return null; // Don't reveal if email exists
+        return null;
       }
 
-      // Generate reset token
       const token = generateResetToken();
       const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
 
-      // Store reset token
       await db.insert(passwordResetTokens).values({
         userId: user.id,
         token,
@@ -186,7 +159,6 @@ export class PasswordReset {
         used: false
       });
 
-      // Send reset email (attempt in production, fallback in development)
       const emailSent = await EmailService.sendPasswordResetEmail(email, token);
       
       if (emailSent) {
@@ -194,7 +166,6 @@ export class PasswordReset {
       } else {
         console.log(`Failed to send password reset email to ${email}`);
         
-        // In development, show the reset URL in logs for testing
         if (process.env.NODE_ENV !== 'production') {
           const resetUrl = `https://bookd.tools/?reset_token=${token}`;
           console.log(`\n🔗 DEVELOPMENT RESET LINK: ${resetUrl}\n`);
@@ -208,7 +179,6 @@ export class PasswordReset {
     }
   }
 
-  // Validate reset token
   static async validateResetToken(token: string): Promise<{ userId: number } | null> {
     try {
       const [resetToken] = await db
@@ -223,10 +193,7 @@ export class PasswordReset {
         )
         .limit(1);
 
-      if (!resetToken) {
-        return null;
-      }
-
+      if (!resetToken) return null;
       return { userId: resetToken.userId };
     } catch (error) {
       console.error('Reset token validation error:', error);
@@ -234,33 +201,45 @@ export class PasswordReset {
     }
   }
 
-  // Reset password using token
   static async resetPassword(token: string, newPassword: string): Promise<boolean> {
     try {
-      // Validate token
-      const tokenData = await this.validateResetToken(token);
-      if (!tokenData) {
+      const [resetToken] = await db
+        .select({
+          userId: passwordResetTokens.userId,
+        })
+        .from(passwordResetTokens)
+        .where(
+          and(
+            eq(passwordResetTokens.token, token),
+            eq(passwordResetTokens.used, false),
+            gt(passwordResetTokens.expiresAt, new Date())
+          )
+        )
+        .limit(1);
+
+      if (!resetToken) {
+        console.log('❌ Invalid or expired reset token');
         return false;
       }
 
-      // Hash new password
       const passwordHash = await bcrypt.hash(newPassword, 10);
 
-      // Update user password
       await db
         .update(users)
-        .set({ passwordHash })
-        .where(eq(users.id, tokenData.userId));
+        .set({ 
+          passwordHash,
+          lastLoginAt: new Date()
+        })
+        .where(eq(users.id, resetToken.userId));
 
-      // Mark token as used
       await db
         .update(passwordResetTokens)
         .set({ used: true })
         .where(eq(passwordResetTokens.token, token));
 
-      // Destroy all sessions for this user (force re-login)
-      await SessionManager.destroyUserSessions(tokenData.userId);
+      await SessionManager.destroyUserSessions(resetToken.userId);
 
+      console.log('✅ Password reset successful for user:', resetToken.userId);
       return true;
     } catch (error) {
       console.error('Password reset error:', error);
@@ -269,9 +248,8 @@ export class PasswordReset {
   }
 }
 
-// Enhanced authentication functions
+// Authentication service
 export class AuthService {
-  // Create user with password
   static async createUser(email: string, password: string, name: string): Promise<any> {
     try {
       const passwordHash = await bcrypt.hash(password, 10);
@@ -294,7 +272,6 @@ export class AuthService {
     }
   }
 
-  // Validate password and return user
   static async validatePassword(email: string, password: string): Promise<any> {
     try {
       const [user] = await db
@@ -317,7 +294,6 @@ export class AuthService {
         return null;
       }
 
-      // Update last login
       await db
         .update(users)
         .set({ lastLoginAt: new Date() })
@@ -330,7 +306,6 @@ export class AuthService {
     }
   }
 
-  // Get user by ID
   static async getUserById(id: number): Promise<any> {
     try {
       const [user] = await db
@@ -352,15 +327,8 @@ export class AuthService {
   }
 }
 
-// Auth middleware
+// Simple auth middleware - NO COMPLEX BLOCKING
 export function requireAuth(req: any, res: any, next: any) {
-  // If this is a password reset request, deny authentication
-  const resetToken = req.query.reset_token || req.body.reset_token;
-  if (resetToken) {
-    console.log('🚫 Password reset token detected, blocking authentication for:', resetToken);
-    return res.status(401).json({ message: "Password reset in progress" });
-  }
-  
   const sessionId = req.cookies?.sessionId;
   
   if (!sessionId) {
@@ -404,12 +372,11 @@ export function setupAuthRoutes(app: any) {
         req.get('User-Agent')
       );
       
-      // Set secure cookie
       res.cookie('sessionId', sessionId, {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
         sameSite: 'strict',
-        maxAge: 30 * 24 * 60 * 60 * 1000 // 30 days
+        maxAge: 30 * 24 * 60 * 60 * 1000
       });
       
       res.json({ 
@@ -443,12 +410,11 @@ export function setupAuthRoutes(app: any) {
         req.get('User-Agent')
       );
       
-      // Set secure cookie
       res.cookie('sessionId', sessionId, {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
         sameSite: 'strict',
-        maxAge: 30 * 24 * 60 * 60 * 1000 // 30 days
+        maxAge: 30 * 24 * 60 * 60 * 1000
       });
       
       res.json({ 
@@ -520,8 +486,6 @@ export function setupAuthRoutes(app: any) {
       
       const token = await PasswordReset.createResetToken(email);
       
-      // Always return success to prevent email enumeration
-      // In development, include the reset URL for testing
       if (process.env.NODE_ENV !== 'production' && token) {
         const resetUrl = `https://bookd.tools/?reset_token=${token}`;
         res.json({ 
@@ -536,6 +500,40 @@ export function setupAuthRoutes(app: any) {
     } catch (error) {
       console.error('Password reset request error:', error);
       res.status(500).json({ message: "Password reset request failed" });
+    }
+  });
+
+  // Validate reset token
+  app.post('/api/auth/validate-reset-token', async (req: any, res: any) => {
+    try {
+      const { token } = req.body;
+
+      if (!token) {
+        return res.status(400).json({ message: "Token is required" });
+      }
+
+      const tokenData = await PasswordReset.validateResetToken(token);
+
+      if (!tokenData) {
+        return res.status(400).json({ message: "Invalid or expired reset token" });
+      }
+
+      const user = await AuthService.getUserById(tokenData.userId);
+      if (!user) {
+        return res.status(400).json({ message: "User not found" });
+      }
+
+      res.json({ 
+        valid: true,
+        user: {
+          id: user.id,
+          email: user.email,
+          name: user.name
+        }
+      });
+    } catch (error) {
+      console.error('Reset token validation error:', error);
+      res.status(500).json({ message: "Token validation failed" });
     }
   });
 
@@ -565,4 +563,16 @@ export function setupAuthRoutes(app: any) {
 // Cleanup expired sessions periodically
 setInterval(() => {
   SessionManager.cleanupExpiredSessions();
-}, 60 * 60 * 1000); // Every hour
+}, 60 * 60 * 1000);
+
+// Add cleanup method
+SessionManager.cleanupExpiredSessions = async function() {
+  try {
+    await db
+      .update(userSessions)
+      .set({ isActive: false })
+      .where(gt(new Date(), userSessions.expiresAt));
+  } catch (error) {
+    console.error('Failed to cleanup expired sessions:', error);
+  }
+};
