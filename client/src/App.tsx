@@ -19,6 +19,19 @@ function Router() {
     
     async function checkAuth() {
       try {
+        // Check if there's a reset token in the URL - if so, don't auto-authenticate
+        const urlParams = new URLSearchParams(window.location.search);
+        const resetToken = urlParams.get('reset_token');
+        
+        if (resetToken) {
+          // For reset tokens, skip authentication check and show auth form
+          if (mounted) {
+            setUser(null);
+            setIsLoading(false);
+          }
+          return;
+        }
+        
         const response = await fetch("/api/auth/user", {
           credentials: "include",
           headers: {
