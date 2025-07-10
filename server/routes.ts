@@ -580,6 +580,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Special handler for password reset URLs - clear session before serving page
+  app.use((req: any, res: any, next: any) => {
+    const resetToken = req.query.reset_token;
+    
+    if (resetToken && req.method === 'GET') {
+      // Clear session cookie for password reset
+      res.clearCookie('sessionId', { 
+        path: '/',
+        domain: process.env.NODE_ENV === 'production' ? '.bookd.tools' : undefined,
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict'
+      });
+      
+      console.log('🔄 Password reset URL detected, session cookie cleared for token:', resetToken);
+    }
+    
+    next();
+  });
+
   // Setup authentication routes
   setupAuthRoutes(app);
 
