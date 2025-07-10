@@ -612,6 +612,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         'Expires': '0',
         'X-Reset-Mode': 'true'
       });
+      
+      // Mark this request as having a reset token for requireAuth middleware
+      req.hasResetToken = true;
     }
     
     next();

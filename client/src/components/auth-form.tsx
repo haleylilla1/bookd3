@@ -51,10 +51,24 @@ export function AuthForm({ onSuccess }: AuthFormProps) {
     const token = urlParams.get('reset_token');
 
     if (token) {
-      console.log('🔐 AuthForm detected reset token, switching to reset mode:', token);
-      setResetToken(token);
+      console.log('🔑 RESET TOKEN DETECTED IN URL:', token);
+
+      // Force complete logout first
+      document.cookie.split(";").forEach(function(c) { 
+        document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/"); 
+      });
+      localStorage.clear();
+      sessionStorage.clear();
+
       setMode('reset-password');
+
+      // Auto-populate the hidden token field
       resetPasswordForm.setValue('token', token);
+
+      // Clear the URL parameter for cleaner UX
+      const newUrl = new URL(window.location.href);
+      newUrl.searchParams.delete('reset_token');
+      window.history.replaceState({}, '', newUrl.toString());
     }
   }, []);
 
@@ -75,7 +89,32 @@ export function AuthForm({ onSuccess }: AuthFormProps) {
 
   const resetPasswordForm = useForm<ResetPasswordData>({
     resolver: zodResolver(resetPasswordSchema),
-    defaultValues: { token: '', newPassword: '' }
+    defaultValues: {
+      token: "",
+      newPassword: ""
+    }
+  });
+
+  const resetPasswordMutation = useMutation({
+    mutationFn: async (data: ResetPasswordData) => {
+      const response = await apiRequest("POST", "/api/auth/reset-password", data);
+      return response.json();
+    },
+    onSuccess: (data) => {
+      toast({
+        title: "Password Reset Successful",
+        description: "Your password has been updated. Please log in with your new password.",
+      });
+      setMode('login');
+      resetPasswordForm.reset();
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Password Reset Failed",
+        description: error.message || "Failed to reset password. The link may be expired.",
+        variant: "destructive",
+      });
+    },
   });
 
   const loginMutation = useMutation({
@@ -136,26 +175,6 @@ export function AuthForm({ onSuccess }: AuthFormProps) {
         // Note: Auto-navigation removed - user should click email link or console link
         // This allows testing of the actual email flow
       }
-    },
-    onError: (error: any) => {
-      toast({
-        title: "Reset failed",
-        description: error.message || "Please try again",
-        variant: "destructive"
-      });
-    }
-  });
-
-  const resetPasswordMutation = useMutation({
-    mutationFn: async (data: ResetPasswordData) => {
-      return apiRequest('POST', '/api/auth/reset-password', data);
-    },
-    onSuccess: () => {
-      toast({
-        title: "Password reset successful",
-        description: "You can now login with your new password"
-      });
-      setMode('login');
     },
     onError: (error: any) => {
       toast({
@@ -387,15 +406,9 @@ export function AuthForm({ onSuccess }: AuthFormProps) {
                   name="token"
                   render={({ field }) => (
                     <FormItem className="hidden">
-                      <FormLabel>Reset Token</FormLabel>
                       <FormControl>
-                        <Input 
-                          type="hidden" 
-                          {...field}
-                          value={resetToken || field.value}
-                        />
+                        <Input type="hidden" {...field} />
                       </FormControl>
-                      <FormMessage />
                     </FormItem>
                   )}
                 />
@@ -408,7 +421,7 @@ export function AuthForm({ onSuccess }: AuthFormProps) {
                       <FormControl>
                         <Input 
                           type="password" 
-                          placeholder="Enter new password (min 6 characters)"
+                          placeholder="Enter your new password (min 6 characters)"
                           {...field}
                         />
                       </FormControl>
