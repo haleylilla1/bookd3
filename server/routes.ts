@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { setupAuthRoutes, requireAuth } from "./unified-auth";
+import { setupAuthRoutes, requireAuth, SessionManager } from "./unified-auth";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Force HTTPS redirect and add security headers in production
@@ -580,21 +580,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Special handler for password reset URLs - clear session before serving page
-  app.use((req: any, res: any, next: any) => {
+  // Special middleware for reset tokens - force logout before any other processing
+  app.get('*', (req: any, res: any, next: any) => {
     const resetToken = req.query.reset_token;
     
-    if (resetToken && req.method === 'GET') {
-      // Clear session cookie for password reset
-      res.clearCookie('sessionId', { 
-        path: '/',
-        domain: process.env.NODE_ENV === 'production' ? '.bookd.tools' : undefined,
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'strict'
+    if (resetToken) {
+      console.log('🚫 SERVER: Reset token detected, forcing session destruction:', resetToken);
+      
+      // Destroy session in database if it exists
+      const sessionId = req.cookies?.sessionId;
+      if (sessionId) {
+        SessionManager.destroySession(sessionId).catch(console.error);
+      }
+      
+      // Clear ALL possible session cookies
+      const cookieNames = ['sessionId', 'connect.sid', 'session'];
+      cookieNames.forEach(name => {
+        res.clearCookie(name, { path: '/' });
+        res.clearCookie(name, { path: '/', domain: '.bookd.tools' });
+        res.clearCookie(name, { path: '/', domain: 'bookd.tools' });
       });
       
-      console.log('🔄 Password reset URL detected, session cookie cleared for token:', resetToken);
+      // Set response headers to prevent caching
+      res.set({
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0'
+      });
     }
     
     next();

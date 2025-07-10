@@ -19,35 +19,30 @@ function Router() {
     
     async function checkAuth() {
       try {
-        // Check if there's a reset token in the URL - if so, don't auto-authenticate
+        // IMMEDIATE check for reset token - highest priority
         const urlParams = new URLSearchParams(window.location.search);
         const resetToken = urlParams.get('reset_token');
         
         if (resetToken) {
-          // For reset tokens, clear any existing session and show auth form
-          console.log('🔄 Reset token detected, clearing all cookies and forcing logout:', resetToken);
+          console.log('🚫 RESET TOKEN DETECTED - BLOCKING ALL AUTHENTICATION:', resetToken);
           
-          // Clear ALL possible session cookies
-          const cookiesToClear = ['sessionId', 'connect.sid', 'session'];
-          const domains = ['', '.bookd.tools', 'bookd.tools'];
-          
-          cookiesToClear.forEach(cookieName => {
-            domains.forEach(domain => {
-              document.cookie = `${cookieName}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; ${domain ? `domain=${domain};` : ''}`;
-            });
-          });
-          
-          // Also clear localStorage and sessionStorage
-          localStorage.clear();
-          sessionStorage.clear();
-          
+          // Immediately force logout state
           if (mounted) {
             setUser(null);
             setIsLoading(false);
           }
-          return;
+          
+          // Clear all cookies and storage
+          document.cookie.split(";").forEach(function(c) { 
+            document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/"); 
+          });
+          localStorage.clear();
+          sessionStorage.clear();
+          
+          return; // EXIT IMMEDIATELY - no auth check
         }
         
+        // Only check authentication if NO reset token
         const response = await fetch("/api/auth/user", {
           credentials: "include",
           headers: {
