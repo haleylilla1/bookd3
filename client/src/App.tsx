@@ -25,6 +25,7 @@ function Router() {
 
         if (resetToken) {
           console.log('🚫 CRITICAL SECURITY: Reset token detected - PREVENTING AUTO-LOGIN:', resetToken);
+          console.log('🚫 Current URL:', window.location.href);
 
           // IMMEDIATELY block any authentication attempts
           if (mounted) {

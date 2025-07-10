@@ -580,14 +580,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // CRITICAL SECURITY: Block ALL authentication when reset token is present - MUST BE FIRST
-  app.use(async (req: any, res: any, next: any) => {
-    const resetToken = req.query.reset_token;
+  // CRITICAL SECURITY: Block ALL authentication when reset token is present - ABSOLUTE FIRST PRIORITY
+  app.use('*', async (req: any, res: any, next: any) => {
+    const resetToken = req.query.reset_token || req.body.reset_token;
 
     if (resetToken) {
       console.log('🚫 CRITICAL SECURITY: Reset token detected - BLOCKING ALL AUTHENTICATION:', resetToken);
+      console.log('🚫 Request URL:', req.url);
+      console.log('🚫 Request path:', req.path);
 
-      // Immediately destroy any existing session
+      // IMMEDIATELY destroy any existing session
       const sessionId = req.cookies?.sessionId;
       if (sessionId) {
         console.log('🗂️ EMERGENCY: Destroying session for security:', sessionId);
@@ -596,6 +598,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         } catch (error) {
           console.error('Session destruction error:', error);
         }
+      }
+
+      // BLOCK any API requests that might auto-authenticate
+      if (req.path.startsWith('/api/auth/user') || req.path.startsWith('/api/user')) {
+        console.log('🚫 BLOCKING AUTH API REQUEST during reset');
+        return res.status(401).json({ 
+          message: "Authentication blocked during password reset",
+          resetMode: true 
+        });
       }
 
       // Clear ALL cookies aggressively with multiple attempts

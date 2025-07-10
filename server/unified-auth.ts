@@ -391,6 +391,7 @@ export function requireAuth(req: any, res: any, next: any) {
   
   if (resetToken) {
     console.log('🚫 SECURITY BLOCK: Reset token detected - completely blocking authentication');
+    console.log('🚫 Request details:', { path: req.path, url: req.url });
     
     // Clear any existing session data from request
     req.user = null;
