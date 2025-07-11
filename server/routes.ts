@@ -51,7 +51,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // User data endpoints - all require authentication
   app.get('/api/user', requireAuth, async (req, res) => {
     try {
-      const user = await storage.getUser(req.session.userId);
+      const user = await storage.getUser(req.userId);
       if (!user) {
         return res.status(404).json({ error: 'User not found' });
       }
@@ -63,7 +63,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.put('/api/user', requireAuth, async (req, res) => {
     try {
-      const updatedUser = await storage.updateUser(req.session.userId, req.body);
+      const updatedUser = await storage.updateUser(req.userId, req.body);
       res.json(updatedUser);
     } catch (error) {
       res.status(500).json({ error: 'Failed to update user' });
@@ -73,7 +73,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Gig endpoints
   app.get('/api/gigs', requireAuth, async (req, res) => {
     try {
-      const gigs = await storage.getGigsByUser(req.session.userId);
+      const gigs = await storage.getGigsByUser(req.userId);
       res.json(gigs);
     } catch (error) {
       res.status(500).json({ error: 'Failed to fetch gigs' });
@@ -82,7 +82,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/gigs', requireAuth, async (req, res) => {
     try {
-      const gig = await storage.createGig({ ...req.body, userId: req.session.userId });
+      const gig = await storage.createGig({ ...req.body, userId: req.userId });
       res.json(gig);
     } catch (error) {
       res.status(500).json({ error: 'Failed to create gig' });
@@ -94,7 +94,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const gigId = parseInt(req.params.id);
       const existingGig = await storage.getGig(gigId);
       
-      if (!existingGig || existingGig.userId !== req.session.userId) {
+      if (!existingGig || existingGig.userId !== req.userId) {
         return res.status(404).json({ error: 'Gig not found' });
       }
       
@@ -110,7 +110,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const gigId = parseInt(req.params.id);
       const existingGig = await storage.getGig(gigId);
       
-      if (!existingGig || existingGig.userId !== req.session.userId) {
+      if (!existingGig || existingGig.userId !== req.userId) {
         return res.status(404).json({ error: 'Gig not found' });
       }
       
@@ -124,7 +124,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Expense endpoints
   app.get('/api/expenses', requireAuth, async (req, res) => {
     try {
-      const expenses = await storage.getExpensesByUser(req.session.userId);
+      const expenses = await storage.getExpensesByUser(req.userId);
       res.json(expenses);
     } catch (error) {
       res.status(500).json({ error: 'Failed to fetch expenses' });
@@ -133,7 +133,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/expenses', requireAuth, async (req, res) => {
     try {
-      const expense = await storage.createExpense({ ...req.body, userId: req.session.userId });
+      const expense = await storage.createExpense({ ...req.body, userId: req.userId });
       res.json(expense);
     } catch (error) {
       res.status(500).json({ error: 'Failed to create expense' });
@@ -145,7 +145,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const expenseId = parseInt(req.params.id);
       const existingExpense = await storage.getExpense(expenseId);
       
-      if (!existingExpense || existingExpense.userId !== req.session.userId) {
+      if (!existingExpense || existingExpense.userId !== req.userId) {
         return res.status(404).json({ error: 'Expense not found' });
       }
       
@@ -161,7 +161,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const expenseId = parseInt(req.params.id);
       const existingExpense = await storage.getExpense(expenseId);
       
-      if (!existingExpense || existingExpense.userId !== req.session.userId) {
+      if (!existingExpense || existingExpense.userId !== req.userId) {
         return res.status(404).json({ error: 'Expense not found' });
       }
       
@@ -175,7 +175,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Goal endpoints
   app.get('/api/goals', requireAuth, async (req, res) => {
     try {
-      const goals = await storage.getGoalsByUser(req.session.userId);
+      const goals = await storage.getGoalsByUser(req.userId);
       res.json(goals);
     } catch (error) {
       res.status(500).json({ error: 'Failed to fetch goals' });
@@ -184,7 +184,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/goals', requireAuth, async (req, res) => {
     try {
-      const goal = await storage.createGoal({ ...req.body, userId: req.session.userId });
+      const goal = await storage.createGoal({ ...req.body, userId: req.userId });
       res.json(goal);
     } catch (error) {
       res.status(500).json({ error: 'Failed to create goal' });
@@ -196,7 +196,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const goalId = parseInt(req.params.id);
       const existingGoal = await storage.getGoal(goalId);
       
-      if (!existingGoal || existingGoal.userId !== req.session.userId) {
+      if (!existingGoal || existingGoal.userId !== req.userId) {
         return res.status(404).json({ error: 'Goal not found' });
       }
       
@@ -212,7 +212,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const goalId = parseInt(req.params.id);
       const existingGoal = await storage.getGoal(goalId);
       
-      if (!existingGoal || existingGoal.userId !== req.session.userId) {
+      if (!existingGoal || existingGoal.userId !== req.userId) {
         return res.status(404).json({ error: 'Goal not found' });
       }
       
@@ -226,7 +226,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Monthly/Yearly goal endpoints
   app.get('/api/monthly-goals', requireAuth, async (req, res) => {
     try {
-      const goals = await storage.getMonthlyGoalsByUser(req.session.userId);
+      const goals = await storage.getMonthlyGoalsByUser(req.userId);
       res.json(goals);
     } catch (error) {
       res.status(500).json({ error: 'Failed to fetch monthly goals' });
@@ -235,7 +235,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/monthly-goals', requireAuth, async (req, res) => {
     try {
-      const goal = await storage.createMonthlyGoal({ ...req.body, userId: req.session.userId });
+      const goal = await storage.createMonthlyGoal({ ...req.body, userId: req.userId });
       res.json(goal);
     } catch (error) {
       res.status(500).json({ error: 'Failed to create monthly goal' });
@@ -244,7 +244,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get('/api/yearly-goals', requireAuth, async (req, res) => {
     try {
-      const goals = await storage.getYearlyGoalsByUser(req.session.userId);
+      const goals = await storage.getYearlyGoalsByUser(req.userId);
       res.json(goals);
     } catch (error) {
       res.status(500).json({ error: 'Failed to fetch yearly goals' });
@@ -253,7 +253,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/yearly-goals', requireAuth, async (req, res) => {
     try {
-      const goal = await storage.createYearlyGoal({ ...req.body, userId: req.session.userId });
+      const goal = await storage.createYearlyGoal({ ...req.body, userId: req.userId });
       res.json(goal);
     } catch (error) {
       res.status(500).json({ error: 'Failed to create yearly goal' });
@@ -307,7 +307,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Automatic gig status update endpoint
   app.post('/api/gigs/update-statuses', requireAuth, async (req, res) => {
     try {
-      const gigs = await storage.getGigsByUser(req.session.userId);
+      const gigs = await storage.getGigsByUser(req.userId);
       const today = new Date();
       today.setHours(0, 0, 0, 0);
       
@@ -332,7 +332,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Custom gig types endpoint
   app.get('/api/gig-types', requireAuth, async (req, res) => {
     try {
-      const user = await storage.getUser(req.session.userId);
+      const user = await storage.getUser(req.userId);
       res.json(user?.customGigTypes || []);
     } catch (error) {
       res.status(500).json({ error: 'Failed to fetch gig types' });
@@ -342,7 +342,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/gig-types', requireAuth, async (req, res) => {
     try {
       const { gigType } = req.body;
-      const user = await storage.getUser(req.session.userId);
+      const user = await storage.getUser(req.userId);
       
       if (!user) {
         return res.status(404).json({ error: 'User not found' });
@@ -351,7 +351,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const customGigTypes = user.customGigTypes || [];
       if (!customGigTypes.includes(gigType)) {
         customGigTypes.push(gigType);
-        await storage.updateUser(req.session.userId, { customGigTypes });
+        await storage.updateUser(req.userId, { customGigTypes });
       }
       
       res.json({ success: true });
