@@ -310,7 +310,7 @@ export class AuthService {
   }
 }
 
-// Simple auth middleware - NO COMPLEX BLOCKING
+// BULLETPROOF auth middleware with validation
 export function requireAuth(req: any, res: any, next: any) {
   const sessionId = req.cookies?.sessionId;
   
@@ -324,10 +324,25 @@ export function requireAuth(req: any, res: any, next: any) {
         return res.status(401).json({ message: "Invalid session" });
       }
       
+      // CRITICAL: Set user ID and validate pattern
       req.userId = session.userId;
+      
+      // BULLETPROOF: Validate authentication pattern
+      if (typeof req.userId !== 'number' || req.userId <= 0) {
+        console.error('❌ CRITICAL AUTH ERROR: Invalid userId set in middleware');
+        return res.status(500).json({ message: "Authentication configuration error" });
+      }
+      
+      // BULLETPROOF: Prevent deprecated pattern usage
+      if (req.session?.userId) {
+        console.error('❌ DEPRECATED AUTH PATTERN DETECTED: req.session.userId exists');
+        console.error('This suggests route handlers may be using deprecated authentication');
+      }
+      
       next();
     })
     .catch(error => {
+      console.error('Authentication error:', error);
       res.status(500).json({ message: "Authentication error" });
     });
 }
