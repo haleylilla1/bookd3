@@ -333,9 +333,9 @@ export function requireAuth(req: any, res: any, next: any) {
 }
 
 // Setup auth routes
-export function setupAuthRoutes(app: any) {
+export function setupAuthRoutes(app: any, authLimiter?: any, passwordResetLimiter?: any) {
   // Login
-  app.post('/api/auth/login', async (req: any, res: any) => {
+  app.post('/api/auth/login', authLimiter, async (req: any, res: any) => {
     try {
       const { email, password } = req.body;
       
@@ -375,7 +375,7 @@ export function setupAuthRoutes(app: any) {
   });
 
   // Register
-  app.post('/api/auth/register', async (req: any, res: any) => {
+  app.post('/api/auth/register', authLimiter, async (req: any, res: any) => {
     try {
       const { email, password, name } = req.body;
       
@@ -454,7 +454,7 @@ export function setupAuthRoutes(app: any) {
   });
 
   // Request password reset
-  app.post('/api/auth/reset-password-request', async (req: any, res: any) => {
+  app.post('/api/auth/reset-password-request', passwordResetLimiter, async (req: any, res: any) => {
     try {
       const { email } = req.body;
       
@@ -514,7 +514,7 @@ export function setupAuthRoutes(app: any) {
   });
 
   // Reset password
-  app.post('/api/auth/reset-password', async (req: any, res: any) => {
+  app.post('/api/auth/reset-password', passwordResetLimiter, async (req: any, res: any) => {
     try {
       const { token, newPassword } = req.body;
       
