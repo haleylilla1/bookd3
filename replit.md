@@ -22,8 +22,15 @@ Bookd is a mobile-first gig worker companion app with comprehensive financial tr
 - Focus on mobile-first experience optimization
 - Prioritize authentication reliability for user onboarding
 - Maintain simple, clean interface design
+- CRITICAL: Prevent authentication changes from affecting existing users' data access
+- Require comprehensive testing before any authentication modifications
 
 ## Recent Changes
+- 2025-07-11: AUTHENTICATION CONSISTENCY SYSTEM IMPLEMENTED - Created comprehensive prevention system for auth-related data access failures
+- 2025-07-11: Added automated testing script, validation middleware, and detailed documentation to prevent user data loss
+- 2025-07-11: Established single source of truth: req.userId pattern across all routes with enforcement mechanisms
+- 2025-07-11: CRITICAL DATA ACCESS BUG FIXED - Resolved authentication middleware mismatch that prevented user data from loading
+- 2025-07-11: Fixed req.session.userId vs req.userId inconsistency that caused all 35 gigs to disappear from dashboard
 - 2025-07-10: REACT QUERY CLIENT BUG FIXED - Resolved "Missing queryFn" error preventing gig data from loading in dashboard
 - 2025-07-10: Fixed conflicting QueryClient instances by using unified queryClient from lib/queryClient.ts
 - 2025-07-10: Dashboard now successfully loads all 35 gigs with proper authentication and data display
