@@ -28,7 +28,6 @@ class EmailService {
   
   static async sendPasswordResetEmail(email: string, token: string): Promise<boolean> {
     if (!process.env.SENDGRID_API_KEY) {
-      console.log('SendGrid API key not configured, skipping email send');
       return false;
     }
     
@@ -55,7 +54,6 @@ class EmailService {
       
       return true;
     } catch (error) {
-      console.error('Failed to send password reset email:', error);
       return false;
     }
   }
@@ -81,7 +79,6 @@ export class SessionManager {
       
       return sessionId;
     } catch (error) {
-      console.error('Failed to create session:', error);
       throw new Error('Session creation failed');
     }
   }
@@ -105,7 +102,6 @@ export class SessionManager {
       if (!session) return null;
       return { userId: session.userId };
     } catch (error) {
-      console.error('Session validation error:', error);
       return null;
     }
   }
@@ -119,7 +115,6 @@ export class SessionManager {
         .set({ isActive: false })
         .where(eq(userSessions.sessionId, sessionId));
     } catch (error) {
-      console.error('Failed to destroy session:', error);
     }
   }
 
@@ -130,7 +125,6 @@ export class SessionManager {
         .set({ isActive: false })
         .where(eq(userSessions.userId, userId));
     } catch (error) {
-      console.error('Failed to destroy user sessions:', error);
     }
   }
 }
@@ -162,19 +156,15 @@ export class PasswordReset {
       const emailSent = await EmailService.sendPasswordResetEmail(email, token);
       
       if (emailSent) {
-        console.log(`Password reset email sent to ${email}`);
       } else {
-        console.log(`Failed to send password reset email to ${email}`);
         
         if (process.env.NODE_ENV !== 'production') {
           const resetUrl = `https://bookd.tools/?reset_token=${token}`;
-          console.log(`\n🔗 DEVELOPMENT RESET LINK: ${resetUrl}\n`);
         }
       }
 
       return token;
     } catch (error) {
-      console.error('Failed to create reset token:', error);
       return null;
     }
   }
@@ -196,7 +186,6 @@ export class PasswordReset {
       if (!resetToken) return null;
       return { userId: resetToken.userId };
     } catch (error) {
-      console.error('Reset token validation error:', error);
       return null;
     }
   }
@@ -218,7 +207,6 @@ export class PasswordReset {
         .limit(1);
 
       if (!resetToken) {
-        console.log('❌ Invalid or expired reset token');
         return false;
       }
 
@@ -239,10 +227,8 @@ export class PasswordReset {
 
       await SessionManager.destroyUserSessions(resetToken.userId);
 
-      console.log('✅ Password reset successful for user:', resetToken.userId);
       return true;
     } catch (error) {
-      console.error('Password reset error:', error);
       return false;
     }
   }
@@ -267,7 +253,6 @@ export class AuthService {
 
       return user;
     } catch (error) {
-      console.error('User creation error:', error);
       throw new Error('Failed to create user');
     }
   }
@@ -301,7 +286,6 @@ export class AuthService {
 
       return user;
     } catch (error) {
-      console.error('Password validation error:', error);
       return null;
     }
   }
@@ -321,7 +305,6 @@ export class AuthService {
 
       return user || null;
     } catch (error) {
-      console.error('Get user error:', error);
       return null;
     }
   }
@@ -345,7 +328,6 @@ export function requireAuth(req: any, res: any, next: any) {
       next();
     })
     .catch(error => {
-      console.error('Auth middleware error:', error);
       res.status(500).json({ message: "Authentication error" });
     });
 }
@@ -388,7 +370,6 @@ export function setupAuthRoutes(app: any) {
         }
       });
     } catch (error) {
-      console.error('Login error:', error);
       res.status(500).json({ message: "Login failed" });
     }
   });
@@ -426,7 +407,6 @@ export function setupAuthRoutes(app: any) {
         }
       });
     } catch (error) {
-      console.error('Registration error:', error);
       res.status(500).json({ message: "Registration failed" });
     }
   });
@@ -442,7 +422,6 @@ export function setupAuthRoutes(app: any) {
       res.clearCookie('sessionId');
       res.json({ message: "Logout successful" });
     } catch (error) {
-      console.error('Logout error:', error);
       res.status(500).json({ message: "Logout failed" });
     }
   });
@@ -470,7 +449,6 @@ export function setupAuthRoutes(app: any) {
         businessEmail: user.businessEmail
       });
     } catch (error) {
-      console.error('Get user error:', error);
       res.status(500).json({ message: "Failed to get user" });
     }
   });
@@ -498,7 +476,6 @@ export function setupAuthRoutes(app: any) {
         });
       }
     } catch (error) {
-      console.error('Password reset request error:', error);
       res.status(500).json({ message: "Password reset request failed" });
     }
   });
@@ -532,7 +509,6 @@ export function setupAuthRoutes(app: any) {
         }
       });
     } catch (error) {
-      console.error('Reset token validation error:', error);
       res.status(500).json({ message: "Token validation failed" });
     }
   });
@@ -554,7 +530,6 @@ export function setupAuthRoutes(app: any) {
       
       res.json({ message: "Password reset successful" });
     } catch (error) {
-      console.error('Password reset error:', error);
       res.status(500).json({ message: "Password reset failed" });
     }
   });
@@ -573,6 +548,5 @@ SessionManager.cleanupExpiredSessions = async function() {
       .set({ isActive: false })
       .where(gt(new Date(), userSessions.expiresAt));
   } catch (error) {
-    console.error('Failed to cleanup expired sessions:', error);
   }
 };
