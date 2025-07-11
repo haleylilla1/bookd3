@@ -2,6 +2,7 @@
 // This system prevents authentication pattern violations at runtime
 
 import { Request, Response, NextFunction } from 'express';
+import { logger, logError, logSecurityEvent } from './logger';
 
 // Type-safe authenticated request
 export interface AuthenticatedRequest extends Request {
@@ -12,65 +13,70 @@ export interface AuthenticatedRequest extends Request {
 export function authPatternGuard(req: AuthenticatedRequest, res: Response, next: NextFunction) {
   // BULLETPROOF: Validate userId is properly set
   if (!req.userId || typeof req.userId !== 'number' || req.userId <= 0) {
-    console.error('❌ CRITICAL: Authentication guard failed - invalid userId');
-    console.error('req.userId:', req.userId);
-    console.error('This indicates a serious authentication middleware failure');
+    logSecurityEvent('Authentication guard failed - invalid userId', { 
+      userId: req.userId, 
+      route: req.path 
+    });
     return res.status(500).json({ error: 'Authentication system error' });
   }
   
   // BULLETPROOF: Detect deprecated pattern usage
   if ((req as any).session?.userId) {
-    console.error('❌ DEPRECATED PATTERN DETECTED: req.session.userId found');
-    console.error('Route handlers must use req.userId, not req.session.userId');
+    logSecurityEvent('Deprecated auth pattern detected', { 
+      route: req.path, 
+      sessionUserId: (req as any).session.userId 
+    });
   }
   
   next();
 }
 
 // Development-only route pattern scanner
-export function scanForDeprecatedPatterns() {
+export async function scanForDeprecatedPatterns() {
   if (process.env.NODE_ENV === 'development') {
     try {
-      const fs = require('fs');
-      const path = require('path');
+      const fs = await import('fs');
+      const path = await import('path');
       
       // Use import.meta.dirname for ES modules
-      const currentDir = import.meta.dirname || __dirname;
+      const currentDir = import.meta.dirname || process.cwd() + '/server';
       const routesPath = path.join(currentDir, 'routes.ts');
       
       if (fs.existsSync(routesPath)) {
         const routesContent = fs.readFileSync(routesPath, 'utf8');
         
         if (routesContent.includes('req.session.userId')) {
-          console.error('❌ CRITICAL: Deprecated auth pattern found in routes.ts');
-          console.error('Search for "req.session.userId" and replace with "req.userId"');
-          console.error('This WILL cause user data access failures');
+          logSecurityEvent('Deprecated auth pattern found in routes.ts', { 
+            pattern: 'req.session.userId',
+            file: 'routes.ts' 
+          });
           return false;
         }
         
-        console.log('✅ Authentication patterns validated - no deprecated usage found');
+        logger.info('Authentication patterns validated - no deprecated usage found');
         return true;
       }
     } catch (error) {
-      console.log('Note: Could not scan routes.ts for deprecated patterns (this is OK)');
+      logger.debug('Could not scan routes.ts for deprecated patterns', { error });
     }
   }
   return true;
 }
 
 // Startup validation
-export function validateAuthSystemOnStartup() {
-  console.log('🔒 Validating authentication system...');
+export async function validateAuthSystemOnStartup() {
+  logger.info('Validating authentication system...');
   
-  const patternsValid = scanForDeprecatedPatterns();
+  const patternsValid = await scanForDeprecatedPatterns();
   
   if (!patternsValid) {
-    console.error('❌ AUTHENTICATION SYSTEM VALIDATION FAILED');
-    console.error('Server startup should be halted until patterns are fixed');
+    logSecurityEvent('Authentication system validation failed', { 
+      reason: 'Deprecated patterns detected' 
+    });
     throw new Error('Authentication pattern validation failed');
   }
   
-  console.log('✅ Authentication system validation passed');
+  logger.info('Authentication system validation passed');
 }
 
 // Helper to get user ID safely

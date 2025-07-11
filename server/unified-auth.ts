@@ -5,6 +5,7 @@ import { users, userSessions, passwordResetTokens } from '@shared/schema';
 import { eq, and, gt } from 'drizzle-orm';
 import crypto from 'crypto';
 import { MailService } from '@sendgrid/mail';
+import { logger, logError, logAuthEvent, logSecurityEvent } from './logger';
 
 // Generate secure session ID
 export function generateSessionId(): string {
@@ -329,20 +330,25 @@ export function requireAuth(req: any, res: any, next: any) {
       
       // BULLETPROOF: Validate authentication pattern
       if (typeof req.userId !== 'number' || req.userId <= 0) {
-        console.error('❌ CRITICAL AUTH ERROR: Invalid userId set in middleware');
+        logSecurityEvent('Critical auth error - invalid userId set in middleware', {
+          userId: req.userId,
+          route: req.path
+        });
         return res.status(500).json({ message: "Authentication configuration error" });
       }
       
       // BULLETPROOF: Prevent deprecated pattern usage
       if (req.session?.userId) {
-        console.error('❌ DEPRECATED AUTH PATTERN DETECTED: req.session.userId exists');
-        console.error('This suggests route handlers may be using deprecated authentication');
+        logSecurityEvent('Deprecated auth pattern detected in middleware', {
+          sessionUserId: req.session.userId,
+          route: req.path
+        });
       }
       
       next();
     })
     .catch(error => {
-      console.error('Authentication error:', error);
+      logError('Authentication error in middleware', error);
       res.status(500).json({ message: "Authentication error" });
     });
 }
