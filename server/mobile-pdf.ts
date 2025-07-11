@@ -40,9 +40,7 @@ export class MobilePDFGenerator {
 
   async generateReport(options: ReportOptions): Promise<Buffer> {
     try {
-      console.log('Starting PDF generation for user:', options.userId);
       const reportData = await this.prepareReportData(options);
-      console.log('Report data prepared:', { 
         gigsCount: reportData.gigs.length, 
         totalIncome: reportData.totalIncome 
       });
@@ -64,13 +62,11 @@ export class MobilePDFGenerator {
       // Add page numbers to all pages
       this.addAllPageNumbers();
 
-      console.log('PDF generated successfully');
       
       // Use 'uint8array' output for better mobile compatibility
       const pdfOutput = this.doc.output('arraybuffer');
       return Buffer.from(pdfOutput);
     } catch (error) {
-      console.error('PDF generation error:', error);
       
       // Fallback: Create a simple error PDF
       try {
@@ -83,7 +79,6 @@ export class MobilePDFGenerator {
         
         return Buffer.from(errorDoc.output('arraybuffer'));
       } catch (fallbackError) {
-        console.error('Fallback PDF generation failed:', fallbackError);
         throw new Error('PDF generation completely failed');
       }
     }

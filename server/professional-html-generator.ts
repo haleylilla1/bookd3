@@ -400,7 +400,6 @@ export async function generateProfessionalHTML(options: ReportOptions): Promise<
 </html>
   `;
   } catch (error) {
-    console.error('Error generating professional HTML report:', error);
     // Return a fallback error page
     return `
 <!DOCTYPE html>

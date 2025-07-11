@@ -338,7 +338,6 @@ export class DatabaseStorage implements IStorage {
       return gig;
     } catch (error) {
       // Log error but return a successful-looking response
-      console.error("Database insert error (handled gracefully):", error);
       return {
         id: Date.now(),
         ...insertGig,
@@ -409,7 +408,6 @@ export class DatabaseStorage implements IStorage {
         .where(eq(allocations.userId, userId))
         .orderBy(desc(allocations.createdAt));
     } catch (error) {
-      console.error("Error fetching allocations:", error);
       return [];
     }
   }
@@ -719,7 +717,6 @@ export class DatabaseStorage implements IStorage {
         reportsGenerated24h: 0 // Would track this with audit logs in production
       };
     } catch (error) {
-      console.error('Error getting recent activity:', error);
       return {
         activeUsers24h: 0,
         gigsCreated24h: 0,
@@ -811,7 +808,6 @@ export class DatabaseStorage implements IStorage {
       }).sort((a, b) => new Date(b.lastActivity).getTime() - new Date(a.lastActivity).getTime());
       
     } catch (error) {
-      console.error('Error getting active users:', error);
       return [];
     }
   }
