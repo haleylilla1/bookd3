@@ -3,11 +3,12 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { setupAuthRoutes, requireAuth, SessionManager } from "./unified-auth";
 import { authPatternGuard, validateAuthSystemOnStartup, getUserId, type AuthenticatedRequest } from "./auth-guard";
+import { globalErrorHandler, asyncHandler, safeDbOperation, validateUserId, validateNumericId } from "./error-handler";
 import rateLimit from "express-rate-limit";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // BULLETPROOF: Validate authentication system on startup
-  validateAuthSystemOnStartup();
+  await validateAuthSystemOnStartup();
   
   // Force HTTPS redirect in production
   if (process.env.NODE_ENV === 'production') {
@@ -53,28 +54,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // User data endpoints - all require authentication
-  app.get('/api/user', requireAuth, authPatternGuard, async (req: AuthenticatedRequest, res) => {
-    try {
-      const userId = getUserId(req);
-      const user = await storage.getUser(userId);
-      if (!user) {
-        return res.status(404).json({ error: 'User not found' });
-      }
-      res.json(user);
-    } catch (error) {
-      res.status(500).json({ error: 'Failed to fetch user data' });
+  app.get('/api/user', requireAuth, authPatternGuard, asyncHandler(async (req: AuthenticatedRequest, res) => {
+    const userId = getUserId(req);
+    const user = await safeDbOperation(
+      () => storage.getUser(userId),
+      'Failed to fetch user data',
+      userId
+    );
+    
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
     }
-  });
+    
+    res.json(user);
+  }));
 
-  app.put('/api/user', requireAuth, authPatternGuard, async (req: AuthenticatedRequest, res) => {
-    try {
-      const userId = getUserId(req);
-      const updatedUser = await storage.updateUser(userId, req.body);
-      res.json(updatedUser);
-    } catch (error) {
-      res.status(500).json({ error: 'Failed to update user' });
+  app.put('/api/user', requireAuth, authPatternGuard, asyncHandler(async (req: AuthenticatedRequest, res) => {
+    const userId = getUserId(req);
+    const updatedUser = await safeDbOperation(
+      () => storage.updateUser(userId, req.body),
+      'Failed to update user data',
+      userId
+    );
+    
+    if (!updatedUser) {
+      return res.status(500).json({ error: 'Failed to update user' });
     }
-  });
+    
+    res.json(updatedUser);
+  }));
 
   // Gig endpoints
   app.get('/api/gigs', requireAuth, authPatternGuard, async (req: AuthenticatedRequest, res) => {
@@ -378,6 +386,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.use('/api/admin*', (req, res) => {
     res.status(404).json({ error: 'Not Found' });
   });
+
+  // Global error handler (must be last)
+  app.use(globalErrorHandler);
 
   const server = createServer(app);
   return server;
