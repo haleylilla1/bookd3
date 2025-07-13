@@ -32,6 +32,8 @@ interface ReceiptData {
   description: string;
   gigName: string;
   clientName: string;
+  reimbursed: boolean;
+  receipts: string[]; // Array of receipt photo URLs/base64 strings
 }
 
 export class ProfessionalPDFGenerator {
@@ -143,7 +145,7 @@ export class ProfessionalPDFGenerator {
     const avgTaxPercentage = user.defaultTaxPercentage || 23;
     const afterTaxIncome = netIncome - estimatedTaxes;
 
-    // Prepare receipts data
+    // Prepare receipts data with photos and reimbursement status
     const receipts: ReceiptData[] = [];
     completedGigs.forEach(gig => {
       if (parseFloat(gig.parkingExpense || '0') > 0) {
@@ -153,7 +155,9 @@ export class ProfessionalPDFGenerator {
           amount: parseFloat(gig.parkingExpense || '0'),
           description: 'Parking expense',
           gigName: gig.eventName || 'Unnamed Event',
-          clientName: gig.clientName || 'Direct Client'
+          clientName: gig.clientName || 'Direct Client',
+          reimbursed: Boolean(gig.parkingReimbursed),
+          receipts: Array.isArray(gig.parkingReceipts) ? gig.parkingReceipts : []
         });
       }
       if (parseFloat(gig.otherExpenses || '0') > 0) {
@@ -163,7 +167,9 @@ export class ProfessionalPDFGenerator {
           amount: parseFloat(gig.otherExpenses || '0'),
           description: 'Other business expense',
           gigName: gig.eventName || 'Unnamed Event',
-          clientName: gig.clientName || 'Direct Client'
+          clientName: gig.clientName || 'Direct Client',
+          reimbursed: Boolean(gig.otherExpensesReimbursed),
+          receipts: Array.isArray(gig.otherExpenseReceipts) ? gig.otherExpenseReceipts : []
         });
       }
     });
@@ -718,15 +724,16 @@ export class ProfessionalPDFGenerator {
       return;
     }
     
-    // Enhanced receipts display
-    data.receipts.forEach((receipt, index) => {
-      if (this.currentY > 220) {
+    // Enhanced receipts display with photos
+    for (const receipt of data.receipts) {
+      if (this.currentY > 200) {
         this.newPage();
       }
       
-      // Receipt box
+      // Receipt info box
       this.doc.setDrawColor(0, 0, 0);
-      this.doc.rect(20, this.currentY, 170, 50);
+      this.doc.setLineWidth(0.5);
+      this.doc.rect(20, this.currentY, 170, 45);
       
       this.currentY += 10;
       
@@ -740,10 +747,45 @@ export class ProfessionalPDFGenerator {
       this.addLine(`Client: ${receipt.clientName}`);
       this.addLine(`Date: ${new Date(receipt.date).toLocaleDateString()}`);
       this.addLine(`Type: ${receipt.type === 'parking' ? 'Parking Expense' : 'Other Business Expense'}`);
+      
+      // Amount and reimbursement status
+      this.doc.setFontSize(11);
+      this.doc.setFont('helvetica', 'bold');
       this.addLine(`Amount: $${receipt.amount.toFixed(2)}`);
       
+      if (receipt.reimbursed) {
+        this.doc.setFontSize(9);
+        this.doc.setFont('helvetica', 'normal');
+        this.addLine('✓ REIMBURSED - Not tax deductible');
+      } else {
+        this.doc.setFontSize(9);
+        this.doc.setFont('helvetica', 'normal');
+        this.addLine('TAX DEDUCTIBLE - Business expense');
+      }
+      
       this.currentY += 15;
-    });
+      
+      // Receipt photos section
+      if (receipt.receipts && receipt.receipts.length > 0) {
+        this.doc.setFontSize(10);
+        this.doc.setFont('helvetica', 'bold');
+        this.addLine(`Receipt Photos (${receipt.receipts.length}):`);
+        
+        this.addSpacing(5);
+        
+        // Process receipt photos
+        this.addReceiptPhotos(receipt.receipts);
+        
+        this.addSpacing(10);
+      } else {
+        this.doc.setFontSize(9);
+        this.doc.setFont('helvetica', 'italic');
+        this.addLine('No receipt photos uploaded for this expense');
+        this.addSpacing(10);
+      }
+      
+      this.addSpacing(10);
+    }
     
     // Summary totals
     this.addSpacing(20);
@@ -755,15 +797,89 @@ export class ProfessionalPDFGenerator {
     const totalReceipts = data.receipts.reduce((sum, r) => sum + r.amount, 0);
     const parkingTotal = data.receipts.filter(r => r.type === 'parking').reduce((sum, r) => sum + r.amount, 0);
     const otherTotal = data.receipts.filter(r => r.type === 'other').reduce((sum, r) => sum + r.amount, 0);
+    const reimbursedTotal = data.receipts.filter(r => r.reimbursed).reduce((sum, r) => sum + r.amount, 0);
+    const deductibleTotal = data.receipts.filter(r => !r.reimbursed).reduce((sum, r) => sum + r.amount, 0);
     
     this.doc.setFontSize(12);
     this.doc.setFont('helvetica', 'normal');
     this.addLine(`Total Parking Expenses: $${parkingTotal.toFixed(2)}`);
     this.addLine(`Total Other Expenses: $${otherTotal.toFixed(2)}`);
+    this.addLine(`Total Reimbursed Expenses: $${reimbursedTotal.toFixed(2)}`);
+    this.addLine(`Total Tax Deductible Expenses: $${deductibleTotal.toFixed(2)}`);
     this.addLine(`Total Mileage Deduction: $${data.mileageValue.toFixed(2)}`);
     
     this.doc.setFont('helvetica', 'bold');
-    this.addLine(`TOTAL BUSINESS EXPENSES: $${(totalReceipts + data.mileageValue).toFixed(2)}`);
+    this.addLine(`TOTAL BUSINESS DEDUCTIONS: $${(deductibleTotal + data.mileageValue).toFixed(2)}`);
+  }
+
+  private addReceiptPhotos(receiptUrls: string[]): void {
+    const photosPerRow = 2;
+    const photoWidth = 80;
+    const photoHeight = 60;
+    const photoSpacing = 10;
+    
+    for (let i = 0; i < receiptUrls.length; i++) {
+      const col = i % photosPerRow;
+      const row = Math.floor(i / photosPerRow);
+      
+      // Check if we need a new page
+      if (this.currentY + photoHeight > 250) {
+        this.newPage();
+      }
+      
+      const x = 25 + col * (photoWidth + photoSpacing);
+      const y = this.currentY + row * (photoHeight + photoSpacing);
+      
+      try {
+        // Add photo to PDF
+        this.addImageToPDF(receiptUrls[i], x, y, photoWidth, photoHeight);
+        
+        // Add photo label
+        this.doc.setFontSize(8);
+        this.doc.setFont('helvetica', 'normal');
+        this.doc.text(`Photo ${i + 1}`, x + photoWidth/2, y + photoHeight + 8, { align: 'center' });
+        
+      } catch (error) {
+        // If image fails to load, show placeholder
+        this.doc.setDrawColor(200, 200, 200);
+        this.doc.setFillColor(240, 240, 240);
+        this.doc.rect(x, y, photoWidth, photoHeight, 'FD');
+        
+        this.doc.setFontSize(8);
+        this.doc.setFont('helvetica', 'normal');
+        this.doc.text('Photo unavailable', x + photoWidth/2, y + photoHeight/2, { align: 'center' });
+        this.doc.text(`Photo ${i + 1}`, x + photoWidth/2, y + photoHeight + 8, { align: 'center' });
+      }
+      
+      // Update currentY after every row
+      if (col === photosPerRow - 1 || i === receiptUrls.length - 1) {
+        this.currentY = y + photoHeight + 15;
+      }
+    }
+  }
+
+  private addImageToPDF(imageUrl: string, x: number, y: number, width: number, height: number): void {
+    try {
+      // Check if it's a data URL (base64)
+      if (imageUrl.startsWith('data:')) {
+        this.doc.addImage(imageUrl, 'JPEG', x, y, width, height);
+      } else {
+        // For regular URLs, we'd need to fetch and convert to base64
+        // For now, show placeholder for external URLs
+        this.doc.setDrawColor(200, 200, 200);
+        this.doc.setFillColor(240, 240, 240);
+        this.doc.rect(x, y, width, height, 'FD');
+        
+        this.doc.setFontSize(8);
+        this.doc.setFont('helvetica', 'normal');
+        this.doc.text('Receipt Image', x + width/2, y + height/2, { align: 'center' });
+      }
+    } catch (error) {
+      // Fallback to placeholder
+      this.doc.setDrawColor(200, 200, 200);
+      this.doc.setFillColor(240, 240, 240);
+      this.doc.rect(x, y, width, height, 'FD');
+    }
   }
 
   private addSummaryTotals(data: ReportData): void {
