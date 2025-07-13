@@ -58,11 +58,10 @@ export async function calculateDistance(
   }
 
   try {
-    // Enhanced mobile network handling
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 20000); // 20 second timeout for mobile
+    // Use mobile network manager for enhanced reliability
+    const { mobileNetworkManager } = await import('./mobile-optimization');
     
-    const response = await fetch('/api/calculate-distance', {
+    const data = await mobileNetworkManager.makeRequestWithRetry('/api/calculate-distance', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -71,33 +70,11 @@ export async function calculateDistance(
         startAddress: origin,
         endAddress: destination
       }),
-      signal: controller.signal,
       // Mobile-specific options
       cache: 'no-cache',
       mode: 'same-origin',
       credentials: 'include'
     });
-
-    clearTimeout(timeoutId);
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      let errorData;
-      try {
-        errorData = JSON.parse(errorText);
-      } catch {
-        errorData = { error: `HTTP ${response.status}: ${response.statusText}` };
-      }
-      
-      return {
-        distanceMiles: 0,
-        travelTimeMinutes: 0,
-        status: 'error',
-        error: errorData.error || 'Failed to calculate distance'
-      };
-    }
-
-    const data = await response.json();
     
     // Validate response data
     if (data.status !== 'success' || typeof data.distanceMiles !== 'number') {
@@ -118,7 +95,7 @@ export async function calculateDistance(
     console.error('Distance calculation error:', error);
     
     if (error instanceof Error) {
-      if (error.name === 'AbortError') {
+      if (error.name === 'AbortError' || error.message.includes('timeout')) {
         return {
           distanceMiles: 0,
           travelTimeMinutes: 0,
@@ -127,7 +104,7 @@ export async function calculateDistance(
         };
       }
       
-      if (error.message.includes('fetch')) {
+      if (error.message.includes('fetch') || error.message.includes('network')) {
         return {
           distanceMiles: 0,
           travelTimeMinutes: 0,
