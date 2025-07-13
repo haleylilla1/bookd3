@@ -24,12 +24,12 @@ import { AutoSaveIndicator, useOnlineStatus } from "./auto-save-indicator";
 import { RecoveryDialog } from "./recovery-dialog";
 import { useFormAutoSave, submitFormWithRetry, getAutoSavedData } from "@/lib/auto-save";
 
-// Simplified schema - removed redundant fields and validations
+// ULTRA-SIMPLIFIED SCHEMA - Only validate truly required fields
 const gigFormSchema = z.object({
-  gigType: z.string().min(1, "Gig type is required"),
-  eventName: z.string().min(1, "Event name is required"),
-  clientName: z.string().min(1, "Client name is required"),
-  startDate: z.string().min(1, "Start date is required"),
+  gigType: z.string().min(1, "Please select a gig type"),
+  eventName: z.string().min(1, "Please enter an event name"),
+  clientName: z.string().min(1, "Please enter a client name"),
+  startDate: z.string().min(1, "Please select a start date"),
   endDate: z.string().optional(),
   expectedPay: z.string().optional(),
   actualPay: z.string().optional(),
@@ -68,37 +68,47 @@ function parseNumeric(value: string | undefined): string | null {
   }
 }
 
-// Safe date range generator - never fails
+// ULTRA-SIMPLE DATE RANGE - Never fails, always works
 function generateDateRange(startDate: string, endDate?: string): string[] {
-  // Always return at least today's date if everything fails
   const today = new Date().toISOString().split('T')[0];
   
+  // If no start date, use today
   if (!startDate?.trim()) return [today];
   
-  const start = new Date(startDate);
-  if (isNaN(start.getTime())) return [today];
-  
-  if (!endDate || endDate === startDate) {
+  // If no end date or same as start, single day gig
+  if (!endDate?.trim() || endDate === startDate) {
     return [startDate];
   }
   
-  const end = new Date(endDate);
-  if (isNaN(end.getTime()) || end < start) {
+  try {
+    const start = new Date(startDate + 'T00:00:00');
+    const end = new Date(endDate + 'T00:00:00');
+    
+    // If dates are invalid or end is before start, use single day
+    if (isNaN(start.getTime()) || isNaN(end.getTime()) || end < start) {
+      return [startDate];
+    }
+    
+    // Calculate days between
+    const daysDiff = Math.floor((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
+    
+    // Limit to 30 days max for safety
+    if (daysDiff > 30) {
+      return [startDate];
+    }
+    
+    // Generate dates
+    const dates: string[] = [];
+    for (let i = 0; i <= daysDiff; i++) {
+      const date = new Date(start);
+      date.setDate(date.getDate() + i);
+      dates.push(date.toISOString().split('T')[0]);
+    }
+    
+    return dates;
+  } catch {
     return [startDate];
   }
-  
-  const dates = [];
-  const current = new Date(start);
-  
-  // Safe loop with hard limit
-  let maxDays = 30; // Reasonable limit
-  while (current <= end && maxDays > 0) {
-    dates.push(current.toISOString().split('T')[0]);
-    current.setDate(current.getDate() + 1);
-    maxDays--;
-  }
-  
-  return dates.length > 0 ? dates : [startDate];
 }
 
 
@@ -506,22 +516,40 @@ export default function GigForm({ onClose }: GigFormProps) {
     return tax.toFixed(2);
   }, [expectedPay, taxPercentage]);
 
+  // ULTRA-SIMPLE multi-day detection - crystal clear for users
   const multiDayInfo = useMemo(() => {
-    if (!startDate?.trim()) return { isMultiDay: false, dayCount: 1 };
+    // No start date = single day
+    if (!startDate?.trim()) return { isMultiDay: false, dayCount: 1, displayText: "Single day gig" };
     
-    const isMultiDay = endDate && endDate.trim() && startDate !== endDate;
-    if (!isMultiDay) return { isMultiDay: false, dayCount: 1 };
-    
-    const startDateObj = new Date(startDate);
-    const endDateObj = new Date(endDate);
-    
-    // Validate dates
-    if (isNaN(startDateObj.getTime()) || isNaN(endDateObj.getTime()) || endDateObj < startDateObj) {
-      return { isMultiDay: false, dayCount: 1 };
+    // No end date or same dates = single day
+    if (!endDate?.trim() || endDate === startDate) {
+      return { isMultiDay: false, dayCount: 1, displayText: "Single day gig" };
     }
     
-    const dayCount = Math.max(1, Math.ceil((endDateObj.getTime() - startDateObj.getTime()) / (1000 * 60 * 60 * 24)) + 1);
-    return { isMultiDay: true, dayCount: Math.min(365, dayCount) }; // Cap at 365 days
+    try {
+      const start = new Date(startDate + 'T00:00:00');
+      const end = new Date(endDate + 'T00:00:00');
+      
+      // Invalid dates = single day
+      if (isNaN(start.getTime()) || isNaN(end.getTime()) || end < start) {
+        return { isMultiDay: false, dayCount: 1, displayText: "Single day gig" };
+      }
+      
+      const dayCount = Math.floor((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+      
+      // Too many days = single day (for safety)
+      if (dayCount > 30) {
+        return { isMultiDay: false, dayCount: 1, displayText: "Too many days - using single day" };
+      }
+      
+      return { 
+        isMultiDay: true, 
+        dayCount, 
+        displayText: `${dayCount} day gig (${start.toLocaleDateString()} to ${end.toLocaleDateString()})`
+      };
+    } catch {
+      return { isMultiDay: false, dayCount: 1, displayText: "Single day gig" };
+    }
   }, [startDate, endDate]);
 
   return (
@@ -545,12 +573,16 @@ export default function GigForm({ onClose }: GigFormProps) {
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit, (errors) => {
               console.log("Form validation errors:", errors);
-              // Show user-friendly error if form validation fails
-              toast({
-                title: "Please check your entries",
-                description: "Some required fields need to be completed.",
-                variant: "destructive"
-              });
+              // CRYSTAL CLEAR error messages for users
+              const errorFields = Object.keys(errors);
+              if (errorFields.length > 0) {
+                const firstError = errors[errorFields[0] as keyof typeof errors];
+                toast({
+                  title: "Required Field Missing",
+                  description: firstError?.message || "Please complete all required fields",
+                  variant: "destructive"
+                });
+              }
             })} className="space-y-4">
               {/* Gig Type */}
               <FormField
@@ -674,6 +706,21 @@ export default function GigForm({ onClose }: GigFormProps) {
                     </FormItem>
                   )}
                 />
+              </div>
+
+              {/* CLEAR multi-day indicator */}
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                  <span className="text-sm font-medium text-blue-800">
+                    {multiDayInfo.displayText}
+                  </span>
+                </div>
+                {multiDayInfo.isMultiDay && (
+                  <p className="text-xs text-blue-600 mt-1 ml-4">
+                    This will create {multiDayInfo.dayCount} separate calendar entries. All payments will be totaled across all days.
+                  </p>
+                )}
               </div>
 
 
@@ -1160,7 +1207,7 @@ export default function GigForm({ onClose }: GigFormProps) {
                 )}
               />
 
-              {/* Submit Button */}
+              {/* Submit Button with clear multi-day indication */}
               <Button 
                 type="submit" 
                 className="w-full min-h-[48px] text-base font-semibold bg-blue-600 hover:bg-blue-700 text-white border-0"
@@ -1172,7 +1219,11 @@ export default function GigForm({ onClose }: GigFormProps) {
                   WebkitTapHighlightColor: 'transparent'
                 }}
               >
-                {createGigMutation.isPending ? "Saving..." : "Save Gig"}
+                {createGigMutation.isPending ? "Saving..." : 
+                  multiDayInfo.isMultiDay ? 
+                    `Create ${multiDayInfo.dayCount} Day Gig` : 
+                    "Save Gig"
+                }
               </Button>
             </form>
           </Form>
