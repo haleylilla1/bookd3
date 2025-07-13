@@ -1,4 +1,4 @@
-import jsPDF from 'jspdf';
+import { jsPDF } from 'jspdf';
 import { storage } from './storage';
 import type { Gig, Expense, User } from '@shared/schema';
 
@@ -41,9 +41,6 @@ export class MobilePDFGenerator {
   async generateReport(options: ReportOptions): Promise<Buffer> {
     try {
       const reportData = await this.prepareReportData(options);
-        gigsCount: reportData.gigs.length, 
-        totalIncome: reportData.totalIncome 
-      });
       
       this.addCoverPage(reportData);
       this.newPage();

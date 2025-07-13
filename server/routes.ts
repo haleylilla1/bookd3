@@ -4,6 +4,7 @@ import { storage } from "./storage";
 import { setupAuthRoutes, requireAuth, SessionManager } from "./unified-auth";
 import { authPatternGuard, validateAuthSystemOnStartup, getUserId, type AuthenticatedRequest } from "./auth-guard";
 import { globalErrorHandler, asyncHandler, safeDbOperation, validateUserId, validateNumericId } from "./error-handler";
+import { logError } from "./logger";
 import rateLimit from "express-rate-limit";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -302,22 +303,101 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // PDF report generation endpoints
   app.get('/api/reports/pdf', requireAuth, authPatternGuard, async (req: AuthenticatedRequest, res) => {
     try {
-      const { period, year, month } = req.query;
+      const { period, year, month, professional } = req.query;
+      const userId = getUserId(req);
       
-      // PDF generation logic would go here
-      res.json({ error: 'PDF generation temporarily unavailable' });
+      if (!period || !year) {
+        return res.status(400).json({ error: 'Period and year are required' });
+      }
+
+      const reportOptions = {
+        userId,
+        period: period as 'monthly' | 'annual',
+        year: parseInt(year as string),
+        month: month ? parseInt(month as string) : undefined
+      };
+
+      let pdfBuffer: Buffer;
+      
+      try {
+        // Try professional generator first
+        if (professional === 'true') {
+          const { ProfessionalPDFGenerator } = await import('./professional-pdf-generator');
+          const generator = new ProfessionalPDFGenerator();
+          pdfBuffer = await generator.generateReport(reportOptions);
+        } else {
+          // Use mobile generator
+          const { MobilePDFGenerator } = await import('./mobile-pdf');
+          const generator = new MobilePDFGenerator();
+          pdfBuffer = await generator.generateReport(reportOptions);
+        }
+      } catch (importError) {
+        logError('PDF generator import/execution error', importError as Error, userId);
+        // Fallback: Try the other generator
+        try {
+          if (professional === 'true') {
+            const { MobilePDFGenerator } = await import('./mobile-pdf');
+            const generator = new MobilePDFGenerator();
+            pdfBuffer = await generator.generateReport(reportOptions);
+          } else {
+            const { ProfessionalPDFGenerator } = await import('./professional-pdf-generator');
+            const generator = new ProfessionalPDFGenerator();
+            pdfBuffer = await generator.generateReport(reportOptions);
+          }
+        } catch (fallbackError) {
+          logError('Fallback PDF generator also failed', fallbackError as Error, userId);
+          throw new Error('Both PDF generators failed');
+        }
+      }
+      
+      // Set appropriate headers for PDF download
+      const filename = `${period}-income-report-${year}${month ? `-${month}` : ''}.pdf`;
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+      res.setHeader('Content-Length', pdfBuffer.length);
+      
+      res.send(pdfBuffer);
     } catch (error) {
-      res.status(500).json({ error: 'Failed to generate PDF report' });
+      logError('PDF generation error', error as Error, userId);
+      
+      // Send more specific error message
+      const errorMessage = error instanceof Error 
+        ? error.message 
+        : 'Unknown PDF generation error';
+      
+      res.status(500).json({ 
+        error: 'Failed to generate PDF report',
+        details: errorMessage
+      });
     }
   });
 
   app.get('/api/reports/html', requireAuth, authPatternGuard, async (req: AuthenticatedRequest, res) => {
     try {
       const { period, year, month } = req.query;
+      const userId = getUserId(req);
       
-      // HTML report generation logic would go here
-      res.json({ error: 'HTML report generation temporarily unavailable' });
+      if (!period || !year) {
+        return res.status(400).json({ error: 'Period and year are required' });
+      }
+
+      const reportOptions = {
+        userId,
+        period: period as 'monthly' | 'annual',
+        year: parseInt(year as string),
+        month: month ? parseInt(month as string) : undefined
+      };
+
+      // Import HTML generator
+      const { generateProfessionalHTML } = await import('./professional-html-generator');
+      
+      const htmlContent = await generateProfessionalHTML(reportOptions);
+      
+      // Set appropriate headers for HTML response
+      res.setHeader('Content-Type', 'text/html; charset=utf-8');
+      res.send(htmlContent);
     } catch (error) {
+      console.error('HTML generation error:', error);
       res.status(500).json({ error: 'Failed to generate HTML report' });
     }
   });
