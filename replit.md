@@ -27,6 +27,11 @@ Bookd is a mobile-first gig worker companion app with comprehensive financial tr
 - PREFER SIMPLE SOLUTIONS: Choose simple, reliable implementations over complex feature-rich ones
 
 ## Recent Changes
+- 2025-07-13: MULTI-DAY GIG DATE EDITING FIXED - Calendar edit now properly handles date range changes
+- 2025-07-13: When editing multi-day gigs and changing dates, system now deletes old series and creates new series with updated date range
+- 2025-07-13: Fixed issue where clicking on June 12 gig and changing end date to June 13 would not update the calendar
+- 2025-07-13: Multi-day gig recreation system: detects date changes, deletes old gig series, generates new date range, creates new gig entries
+- 2025-07-13: Enhanced multi-day edit logic with comprehensive error handling and user feedback
 - 2025-07-13: FORM VALIDATION CLARITY ACHIEVED - 100% confidence level reached for user-friendly form validation
 - 2025-07-13: Crystal clear error messages: "Please select a gig type" instead of generic "required field" messages
 - 2025-07-13: Multi-day gig creation ULTRA-SIMPLIFIED with real-time visual feedback showing exactly what happens
