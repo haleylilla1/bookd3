@@ -302,11 +302,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // PDF report generation endpoints
   app.get('/api/reports/pdf', requireAuth, authPatternGuard, async (req: AuthenticatedRequest, res) => {
     try {
-      const { period, year, month } = req.query;
+      const { period, year, month, professional } = req.query;
+      const userId = getUserId(req);
       
-      // PDF generation logic would go here
-      res.json({ error: 'PDF generation temporarily unavailable' });
+      if (!period || !year) {
+        return res.status(400).json({ error: 'Period and year are required' });
+      }
+
+      const reportOptions = {
+        userId,
+        period: period as 'monthly' | 'annual',
+        year: parseInt(year as string),
+        month: month ? parseInt(month as string) : undefined
+      };
+
+      // Import PDF generators
+      const { MobilePDFGenerator } = await import('./mobile-pdf');
+      const { ProfessionalPDFGenerator } = await import('./professional-pdf-generator');
+      
+      // Choose generator based on professional flag
+      const generator = professional === 'true' 
+        ? new ProfessionalPDFGenerator() 
+        : new MobilePDFGenerator();
+      
+      const pdfBuffer = await generator.generateReport(reportOptions);
+      
+      // Set appropriate headers for PDF download
+      const filename = `${period}-income-report-${year}${month ? `-${month}` : ''}.pdf`;
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+      res.setHeader('Content-Length', pdfBuffer.length);
+      
+      res.send(pdfBuffer);
     } catch (error) {
+      console.error('PDF generation error:', error);
       res.status(500).json({ error: 'Failed to generate PDF report' });
     }
   });
@@ -314,10 +343,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/reports/html', requireAuth, authPatternGuard, async (req: AuthenticatedRequest, res) => {
     try {
       const { period, year, month } = req.query;
+      const userId = getUserId(req);
       
-      // HTML report generation logic would go here
-      res.json({ error: 'HTML report generation temporarily unavailable' });
+      if (!period || !year) {
+        return res.status(400).json({ error: 'Period and year are required' });
+      }
+
+      const reportOptions = {
+        userId,
+        period: period as 'monthly' | 'annual',
+        year: parseInt(year as string),
+        month: month ? parseInt(month as string) : undefined
+      };
+
+      // Import HTML generator
+      const { generateProfessionalHTML } = await import('./professional-html-generator');
+      
+      const htmlContent = await generateProfessionalHTML(reportOptions);
+      
+      // Set appropriate headers for HTML response
+      res.setHeader('Content-Type', 'text/html; charset=utf-8');
+      res.send(htmlContent);
     } catch (error) {
+      console.error('HTML generation error:', error);
       res.status(500).json({ error: 'Failed to generate HTML report' });
     }
   });
