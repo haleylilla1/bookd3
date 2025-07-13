@@ -7,7 +7,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
-import { ChevronLeft, ChevronRight, Edit2, Save, X, DollarSign, Calendar, Users, TrendingUp, Receipt, Calculator, PiggyBank, FileText, Download, Eye } from "lucide-react";
+import { ChevronLeft, ChevronRight, Edit2, Save, X, DollarSign, Calendar, Users, TrendingUp, Receipt, Calculator, PiggyBank, FileText, Download } from "lucide-react";
 import type { Gig, User } from "@shared/schema";
 
 type TimePeriod = "monthly" | "annual";
@@ -24,7 +24,7 @@ export default function Dashboard() {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [showEarningsBreakdown, setShowEarningsBreakdown] = useState(false);
   const [showProjectedBreakdown, setShowProjectedBreakdown] = useState(false);
-  const [mobilePdfReady, setMobilePdfReady] = useState(false);
+
   const [showTaxBreakdown, setShowTaxBreakdown] = useState(false);
   const [showTipsBreakdown, setShowTipsBreakdown] = useState(false);
   const [showExpensesBreakdown, setShowExpensesBreakdown] = useState(false);
@@ -340,57 +340,23 @@ export default function Dashboard() {
       
       console.log('Requesting Professional PDF with params:', params.toString());
       
-      // Enhanced mobile detection for universal compatibility
-      const isMobile = /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini|Mobile|mobile|CriOS/i.test(navigator.userAgent) ||
-                       (typeof window.orientation !== 'undefined') ||
-                       (window.innerWidth <= 768);
+      // Generate PDF download directly (no mobile/desktop detection)
+      const pdfUrl = `/api/reports/pdf?${params.toString()}`;
       
-      if (isMobile) {
-        // Mobile device - use professional HTML report
-        console.log('Mobile device detected, using professional HTML report');
-        const pdfUrl = `/api/reports/pdf?${params.toString()}`;
-        
-        // Test the URL first
-        const testResponse = await fetch(pdfUrl, { 
-          method: 'HEAD', 
-          credentials: 'include' 
-        });
-        
-        if (!testResponse.ok) {
-          throw new Error(`Failed to generate professional report: ${testResponse.status} ${testResponse.statusText}`);
-        }
-        
-        // Open professional report in new tab/window
-        try {
-          const newWindow = window.open(pdfUrl, '_blank');
-          if (!newWindow || newWindow.closed || typeof newWindow.closed === 'undefined') {
-            // Popup blocked - fallback
-            window.location.href = pdfUrl;
-          }
-        } catch (e) {
-          console.log('Professional PDF open failed, using fallback');
-          window.location.href = pdfUrl;
-        }
-        
-        toast({
-          title: `${selectedPeriod === 'monthly' ? 'Monthly' : 'Annual'} Income Report Opened`,
-          description: "Your comprehensive income report has been opened in a new tab.",
-          duration: 5000,
-        });
-        
-      } else {
-        // Desktop - use PDF endpoint (when available) or fallback to HTML
-        console.log('Desktop device, attempting professional PDF download');
-        
-        // For now, use HTML version until PDF endpoint is created
-        const pdfUrl = `/api/reports/pdf?${params.toString()}`;
-        window.open(pdfUrl, '_blank');
-        
-        toast({
-          title: `${selectedPeriod === 'monthly' ? 'Monthly' : 'Annual'} Income Report Opened`,
-          description: "Your comprehensive income report has been opened in a new tab.",
-        });
-      }
+      // Create a temporary link element to trigger download
+      const link = document.createElement('a');
+      link.href = pdfUrl;
+      link.download = `${selectedPeriod}-income-report-${year}${selectedPeriod === 'monthly' ? `-${month}` : ''}.pdf`;
+      link.style.display = 'none';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      toast({
+        title: `${selectedPeriod === 'monthly' ? 'Monthly' : 'Annual'} Income Report Generated`,
+        description: "Your comprehensive income report has been downloaded as a PDF.",
+        duration: 5000,
+      });
       
     } catch (error) {
       console.error('Professional PDF error:', error);
@@ -611,46 +577,7 @@ export default function Dashboard() {
             <FileText className="w-4 h-4" />
             {selectedPeriod === 'monthly' ? 'Monthly Income Report' : 'Annual Income Report'}
           </Button>
-        
-          {/* Mobile PDF View Button - only show if PDF is ready and on mobile */}
-          {mobilePdfReady && (/Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini|Mobile|mobile|CriOS/i.test(navigator.userAgent) || 
-                             (typeof window.orientation !== 'undefined') || 
-                             (window.innerWidth <= 768)) && (
-            <Button
-              variant="default"
-              size="sm"
-              onClick={() => {
-                const pdfUrl = sessionStorage.getItem('pdfUrl');
-                if (pdfUrl) {
-                  // Try multiple approaches for maximum compatibility
-                  try {
-                    // Method 1: Try window.open first
-                    const newWindow = window.open(pdfUrl, '_blank');
-                    
-                    // Method 2: If popup blocked, create a temporary link
-                    if (!newWindow || newWindow.closed || typeof newWindow.closed === 'undefined') {
-                      console.log('Popup blocked, using link method');
-                      const link = document.createElement('a');
-                      link.href = pdfUrl;
-                      link.target = '_blank';
-                      link.rel = 'noopener noreferrer';
-                      document.body.appendChild(link);
-                      link.click();
-                      document.body.removeChild(link);
-                    }
-                  } catch (error) {
-                    // Method 3: Fallback to same-tab navigation
-                    console.log('All methods failed, using location.href');
-                    window.location.href = pdfUrl;
-                  }
-                }
-              }}
-              className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white"
-            >
-              <Eye className="w-4 h-4" />
-              {selectedPeriod === 'monthly' ? 'View Monthly Report' : 'View Annual Report'}
-            </Button>
-          )}
+
         </div>
       </div>
 
