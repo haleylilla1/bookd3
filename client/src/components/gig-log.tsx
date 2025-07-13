@@ -11,6 +11,9 @@ import { formatCurrency, formatDate } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import type { Gig } from "@shared/schema";
+import { AutoSaveIndicator, useOnlineStatus } from "./auto-save-indicator";
+import { RecoveryDialog } from "./recovery-dialog";
+import { useFormAutoSave, submitFormWithRetry } from "@/lib/auto-save";
 
 export default function GigLog() {
   const [editingGig, setEditingGig] = useState<Gig | null>(null);
@@ -291,6 +294,10 @@ interface GigEditFormProps {
 
 function GigEditForm({ gig, onSave, onCancel, isLoading }: GigEditFormProps) {
   const { data: user } = useQuery({ queryKey: ["/api/user"] });
+  const [autoSaveLastSaved, setAutoSaveLastSaved] = useState<Date | null>(null);
+  const [showRecoveryDialog, setShowRecoveryDialog] = useState(false);
+  const [recoveryData, setRecoveryData] = useState<any>(null);
+  const isOnline = useOnlineStatus();
   
   const [formData, setFormData] = useState({
     clientName: gig.clientName,
@@ -305,6 +312,22 @@ function GigEditForm({ gig, onSave, onCancel, isLoading }: GigEditFormProps) {
     taxPercentage: (gig.taxPercentage !== null && gig.taxPercentage !== undefined) ? gig.taxPercentage : 23,
   });
 
+  // Auto-save functionality
+  const { saveNow, clearSave, restoreData } = useFormAutoSave(
+    `gig-edit-${gig.id}`,
+    formData,
+    true
+  );
+
+  // Check for recovery data on mount
+  useEffect(() => {
+    const recovered = restoreData();
+    if (recovered) {
+      setRecoveryData(recovered);
+      setShowRecoveryDialog(true);
+    }
+  }, [restoreData]);
+
   // Update tax percentage when user data loads
   useEffect(() => {
     if (user && (gig.taxPercentage === null || gig.taxPercentage === undefined)) {
@@ -315,11 +338,36 @@ function GigEditForm({ gig, onSave, onCancel, isLoading }: GigEditFormProps) {
     }
   }, [user, gig.taxPercentage]);
 
+  // Auto-save indicator update
+  useEffect(() => {
+    if (formData && Object.keys(formData).length > 0) {
+      setAutoSaveLastSaved(new Date());
+    }
+  }, [formData]);
 
-
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    onSave(formData);
+    
+    try {
+      await submitFormWithRetry(
+        formData,
+        async (data) => {
+          onSave(data);
+          return { success: true };
+        },
+        {
+          autoSaveKey: `gig-edit-${gig.id}`,
+          onSuccess: () => {
+            clearSave();
+          },
+          onError: (error) => {
+            console.error("Form submission error:", error);
+          }
+        }
+      );
+    } catch (error) {
+      console.error("Form submission failed:", error);
+    }
   };
 
   return (
@@ -412,14 +460,38 @@ function GigEditForm({ gig, onSave, onCancel, isLoading }: GigEditFormProps) {
         />
       </div>
 
-      <div className="flex justify-end gap-2 pt-4">
-        <Button type="button" variant="outline" onClick={onCancel}>
-          Cancel
-        </Button>
-        <Button type="submit" disabled={isLoading}>
-          {isLoading ? "Saving..." : "Save Changes"}
-        </Button>
+      <div className="flex justify-between items-center pt-4">
+        <AutoSaveIndicator 
+          isSaving={isLoading}
+          lastSaved={autoSaveLastSaved}
+          isOnline={isOnline}
+        />
+        <div className="flex gap-2">
+          <Button type="button" variant="outline" onClick={onCancel}>
+            Cancel
+          </Button>
+          <Button type="submit" disabled={isLoading}>
+            {isLoading ? "Saving..." : "Save Changes"}
+          </Button>
+        </div>
       </div>
+      
+      {/* Recovery Dialog */}
+      <RecoveryDialog
+        isOpen={showRecoveryDialog}
+        onClose={() => setShowRecoveryDialog(false)}
+        onRestore={(data) => {
+          setFormData(data);
+          setShowRecoveryDialog(false);
+        }}
+        onDiscard={() => {
+          clearSave();
+          setShowRecoveryDialog(false);
+        }}
+        recoveryData={recoveryData}
+        timestamp={recoveryData?.timestamp || Date.now()}
+        formType="gig"
+      />
     </form>
   );
 }
