@@ -41,9 +41,6 @@ export class MobilePDFGenerator {
   async generateReport(options: ReportOptions): Promise<Buffer> {
     try {
       const reportData = await this.prepareReportData(options);
-        gigsCount: reportData.gigs.length, 
-        totalIncome: reportData.totalIncome 
-      });
       
       this.addCoverPage(reportData);
       this.newPage();

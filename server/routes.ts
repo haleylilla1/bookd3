@@ -316,16 +316,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
         month: month ? parseInt(month as string) : undefined
       };
 
-      // Import PDF generators
-      const { MobilePDFGenerator } = await import('./mobile-pdf');
-      const { ProfessionalPDFGenerator } = await import('./professional-pdf-generator');
+      let pdfBuffer: Buffer;
       
-      // Choose generator based on professional flag
-      const generator = professional === 'true' 
-        ? new ProfessionalPDFGenerator() 
-        : new MobilePDFGenerator();
-      
-      const pdfBuffer = await generator.generateReport(reportOptions);
+      try {
+        // Try professional generator first
+        if (professional === 'true') {
+          const { ProfessionalPDFGenerator } = await import('./professional-pdf-generator');
+          const generator = new ProfessionalPDFGenerator();
+          pdfBuffer = await generator.generateReport(reportOptions);
+        } else {
+          // Use mobile generator
+          const { MobilePDFGenerator } = await import('./mobile-pdf');
+          const generator = new MobilePDFGenerator();
+          pdfBuffer = await generator.generateReport(reportOptions);
+        }
+      } catch (importError) {
+        console.error('PDF generator import/execution error:', importError);
+        // Fallback: Try the other generator
+        try {
+          if (professional === 'true') {
+            const { MobilePDFGenerator } = await import('./mobile-pdf');
+            const generator = new MobilePDFGenerator();
+            pdfBuffer = await generator.generateReport(reportOptions);
+          } else {
+            const { ProfessionalPDFGenerator } = await import('./professional-pdf-generator');
+            const generator = new ProfessionalPDFGenerator();
+            pdfBuffer = await generator.generateReport(reportOptions);
+          }
+        } catch (fallbackError) {
+          console.error('Fallback PDF generator also failed:', fallbackError);
+          throw new Error('Both PDF generators failed');
+        }
+      }
       
       // Set appropriate headers for PDF download
       const filename = `${period}-income-report-${year}${month ? `-${month}` : ''}.pdf`;
@@ -336,7 +358,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.send(pdfBuffer);
     } catch (error) {
       console.error('PDF generation error:', error);
-      res.status(500).json({ error: 'Failed to generate PDF report' });
+      
+      // Send more specific error message
+      const errorMessage = error instanceof Error 
+        ? error.message 
+        : 'Unknown PDF generation error';
+      
+      res.status(500).json({ 
+        error: 'Failed to generate PDF report',
+        details: errorMessage
+      });
     }
   });
 
