@@ -4,6 +4,7 @@ import { storage } from "./storage";
 import { setupAuthRoutes, requireAuth, SessionManager } from "./unified-auth";
 import { authPatternGuard, validateAuthSystemOnStartup, getUserId, type AuthenticatedRequest } from "./auth-guard";
 import { globalErrorHandler, asyncHandler, safeDbOperation, validateUserId, validateNumericId } from "./error-handler";
+import { logError } from "./logger";
 import rateLimit from "express-rate-limit";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -331,7 +332,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           pdfBuffer = await generator.generateReport(reportOptions);
         }
       } catch (importError) {
-        console.error('PDF generator import/execution error:', importError);
+        logError('PDF generator import/execution error', importError as Error, userId);
         // Fallback: Try the other generator
         try {
           if (professional === 'true') {
@@ -344,7 +345,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             pdfBuffer = await generator.generateReport(reportOptions);
           }
         } catch (fallbackError) {
-          console.error('Fallback PDF generator also failed:', fallbackError);
+          logError('Fallback PDF generator also failed', fallbackError as Error, userId);
           throw new Error('Both PDF generators failed');
         }
       }
@@ -357,7 +358,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       res.send(pdfBuffer);
     } catch (error) {
-      console.error('PDF generation error:', error);
+      logError('PDF generation error', error as Error, userId);
       
       // Send more specific error message
       const errorMessage = error instanceof Error 

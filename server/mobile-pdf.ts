@@ -1,4 +1,4 @@
-import jsPDF from 'jspdf';
+import { jsPDF } from 'jspdf';
 import { storage } from './storage';
 import type { Gig, Expense, User } from '@shared/schema';
 
