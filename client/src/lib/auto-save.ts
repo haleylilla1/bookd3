@@ -178,7 +178,34 @@ export async function submitFormWithRetry<T>(
   }
 }
 
-// Auto-save form data hook with network retry
+// Enhanced recovery detection
+export function hasRecoverableData(formKey: string): { hasData: boolean; timestamp: number | null; data: any } {
+  try {
+    const { data, timestamp } = getAutoSavedData(formKey);
+    
+    if (data && timestamp) {
+      const ageInMinutes = (Date.now() - timestamp) / (1000 * 60);
+      
+      // Only consider data recoverable if it's less than 30 minutes old
+      if (ageInMinutes < 30) {
+        // Check if data has meaningful content (not just empty/default values)
+        const hasContent = Object.values(data).some(value => 
+          value !== null && value !== undefined && value !== '' && value !== 0
+        );
+        
+        if (hasContent) {
+          return { hasData: true, timestamp, data };
+        }
+      }
+    }
+  } catch (error) {
+    console.error('Error checking recoverable data:', error);
+  }
+  
+  return { hasData: false, timestamp: null, data: null };
+}
+
+// Auto-save form data hook with enhanced recovery detection
 export function useFormAutoSave<T>(
   formKey: string,
   formData: T,
@@ -206,9 +233,14 @@ export function useFormAutoSave<T>(
     return null;
   }, [formKey]);
 
+  const checkForRecovery = useCallback(() => {
+    return hasRecoverableData(formKey);
+  }, [formKey]);
+
   return {
     saveNow,
     clearSave,
-    restoreData
+    restoreData,
+    checkForRecovery
   };
 }
