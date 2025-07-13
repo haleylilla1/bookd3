@@ -55,19 +55,21 @@ export class ProfessionalPDFGenerator {
     this.newPage();
     this.addIncomeSummary(data);
     
-    // Page 3: Tax Breakdown & Estimates
+    // Page 3: Detailed Tax Estimates by Gig
     this.newPage();
-    this.addTaxBreakdown(data);
+    this.addDetailedTaxEstimatesByGig(data);
     
-    // Page 4: Expense & Mileage Summary
+    // Page 4: Mileage Log
     this.newPage();
-    this.addExpenseSummary(data);
+    this.addMileageLog(data);
     
-    // Page 5+: Receipts Pages
-    if (data.receipts.length > 0) {
-      this.newPage();
-      this.addReceiptsPages(data);
-    }
+    // Page 5: Business Expenses & Receipts
+    this.newPage();
+    this.addReceiptsPages(data);
+    
+    // Page 6: Summary Totals
+    this.newPage();
+    this.addSummaryTotals(data);
     
     // Add page numbers to all pages
     this.addAllPageNumbers();
@@ -520,37 +522,295 @@ export class ProfessionalPDFGenerator {
     }
   }
 
+  private addDetailedTaxEstimatesByGig(data: ReportData): void {
+    this.currentY = 20;
+    
+    // Header
+    this.doc.setFontSize(18);
+    this.doc.setFont('helvetica', 'bold');
+    this.addLine('DETAILED TAX ESTIMATES BY GIG', 18, true);
+    
+    this.addSpacing(10);
+    
+    // Description
+    this.doc.setFontSize(10);
+    this.doc.setFont('helvetica', 'normal');
+    this.addLine('Tax calculations based on individual gig tax rates applied to gross income.');
+    this.addLine('Note: Expenses are tracked separately for deduction purposes.');
+    
+    this.addSpacing(10);
+    
+    // Table header
+    this.doc.setFontSize(10);
+    this.doc.setFont('helvetica', 'bold');
+    
+    this.doc.rect(20, this.currentY, 170, 12);
+    this.currentY += 8;
+    
+    this.doc.text('Gig/Event', 25, this.currentY);
+    this.doc.text('Income', 100, this.currentY);
+    this.doc.text('Tax Rate', 130, this.currentY);
+    this.doc.text('Tax Estimate', 160, this.currentY);
+    
+    this.currentY += 8;
+    
+    // Table rows
+    this.doc.setFont('helvetica', 'normal');
+    let totalTaxes = 0;
+    
+    data.gigs.forEach((gig, index) => {
+      if (this.currentY > 250) {
+        this.newPage();
+      }
+      
+      // Alternate row background
+      if (index % 2 === 0) {
+        this.doc.setFillColor(245, 245, 245);
+        this.doc.rect(20, this.currentY - 4, 170, 12, 'F');
+      }
+      
+      const gigIncome = parseFloat(gig.actualPay || '0') + parseFloat(gig.tips || '0');
+      const gigTaxRate = (gig.taxPercentage !== null && gig.taxPercentage !== undefined) 
+        ? gig.taxPercentage 
+        : (data.user.defaultTaxPercentage || 23);
+      const gigTaxes = gigIncome * (gigTaxRate / 100);
+      
+      const eventName = (gig.eventName || 'Unnamed Event').substring(0, 20);
+      
+      this.doc.text(eventName, 25, this.currentY + 4);
+      this.doc.text(`$${gigIncome.toFixed(2)}`, 100, this.currentY + 4);
+      this.doc.text(`${gigTaxRate}%`, 130, this.currentY + 4);
+      this.doc.text(`$${gigTaxes.toFixed(2)}`, 160, this.currentY + 4);
+      
+      totalTaxes += gigTaxes;
+      this.currentY += 12;
+    });
+    
+    // Total row
+    this.currentY += 5;
+    this.doc.setFont('helvetica', 'bold');
+    this.doc.setFillColor(200, 200, 200);
+    this.doc.rect(20, this.currentY - 4, 170, 12, 'F');
+    
+    this.doc.text('TOTAL TAX ESTIMATE:', 100, this.currentY + 4);
+    this.doc.text(`$${totalTaxes.toFixed(2)}`, 160, this.currentY + 4);
+    
+    this.addSpacing(20);
+    
+    // Tax payment due dates
+    this.doc.setFontSize(12);
+    this.doc.setFont('helvetica', 'bold');
+    this.addLine('2025 TAX PAYMENT DUE DATES:', 12, true);
+    
+    this.addSpacing(8);
+    this.doc.setFontSize(10);
+    this.doc.setFont('helvetica', 'normal');
+    this.addLine('• Q1 2025: April 15, 2025');
+    this.addLine('• Q2 2025: June 16, 2025');
+    this.addLine('• Q3 2025: September 15, 2025');
+    this.addLine('• Q4 2025: January 15, 2026');
+  }
+
+  private addMileageLog(data: ReportData): void {
+    this.currentY = 20;
+    
+    // Header
+    this.doc.setFontSize(18);
+    this.doc.setFont('helvetica', 'bold');
+    this.addLine('MILEAGE LOG', 18, true);
+    
+    this.addSpacing(10);
+    
+    // Description
+    this.doc.setFontSize(10);
+    this.doc.setFont('helvetica', 'normal');
+    this.addLine(`Business mileage calculated at IRS standard rate of $${this.MILEAGE_RATE}/mile for ${new Date().getFullYear()}.`);
+    
+    this.addSpacing(10);
+    
+    // Table header
+    this.doc.setFontSize(10);
+    this.doc.setFont('helvetica', 'bold');
+    
+    this.doc.rect(20, this.currentY, 170, 12);
+    this.currentY += 8;
+    
+    this.doc.text('Date', 25, this.currentY);
+    this.doc.text('Purpose/Event', 60, this.currentY);
+    this.doc.text('Miles', 130, this.currentY);
+    this.doc.text('Deduction', 160, this.currentY);
+    
+    this.currentY += 8;
+    
+    // Table rows
+    this.doc.setFont('helvetica', 'normal');
+    let totalMileage = 0;
+    let totalDeduction = 0;
+    
+    data.gigs.forEach((gig, index) => {
+      const mileage = parseFloat(gig.mileage?.toString() || '0');
+      if (mileage <= 0) return;
+      
+      if (this.currentY > 250) {
+        this.newPage();
+      }
+      
+      // Alternate row background
+      if (index % 2 === 0) {
+        this.doc.setFillColor(245, 245, 245);
+        this.doc.rect(20, this.currentY - 4, 170, 12, 'F');
+      }
+      
+      const dateStr = gig.date.includes(' - ') ? gig.date : new Date(gig.date).toLocaleDateString();
+      const eventName = (gig.eventName || 'Unnamed Event').substring(0, 25);
+      const deduction = mileage * this.MILEAGE_RATE;
+      
+      this.doc.text(dateStr, 25, this.currentY + 4);
+      this.doc.text(eventName, 60, this.currentY + 4);
+      this.doc.text(mileage.toString(), 130, this.currentY + 4);
+      this.doc.text(`$${deduction.toFixed(2)}`, 160, this.currentY + 4);
+      
+      totalMileage += mileage;
+      totalDeduction += deduction;
+      this.currentY += 12;
+    });
+    
+    // Total row
+    this.currentY += 5;
+    this.doc.setFont('helvetica', 'bold');
+    this.doc.setFillColor(200, 200, 200);
+    this.doc.rect(20, this.currentY - 4, 170, 12, 'F');
+    
+    this.doc.text('TOTAL MILEAGE:', 60, this.currentY + 4);
+    this.doc.text(totalMileage.toString(), 130, this.currentY + 4);
+    this.doc.text(`$${totalDeduction.toFixed(2)}`, 160, this.currentY + 4);
+    
+    this.addSpacing(20);
+    
+    // Notes section
+    this.doc.setFontSize(12);
+    this.doc.setFont('helvetica', 'bold');
+    this.addLine('MILEAGE DOCUMENTATION NOTES:', 12, true);
+    
+    this.addSpacing(8);
+    this.doc.setFontSize(10);
+    this.doc.setFont('helvetica', 'normal');
+    this.addLine('• Keep detailed records of business travel');
+    this.addLine('• Document business purpose for each trip');
+    this.addLine('• Consider using mileage tracking app for accuracy');
+    this.addLine('• Alternative: Track actual vehicle expenses instead');
+  }
+
   private addReceiptsPages(data: ReportData): void {
     this.currentY = 20;
     
     // Header
     this.doc.setFontSize(18);
     this.doc.setFont('helvetica', 'bold');
-    this.addLine('RECEIPTS & EXPENSE DOCUMENTATION', 18, true);
+    this.addLine('BUSINESS EXPENSES & RECEIPTS', 18, true);
     
-    this.addSpacing(15);
+    this.addSpacing(10);
     
     if (data.receipts.length === 0) {
       this.doc.setFontSize(12);
       this.doc.setFont('helvetica', 'normal');
-      this.addCenterLine('No receipts recorded for this period.');
+      this.addLine('No business expenses were recorded for this period.');
       return;
     }
     
-    // Receipts table header
-    this.doc.setFontSize(10);
+    // Enhanced receipts display
+    data.receipts.forEach((receipt, index) => {
+      if (this.currentY > 220) {
+        this.newPage();
+      }
+      
+      // Receipt box
+      this.doc.setDrawColor(0, 0, 0);
+      this.doc.rect(20, this.currentY, 170, 50);
+      
+      this.currentY += 10;
+      
+      // Receipt header
+      this.doc.setFontSize(12);
+      this.doc.setFont('helvetica', 'bold');
+      this.addLine(`${receipt.gigName}`, 12, true);
+      
+      this.doc.setFontSize(10);
+      this.doc.setFont('helvetica', 'normal');
+      this.addLine(`Client: ${receipt.clientName}`);
+      this.addLine(`Date: ${new Date(receipt.date).toLocaleDateString()}`);
+      this.addLine(`Type: ${receipt.type === 'parking' ? 'Parking Expense' : 'Other Business Expense'}`);
+      this.addLine(`Amount: $${receipt.amount.toFixed(2)}`);
+      
+      this.currentY += 15;
+    });
+    
+    // Summary totals
+    this.addSpacing(20);
+    this.doc.setFontSize(14);
     this.doc.setFont('helvetica', 'bold');
-    this.doc.rect(20, this.currentY, 170, 12);
+    this.addLine('EXPENSE SUMMARY', 14, true);
     
-    this.currentY += 8;
-    this.doc.text('Date', 25, this.currentY);
-    this.doc.text('Type', 50, this.currentY);
-    this.doc.text('Description', 80, this.currentY);
-    this.doc.text('Amount', 165, this.currentY);
+    this.addSpacing(10);
+    const totalReceipts = data.receipts.reduce((sum, r) => sum + r.amount, 0);
+    const parkingTotal = data.receipts.filter(r => r.type === 'parking').reduce((sum, r) => sum + r.amount, 0);
+    const otherTotal = data.receipts.filter(r => r.type === 'other').reduce((sum, r) => sum + r.amount, 0);
     
-    this.currentY += 8;
+    this.doc.setFontSize(12);
+    this.doc.setFont('helvetica', 'normal');
+    this.addLine(`Total Parking Expenses: $${parkingTotal.toFixed(2)}`);
+    this.addLine(`Total Other Expenses: $${otherTotal.toFixed(2)}`);
+    this.addLine(`Total Mileage Deduction: $${data.mileageValue.toFixed(2)}`);
     
-    // Receipt entries
+    this.doc.setFont('helvetica', 'bold');
+    this.addLine(`TOTAL BUSINESS EXPENSES: $${(totalReceipts + data.mileageValue).toFixed(2)}`);
+  }
+
+  private addSummaryTotals(data: ReportData): void {
+    this.currentY = 20;
+    
+    // Header
+    this.doc.setFontSize(18);
+    this.doc.setFont('helvetica', 'bold');
+    this.addLine('SUMMARY TOTALS', 18, true);
+    
+    this.addSpacing(20);
+    
+    // Summary box
+    this.doc.setDrawColor(0, 0, 0);
+    this.doc.rect(20, this.currentY, 170, 120);
+    
+    this.currentY += 15;
+    
+    // Financial summary
+    this.doc.setFontSize(14);
+    this.doc.setFont('helvetica', 'bold');
+    this.addLine('FINANCIAL SUMMARY', 14, true);
+    
+    this.addSpacing(10);
+    this.doc.setFontSize(12);
+    this.doc.setFont('helvetica', 'normal');
+    this.addLine(`Total Gigs Completed: ${data.gigs.length}`);
+    this.addLine(`Gross Income: $${data.totalIncome.toFixed(2)}`);
+    this.addLine(`Business Expenses: $${(data.totalExpenses + data.mileageValue).toFixed(2)}`);
+    this.addLine(`  - Parking: $${data.receipts.filter(r => r.type === 'parking').reduce((sum, r) => sum + r.amount, 0).toFixed(2)}`);
+    this.addLine(`  - Other: $${data.receipts.filter(r => r.type === 'other').reduce((sum, r) => sum + r.amount, 0).toFixed(2)}`);
+    this.addLine(`  - Mileage: $${data.mileageValue.toFixed(2)}`);
+    this.addLine(`Net Income: $${data.netIncome.toFixed(2)}`);
+    
+    this.doc.setFont('helvetica', 'bold');
+    this.addLine(`Estimated Taxes: $${data.estimatedTaxes.toFixed(2)}`);
+    this.addLine(`After-Tax Income: $${data.afterTaxIncome.toFixed(2)}`);
+    
+    this.currentY += 30;
+    
+    // Footer note
+    this.doc.setFontSize(10);
+    this.doc.setFont('helvetica', 'italic');
+    this.addCenterLine('This report summarizes your freelance income and business expenses.');
+    this.addCenterLine('Please consult with a tax professional for proper tax filing.');
+    this.addCenterLine('Keep all original receipts and documentation for your records.');
+  }
     this.doc.setFont('helvetica', 'normal');
     let receiptTotal = 0;
     
