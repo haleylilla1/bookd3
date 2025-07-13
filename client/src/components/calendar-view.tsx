@@ -294,6 +294,101 @@ export default function CalendarView() {
     setEditingGig(gig);
   };
 
+  // Helper function to generate date range (reused from gig-form)
+  const generateDateRange = (startDate: string, endDate?: string): string[] => {
+    if (!endDate || endDate === startDate) return [startDate];
+    
+    try {
+      const start = new Date(startDate + 'T00:00:00');
+      const end = new Date(endDate + 'T00:00:00');
+      
+      if (isNaN(start.getTime()) || isNaN(end.getTime()) || end < start) return [startDate];
+      
+      const daysDiff = Math.floor((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
+      if (daysDiff > 30) return [startDate];
+      
+      const dates: string[] = [];
+      for (let i = 0; i <= daysDiff; i++) {
+        const date = new Date(start);
+        date.setDate(date.getDate() + i);
+        dates.push(date.toISOString().split('T')[0]);
+      }
+      return dates;
+    } catch {
+      return [startDate];
+    }
+  };
+
+  // Helper function to recreate multi-day gigs with new dates
+  const recreateMultiDayGigs = async (gigIds: number[], startDate: string, endDate: string, updatePayload: any) => {
+    try {
+      // Delete existing gigs
+      for (const gigId of gigIds) {
+        const response = await apiRequest("DELETE", `/api/gigs/${gigId}`);
+        if (!response.ok) throw new Error(`Failed to delete gig ${gigId}`);
+      }
+      
+      // Create new gigs
+      const newDates = generateDateRange(startDate, endDate);
+      for (const date of newDates) {
+        const gigData = {
+          userId: user?.id,
+          date,
+          ...updatePayload,
+          paymentMethod: editingGig!.paymentMethod || "Cash",
+          notes: editingGig!.notes || null
+        };
+        
+        const response = await apiRequest("POST", "/api/gigs", gigData);
+        if (!response.ok) throw new Error(`Failed to create gig for ${date}`);
+      }
+      
+      queryClient.invalidateQueries({ queryKey: ["/api/gigs"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/dashboard/stats"] });
+      
+      toast({
+        title: "Multi-day gig recreated",
+        description: `Created ${newDates.length} days from ${startDate} to ${endDate}`,
+      });
+      
+      setEditingGig(null);
+    } catch (error) {
+      console.error("Error recreating multi-day gigs:", error);
+      toast({
+        title: "Update failed",
+        description: "Failed to update date range. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Helper function to update existing multi-day gigs
+  const updateMultiDayGigs = async (gigIds: number[], updatePayload: any) => {
+    try {
+      for (const gigId of gigIds) {
+        const response = await apiRequest("PUT", `/api/gigs/${gigId}`, updatePayload);
+        if (!response.ok) throw new Error(`Failed to update gig ${gigId}`);
+      }
+      
+      queryClient.invalidateQueries({ queryKey: ["/api/gigs"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/dashboard/stats"] });
+      
+      toast({
+        title: "Multi-day gig updated",
+        description: `Updated ${gigIds.length} days of ${editingGig!.eventName}`,
+      });
+      
+      setEditingGig(null);
+    } catch (error) {
+      console.error("Error updating multi-day gigs:", error);
+      toast({
+        title: "Update failed",
+        description: "Some gigs may not have been updated. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
   const handleSaveEdit = (updatedData: any) => {
     if (!editingGig) return;
 
@@ -351,170 +446,22 @@ export default function CalendarView() {
 
     console.log("Saving gig edit:", updatePayload); // Debug log
     
-    // Handle multi-day gigs: check if date range changed
-    if (editingGig.isMultiDay && editingGig.gigIds && editingGig.gigIds.length > 0) {
-      // Check if dates changed - if so, recreate the gig series
-      const originalStartDate = editingGig.startDate;
-      const originalEndDate = editingGig.endDate;
-      const newStartDate = updatedData.startDate || originalStartDate;
-      const newEndDate = updatedData.endDate || originalEndDate;
+    // Handle multi-day gigs with efficient date change detection
+    if (editingGig.isMultiDay && editingGig.gigIds?.length) {
+      const datesChanged = (updatedData.startDate !== editingGig.startDate) || 
+                          (updatedData.endDate !== editingGig.endDate);
       
-      console.log("Multi-day gig date check:", {
-        originalStartDate,
-        originalEndDate,
-        newStartDate,
-        newEndDate
-      });
-      
-      // If dates changed, recreate the entire gig series
-      if (newStartDate !== originalStartDate || newEndDate !== originalEndDate) {
-        console.log("Date range changed - recreating multi-day gig series");
-        
-        const recreateMultiDayGigs = async () => {
-          try {
-            // Step 1: Delete all existing gigs in the series
-            for (const gigId of editingGig.gigIds!) {
-              const response = await apiRequest("DELETE", `/api/gigs/${gigId}`);
-              if (!response.ok) {
-                throw new Error(`Failed to delete gig ${gigId}`);
-              }
-            }
-            
-            // Step 2: Generate new date range
-            const generateDateRange = (startDate: string, endDate?: string): string[] => {
-              if (!endDate || endDate === startDate) {
-                return [startDate];
-              }
-              
-              try {
-                const start = new Date(startDate + 'T00:00:00');
-                const end = new Date(endDate + 'T00:00:00');
-                
-                if (isNaN(start.getTime()) || isNaN(end.getTime()) || end < start) {
-                  return [startDate];
-                }
-                
-                const daysDiff = Math.floor((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
-                
-                if (daysDiff > 30) {
-                  return [startDate];
-                }
-                
-                const dates: string[] = [];
-                for (let i = 0; i <= daysDiff; i++) {
-                  const date = new Date(start);
-                  date.setDate(date.getDate() + i);
-                  dates.push(date.toISOString().split('T')[0]);
-                }
-                
-                return dates;
-              } catch {
-                return [startDate];
-              }
-            };
-            
-            const newDates = generateDateRange(newStartDate, newEndDate);
-            
-            // Step 3: Create new gigs for each date
-            for (const date of newDates) {
-              const gigData = {
-                userId: user?.id, // Add user ID for API
-                date: date,
-                eventName: updatePayload.eventName,
-                clientName: updatePayload.clientName,
-                gigType: updatePayload.gigType,
-                status: updatePayload.status,
-                duties: updatePayload.duties,
-                taxPercentage: updatePayload.taxPercentage,
-                expectedPay: updatePayload.expectedPay,
-                actualPay: updatePayload.actualPay,
-                tips: updatePayload.tips,
-                parkingExpense: updatePayload.parkingExpense,
-                otherExpenses: updatePayload.otherExpenses,
-                mileage: updatePayload.mileage,
-                parkingReceipts: updatePayload.parkingReceipts || [],
-                otherExpenseReceipts: updatePayload.otherExpenseReceipts || [],
-                parkingReimbursed: updatePayload.parkingReimbursed || false,
-                otherExpensesReimbursed: updatePayload.otherExpensesReimbursed || false,
-                paymentMethod: editingGig.paymentMethod || "Cash",
-                notes: editingGig.notes || null
-              };
-              
-              const response = await apiRequest("POST", "/api/gigs", gigData);
-              if (!response.ok) {
-                throw new Error(`Failed to create gig for ${date}`);
-              }
-            }
-            
-            // Success - invalidate queries and show success message
-            queryClient.invalidateQueries({ queryKey: ["/api/gigs"] });
-            queryClient.invalidateQueries({ queryKey: ["/api/dashboard/stats"] });
-            
-            toast({
-              title: "Multi-day gig recreated",
-              description: `Created ${newDates.length} days from ${newStartDate} to ${newEndDate}`,
-            });
-            
-            setEditingGig(null);
-            console.log("Multi-day gig series recreated successfully");
-            
-          } catch (error) {
-            console.error("Error recreating multi-day gigs:", error);
-            toast({
-              title: "Update failed",
-              description: "Failed to update date range. Please try again.",
-              variant: "destructive",
-            });
-          }
-        };
-        
-        // Execute recreation
-        recreateMultiDayGigs();
+      if (datesChanged) {
+        // Recreate gig series with new dates
+        recreateMultiDayGigs(editingGig.gigIds, updatedData.startDate || editingGig.startDate!, 
+                           updatedData.endDate || editingGig.endDate!, updatePayload);
       } else {
-        // No date changes - just update existing gigs
-        console.log("No date changes - updating existing multi-day gig series:", editingGig.gigIds);
-        
-        const updateMultiDayGigs = async () => {
-          try {
-            // Update all gigs in the series sequentially
-            for (const gigId of editingGig.gigIds!) {
-              const response = await apiRequest("PUT", `/api/gigs/${gigId}`, updatePayload);
-              if (!response.ok) {
-                throw new Error(`Failed to update gig ${gigId}`);
-              }
-            }
-            
-            // Success - invalidate queries and show success message
-            queryClient.invalidateQueries({ queryKey: ["/api/gigs"] });
-            queryClient.invalidateQueries({ queryKey: ["/api/dashboard/stats"] });
-            
-            toast({
-              title: "Multi-day gig updated",
-              description: `Updated ${editingGig.gigIds!.length} days of ${editingGig.eventName}`,
-            });
-            
-            setEditingGig(null);
-            console.log("All multi-day gigs updated successfully");
-            
-          } catch (error) {
-            console.error("Error updating multi-day gigs:", error);
-            toast({
-              title: "Update failed",
-              description: "Some gigs may not have been updated. Please try again.",
-              variant: "destructive",
-            });
-          }
-        };
-        
-        // Execute update
-        updateMultiDayGigs();
+        // Update existing gigs in series
+        updateMultiDayGigs(editingGig.gigIds, updatePayload);
       }
     } else {
-      // Single day gig - use normal mutation
-      updateGigMutation.mutate({
-        id: editingGig.id,
-        data: updatePayload,
-      });
+      // Single day gig
+      updateGigMutation.mutate({ id: editingGig.id, data: updatePayload });
     }
   };
 
