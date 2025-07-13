@@ -140,25 +140,31 @@ export class NetworkRetryHandler {
   }
 }
 
-// Form submission with auto-save and retry
+// Simple form submission with retry
 export async function submitFormWithRetry<T>(
   data: T,
-  submitFunction: (data: T) => Promise<any>,
+  url: string,
   options: {
     autoSaveKey?: string;
     onSuccess?: (result: any) => void;
     onError?: (error: Error) => void;
-    onRetry?: (attempt: number) => void;
   } = {}
 ): Promise<any> {
-  const retryHandler = new NetworkRetryHandler();
-  
   try {
-    const result = await retryHandler.executeWithRetry(
-      () => submitFunction(data),
-      options.onRetry,
-      options.onError
-    );
+    const { fetchWithRetry } = await import('./mobile-optimization');
+    
+    const response = await fetchWithRetry(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+      credentials: 'include'
+    });
+    
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+    
+    const result = await response.json();
     
     // Clear auto-saved data on successful submission
     if (options.autoSaveKey) {

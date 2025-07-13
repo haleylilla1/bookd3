@@ -58,10 +58,10 @@ export async function calculateDistance(
   }
 
   try {
-    // Use mobile network manager for enhanced reliability
-    const { mobileNetworkManager } = await import('./mobile-optimization');
+    // Use simple retry mechanism
+    const { fetchWithRetry } = await import('./mobile-optimization');
     
-    const data = await mobileNetworkManager.makeRequestWithRetry('/api/calculate-distance', {
+    const response = await fetchWithRetry('/api/calculate-distance', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -70,11 +70,27 @@ export async function calculateDistance(
         startAddress: origin,
         endAddress: destination
       }),
-      // Mobile-specific options
-      cache: 'no-cache',
-      mode: 'same-origin',
       credentials: 'include'
     });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      let errorData;
+      try {
+        errorData = JSON.parse(errorText);
+      } catch {
+        errorData = { error: `HTTP ${response.status}: ${response.statusText}` };
+      }
+      
+      return {
+        distanceMiles: 0,
+        travelTimeMinutes: 0,
+        status: 'error',
+        error: errorData.error || 'Failed to calculate distance'
+      };
+    }
+
+    const data = await response.json();
     
     // Validate response data
     if (data.status !== 'success' || typeof data.distanceMiles !== 'number') {
