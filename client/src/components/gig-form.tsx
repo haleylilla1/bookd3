@@ -194,22 +194,22 @@ export default function GigForm({ onClose }: GigFormProps) {
   const formData = form.watch();
   
   // Auto-save functionality
-  const { saveNow, clearSave, restoreData } = useFormAutoSave(
+  const { saveNow, clearSave, restoreData, checkForRecovery } = useFormAutoSave(
     'gig-form',
     formData,
     !userLoading && user !== null
   );
 
-  // Check for recovery data on mount
+  // Enhanced recovery detection on mount
   useEffect(() => {
     if (user && !userLoading) {
-      const recovered = restoreData();
-      if (recovered) {
-        setRecoveryData(recovered);
+      const recoveryResult = checkForRecovery();
+      if (recoveryResult.hasData) {
+        setRecoveryData(recoveryResult.data);
         setShowRecoveryDialog(true);
       }
     }
-  }, [user, userLoading, restoreData]);
+  }, [user, userLoading, checkForRecovery]);
 
   // Update form when user data loads
   useEffect(() => {
