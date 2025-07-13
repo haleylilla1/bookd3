@@ -14,6 +14,9 @@ import { apiRequest } from "@/lib/queryClient";
 import type { Gig } from "@shared/schema";
 import { formatMonth, addMonths } from "@/lib/dateUtils";
 import ReceiptUpload from "@/components/receipt-upload";
+import { AutoSaveIndicator, useOnlineStatus } from "./auto-save-indicator";
+import { RecoveryDialog } from "./recovery-dialog";
+import { useFormAutoSave, submitFormWithRetry } from "@/lib/auto-save";
 
 // Utility function to parse dates consistently across timezones (same as dashboard)
 const parseGigDate = (dateString: string): Date => {
