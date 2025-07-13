@@ -29,15 +29,14 @@ const getGigStatusColor = (status: string) => {
     case "completed":
       return "bg-green-500";
     case "pending_payment":
+    case "pending":
+    case "applied":
       return "bg-orange-500";
     case "upcoming":
     case "confirmed":
       return "bg-blue-500";
-    case "pending":
-    case "applied":
-      return "bg-gray-400";
     default:
-      return "bg-gray-300";
+      return "bg-orange-500"; // Default to pending payment
   }
 };
 
@@ -504,15 +503,15 @@ export default function CalendarView() {
                       <div className="absolute inset-0 flex items-center justify-center">
                         {dayGigs.length === 1 ? (
                           <div 
-                            className={`w-10 h-10 rounded-full ${getGigStatusColor(dayGigs[0].status)} opacity-30`}
+                            className={`w-10 h-10 rounded-full ${getGigStatusColor(dayGigs[0].status)} opacity-30 flex-shrink-0`}
                           />
                         ) : dayGigs.length === 2 ? (
                           <div className="flex gap-1">
                             <div 
-                              className={`w-8 h-8 rounded-full ${getGigStatusColor(dayGigs[0].status)} opacity-30`}
+                              className={`w-8 h-8 rounded-full ${getGigStatusColor(dayGigs[0].status)} opacity-30 flex-shrink-0`}
                             />
                             <div 
-                              className={`w-8 h-8 rounded-full ${getGigStatusColor(dayGigs[1].status)} opacity-30`}
+                              className={`w-8 h-8 rounded-full ${getGigStatusColor(dayGigs[1].status)} opacity-30 flex-shrink-0`}
                             />
                           </div>
                         ) : (
@@ -520,11 +519,11 @@ export default function CalendarView() {
                             {dayGigs.slice(0, 3).map((gig: Gig, gigIndex: number) => (
                               <div 
                                 key={gigIndex}
-                                className={`w-5 h-5 rounded-full ${getGigStatusColor(gig.status)} opacity-30`}
+                                className={`w-5 h-5 rounded-full ${getGigStatusColor(gig.status)} opacity-30 flex-shrink-0`}
                               />
                             ))}
                             {dayGigs.length > 3 && (
-                              <div className="w-5 h-5 rounded-full bg-gray-500 opacity-30 flex items-center justify-center">
+                              <div className="w-5 h-5 rounded-full bg-gray-500 opacity-30 flex items-center justify-center flex-shrink-0">
                                 <span className="text-xs text-white font-bold">+</span>
                               </div>
                             )}
@@ -558,20 +557,16 @@ export default function CalendarView() {
           <h3 className="font-semibold text-sm mb-3 text-gray-700">Gig Status Colors</h3>
           <div className="flex flex-wrap gap-4 text-xs mb-3">
             <div className="flex items-center gap-2">
-              <div className="w-5 h-5 rounded-full bg-green-500"></div>
+              <div className="w-5 h-5 rounded-full bg-green-500 flex-shrink-0"></div>
               <span className="text-gray-600">Completed</span>
             </div>
             <div className="flex items-center gap-2">
-              <div className="w-5 h-5 rounded-full bg-orange-500"></div>
+              <div className="w-5 h-5 rounded-full bg-orange-500 flex-shrink-0"></div>
               <span className="text-gray-600">Pending Payment</span>
             </div>
             <div className="flex items-center gap-2">
-              <div className="w-5 h-5 rounded-full bg-blue-500"></div>
+              <div className="w-5 h-5 rounded-full bg-blue-500 flex-shrink-0"></div>
               <span className="text-gray-600">Upcoming</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-5 h-5 rounded-full bg-gray-400"></div>
-              <span className="text-gray-600">Pending</span>
             </div>
           </div>
           <div className="text-xs text-gray-500 pt-2 border-t">
