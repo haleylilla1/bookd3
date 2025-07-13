@@ -811,57 +811,6 @@ export class ProfessionalPDFGenerator {
     this.addCenterLine('Please consult with a tax professional for proper tax filing.');
     this.addCenterLine('Keep all original receipts and documentation for your records.');
   }
-    this.doc.setFont('helvetica', 'normal');
-    let receiptTotal = 0;
-    
-    data.receipts.forEach((receipt, index) => {
-      if (this.currentY > 250) {
-        this.newPage();
-        this.currentY += 15;
-      }
-      
-      if (index % 2 === 0) {
-        this.doc.setFillColor(245, 245, 245);
-        this.doc.rect(20, this.currentY - 4, 170, 12, 'F');
-      }
-      
-      const dateStr = new Date(receipt.date).toLocaleDateString();
-      const type = receipt.type === 'parking' ? 'Parking' : 'Other';
-      const description = `${receipt.gigName} (${receipt.clientName})`.substring(0, 35);
-      
-      this.doc.text(dateStr, 25, this.currentY + 4);
-      this.doc.text(type, 50, this.currentY + 4);
-      this.doc.text(description, 80, this.currentY + 4);
-      this.doc.text(`$${receipt.amount.toFixed(2)}`, 165, this.currentY + 4);
-      
-      receiptTotal += receipt.amount;
-      this.currentY += 12;
-    });
-    
-    // Total row
-    this.currentY += 5;
-    this.doc.setFont('helvetica', 'bold');
-    this.doc.setFillColor(200, 200, 200);
-    this.doc.rect(20, this.currentY - 4, 170, 12, 'F');
-    
-    this.doc.text('TOTAL RECEIPTS:', 80, this.currentY + 4);
-    this.doc.text(`$${receiptTotal.toFixed(2)}`, 165, this.currentY + 4);
-    
-    this.addSpacing(20);
-    
-    // Notes section
-    this.doc.setFontSize(12);
-    this.doc.setFont('helvetica', 'bold');
-    this.addLine('NOTES FOR TAX FILING:', 12, true);
-    
-    this.addSpacing(8);
-    this.doc.setFontSize(10);
-    this.doc.setFont('helvetica', 'normal');
-    this.addLine('• Keep all original receipts and documentation');
-    this.addLine('• Business expenses must be ordinary and necessary');
-    this.addLine('• Mileage calculated using IRS standard rate');
-    this.addLine('• Consult tax professional for proper categorization');
-  }
 
   private addLine(text: string, fontSize: number = 10, isBold: boolean = false): void {
     this.doc.setFontSize(fontSize);
