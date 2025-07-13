@@ -1,4 +1,4 @@
-import jsPDF from 'jspdf';
+const { jsPDF } = require('jspdf');
 import { storage } from './storage';
 import type { Gig, Expense, User } from '@shared/schema';
 
