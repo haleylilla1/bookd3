@@ -320,10 +320,10 @@ export default function Dashboard() {
 
 
 
-  const handleDownloadProfessionalPDF = async () => {
+  const handleViewIncomeReport = async () => {
     try {
       setIsGeneratingPDF(true);
-      console.log('Starting Professional PDF download...');
+      console.log('Opening HTML income report...');
       
       const year = currentDate.getFullYear();
       const month = currentDate.getMonth() + 1;
@@ -338,33 +338,25 @@ export default function Dashboard() {
         params.append('month', month.toString());
       }
       
-      console.log('Requesting Professional PDF with params:', params.toString());
+      console.log('Opening HTML report with params:', params.toString());
       
-      // Generate PDF download directly (no mobile/desktop detection)
-      const pdfUrl = `/api/reports/pdf?${params.toString()}`;
-      
-      // Create a temporary link element to trigger download
-      const link = document.createElement('a');
-      link.href = pdfUrl;
-      link.download = `${selectedPeriod}-income-report-${year}${selectedPeriod === 'monthly' ? `-${month}` : ''}.pdf`;
-      link.style.display = 'none';
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
+      // Open HTML report in new tab for maximum compatibility
+      const reportUrl = `/api/reports/html?${params.toString()}`;
+      window.open(reportUrl, '_blank');
       
       toast({
-        title: `${selectedPeriod === 'monthly' ? 'Monthly' : 'Annual'} Income Report Generated`,
-        description: "Your comprehensive income report has been downloaded as a PDF.",
-        duration: 5000,
+        title: `${selectedPeriod === 'monthly' ? 'Monthly' : 'Annual'} Income Report Opened`,
+        description: "Your comprehensive income report has been opened in a new tab.",
+        duration: 3000,
       });
       
     } catch (error) {
-      console.error('Professional PDF error:', error);
+      console.error('HTML report error:', error);
       
-      let errorMessage = "Failed to generate professional report. Please try again.";
+      let errorMessage = "Failed to generate income report. Please try again.";
       if (error instanceof Error) {
         if (error.message.includes('401')) {
-          errorMessage = "Please log in again to access the professional report.";
+          errorMessage = "Please log in again to access the income report.";
         } else if (error.message.includes('Failed to fetch')) {
           errorMessage = "Network error - please check your connection.";
         }
@@ -570,12 +562,12 @@ export default function Dashboard() {
           <Button
             variant="default"
             size="sm"
-            onClick={handleDownloadProfessionalPDF}
+            onClick={handleViewIncomeReport}
             disabled={isGeneratingPDF}
             className="flex items-center gap-2 bg-green-600 hover:bg-green-700"
           >
             <FileText className="w-4 h-4" />
-            {selectedPeriod === 'monthly' ? 'Monthly Income Report' : 'Annual Income Report'}
+            {selectedPeriod === 'monthly' ? 'View Monthly Report' : 'View Annual Report'}
           </Button>
 
         </div>
