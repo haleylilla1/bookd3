@@ -1,8 +1,12 @@
 export interface DistanceResult {
   distanceMiles: number;
   travelTimeMinutes: number;
-  status: 'success' | 'error';
+  status: 'success' | 'error' | 'partial_success';
   error?: string;
+  segments?: number;
+  roundTrip?: boolean;
+  errors?: string[];
+  fromCache?: boolean;
 }
 
 // Development fallback function for distance estimation
@@ -46,7 +50,9 @@ function estimateDistance(origin: string, destination: string): DistanceResult {
 
 export async function calculateDistance(
   origin: string,
-  destination: string
+  destination: string,
+  waypoints: string[] = [],
+  roundTrip: boolean = false
 ): Promise<DistanceResult> {
   if (!origin.trim() || !destination.trim()) {
     return {
@@ -68,7 +74,9 @@ export async function calculateDistance(
       },
       body: JSON.stringify({
         startAddress: origin,
-        endAddress: destination
+        endAddress: destination,
+        waypoints: waypoints.filter(w => w?.trim()),
+        roundTrip
       }),
       credentials: 'include'
     });
@@ -93,7 +101,7 @@ export async function calculateDistance(
     const data = await response.json();
     
     // Validate response data
-    if (data.status !== 'success' || typeof data.distanceMiles !== 'number') {
+    if (!data.status || typeof data.distanceMiles !== 'number') {
       return {
         distanceMiles: 0,
         travelTimeMinutes: 0,
@@ -105,7 +113,11 @@ export async function calculateDistance(
     return {
       distanceMiles: data.distanceMiles,
       travelTimeMinutes: data.travelTimeMinutes || 0,
-      status: 'success'
+      status: data.status,
+      segments: data.segments,
+      roundTrip: data.roundTrip,
+      errors: data.errors,
+      fromCache: data.fromCache
     };
   } catch (error) {
     console.error('Distance calculation error:', error);

@@ -382,21 +382,72 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Distance calculation endpoint (authenticated)
   app.post('/api/calculate-distance', requireAuth, authPatternGuard, async (req: AuthenticatedRequest, res) => {
     try {
-      const { startAddress, endAddress } = req.body;
+      const { startAddress, endAddress, waypoints = [], roundTrip = false } = req.body;
       
       if (!startAddress || !endAddress) {
-        return res.status(400).json({ error: 'Start and end addresses are required' });
+        return res.status(400).json({ 
+          status: 'error',
+          error: 'Start and end addresses are required' 
+        });
       }
 
-      // Google Maps distance calculation logic would go here
-      // For now, return a placeholder response
+      const { mileageService } = await import('./mileage-service');
+      
+      let totalDistance = 0;
+      let totalDuration = 0;
+      let errors: string[] = [];
+      
+      // Create route segments
+      const addresses = [startAddress, ...waypoints.filter(w => w?.trim()), endAddress];
+      
+      // Calculate distance for each segment
+      for (let i = 0; i < addresses.length - 1; i++) {
+        const origin = addresses[i].trim();
+        const destination = addresses[i + 1].trim();
+        
+        const result = await mileageService.calculateDistance(origin, destination);
+        
+        if (result.success) {
+          totalDistance += result.distance;
+          totalDuration += result.duration;
+        } else {
+          errors.push(`Segment ${i + 1}: ${result.error}`);
+        }
+      }
+      
+      // Apply round trip multiplier if requested
+      if (roundTrip && totalDistance > 0) {
+        totalDistance *= 2;
+        totalDuration *= 2;
+      }
+      
+      // Round distance up to nearest whole number (for tax purposes)
+      const roundedDistance = Math.ceil(totalDistance);
+      
+      if (errors.length > 0) {
+        logger.warn('Distance calculation completed with errors', { 
+          startAddress, 
+          endAddress, 
+          errors,
+          userId: getUserId(req)
+        });
+      }
+      
       res.json({
-        distance: 0,
-        duration: 0,
-        error: 'Distance calculation service temporarily unavailable'
+        status: errors.length === 0 ? 'success' : 'partial_success',
+        distanceMiles: roundedDistance,
+        travelTimeMinutes: Math.round(totalDuration),
+        segments: addresses.length - 1,
+        roundTrip,
+        errors: errors.length > 0 ? errors : undefined
       });
+      
     } catch (error) {
-      res.status(500).json({ error: 'Failed to calculate distance' });
+      logError('Distance calculation error', error as Error, getUserId(req));
+      res.status(500).json({ 
+        status: 'error',
+        error: 'Failed to calculate distance' 
+      });
     }
   });
 

@@ -977,49 +977,45 @@ function GigEditForm({ gig, onSave, onCancel, isLoading }: GigEditFormProps) {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 20000); // 20 second timeout
       
-      const response = await fetch("/api/calculate-distance", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          startAddress: formData.startingAddress.trim(),
-          endAddress: formData.endingAddress.trim(),
-          waypoints: formData.stops.filter(stop => stop?.trim()),
-          roundTrip: formData.includeRoundtrip
-        }),
-        signal: controller.signal,
-        cache: 'no-cache',
-        credentials: 'include'
-      });
+      const { calculateDistance } = await import('../lib/distance');
+      
+      const result = await calculateDistance(
+        formData.startingAddress.trim(),
+        formData.endingAddress.trim(),
+        formData.stops.filter(stop => stop?.trim()),
+        formData.includeRoundtrip
+      );
 
       clearTimeout(timeoutId);
 
-      if (!response.ok) {
-        const errorText = await response.text();
-        let errorData;
-        try {
-          errorData = JSON.parse(errorText);
-        } catch {
-          errorData = { error: `HTTP ${response.status}: ${response.statusText}` };
-        }
-        throw new Error(errorData.error || "Failed to calculate distance");
+      if (result.status === 'error') {
+        throw new Error(result.error || 'Failed to calculate distance');
       }
       
-      const result = await response.json();
+      // Handle partial success with warnings
+      if (result.status === 'partial_success') {
+        const warningMessage = result.errors?.join(', ') || 'Some route segments could not be calculated';
+        console.warn('Distance calculation partial success:', warningMessage);
+      }
       
-      if (result.status === 'success' && typeof result.distanceMiles === 'number') {
-        const roundedDistance = Math.ceil(result.distanceMiles);
-        setFormData(prev => ({ 
-          ...prev, 
-          calculatedMileage: roundedDistance.toString(),
-          mileage: roundedDistance 
-        }));
-        
+      const roundedDistance = Math.ceil(result.distanceMiles);
+      setFormData(prev => ({ 
+        ...prev, 
+        calculatedMileage: roundedDistance.toString(),
+        mileage: roundedDistance 
+      }));
+      
+      if (result.status === 'success') {
         toast({
           title: "Mileage Calculated",
-          description: `${roundedDistance} miles total${formData.includeRoundtrip ? ' including round trip' : ''}.`,
+          description: `${roundedDistance} miles total${formData.includeRoundtrip ? ' including round trip' : ''}${result.fromCache ? ' (from cache)' : ''}.`,
         });
       } else {
-        throw new Error(result.error || "Invalid response from distance service");
+        toast({
+          title: "Distance Calculated (with warnings)",
+          description: `${roundedDistance} miles calculated. Some segments may be estimated.`,
+          variant: "default",
+        });
       }
       
     } catch (error) {
