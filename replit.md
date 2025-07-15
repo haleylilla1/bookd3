@@ -29,6 +29,8 @@ Bookd is a mobile-first gig worker companion app with comprehensive financial tr
 - CRITICAL: Prevent authentication changes from affecting existing users' data access
 - Require comprehensive testing before any authentication modifications
 - PREFER SIMPLE SOLUTIONS: Choose simple, reliable implementations over complex feature-rich ones
+- DETAILED PLANNING: User requests extremely detailed hour-by-hour breakdowns for development tasks
+- PRODUCTION FOCUS: Prioritize production readiness with comprehensive testing and monitoring
 
 ## Recent Changes
 - 2025-07-15: MILEAGE SYSTEM OPTIMIZATION COMPLETE - Maximized simplicity, efficiency, and reliability while maintaining enterprise features
