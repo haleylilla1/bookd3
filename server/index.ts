@@ -17,12 +17,19 @@ async function start() {
   handleUnhandledRejections();
   handleUncaughtExceptions();
   
-  // Start backup system
+  // Start infrastructure systems
   try {
     const { backupSystem } = await import('./backup-system');
+    const { monitoringSystem } = await import('./monitoring-system');
+    const { infrastructureManager } = await import('./infrastructure-manager');
+    const { alertingSystem } = await import('./alerting-system');
+    
     backupSystem.startBackupScheduler();
+    monitoringSystem.startMetricsCollection();
+    infrastructureManager.startHealthMonitoring();
+    // alertingSystem starts automatically in constructor
   } catch (error) {
-    console.error('Failed to start backup system:', error);
+    console.error('Failed to start infrastructure systems:', error);
   }
   
   const server = await registerRoutes(app);
