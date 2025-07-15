@@ -306,58 +306,46 @@ export default function GigForm({ onClose }: GigFormProps) {
     setIsCalculatingDistance(true);
     
     try {
-      let totalDistance = 0;
-      let totalTime = 0;
+      // Calculate distance using improved service
+      const filteredStops = stops.filter(stop => stop?.trim()).slice(0, 8); // Limit to 8 stops
       
-      const filteredStops = stops.filter(stop => stop?.trim()).slice(0, 10); // Limit stops to prevent API abuse
-      const waypoints = [startingAddress.trim(), ...filteredStops, endingAddress.trim()];
+      const result = await calculateDistance(
+        startingAddress.trim(),
+        endingAddress.trim(),
+        filteredStops,
+        includeRoundtrip
+      );
       
-      // Calculate distance with timeout and retry logic
-      for (let i = 0; i < waypoints.length - 1; i++) {
-        let retries = 2;
-        let result: any = null;
+      if (result.status === 'error') {
+        throw new Error(result.error || 'Failed to calculate distance');
+      }
+      
+      // Handle partial success with warnings
+      if (result.status === 'partial_success') {
+        const warningMessage = result.errors?.join(', ') || 'Some route segments could not be calculated';
+        console.warn('Distance calculation partial success:', warningMessage);
         
-        while (retries > 0 && !result) {
-          try {
-            result = await Promise.race([
-              calculateDistance(waypoints[i], waypoints[i + 1]),
-              new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 10000))
-            ]);
-          } catch (timeoutError) {
-            retries--;
-            if (retries === 0) throw new Error(`Failed to calculate distance between ${waypoints[i]} and ${waypoints[i + 1]}: Timeout`);
-            await new Promise(resolve => setTimeout(resolve, 1000)); // Wait 1s before retry
-          }
-        }
+        toast({
+          title: "Distance Calculated (with warnings)",
+          description: `${result.distanceMiles} miles calculated. Some segments may be estimated.`,
+          variant: "default",
+        });
+      }
+      
+      const roundedDistance = Math.min(9999, result.distanceMiles); // Cap at 9999 miles
+      
+      if (roundedDistance > 0) {
+        form.setValue('mileage', roundedDistance);
         
-        if (result && (result as any).status === 'success' && typeof (result as any).distanceMiles === 'number' && isFinite((result as any).distanceMiles)) {
-          totalDistance += Math.max(0, (result as any).distanceMiles);
-          totalTime += Math.max(0, (result as any).travelTimeMinutes || 0);
-        } else {
-          throw new Error(`Invalid response for route segment ${i + 1}`);
+        if (result.status === 'success') {
+          toast({
+            title: "Mileage Calculated",
+            description: `${roundedDistance} miles total${includeRoundtrip ? ' including round trip' : ''}${result.fromCache ? ' (from cache)' : ''}.`,
+          });
         }
+      } else {
+        throw new Error("Calculated distance is zero or invalid");
       }
-      
-      // Validate calculated values
-      if (!isFinite(totalDistance) || totalDistance < 0) {
-        throw new Error("Invalid distance calculation result");
-      }
-      
-      // Apply round trip multiplier
-      if (includeRoundtrip) {
-        totalDistance *= 2;
-        totalTime *= 2;
-      }
-      
-      // Round up to nearest whole number and validate final result
-      const roundedDistance = Math.ceil(Math.min(9999, totalDistance)); // Cap at 9999 miles
-      
-      form.setValue("calculatedMileage", roundedDistance.toString());
-      
-      toast({
-        title: "Mileage Calculated",
-        description: `${roundedDistance} miles total (${Math.round(totalTime)} min travel time)${includeRoundtrip ? ' including round trip' : ''}.`,
-      });
       
     } catch (error) {
       console.error("Mileage calculation error:", error);
