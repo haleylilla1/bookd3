@@ -3,90 +3,140 @@
  * Tests core functionality without authentication
  */
 
-const { exec } = require('child_process');
-const util = require('util');
-const execAsync = util.promisify(exec);
+import axios from 'axios';
+
+const BASE_URL = 'https://bookd-tools.replit.app';
 
 async function testMileageService() {
-  console.log('🧪 Testing Mileage Service Directly');
-  console.log('===================================');
+  console.log('🚀 Testing Enterprise Mileage System');
+  console.log('=================================\n');
 
+  // Test 1: Simple distance calculation
+  console.log('Test 1: Distance calculation between known locations');
   try {
-    // Test 1: Address validation
-    console.log('\n📍 Test 1: Address Validation');
-    const testAddresses = [
-      '123 Main St, New York, NY',
-      'xyz',
-      '',
-      'Central Park, NYC',
-      'Very long address that should be rejected because it exceeds normal limits and contains way too many characters'
-    ];
-
-    // Test 2: Basic functionality check
-    console.log('\n🔧 Test 2: Service Functionality');
-    console.log('- MileageService class exists');
-    console.log('- Address validation implemented');
-    console.log('- Cache management included');
-    console.log('- Google Maps API integration ready');
-    console.log('- Fallback estimation available');
-
-    // Test 3: API endpoint availability
-    console.log('\n🌐 Test 3: API Endpoint Test');
+    const response = await axios.post(`${BASE_URL}/api/calculate-distance`, {
+      startAddress: '1600 Amphitheatre Parkway, Mountain View, CA',
+      endAddress: '1 Infinite Loop, Cupertino, CA',
+      userId: 1
+    });
     
-    try {
-      const { stdout } = await execAsync('curl -s -X POST http://localhost:5000/api/calculate-distance -H "Content-Type: application/json" -d \'{"startAddress":"test","endAddress":"test"}\'');
-      console.log('API Response:', stdout);
-      
-      if (stdout.includes('Invalid session')) {
-        console.log('✅ API endpoint is properly protected (requires authentication)');
-      } else if (stdout.includes('error')) {
-        console.log('✅ API endpoint is responding with error handling');
-      } else {
-        console.log('✅ API endpoint is responding');
-      }
-    } catch (error) {
-      console.log('❌ API endpoint test failed:', error.message);
-    }
-
-    // Test 4: Google Maps API key check
-    console.log('\n🔑 Test 4: Google Maps API Configuration');
-    if (process.env.GOOGLE_MAPS_API_KEY) {
-      console.log('✅ Google Maps API key is configured');
-      console.log('✅ Real distance calculations will be available');
-    } else {
-      console.log('⚠️  Google Maps API key not found');
-      console.log('⚠️  System will use fallback estimation');
-    }
-
-    // Test 5: Core service features
-    console.log('\n⚙️  Test 5: Core Features Available');
-    console.log('✅ Rate limiting (100 calls/hour)');
-    console.log('✅ Caching system (24-hour cache)');
-    console.log('✅ Address validation (8 rules)');
-    console.log('✅ Fallback estimation');
-    console.log('✅ Multi-user support');
-    console.log('✅ Error handling');
-
-    console.log('\n🎯 Test Summary');
-    console.log('===============');
-    console.log('✅ Mileage service is properly implemented');
-    console.log('✅ All core features are available');
-    console.log('✅ API endpoint is protected and functional');
-    console.log('✅ Google Maps integration is ready');
-    console.log('✅ System handles multiple users correctly');
-    
-    return true;
+    console.log('✅ Distance calculation successful:');
+    console.log(`   Distance: ${response.data.distanceMiles} miles`);
+    console.log(`   Duration: ${response.data.travelTimeMinutes} minutes`);
+    console.log(`   Status: ${response.data.status}`);
+    console.log(`   Confidence: ${response.data.confidence || 'N/A'}`);
+    console.log('');
   } catch (error) {
-    console.log('❌ Test failed:', error.message);
-    return false;
+    console.log('❌ Distance calculation failed:');
+    console.log(`   Error: ${error.response?.data?.error || error.message}`);
+    console.log('');
   }
+
+  // Test 2: Address validation
+  console.log('Test 2: Address validation');
+  try {
+    const response = await axios.post(`${BASE_URL}/api/validate-address`, {
+      address: '1600 Amphitheatre Parkway, Mountain View, CA',
+      userId: 1
+    });
+    
+    console.log('✅ Address validation successful:');
+    console.log(`   Valid: ${response.data.valid}`);
+    console.log(`   Confidence: ${response.data.confidence || 'N/A'}`);
+    console.log(`   Standardized: ${response.data.standardized || 'N/A'}`);
+    if (response.data.issues?.length) {
+      console.log(`   Issues: ${response.data.issues.join(', ')}`);
+    }
+    console.log('');
+  } catch (error) {
+    console.log('❌ Address validation failed:');
+    console.log(`   Error: ${error.response?.data?.error || error.message}`);
+    console.log('');
+  }
+
+  // Test 3: Invalid address
+  console.log('Test 3: Invalid address handling');
+  try {
+    const response = await axios.post(`${BASE_URL}/api/validate-address`, {
+      address: 'This is not a valid address 12345',
+      userId: 1
+    });
+    
+    console.log('✅ Invalid address handled correctly:');
+    console.log(`   Valid: ${response.data.valid}`);
+    console.log(`   Confidence: ${response.data.confidence || 'N/A'}`);
+    if (response.data.issues?.length) {
+      console.log(`   Issues: ${response.data.issues.join(', ')}`);
+    }
+    console.log('');
+  } catch (error) {
+    console.log('❌ Invalid address test failed:');
+    console.log(`   Error: ${error.response?.data?.error || error.message}`);
+    console.log('');
+  }
+
+  // Test 4: Round trip calculation
+  console.log('Test 4: Round trip calculation');
+  try {
+    const response = await axios.post(`${BASE_URL}/api/calculate-distance`, {
+      startAddress: '1600 Amphitheatre Parkway, Mountain View, CA',
+      endAddress: '101 California St, San Francisco, CA',
+      roundTrip: true,
+      userId: 1
+    });
+    
+    console.log('✅ Round trip calculation successful:');
+    console.log(`   Distance: ${response.data.distanceMiles} miles`);
+    console.log(`   Duration: ${response.data.travelTimeMinutes} minutes`);
+    console.log(`   Round trip: ${response.data.roundTrip}`);
+    console.log('');
+  } catch (error) {
+    console.log('❌ Round trip calculation failed:');
+    console.log(`   Error: ${error.response?.data?.error || error.message}`);
+    console.log('');
+  }
+
+  // Test 5: Multi-waypoint calculation
+  console.log('Test 5: Multi-waypoint calculation');
+  try {
+    const response = await axios.post(`${BASE_URL}/api/calculate-distance`, {
+      startAddress: '1600 Amphitheatre Parkway, Mountain View, CA',
+      endAddress: '1 Infinite Loop, Cupertino, CA',
+      waypoints: ['101 California St, San Francisco, CA'],
+      userId: 1
+    });
+    
+    console.log('✅ Multi-waypoint calculation successful:');
+    console.log(`   Distance: ${response.data.distanceMiles} miles`);
+    console.log(`   Duration: ${response.data.travelTimeMinutes} minutes`);
+    console.log(`   Waypoints: ${response.data.waypoints || 'N/A'}`);
+    console.log('');
+  } catch (error) {
+    console.log('❌ Multi-waypoint calculation failed:');
+    console.log(`   Error: ${error.response?.data?.error || error.message}`);
+    console.log('');
+  }
+
+  // Test 6: System statistics
+  console.log('Test 6: System statistics');
+  try {
+    const response = await axios.get(`${BASE_URL}/api/mileage-stats?userId=1`);
+    
+    console.log('✅ System statistics retrieved:');
+    console.log(`   Cache size: ${response.data.system?.cacheSize || 'N/A'}`);
+    console.log(`   Address cache: ${response.data.system?.addressCacheSize || 'N/A'}`);
+    console.log(`   Total users: ${response.data.system?.totalUsers || 'N/A'}`);
+    console.log(`   Queue length: ${response.data.system?.queueLength || 'N/A'}`);
+    console.log('');
+  } catch (error) {
+    console.log('❌ System statistics failed:');
+    console.log(`   Error: ${error.response?.data?.error || error.message}`);
+    console.log('');
+  }
+
+  console.log('🎯 Enterprise Mileage System test complete!');
+  console.log('=======================================');
 }
 
 // Run the test
-testMileageService().then(success => {
-  if (success) {
-    console.log('\n🎉 All tests passed! Mileage system is ready for production.');
-  } else {
-    console.log('\n❌ Some tests failed. Please check the implementation.');
-  }
-}).catch(console.error);
+testMileageService().catch(console.error);

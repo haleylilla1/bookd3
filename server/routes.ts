@@ -383,6 +383,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/calculate-distance', requireAuth, authPatternGuard, async (req: AuthenticatedRequest, res) => {
     try {
       const { startAddress, endAddress, waypoints = [], roundTrip = false } = req.body;
+      const userId = getUserId(req);
       
       if (!startAddress || !endAddress) {
         return res.status(400).json({ 
@@ -393,61 +394,99 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const { mileageService } = await import('./mileage-service');
       
-      let totalDistance = 0;
-      let totalDuration = 0;
-      let errors: string[] = [];
+      // Use the enterprise mileage service
+      const result = await mileageService.calculateDistance(
+        userId,
+        startAddress,
+        endAddress,
+        waypoints.filter(w => w?.trim()),
+        roundTrip
+      );
       
-      // Create route segments
-      const addresses = [startAddress, ...waypoints.filter(w => w?.trim()), endAddress];
-      
-      // Calculate distance for each segment
-      for (let i = 0; i < addresses.length - 1; i++) {
-        const origin = addresses[i].trim();
-        const destination = addresses[i + 1].trim();
-        
-        const result = await mileageService.calculateDistance(origin, destination);
-        
-        if (result.success) {
-          totalDistance += result.distance;
-          totalDuration += result.duration;
-        } else {
-          errors.push(`Segment ${i + 1}: ${result.error}`);
-        }
-      }
-      
-      // Apply round trip multiplier if requested
-      if (roundTrip && totalDistance > 0) {
-        totalDistance *= 2;
-        totalDuration *= 2;
-      }
-      
-      // Round distance up to nearest whole number (for tax purposes)
-      const roundedDistance = Math.ceil(totalDistance);
-      
-      if (errors.length > 0) {
-        logger.warn('Distance calculation completed with errors', { 
-          startAddress, 
-          endAddress, 
-          errors,
-          userId: getUserId(req)
+      if (result.success) {
+        res.json({
+          status: 'success',
+          distanceMiles: result.distance,
+          travelTimeMinutes: result.duration,
+          fromCache: result.fromCache,
+          confidence: result.confidence,
+          fallbackUsed: result.fallbackUsed
+        });
+      } else {
+        res.status(400).json({ 
+          status: 'error',
+          error: result.error 
         });
       }
-      
-      res.json({
-        status: errors.length === 0 ? 'success' : 'partial_success',
-        distanceMiles: roundedDistance,
-        travelTimeMinutes: Math.round(totalDuration),
-        segments: addresses.length - 1,
-        roundTrip,
-        errors: errors.length > 0 ? errors : undefined
-      });
-      
     } catch (error) {
-      logError('Distance calculation error', error as Error, getUserId(req));
+      logger.error('Distance calculation error:', error);
       res.status(500).json({ 
         status: 'error',
         error: 'Failed to calculate distance' 
       });
+    }
+  });
+
+  // Address validation endpoint
+  app.post('/api/validate-address', requireAuth, authPatternGuard, async (req: AuthenticatedRequest, res) => {
+    try {
+      const { address } = req.body;
+      
+      if (!address) {
+        return res.status(400).json({ error: 'Address is required' });
+      }
+      
+      const { mileageService } = await import('./mileage-service');
+      const validation = await mileageService.validateAddress(address);
+      res.json(validation);
+    } catch (error) {
+      logger.error('Address validation error:', error);
+      res.status(500).json({ error: 'Failed to validate address' });
+    }
+  });
+
+  // Mileage service statistics endpoint
+  app.get('/api/mileage-stats', requireAuth, authPatternGuard, async (req: AuthenticatedRequest, res) => {
+    try {
+      const userId = getUserId(req);
+      const { mileageService } = await import('./mileage-service');
+      
+      const systemStats = mileageService.getStats();
+      const userStats = mileageService.getUserStats(userId);
+      const queueInfo = mileageService.getQueueInfo();
+      
+      res.json({
+        system: systemStats,
+        user: userStats,
+        queue: queueInfo
+      });
+    } catch (error) {
+      logger.error('Mileage stats error:', error);
+      res.status(500).json({ error: 'Failed to get mileage statistics' });
+    }
+  });
+
+  // Set user priority endpoint (for admin use)
+  app.post('/api/set-user-priority', requireAuth, authPatternGuard, async (req: AuthenticatedRequest, res) => {
+    try {
+      const { userId, priority } = req.body;
+      const requestingUserId = getUserId(req);
+      
+      // Simple admin check (you could enhance this with proper admin roles)
+      if (requestingUserId !== 1) { // Assume user ID 1 is admin
+        return res.status(403).json({ error: 'Admin access required' });
+      }
+      
+      if (!userId || !priority || !['high', 'medium', 'low'].includes(priority)) {
+        return res.status(400).json({ error: 'Valid userId and priority (high/medium/low) are required' });
+      }
+      
+      const { mileageService } = await import('./mileage-service');
+      mileageService.setUserPriority(userId, priority);
+      res.json({ success: true, message: `User ${userId} priority set to ${priority}` });
+    } catch (error) {
+      logger.error('Set user priority error:', error);
+      res.status(500).json({ error: 'Failed to set user priority' });
     }
   });
 
