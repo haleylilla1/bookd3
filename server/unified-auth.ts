@@ -379,6 +379,7 @@ export function setupAuthRoutes(app: any, authLimiter?: any, passwordResetLimite
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
         sameSite: 'lax',
+        domain: process.env.NODE_ENV === 'production' ? 'bookd.tools' : undefined,
         maxAge: 30 * 24 * 60 * 60 * 1000
       });
       
@@ -416,6 +417,7 @@ export function setupAuthRoutes(app: any, authLimiter?: any, passwordResetLimite
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
         sameSite: 'lax',
+        domain: process.env.NODE_ENV === 'production' ? 'bookd.tools' : undefined,
         maxAge: 30 * 24 * 60 * 60 * 1000
       });
       
@@ -440,7 +442,9 @@ export function setupAuthRoutes(app: any, authLimiter?: any, passwordResetLimite
         await SessionManager.destroySession(sessionId);
       }
       
-      res.clearCookie('sessionId');
+      res.clearCookie('sessionId', {
+        domain: process.env.NODE_ENV === 'production' ? 'bookd.tools' : undefined
+      });
       res.json({ message: "Logout successful" });
     } catch (error) {
       res.status(500).json({ message: "Logout failed" });
