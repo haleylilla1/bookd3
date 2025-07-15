@@ -54,25 +54,103 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json({ status: 'healthy', timestamp: new Date().toISOString() });
   });
 
-  // Backup system health check (no sensitive data)
-  app.get('/api/backup-status', requireAuth, authPatternGuard, asyncHandler(async (req: AuthenticatedRequest, res) => {
+  // System monitoring endpoints
+  app.get('/api/system-status', requireAuth, authPatternGuard, asyncHandler(async (req: AuthenticatedRequest, res) => {
     try {
-      const { backupSystem } = await import('./backup-system');
-      const { integrityChecker } = await import('./database-integrity');
+      const { monitoringSystem } = await import('./monitoring-system');
+      const { infrastructureManager } = await import('./infrastructure-manager');
       
-      const [backupInfo, healthCheck] = await Promise.all([
-        backupSystem.getBackupInfo(),
-        integrityChecker.checkHealth()
+      const [metrics, health] = await Promise.all([
+        monitoringSystem.getCurrentStatus(),
+        infrastructureManager.getInfrastructureHealth()
       ]);
       
       res.json({
-        backup: backupInfo,
-        integrity: healthCheck,
+        metrics,
+        infrastructure: health,
         timestamp: new Date().toISOString()
       });
     } catch (error) {
-      logError('Backup status check failed', error);
-      res.status(500).json({ error: 'Failed to check backup status' });
+      logError('System status check failed', error);
+      res.status(500).json({ error: 'Failed to check system status' });
+    }
+  }));
+
+  app.get('/api/health-report', requireAuth, authPatternGuard, asyncHandler(async (req: AuthenticatedRequest, res) => {
+    try {
+      const { infrastructureManager } = await import('./infrastructure-manager');
+      const report = await infrastructureManager.generateStatusReport();
+      
+      res.setHeader('Content-Type', 'text/plain');
+      res.send(report);
+    } catch (error) {
+      logError('Health report generation failed', error);
+      res.status(500).json({ error: 'Failed to generate health report' });
+    }
+  }));
+
+  app.get('/api/metrics-history', requireAuth, authPatternGuard, asyncHandler(async (req: AuthenticatedRequest, res) => {
+    try {
+      const { monitoringSystem } = await import('./monitoring-system');
+      const hours = parseInt(req.query.hours as string) || 24;
+      const history = monitoringSystem.getMetricsHistory(hours);
+      
+      res.json({
+        history,
+        period: `${hours} hours`,
+        timestamp: new Date().toISOString()
+      });
+    } catch (error) {
+      logError('Metrics history fetch failed', error);
+      res.status(500).json({ error: 'Failed to fetch metrics history' });
+    }
+  }));
+
+  app.get('/api/alerts', requireAuth, authPatternGuard, asyncHandler(async (req: AuthenticatedRequest, res) => {
+    try {
+      const { alertingSystem } = await import('./alerting-system');
+      const activeOnly = req.query.active === 'true';
+      const alerts = activeOnly ? alertingSystem.getActiveAlerts() : alertingSystem.getAllAlerts();
+      const summary = alertingSystem.getAlertSummary();
+      
+      res.json({
+        alerts,
+        summary,
+        timestamp: new Date().toISOString()
+      });
+    } catch (error) {
+      logError('Alerts fetch failed', error);
+      res.status(500).json({ error: 'Failed to fetch alerts' });
+    }
+  }));
+
+  app.get('/api/alerts-report', requireAuth, authPatternGuard, asyncHandler(async (req: AuthenticatedRequest, res) => {
+    try {
+      const { alertingSystem } = await import('./alerting-system');
+      const report = alertingSystem.generateAlertReport();
+      
+      res.setHeader('Content-Type', 'text/plain');
+      res.send(report);
+    } catch (error) {
+      logError('Alert report generation failed', error);
+      res.status(500).json({ error: 'Failed to generate alert report' });
+    }
+  }));
+
+  app.post('/api/alerts/:id/resolve', requireAuth, authPatternGuard, asyncHandler(async (req: AuthenticatedRequest, res) => {
+    try {
+      const { alertingSystem } = await import('./alerting-system');
+      const alertId = req.params.id;
+      const resolved = alertingSystem.resolveAlert(alertId);
+      
+      if (resolved) {
+        res.json({ success: true, message: 'Alert resolved' });
+      } else {
+        res.status(404).json({ error: 'Alert not found or already resolved' });
+      }
+    } catch (error) {
+      logError('Alert resolution failed', error);
+      res.status(500).json({ error: 'Failed to resolve alert' });
     }
   }));
 
