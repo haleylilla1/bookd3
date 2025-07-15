@@ -272,8 +272,8 @@ export default function AuthForm() {
       <div className="w-full max-w-md space-y-6">
         {/* Branding */}
         <div className="text-center">
-          <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-2">Bookd</h1>
-          <p className="text-gray-600 dark:text-gray-300 text-lg">Work different.</p>
+          <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-2">bookd</h1>
+          <p className="text-gray-600 dark:text-gray-300 text-lg">for the one's who don't 9-5</p>
         </div>
 
         <Card className="shadow-lg">
