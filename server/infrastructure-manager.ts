@@ -31,31 +31,31 @@ interface ServiceCheck {
 export class InfrastructureManager {
   private healthChecks: ServiceCheck[] = [];
   private alertThresholds = {
-    memory: 85,
-    cpu: 80,
-    disk: 90,
-    responseTime: 2000
+    memory: 90,
+    cpu: 95,
+    disk: 95,
+    responseTime: 5000
   };
 
   constructor() {
-    this.startHealthMonitoring();
+    // Don't start automatically - will be started explicitly
   }
 
   /**
-   * Start comprehensive health monitoring
+   * Start simplified health monitoring
    */
   startHealthMonitoring(): void {
-    // Run health checks every 2 minutes
+    // Run health checks every 5 minutes (reduced frequency)
     setInterval(() => {
       this.runHealthChecks();
-    }, 2 * 60 * 1000);
+    }, 5 * 60 * 1000);
 
-    // Run initial health check after 1 minute
+    // Run initial health check after 3 minutes
     setTimeout(() => {
       this.runHealthChecks();
-    }, 60000);
+    }, 3 * 60 * 1000);
 
-    logger.info('Infrastructure monitoring started - health checks every 2 minutes');
+    logger.info('Infrastructure monitoring started - health checks every 5 minutes');
   }
 
   /**

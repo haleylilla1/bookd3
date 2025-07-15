@@ -17,17 +17,27 @@ async function start() {
   handleUnhandledRejections();
   handleUncaughtExceptions();
   
-  // Start infrastructure systems
+  // Start infrastructure systems (simplified and staggered)
   try {
     const { backupSystem } = await import('./backup-system');
-    const { monitoringSystem } = await import('./monitoring-system');
-    const { infrastructureManager } = await import('./infrastructure-manager');
-    const { alertingSystem } = await import('./alerting-system');
-    
     backupSystem.startBackupScheduler();
-    monitoringSystem.startMetricsCollection();
-    infrastructureManager.startHealthMonitoring();
-    // alertingSystem starts automatically in constructor
+    
+    // Start monitoring systems with delays to reduce startup load
+    setTimeout(async () => {
+      const { monitoringSystem } = await import('./monitoring-system');
+      monitoringSystem.startMetricsCollection();
+    }, 30000); // Start after 30 seconds
+    
+    setTimeout(async () => {
+      const { infrastructureManager } = await import('./infrastructure-manager');
+      infrastructureManager.startHealthMonitoring();
+    }, 60000); // Start after 1 minute
+    
+    setTimeout(async () => {
+      const { alertingSystem } = await import('./alerting-system');
+      alertingSystem.startAlertMonitoring();
+    }, 90000); // Start after 1.5 minutes
+    
   } catch (error) {
     console.error('Failed to start infrastructure systems:', error);
   }

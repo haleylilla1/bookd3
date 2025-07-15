@@ -45,32 +45,32 @@ export class SimpleMonitoringSystem {
   private metrics: SystemMetrics[] = [];
   private maxMetrics: number = 288; // 24 hours of 5-minute intervals
   private alertConfig: AlertConfig = {
-    memoryThreshold: 85, // 85% memory usage
-    cpuThreshold: 80, // 80% CPU usage
-    diskThreshold: 90, // 90% disk usage
-    responseTimeThreshold: 2000 // 2 seconds
+    memoryThreshold: 90, // 90% memory usage (more lenient)
+    cpuThreshold: 95, // 95% CPU usage (more lenient)
+    diskThreshold: 95, // 95% disk usage
+    responseTimeThreshold: 5000 // 5 seconds (more lenient)
   };
   private isCollectingMetrics: boolean = false;
 
   constructor() {
-    this.startMetricsCollection();
+    // Don't start automatically - will be started explicitly
   }
 
   /**
-   * Start collecting system metrics every 5 minutes
+   * Start collecting system metrics every 10 minutes (reduced frequency)
    */
   startMetricsCollection(): void {
-    // Collect initial metrics
+    // Collect initial metrics after 2 minutes
     setTimeout(() => {
       this.collectMetrics();
-    }, 30000); // Wait 30 seconds after startup
+    }, 2 * 60 * 1000);
 
-    // Collect metrics every 5 minutes
+    // Collect metrics every 10 minutes (reduced frequency)
     setInterval(() => {
       this.collectMetrics();
-    }, 5 * 60 * 1000);
+    }, 10 * 60 * 1000);
 
-    logger.info('Monitoring system started - collecting metrics every 5 minutes');
+    logger.info('Monitoring system started - collecting metrics every 10 minutes');
   }
 
   /**

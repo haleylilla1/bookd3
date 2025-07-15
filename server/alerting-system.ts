@@ -28,54 +28,22 @@ export class SimpleAlertingSystem {
   private lastAlertTime: Map<string, number> = new Map();
 
   constructor() {
-    this.setupDefaultAlertRules();
-    this.startAlertMonitoring();
+    this.setupSimpleAlertRules();
+    // Don't start automatically - will be started explicitly
   }
 
   /**
-   * Setup default alert rules
+   * Setup simplified alert rules
    */
-  private setupDefaultAlertRules(): void {
+  private setupSimpleAlertRules(): void {
     this.alertRules = [
-      {
-        name: 'high_memory_usage',
-        condition: (metrics) => metrics.memory.percentage > 85,
-        type: 'warning',
-        message: 'Memory usage is critically high',
-        service: 'system',
-        cooldown: 15
-      },
       {
         name: 'critical_memory_usage',
         condition: (metrics) => metrics.memory.percentage > 95,
         type: 'critical',
-        message: 'Memory usage is at critical levels',
+        message: 'Memory usage is critically high',
         service: 'system',
-        cooldown: 5
-      },
-      {
-        name: 'high_cpu_usage',
-        condition: (metrics) => metrics.cpu.percentage > 80,
-        type: 'warning',
-        message: 'CPU usage is high',
-        service: 'system',
-        cooldown: 10
-      },
-      {
-        name: 'slow_database_response',
-        condition: (metrics) => metrics.database.connectionTime > 2000,
-        type: 'warning',
-        message: 'Database response time is slow',
-        service: 'database',
-        cooldown: 10
-      },
-      {
-        name: 'very_slow_database_response',
-        condition: (metrics) => metrics.database.connectionTime > 5000,
-        type: 'critical',
-        message: 'Database response time is critically slow',
-        service: 'database',
-        cooldown: 5
+        cooldown: 30
       },
       {
         name: 'backup_missing',
@@ -83,48 +51,40 @@ export class SimpleAlertingSystem {
         type: 'critical',
         message: 'No backups found',
         service: 'backup',
-        cooldown: 60
+        cooldown: 120
       },
       {
-        name: 'backup_old',
+        name: 'backup_very_old',
         condition: (metrics) => {
           if (!metrics.backup.lastBackup) return false;
           const hoursSinceBackup = (Date.now() - new Date(metrics.backup.lastBackup).getTime()) / (1000 * 60 * 60);
-          return hoursSinceBackup > 25;
+          return hoursSinceBackup > 48; // Only alert if backup is over 48 hours old
         },
         type: 'warning',
-        message: 'Backup is overdue',
+        message: 'Backup is very old',
         service: 'backup',
-        cooldown: 30
-      },
-      {
-        name: 'database_integrity_issues',
-        condition: (metrics) => !metrics.health || metrics.health.overall !== 'healthy',
-        type: 'warning',
-        message: 'Database integrity issues detected',
-        service: 'database',
-        cooldown: 30
+        cooldown: 60
       }
     ];
 
-    logger.info('Alert rules configured', { ruleCount: this.alertRules.length });
+    logger.info('Simplified alert rules configured', { ruleCount: this.alertRules.length });
   }
 
   /**
-   * Start alert monitoring
+   * Start simplified alert monitoring
    */
-  private startAlertMonitoring(): void {
-    // Check for alerts every 3 minutes
+  startAlertMonitoring(): void {
+    // Check for alerts every 15 minutes (much less frequent)
     setInterval(() => {
       this.checkAlerts();
-    }, 3 * 60 * 1000);
+    }, 15 * 60 * 1000);
 
-    // Run initial alert check after 2 minutes
+    // Run initial alert check after 5 minutes
     setTimeout(() => {
       this.checkAlerts();
-    }, 2 * 60 * 1000);
+    }, 5 * 60 * 1000);
 
-    logger.info('Alert monitoring started - checking every 3 minutes');
+    logger.info('Alert monitoring started - checking every 15 minutes');
   }
 
   /**
