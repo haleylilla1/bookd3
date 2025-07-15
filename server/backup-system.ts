@@ -1,175 +1,119 @@
 import { db } from './db';
 import { logger } from './logger';
-import { exec } from 'child_process';
-import { promisify } from 'util';
 import fs from 'fs/promises';
 import path from 'path';
-import { createHash } from 'crypto';
 
-const execAsync = promisify(exec);
-
-interface BackupMetadata {
-  timestamp: string;
-  size: number;
-  checksum: string;
-  version: string;
-  tableCount: number;
-  userCount: number;
-  gigCount: number;
-  expenseCount: number;
+interface BackupResult {
+  success: boolean;
+  message: string;
+  filePath?: string;
+  size?: number;
 }
 
-interface BackupStats {
-  totalBackups: number;
-  lastBackup: string | null;
-  backupSizes: number[];
-  oldestBackup: string | null;
-  newestBackup: string | null;
-}
-
-export class DatabaseBackupSystem {
+export class SimpleBackupSystem {
   private backupDir: string;
-  private maxBackups: number;
-  private backupInterval: number; // in hours
+  private maxBackups: number = 5;
   private isBackupRunning: boolean = false;
 
   constructor() {
-    this.backupDir = path.join(process.cwd(), 'backups');
-    this.maxBackups = 10; // Keep 10 most recent backups
-    this.backupInterval = 6; // Backup every 6 hours
-    this.initializeBackupDirectory();
+    this.backupDir = path.join(process.cwd(), 'data-backups');
+    this.ensureBackupDir();
   }
 
-  private async initializeBackupDirectory(): Promise<void> {
+  private async ensureBackupDir(): Promise<void> {
     try {
       await fs.mkdir(this.backupDir, { recursive: true });
-      logger.info('Backup directory initialized', { path: this.backupDir });
     } catch (error) {
-      logger.error('Failed to initialize backup directory', { error: error.message });
-      throw error;
+      logger.error('Failed to create backup directory', { error: error.message });
     }
   }
 
   /**
-   * Create a complete database backup
+   * Create a simple JSON backup of critical data
    */
-  async createBackup(): Promise<string> {
+  async createBackup(): Promise<BackupResult> {
     if (this.isBackupRunning) {
-      logger.warn('Backup already in progress, skipping');
-      return '';
+      return { success: false, message: 'Backup already in progress' };
     }
 
     this.isBackupRunning = true;
-    const startTime = Date.now();
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-    const backupFileName = `bookd_backup_${timestamp}.sql`;
+    const backupFileName = `backup_${timestamp}.json`;
     const backupPath = path.join(this.backupDir, backupFileName);
 
     try {
-      logger.info('Starting database backup', { timestamp, backupPath });
+      logger.info('Starting data backup', { timestamp });
 
-      // Get database URL
-      const databaseUrl = process.env.DATABASE_URL;
-      if (!databaseUrl) {
-        throw new Error('DATABASE_URL not found');
-      }
+      // Get all critical data
+      const [users, gigs, expenses, goals, monthlyGoals, yearlyGoals] = await Promise.all([
+        db.query.users.findMany(),
+        db.query.gigs.findMany(),
+        db.query.expenses.findMany(),
+        db.query.goals.findMany(),
+        db.query.monthlyGoals.findMany(),
+        db.query.yearlyGoals.findMany()
+      ]);
 
-      // Create backup using pg_dump
-      const command = `pg_dump "${databaseUrl}" > "${backupPath}"`;
-      await execAsync(command);
+      const backupData = {
+        timestamp: new Date().toISOString(),
+        version: '1.0.0',
+        data: {
+          users,
+          gigs,
+          expenses,
+          goals,
+          monthlyGoals,
+          yearlyGoals
+        },
+        stats: {
+          userCount: users.length,
+          gigCount: gigs.length,
+          expenseCount: expenses.length,
+          goalCount: goals.length
+        }
+      };
 
-      // Verify backup file was created
+      // Save backup file
+      await fs.writeFile(backupPath, JSON.stringify(backupData, null, 2));
+
+      // Get file size
       const stats = await fs.stat(backupPath);
-      if (stats.size === 0) {
-        throw new Error('Backup file is empty');
-      }
 
-      // Calculate checksum
-      const backupContent = await fs.readFile(backupPath);
-      const checksum = createHash('sha256').update(backupContent).digest('hex');
-
-      // Get database statistics
-      const metadata = await this.getBackupMetadata(checksum, stats.size);
-      await this.saveBackupMetadata(backupFileName, metadata);
-
-      // Clean up old backups
+      // Cleanup old backups
       await this.cleanupOldBackups();
 
-      const duration = Date.now() - startTime;
-      logger.info('Database backup completed successfully', {
+      logger.info('Data backup completed', {
         fileName: backupFileName,
         size: stats.size,
-        duration,
-        checksum: checksum.substring(0, 16),
-        ...metadata
+        records: backupData.stats
       });
 
-      return backupPath;
+      return {
+        success: true,
+        message: 'Backup completed successfully',
+        filePath: backupPath,
+        size: stats.size
+      };
     } catch (error) {
-      logger.error('Database backup failed', { error: error.message, timestamp });
+      logger.error('Data backup failed', { error: error.message });
       
-      // Clean up failed backup file
+      // Clean up failed backup
       try {
         await fs.unlink(backupPath);
       } catch (cleanupError) {
-        logger.error('Failed to cleanup failed backup file', { error: cleanupError.message });
+        // Ignore cleanup errors
       }
       
-      throw error;
+      return {
+        success: false,
+        message: `Backup failed: ${error.message}`
+      };
     } finally {
       this.isBackupRunning = false;
     }
   }
 
-  /**
-   * Get metadata for the backup
-   */
-  private async getBackupMetadata(checksum: string, size: number): Promise<BackupMetadata> {
-    try {
-      // Get table counts
-      const userCount = await db.query.users.findMany().then(users => users.length);
-      const gigCount = await db.query.gigs.findMany().then(gigs => gigs.length);
-      const expenseCount = await db.query.expenses.findMany().then(expenses => expenses.length);
 
-      // Get table count from information schema
-      const tableCountResult = await db.execute({
-        sql: `SELECT COUNT(*) as count FROM information_schema.tables WHERE table_schema = 'public'`,
-        args: []
-      });
-      const tableCount = Number(tableCountResult.rows[0]?.count || 0);
-
-      return {
-        timestamp: new Date().toISOString(),
-        size,
-        checksum,
-        version: '1.0.0',
-        tableCount,
-        userCount,
-        gigCount,
-        expenseCount
-      };
-    } catch (error) {
-      logger.error('Failed to get backup metadata', { error: error.message });
-      return {
-        timestamp: new Date().toISOString(),
-        size,
-        checksum,
-        version: '1.0.0',
-        tableCount: 0,
-        userCount: 0,
-        gigCount: 0,
-        expenseCount: 0
-      };
-    }
-  }
-
-  /**
-   * Save backup metadata
-   */
-  private async saveBackupMetadata(fileName: string, metadata: BackupMetadata): Promise<void> {
-    const metadataPath = path.join(this.backupDir, `${fileName}.metadata.json`);
-    await fs.writeFile(metadataPath, JSON.stringify(metadata, null, 2));
-  }
 
   /**
    * Clean up old backups (keep only maxBackups)
@@ -177,7 +121,7 @@ export class DatabaseBackupSystem {
   private async cleanupOldBackups(): Promise<void> {
     try {
       const files = await fs.readdir(this.backupDir);
-      const backupFiles = files.filter(file => file.endsWith('.sql'));
+      const backupFiles = files.filter(file => file.endsWith('.json'));
       
       if (backupFiles.length <= this.maxBackups) {
         return;
@@ -198,16 +142,7 @@ export class DatabaseBackupSystem {
       const toDelete = fileStats.slice(0, fileStats.length - this.maxBackups);
       
       for (const { file } of toDelete) {
-        const backupPath = path.join(this.backupDir, file);
-        const metadataPath = path.join(this.backupDir, `${file}.metadata.json`);
-        
-        await fs.unlink(backupPath);
-        try {
-          await fs.unlink(metadataPath);
-        } catch (error) {
-          // Metadata file might not exist, ignore error
-        }
-        
+        await fs.unlink(path.join(this.backupDir, file));
         logger.info('Removed old backup', { file });
       }
     } catch (error) {
@@ -216,145 +151,81 @@ export class DatabaseBackupSystem {
   }
 
   /**
-   * Get backup statistics
+   * Get simple backup info
    */
-  async getBackupStats(): Promise<BackupStats> {
+  async getBackupInfo(): Promise<{ count: number; lastBackup: string | null; totalSize: number }> {
     try {
       const files = await fs.readdir(this.backupDir);
-      const backupFiles = files.filter(file => file.endsWith('.sql'));
+      const backupFiles = files.filter(file => file.endsWith('.json'));
       
       if (backupFiles.length === 0) {
-        return {
-          totalBackups: 0,
-          lastBackup: null,
-          backupSizes: [],
-          oldestBackup: null,
-          newestBackup: null
-        };
+        return { count: 0, lastBackup: null, totalSize: 0 };
       }
 
-      const fileStats = await Promise.all(
-        backupFiles.map(async (file) => {
-          const filePath = path.join(this.backupDir, file);
-          const stats = await fs.stat(filePath);
-          return { file, mtime: stats.mtime, size: stats.size };
-        })
-      );
+      let totalSize = 0;
+      let lastBackup = null;
+      let newestTime = 0;
 
-      fileStats.sort((a, b) => a.mtime.getTime() - b.mtime.getTime());
+      for (const file of backupFiles) {
+        const filePath = path.join(this.backupDir, file);
+        const stats = await fs.stat(filePath);
+        totalSize += stats.size;
+        
+        if (stats.mtime.getTime() > newestTime) {
+          newestTime = stats.mtime.getTime();
+          lastBackup = stats.mtime.toISOString();
+        }
+      }
 
-      return {
-        totalBackups: backupFiles.length,
-        lastBackup: fileStats[fileStats.length - 1].mtime.toISOString(),
-        backupSizes: fileStats.map(f => f.size),
-        oldestBackup: fileStats[0].mtime.toISOString(),
-        newestBackup: fileStats[fileStats.length - 1].mtime.toISOString()
-      };
+      return { count: backupFiles.length, lastBackup, totalSize };
     } catch (error) {
-      logger.error('Failed to get backup stats', { error: error.message });
-      return {
-        totalBackups: 0,
-        lastBackup: null,
-        backupSizes: [],
-        oldestBackup: null,
-        newestBackup: null
-      };
+      logger.error('Failed to get backup info', { error: error.message });
+      return { count: 0, lastBackup: null, totalSize: 0 };
     }
   }
 
   /**
-   * Restore database from backup
-   */
-  async restoreFromBackup(backupFileName: string): Promise<boolean> {
-    const backupPath = path.join(this.backupDir, backupFileName);
-    
-    try {
-      // Verify backup file exists
-      await fs.access(backupPath);
-      
-      const databaseUrl = process.env.DATABASE_URL;
-      if (!databaseUrl) {
-        throw new Error('DATABASE_URL not found');
-      }
-
-      logger.info('Starting database restore', { backupFileName });
-
-      // Create restore command
-      const command = `psql "${databaseUrl}" < "${backupPath}"`;
-      await execAsync(command);
-
-      logger.info('Database restore completed successfully', { backupFileName });
-      return true;
-    } catch (error) {
-      logger.error('Database restore failed', { error: error.message, backupFileName });
-      return false;
-    }
-  }
-
-  /**
-   * Start automatic backup scheduler
+   * Start automatic backup scheduler - simple daily backups
    */
   startBackupScheduler(): void {
-    // Create initial backup on startup
+    // Create initial backup after 1 minute
     setTimeout(() => {
-      this.createBackup().catch(error => {
-        logger.error('Initial backup failed', { error: error.message });
+      this.createBackup().then(result => {
+        if (result.success) {
+          logger.info('Initial backup completed');
+        } else {
+          logger.error('Initial backup failed', { message: result.message });
+        }
       });
-    }, 30000); // Wait 30 seconds after startup
+    }, 60000);
 
-    // Schedule regular backups
+    // Schedule daily backups
     setInterval(async () => {
-      try {
-        await this.createBackup();
-      } catch (error) {
-        logger.error('Scheduled backup failed', { error: error.message });
+      const result = await this.createBackup();
+      if (!result.success) {
+        logger.error('Scheduled backup failed', { message: result.message });
       }
-    }, this.backupInterval * 60 * 60 * 1000); // Convert hours to milliseconds
+    }, 24 * 60 * 60 * 1000); // 24 hours
 
-    logger.info('Backup scheduler started', {
-      interval: `${this.backupInterval} hours`,
-      maxBackups: this.maxBackups
-    });
+    logger.info('Backup scheduler started - daily backups enabled');
   }
 
   /**
-   * Create emergency backup (for critical operations)
+   * Create emergency backup before critical operations
    */
-  async createEmergencyBackup(reason: string): Promise<string> {
-    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-    const backupFileName = `emergency_backup_${timestamp}.sql`;
-    const backupPath = path.join(this.backupDir, backupFileName);
-
-    try {
-      logger.info('Creating emergency backup', { reason, timestamp });
-
-      const databaseUrl = process.env.DATABASE_URL;
-      if (!databaseUrl) {
-        throw new Error('DATABASE_URL not found');
-      }
-
-      const command = `pg_dump "${databaseUrl}" > "${backupPath}"`;
-      await execAsync(command);
-
-      // Verify backup
-      const stats = await fs.stat(backupPath);
-      if (stats.size === 0) {
-        throw new Error('Emergency backup file is empty');
-      }
-
-      logger.info('Emergency backup created successfully', {
-        fileName: backupFileName,
-        size: stats.size,
-        reason
-      });
-
-      return backupPath;
-    } catch (error) {
-      logger.error('Emergency backup failed', { error: error.message, reason });
-      throw error;
+  async createEmergencyBackup(reason: string): Promise<BackupResult> {
+    logger.info('Creating emergency backup', { reason });
+    const result = await this.createBackup();
+    
+    if (result.success) {
+      logger.info('Emergency backup completed', { reason });
+    } else {
+      logger.error('Emergency backup failed', { reason, message: result.message });
     }
+    
+    return result;
   }
 }
 
 // Export singleton instance
-export const backupSystem = new DatabaseBackupSystem();
+export const backupSystem = new SimpleBackupSystem();

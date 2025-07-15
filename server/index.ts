@@ -17,6 +17,14 @@ async function start() {
   handleUnhandledRejections();
   handleUncaughtExceptions();
   
+  // Start backup system
+  try {
+    const { backupSystem } = await import('./backup-system');
+    backupSystem.startBackupScheduler();
+  } catch (error) {
+    console.error('Failed to start backup system:', error);
+  }
+  
   const server = await registerRoutes(app);
   
   if (process.env.NODE_ENV === "development") {

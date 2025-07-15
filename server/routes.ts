@@ -54,6 +54,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json({ status: 'healthy', timestamp: new Date().toISOString() });
   });
 
+  // Backup system health check (no sensitive data)
+  app.get('/api/backup-status', requireAuth, authPatternGuard, asyncHandler(async (req: AuthenticatedRequest, res) => {
+    try {
+      const { backupSystem } = await import('./backup-system');
+      const { integrityChecker } = await import('./database-integrity');
+      
+      const [backupInfo, healthCheck] = await Promise.all([
+        backupSystem.getBackupInfo(),
+        integrityChecker.checkHealth()
+      ]);
+      
+      res.json({
+        backup: backupInfo,
+        integrity: healthCheck,
+        timestamp: new Date().toISOString()
+      });
+    } catch (error) {
+      logError('Backup status check failed', error);
+      res.status(500).json({ error: 'Failed to check backup status' });
+    }
+  }));
+
   // User data endpoints - all require authentication
   app.get('/api/user', requireAuth, authPatternGuard, asyncHandler(async (req: AuthenticatedRequest, res) => {
     const userId = getUserId(req);
