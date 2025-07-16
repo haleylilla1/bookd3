@@ -22,8 +22,10 @@ import { logMobileError, validateMobileEnvironment } from "@/utils/mobile-debug"
 import ReceiptUpload from "@/components/receipt-upload";
 import { AutoSaveIndicator, useOnlineStatus } from "./auto-save-indicator";
 import { RecoveryDialog } from "./recovery-dialog";
+import { EnhancedRecoveryDialog } from "./enhanced-recovery-dialog";
 import { MobileAutoSaveIndicator, useMobileAutoSaveStatus, MobileRecoveryNotification } from "./mobile-auto-save-indicator";
 import { useFormAutoSave, submitFormWithRetry, getAutoSavedData, hasRecoverableData } from "@/lib/auto-save";
+import { useRecoverySystem, useMobileRecovery } from "@/hooks/use-recovery-system";
 
 // ULTRA-SIMPLIFIED SCHEMA - Only validate truly required fields
 const gigFormSchema = z.object({
@@ -127,6 +129,27 @@ export default function GigForm({ onClose }: GigFormProps) {
   const [recoveryData, setRecoveryData] = useState<any>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showMobileRecovery, setShowMobileRecovery] = useState(false);
+  const [useEnhancedRecovery, setUseEnhancedRecovery] = useState(false);
+
+  // Enhanced recovery system
+  const recoverySystem = useRecoverySystem({
+    formKey: 'gig-form',
+    formType: 'gig',
+    autoCheck: true,
+    onRecoveryFound: (data) => {
+      setRecoveryData(data.data);
+      setUseEnhancedRecovery(true);
+      setShowRecoveryDialog(true);
+    },
+    onRecoveryCleared: () => {
+      setRecoveryData(null);
+      setShowRecoveryDialog(false);
+      setUseEnhancedRecovery(false);
+    }
+  });
+
+  // Mobile recovery
+  const mobileRecovery = useMobileRecovery('gig-form', 'gig');
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const isOnline = useOnlineStatus();
@@ -1262,27 +1285,53 @@ export default function GigForm({ onClose }: GigFormProps) {
         }}
       />
 
-      {/* Desktop Recovery Dialog */}
-      <RecoveryDialog
-        isOpen={showRecoveryDialog}
-        onClose={() => setShowRecoveryDialog(false)}
-        onRestore={(data) => {
-          // Restore form data
-          Object.keys(data).forEach(key => {
-            if (form.setValue) {
-              form.setValue(key as any, data[key]);
-            }
-          });
-          setShowRecoveryDialog(false);
-        }}
-        onDiscard={() => {
-          clearSave();
-          setShowRecoveryDialog(false);
-        }}
-        recoveryData={recoveryData}
-        timestamp={recoveryData?.timestamp || Date.now()}
-        formType="gig"
-      />
+      {/* Recovery Dialog - Enhanced or Standard */}
+      {useEnhancedRecovery ? (
+        <EnhancedRecoveryDialog
+          isOpen={showRecoveryDialog}
+          onClose={() => setShowRecoveryDialog(false)}
+          onRestore={(data) => {
+            // Restore form data
+            Object.keys(data).forEach(key => {
+              if (form.setValue) {
+                form.setValue(key as any, data[key]);
+              }
+            });
+            setShowRecoveryDialog(false);
+          }}
+          onDiscard={() => {
+            clearSave();
+            setShowRecoveryDialog(false);
+          }}
+          recoveryData={recoveryData}
+          timestamp={recoveryData?.timestamp || Date.now()}
+          formType="gig"
+          storageSource={recoverySystem.recoveryData?.storageSource || 'primary'}
+          autoSaveEnabled={true}
+          onlineStatus={isOnline}
+        />
+      ) : (
+        <RecoveryDialog
+          isOpen={showRecoveryDialog}
+          onClose={() => setShowRecoveryDialog(false)}
+          onRestore={(data) => {
+            // Restore form data
+            Object.keys(data).forEach(key => {
+              if (form.setValue) {
+                form.setValue(key as any, data[key]);
+              }
+            });
+            setShowRecoveryDialog(false);
+          }}
+          onDiscard={() => {
+            clearSave();
+            setShowRecoveryDialog(false);
+          }}
+          recoveryData={recoveryData}
+          timestamp={recoveryData?.timestamp || Date.now()}
+          formType="gig"
+        />
+      )}
     </div>
   );
 }

@@ -6,6 +6,8 @@ import { Toaster } from '@/components/ui/toaster';
 import HomePage from '@/pages/home';
 import AuthForm from '@/components/auth-form';
 import NotFound from '@/pages/not-found';
+import { RecoverySystemProvider } from '@/components/recovery-system-provider';
+import { GlobalRecoveryIndicator } from '@/components/global-recovery-indicator';
 
 function AppRouter() {
   const [user, setUser] = useState(null);
@@ -104,8 +106,11 @@ function AppRouter() {
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <AppRouter />
-      <Toaster />
+      <RecoverySystemProvider>
+        <AppRouter />
+        <GlobalRecoveryIndicator />
+        <Toaster />
+      </RecoverySystemProvider>
     </QueryClientProvider>
   );
 }
