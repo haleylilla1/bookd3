@@ -35,6 +35,7 @@ export default function AppHeader({ currentScreen, onScreenChange }: AppHeaderPr
   if (!user) return null;
 
   const getInitials = (name: string) => {
+    if (!name) return 'U';
     return name.split(' ').map(n => n[0]).join('').toUpperCase();
   };
 
@@ -96,9 +97,9 @@ export default function AppHeader({ currentScreen, onScreenChange }: AppHeaderPr
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="relative h-10 w-10 rounded-full">
                 <Avatar className="h-10 w-10">
-                  <AvatarImage src={user.profileImageUrl || undefined} alt={user.username} />
+                  <AvatarImage src={user.profileImageUrl || undefined} alt={user.name || user.email} />
                   <AvatarFallback className="bg-blue-100 text-blue-700">
-                    {getInitials(user.username)}
+                    {getInitials(user.name || user.email)}
                   </AvatarFallback>
                 </Avatar>
               </Button>
@@ -106,7 +107,7 @@ export default function AppHeader({ currentScreen, onScreenChange }: AppHeaderPr
             <DropdownMenuContent className="w-56" align="end" forceMount>
               <DropdownMenuLabel className="font-normal">
                 <div className="flex flex-col space-y-1">
-                  <p className="text-sm font-medium leading-none">{user.username}</p>
+                  <p className="text-sm font-medium leading-none">{user.name || user.email}</p>
                   <p className="text-xs leading-none text-muted-foreground">
                     {user.email}
                   </p>
