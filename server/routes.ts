@@ -17,6 +17,9 @@ import rateLimit from "express-rate-limit";
 export async function registerRoutes(app: Express): Promise<Server> {
   // REPLIT AUTH: Zero-configuration authentication system
   
+  // Set trust proxy for rate limiting
+  app.set('trust proxy', true);
+  
   // Force HTTPS redirect in production
   if (process.env.NODE_ENV === 'production') {
     app.use((req, res, next) => {
