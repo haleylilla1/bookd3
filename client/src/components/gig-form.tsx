@@ -148,6 +148,26 @@ export default function GigForm({ onClose }: GigFormProps) {
     }
   });
 
+  // Optimized recovery system
+  const optimizedRecovery = useOptimizedRecovery({
+    formKey: 'gig-form',
+    formType: 'gig',
+    autoSave: true,
+    saveInterval: 1500,
+    compressionEnabled: true,
+    onRecoveryFound: (data) => {
+      setRecoveryData(data);
+      setUseEnhancedRecovery(true);
+      setShowRecoveryDialog(true);
+    },
+    onSaveSuccess: () => {
+      setAutoSaveLastSaved(new Date());
+    },
+    onSaveError: (error) => {
+      console.error('Optimized recovery save error:', error);
+    }
+  });
+
   // Mobile recovery
   const mobileRecovery = useMobileRecovery('gig-form', 'gig');
   const { toast } = useToast();
@@ -1285,8 +1305,33 @@ export default function GigForm({ onClose }: GigFormProps) {
         }}
       />
 
-      {/* Recovery Dialog - Enhanced or Standard */}
-      {useEnhancedRecovery ? (
+      {/* Recovery Dialog - Optimized Version */}
+      {optimizedRecovery.recoveryData ? (
+        <OptimizedRecoveryDialog
+          isOpen={showRecoveryDialog}
+          onClose={() => setShowRecoveryDialog(false)}
+          onRestore={(data) => {
+            // Restore form data
+            Object.keys(data).forEach(key => {
+              if (form.setValue) {
+                form.setValue(key as any, data[key]);
+              }
+            });
+            optimizedRecovery.clearRecovery();
+            setShowRecoveryDialog(false);
+          }}
+          onDiscard={() => {
+            optimizedRecovery.clearRecovery();
+            setShowRecoveryDialog(false);
+          }}
+          recoveryData={optimizedRecovery.recoveryData.data}
+          timestamp={optimizedRecovery.recoveryData.timestamp}
+          formType="gig"
+          storageSource={optimizedRecovery.recoveryData.storageSource}
+          checksum={optimizedRecovery.recoveryData.checksum}
+          systemStats={optimizedRecovery.systemStats}
+        />
+      ) : useEnhancedRecovery ? (
         <EnhancedRecoveryDialog
           isOpen={showRecoveryDialog}
           onClose={() => setShowRecoveryDialog(false)}
