@@ -22,8 +22,8 @@ import { logMobileError, validateMobileEnvironment } from "@/utils/mobile-debug"
 import ReceiptUpload from "@/components/receipt-upload";
 import { AutoSaveIndicator, useOnlineStatus } from "./auto-save-indicator";
 import { RecoveryDialog } from "./recovery-dialog";
-import { useFormAutoSave, submitFormWithRetry, getAutoSavedData, hasRecoverableData } from "@/lib/auto-save";
 import { MobileAutoSaveIndicator, useMobileAutoSaveStatus, MobileRecoveryNotification } from "./mobile-auto-save-indicator";
+import { useFormAutoSave, submitFormWithRetry, getAutoSavedData, hasRecoverableData } from "@/lib/auto-save";
 
 // ULTRA-SIMPLIFIED SCHEMA - Only validate truly required fields
 const gigFormSchema = z.object({
