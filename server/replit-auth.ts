@@ -121,7 +121,27 @@ export function getUserId(req: ReplitAuthRequest): number {
 
 // Auth routes
 export function setupAuthRoutes(app: any): void {
-  // Login endpoint
+  // Traditional login endpoint that redirects to Replit Auth
+  app.post('/api/auth/login', (req: Request, res: Response) => {
+    // For traditional interface, we redirect to Replit Auth
+    res.json({ 
+      success: true, 
+      redirectUrl: '/auth/login',
+      message: 'Redirecting to authentication...' 
+    });
+  });
+
+  // Traditional register endpoint that redirects to Replit Auth
+  app.post('/api/auth/register', (req: Request, res: Response) => {
+    // For traditional interface, we redirect to Replit Auth
+    res.json({ 
+      success: true, 
+      redirectUrl: '/auth/login',
+      message: 'Redirecting to authentication...' 
+    });
+  });
+
+  // Replit Auth login endpoint
   app.get('/auth/login', (req: Request, res: Response) => {
     const loginUrl = getLoginUrl(req);
     res.redirect(loginUrl);
@@ -145,12 +165,28 @@ export function setupAuthRoutes(app: any): void {
     });
   });
 
-  // Auth status endpoint
-  app.get('/api/auth/status', replitAuthMiddleware, (req: ReplitAuthRequest, res: Response) => {
-    res.json({
-      authenticated: true,
-      user: req.user
-    });
+  // Auth status endpoint (without auth middleware for checking status)
+  app.get('/api/auth/status', async (req: Request, res: Response) => {
+    try {
+      const userInfo = getUserInfo(req);
+      if (userInfo) {
+        const internalUser = await findOrCreateUser(userInfo);
+        res.json({
+          authenticated: true,
+          user: {
+            id: userInfo.id,
+            username: userInfo.name,
+            email: userInfo.email,
+            displayName: userInfo.displayName,
+            profileImageUrl: userInfo.profileImageUrl
+          }
+        });
+      } else {
+        res.json({ authenticated: false });
+      }
+    } catch (error) {
+      res.json({ authenticated: false });
+    }
   });
 }
 
