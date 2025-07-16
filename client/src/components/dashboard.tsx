@@ -35,7 +35,7 @@ export default function Dashboard() {
   const queryClient = useQueryClient();
 
   const { data: user, isLoading: userLoading, error: userError } = useQuery<User>({
-    queryKey: ["/api/auth/user"],
+    queryKey: ["/api/user"],
     retry: 1,
   });
 

@@ -1,15 +1,13 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { setupAuthRoutes, requireAuth, SessionManager } from "./unified-auth";
-import { authPatternGuard, validateAuthSystemOnStartup, getUserId, type AuthenticatedRequest } from "./auth-guard";
+import { setupAuthRoutes as setupReplitAuthRoutes, replitAuthMiddleware, getUserId, type ReplitAuthRequest } from "./replit-auth";
 import { globalErrorHandler, asyncHandler, safeDbOperation, validateUserId, validateNumericId } from "./error-handler";
 import { logError } from "./logger";
 import rateLimit from "express-rate-limit";
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // BULLETPROOF: Validate authentication system on startup
-  await validateAuthSystemOnStartup();
+  // REPLIT AUTH: Zero-configuration authentication system
   
   // Force HTTPS redirect in production
   if (process.env.NODE_ENV === 'production') {
@@ -46,8 +44,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     legacyHeaders: false,
   });
 
-  // Setup authentication routes with rate limiting
-  setupAuthRoutes(app, authLimiter, passwordResetLimiter);
+  // Setup Replit Auth routes
+  setupReplitAuthRoutes(app);
 
   // Health check endpoint (no sensitive data)
   app.get('/health', (req, res) => {
@@ -55,7 +53,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // System monitoring endpoints
-  app.get('/api/system-status', requireAuth, authPatternGuard, asyncHandler(async (req: AuthenticatedRequest, res) => {
+  app.get('/api/system-status', replitAuthMiddleware, asyncHandler(async (req: ReplitAuthRequest, res) => {
     try {
       const { monitoringSystem } = await import('./monitoring-system');
       const { infrastructureManager } = await import('./infrastructure-manager');
@@ -76,7 +74,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   }));
 
-  app.get('/api/health-report', requireAuth, authPatternGuard, asyncHandler(async (req: AuthenticatedRequest, res) => {
+  app.get('/api/health-report', replitAuthMiddleware, asyncHandler(async (req: ReplitAuthRequest, res) => {
     try {
       const { infrastructureManager } = await import('./infrastructure-manager');
       const report = await infrastructureManager.generateStatusReport();
@@ -89,7 +87,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   }));
 
-  app.get('/api/metrics-history', requireAuth, authPatternGuard, asyncHandler(async (req: AuthenticatedRequest, res) => {
+  app.get('/api/metrics-history', replitAuthMiddleware, asyncHandler(async (req: ReplitAuthRequest, res) => {
     try {
       const { monitoringSystem } = await import('./monitoring-system');
       const hours = parseInt(req.query.hours as string) || 24;
@@ -106,7 +104,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   }));
 
-  app.get('/api/alerts', requireAuth, authPatternGuard, asyncHandler(async (req: AuthenticatedRequest, res) => {
+  app.get('/api/alerts', replitAuthMiddleware, asyncHandler(async (req: ReplitAuthRequest, res) => {
     try {
       const { alertingSystem } = await import('./alerting-system');
       const activeOnly = req.query.active === 'true';
@@ -124,7 +122,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   }));
 
-  app.get('/api/alerts-report', requireAuth, authPatternGuard, asyncHandler(async (req: AuthenticatedRequest, res) => {
+  app.get('/api/alerts-report', replitAuthMiddleware, asyncHandler(async (req: ReplitAuthRequest, res) => {
     try {
       const { alertingSystem } = await import('./alerting-system');
       const report = alertingSystem.generateAlertReport();
@@ -137,7 +135,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   }));
 
-  app.post('/api/alerts/:id/resolve', requireAuth, authPatternGuard, asyncHandler(async (req: AuthenticatedRequest, res) => {
+  app.post('/api/alerts/:id/resolve', replitAuthMiddleware, asyncHandler(async (req: ReplitAuthRequest, res) => {
     try {
       const { alertingSystem } = await import('./alerting-system');
       const alertId = req.params.id;
@@ -155,7 +153,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   }));
 
   // User data endpoints - all require authentication
-  app.get('/api/user', requireAuth, authPatternGuard, asyncHandler(async (req: AuthenticatedRequest, res) => {
+  app.get('/api/user', replitAuthMiddleware, asyncHandler(async (req: ReplitAuthRequest, res) => {
     const userId = getUserId(req);
     const user = await safeDbOperation(
       () => storage.getUser(userId),
@@ -170,7 +168,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json(user);
   }));
 
-  app.put('/api/user', requireAuth, authPatternGuard, asyncHandler(async (req: AuthenticatedRequest, res) => {
+  app.put('/api/user', replitAuthMiddleware, asyncHandler(async (req: ReplitAuthRequest, res) => {
     const userId = getUserId(req);
     const updatedUser = await safeDbOperation(
       () => storage.updateUser(userId, req.body),
@@ -186,7 +184,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   }));
 
   // Gig endpoints
-  app.get('/api/gigs', requireAuth, authPatternGuard, async (req: AuthenticatedRequest, res) => {
+  app.get('/api/gigs', replitAuthMiddleware, async (req: ReplitAuthRequest, res) => {
     try {
       const userId = getUserId(req);
       const gigs = await storage.getGigsByUser(userId);
@@ -196,7 +194,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/gigs', requireAuth, authPatternGuard, async (req: AuthenticatedRequest, res) => {
+  app.post('/api/gigs', replitAuthMiddleware, async (req: ReplitAuthRequest, res) => {
     try {
       const userId = getUserId(req);
       const gig = await storage.createGig({ ...req.body, userId });
@@ -206,7 +204,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put('/api/gigs/:id', requireAuth, authPatternGuard, async (req: AuthenticatedRequest, res) => {
+  app.put('/api/gigs/:id', replitAuthMiddleware, async (req: ReplitAuthRequest, res) => {
     try {
       const gigId = parseInt(req.params.id);
       const userId = getUserId(req);
@@ -223,7 +221,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete('/api/gigs/:id', requireAuth, authPatternGuard, async (req: AuthenticatedRequest, res) => {
+  app.delete('/api/gigs/:id', replitAuthMiddleware, async (req: ReplitAuthRequest, res) => {
     try {
       const gigId = parseInt(req.params.id);
       const userId = getUserId(req);
@@ -241,7 +239,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Expense endpoints
-  app.get('/api/expenses', requireAuth, authPatternGuard, async (req: AuthenticatedRequest, res) => {
+  app.get('/api/expenses', replitAuthMiddleware, async (req: ReplitAuthRequest, res) => {
     try {
       const expenses = await storage.getExpensesByUser(getUserId(req));
       res.json(expenses);
@@ -250,7 +248,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/expenses', requireAuth, authPatternGuard, async (req: AuthenticatedRequest, res) => {
+  app.post('/api/expenses', replitAuthMiddleware, async (req: ReplitAuthRequest, res) => {
     try {
       const expense = await storage.createExpense({ ...req.body, userId: getUserId(req) });
       res.json(expense);
@@ -259,7 +257,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put('/api/expenses/:id', requireAuth, authPatternGuard, async (req: AuthenticatedRequest, res) => {
+  app.put('/api/expenses/:id', replitAuthMiddleware, async (req: ReplitAuthRequest, res) => {
     try {
       const expenseId = parseInt(req.params.id);
       const existingExpense = await storage.getExpense(expenseId);
@@ -275,7 +273,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete('/api/expenses/:id', requireAuth, authPatternGuard, async (req: AuthenticatedRequest, res) => {
+  app.delete('/api/expenses/:id', replitAuthMiddleware, async (req: ReplitAuthRequest, res) => {
     try {
       const expenseId = parseInt(req.params.id);
       const existingExpense = await storage.getExpense(expenseId);
@@ -292,7 +290,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Goal endpoints
-  app.get('/api/goals', requireAuth, authPatternGuard, async (req: AuthenticatedRequest, res) => {
+  app.get('/api/goals', replitAuthMiddleware, async (req: ReplitAuthRequest, res) => {
     try {
       const goals = await storage.getGoalsByUser(getUserId(req));
       res.json(goals);
@@ -301,7 +299,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/goals', requireAuth, authPatternGuard, async (req: AuthenticatedRequest, res) => {
+  app.post('/api/goals', replitAuthMiddleware, async (req: ReplitAuthRequest, res) => {
     try {
       const goal = await storage.createGoal({ ...req.body, userId: getUserId(req) });
       res.json(goal);
@@ -310,7 +308,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put('/api/goals/:id', requireAuth, authPatternGuard, async (req: AuthenticatedRequest, res) => {
+  app.put('/api/goals/:id', replitAuthMiddleware, async (req: ReplitAuthRequest, res) => {
     try {
       const goalId = parseInt(req.params.id);
       const existingGoal = await storage.getGoal(goalId);
@@ -326,7 +324,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete('/api/goals/:id', requireAuth, authPatternGuard, async (req: AuthenticatedRequest, res) => {
+  app.delete('/api/goals/:id', replitAuthMiddleware, async (req: ReplitAuthRequest, res) => {
     try {
       const goalId = parseInt(req.params.id);
       const existingGoal = await storage.getGoal(goalId);
@@ -343,7 +341,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Monthly/Yearly goal endpoints
-  app.get('/api/monthly-goals', requireAuth, authPatternGuard, async (req: AuthenticatedRequest, res) => {
+  app.get('/api/monthly-goals', replitAuthMiddleware, async (req: ReplitAuthRequest, res) => {
     try {
       const goals = await storage.getMonthlyGoalsByUser(getUserId(req));
       res.json(goals);
@@ -352,7 +350,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/monthly-goals', requireAuth, authPatternGuard, async (req: AuthenticatedRequest, res) => {
+  app.post('/api/monthly-goals', replitAuthMiddleware, async (req: ReplitAuthRequest, res) => {
     try {
       const goal = await storage.createMonthlyGoal({ ...req.body, userId: getUserId(req) });
       res.json(goal);
@@ -361,7 +359,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get('/api/yearly-goals', requireAuth, authPatternGuard, async (req: AuthenticatedRequest, res) => {
+  app.get('/api/yearly-goals', replitAuthMiddleware, async (req: ReplitAuthRequest, res) => {
     try {
       const goals = await storage.getYearlyGoalsByUser(getUserId(req));
       res.json(goals);
@@ -370,7 +368,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/yearly-goals', requireAuth, authPatternGuard, async (req: AuthenticatedRequest, res) => {
+  app.post('/api/yearly-goals', replitAuthMiddleware, async (req: ReplitAuthRequest, res) => {
     try {
       const goal = await storage.createYearlyGoal({ ...req.body, userId: getUserId(req) });
       res.json(goal);
@@ -380,7 +378,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Distance calculation endpoint (authenticated)
-  app.post('/api/calculate-distance', requireAuth, authPatternGuard, async (req: AuthenticatedRequest, res) => {
+  app.post('/api/calculate-distance', replitAuthMiddleware, async (req: ReplitAuthRequest, res) => {
     try {
       const { startAddress, endAddress, waypoints = [], roundTrip = false } = req.body;
       const userId = getUserId(req);
@@ -428,7 +426,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Address validation endpoint
-  app.post('/api/validate-address', requireAuth, authPatternGuard, async (req: AuthenticatedRequest, res) => {
+  app.post('/api/validate-address', replitAuthMiddleware, async (req: ReplitAuthRequest, res) => {
     try {
       const { address } = req.body;
       
@@ -446,7 +444,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Mileage service statistics endpoint
-  app.get('/api/mileage-stats', requireAuth, authPatternGuard, async (req: AuthenticatedRequest, res) => {
+  app.get('/api/mileage-stats', replitAuthMiddleware, async (req: ReplitAuthRequest, res) => {
     try {
       const userId = getUserId(req);
       const { mileageService } = await import('./mileage-service');
@@ -467,7 +465,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Set user priority endpoint (for admin use)
-  app.post('/api/set-user-priority', requireAuth, authPatternGuard, async (req: AuthenticatedRequest, res) => {
+  app.post('/api/set-user-priority', replitAuthMiddleware, async (req: ReplitAuthRequest, res) => {
     try {
       const { userId, priority } = req.body;
       const requestingUserId = getUserId(req);
@@ -491,7 +489,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // PDF report generation endpoints
-  app.get('/api/reports/pdf', requireAuth, authPatternGuard, async (req: AuthenticatedRequest, res) => {
+  app.get('/api/reports/pdf', replitAuthMiddleware, async (req: ReplitAuthRequest, res) => {
     try {
       const { period, year, month, professional } = req.query;
       const userId = getUserId(req);
@@ -562,7 +560,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get('/api/reports/html', requireAuth, authPatternGuard, async (req: AuthenticatedRequest, res) => {
+  app.get('/api/reports/html', replitAuthMiddleware, async (req: ReplitAuthRequest, res) => {
     try {
       const { period, year, month } = req.query;
       const userId = getUserId(req);
@@ -593,7 +591,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Automatic gig status update endpoint
-  app.post('/api/gigs/update-statuses', requireAuth, authPatternGuard, async (req: AuthenticatedRequest, res) => {
+  app.post('/api/gigs/update-statuses', replitAuthMiddleware, async (req: ReplitAuthRequest, res) => {
     try {
       const gigs = await storage.getGigsByUser(getUserId(req));
       const today = new Date();
@@ -618,7 +616,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Custom gig types endpoint
-  app.get('/api/gig-types', requireAuth, authPatternGuard, async (req: AuthenticatedRequest, res) => {
+  app.get('/api/gig-types', replitAuthMiddleware, async (req: ReplitAuthRequest, res) => {
     try {
       const user = await storage.getUser(getUserId(req));
       res.json(user?.customGigTypes || []);
@@ -627,7 +625,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/gig-types', requireAuth, authPatternGuard, async (req: AuthenticatedRequest, res) => {
+  app.post('/api/gig-types', replitAuthMiddleware, async (req: ReplitAuthRequest, res) => {
     try {
       const { gigType } = req.body;
       const user = await storage.getUser(getUserId(req));

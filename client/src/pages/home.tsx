@@ -7,7 +7,7 @@ import Profile from "@/components/profile";
 import BottomNavigation from "@/components/bottom-navigation";
 import AppHeader from "@/components/app-header";
 import DesktopSidebar from "@/components/desktop-sidebar";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuth } from "@/lib/replit-auth";
 import { Button } from "@/components/ui/button";
 import { Plus, Bell, Briefcase } from "lucide-react";
 
