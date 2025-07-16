@@ -11,7 +11,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuth } from "@/lib/replit-auth";
 import { 
   User, 
   Settings, 
@@ -29,7 +29,7 @@ interface AppHeaderProps {
 }
 
 export default function AppHeader({ currentScreen, onScreenChange }: AppHeaderProps) {
-  const { user, logout, exportData, isLoggingOut, isExporting } = useAuth();
+  const { user, logout, isLoggingOut } = useAuth();
   const [, setLocation] = useLocation();
 
   if (!user) return null;
@@ -96,9 +96,9 @@ export default function AppHeader({ currentScreen, onScreenChange }: AppHeaderPr
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="relative h-10 w-10 rounded-full">
                 <Avatar className="h-10 w-10">
-                  <AvatarImage src={user.profileImageUrl || undefined} alt={user.name} />
+                  <AvatarImage src={user.profileImageUrl || undefined} alt={user.username} />
                   <AvatarFallback className="bg-blue-100 text-blue-700">
-                    {getInitials(user.name)}
+                    {getInitials(user.username)}
                   </AvatarFallback>
                 </Avatar>
               </Button>
@@ -106,7 +106,7 @@ export default function AppHeader({ currentScreen, onScreenChange }: AppHeaderPr
             <DropdownMenuContent className="w-56" align="end" forceMount>
               <DropdownMenuLabel className="font-normal">
                 <div className="flex flex-col space-y-1">
-                  <p className="text-sm font-medium leading-none">{user.name}</p>
+                  <p className="text-sm font-medium leading-none">{user.username}</p>
                   <p className="text-xs leading-none text-muted-foreground">
                     {user.email}
                   </p>
@@ -126,14 +126,14 @@ export default function AppHeader({ currentScreen, onScreenChange }: AppHeaderPr
               
               <DropdownMenuSeparator />
               
-              <DropdownMenuItem onClick={exportData} disabled={isExporting}>
+              <DropdownMenuItem disabled>
                 <Download className="mr-2 h-4 w-4" />
-                <span>{isExporting ? 'Exporting...' : 'Export Data'}</span>
+                <span>Export Data (Coming Soon)</span>
               </DropdownMenuItem>
               
               <DropdownMenuSeparator />
               
-              <DropdownMenuItem onClick={logout} disabled={isLoggingOut}>
+              <DropdownMenuItem onClick={() => logout()} disabled={isLoggingOut}>
                 <LogOut className="mr-2 h-4 w-4" />
                 <span>{isLoggingOut ? 'Signing out...' : 'Sign out'}</span>
               </DropdownMenuItem>
