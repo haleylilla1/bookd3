@@ -434,20 +434,34 @@ export function setupAuthRoutes(app: any, authLimiter?: any, passwordResetLimite
     }
   });
 
-  // Logout
-  app.post('/api/auth/logout', requireAuth, async (req: any, res: any) => {
+  // Logout - NO AUTH REQUIRED to ensure it works even with corrupted sessions
+  app.post('/api/logout', async (req: any, res: any) => {
     try {
       const sessionId = req.cookies?.sessionId;
       if (sessionId) {
         await SessionManager.destroySession(sessionId);
       }
       
+      // Clear cookie completely with all possible configurations
       res.clearCookie('sessionId', {
-        domain: process.env.NODE_ENV === 'production' ? 'bookd.tools' : undefined
+        domain: process.env.NODE_ENV === 'production' ? 'bookd.tools' : undefined,
+        path: '/',
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax'
       });
+      
       res.json({ message: "Logout successful" });
     } catch (error) {
-      res.status(500).json({ message: "Logout failed" });
+      // Always succeed logout to prevent users from getting stuck
+      res.clearCookie('sessionId', {
+        domain: process.env.NODE_ENV === 'production' ? 'bookd.tools' : undefined,
+        path: '/',
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax'
+      });
+      res.json({ message: "Logout successful" });
     }
   });
 

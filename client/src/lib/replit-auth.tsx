@@ -38,12 +38,19 @@ export function useAuth() {
 
   const logoutMutation = useMutation({
     mutationFn: async () => {
-      const response = await apiRequest('POST', '/api/auth/logout');
+      const response = await apiRequest('POST', '/api/logout');
       return response.json();
     },
     onSuccess: () => {
       // Clear all queries after logout
       queryClient.clear();
+      // Force full page reload to ensure complete logout
+      window.location.href = '/';
+    },
+    onError: () => {
+      // Force logout even if API call fails
+      queryClient.clear();
+      window.location.href = '/';
     },
   });
 
