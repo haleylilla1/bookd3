@@ -30,36 +30,40 @@ export function useAutoSave<T>({
       
       // Only save if data has actually changed
       if (serializedData !== previousDataRef.current) {
-        // Mobile-optimized: Multiple storage attempts with validation
+        const timestamp = Date.now().toString();
+        
         if (mobileOptimized) {
-          // Primary storage attempt
-          localStorage.setItem(`autosave_${key}`, serializedData);
-          localStorage.setItem(`autosave_${key}_timestamp`, Date.now().toString());
-          
-          // Mobile Safari fix: Additional backup with alternate key
-          localStorage.setItem(`backup_autosave_${key}`, serializedData);
-          localStorage.setItem(`backup_autosave_${key}_timestamp`, Date.now().toString());
-          
-          // Session storage fallback for mobile browsers
+          // Efficient mobile storage: Primary + critical backup only
           try {
-            sessionStorage.setItem(`session_autosave_${key}`, serializedData);
-            sessionStorage.setItem(`session_autosave_${key}_timestamp`, Date.now().toString());
-          } catch (sessionError) {
-            console.warn('Session storage failed, continuing with localStorage only');
-          }
-          
-          // Mobile-specific: Validate storage immediately
-          const verification = localStorage.getItem(`autosave_${key}`);
-          if (verification !== serializedData) {
-            console.warn('Storage verification failed, retrying...');
-            // Retry once more
+            // Primary storage with immediate validation
             localStorage.setItem(`autosave_${key}`, serializedData);
-            localStorage.setItem(`autosave_${key}_timestamp`, Date.now().toString());
+            localStorage.setItem(`autosave_${key}_timestamp`, timestamp);
+            
+            // Verify primary storage immediately
+            const verification = localStorage.getItem(`autosave_${key}`);
+            if (verification !== serializedData) {
+              throw new Error('Primary storage verification failed');
+            }
+            
+            // Only create backup if primary succeeded
+            localStorage.setItem(`backup_autosave_${key}`, serializedData);
+            localStorage.setItem(`backup_autosave_${key}_timestamp`, timestamp);
+            
+          } catch (localStorageError) {
+            // Fallback to session storage if localStorage fails
+            try {
+              sessionStorage.setItem(`session_autosave_${key}`, serializedData);
+              sessionStorage.setItem(`session_autosave_${key}_timestamp`, timestamp);
+            } catch (sessionError) {
+              // Final fallback: emergency storage
+              sessionStorage.setItem(`emergency_autosave_${key}`, serializedData);
+              sessionStorage.setItem(`emergency_autosave_${key}_timestamp`, timestamp);
+            }
           }
         } else {
-          // Standard storage
+          // Standard storage for desktop
           localStorage.setItem(`autosave_${key}`, serializedData);
-          localStorage.setItem(`autosave_${key}_timestamp`, Date.now().toString());
+          localStorage.setItem(`autosave_${key}_timestamp`, timestamp);
         }
         
         previousDataRef.current = serializedData;
@@ -70,18 +74,6 @@ export function useAutoSave<T>({
       }
     } catch (error) {
       console.error('Auto-save failed:', error);
-      
-      // Mobile fallback: Try session storage if localStorage fails
-      if (mobileOptimized) {
-        try {
-          const serializedData = JSON.stringify(dataToSave);
-          sessionStorage.setItem(`emergency_autosave_${key}`, serializedData);
-          sessionStorage.setItem(`emergency_autosave_${key}_timestamp`, Date.now().toString());
-          console.log('Emergency fallback storage succeeded');
-        } catch (fallbackError) {
-          console.error('All storage methods failed');
-        }
-      }
       
       if (onError) {
         onError(error as Error);
@@ -109,45 +101,51 @@ export function useAutoSave<T>({
     };
   }, [data, enabled, delay, saveData]);
 
-  // Mobile-specific: Add visibility change listener for tab switching
+  // Mobile-specific: Optimized event handling for critical save scenarios
   useEffect(() => {
     if (!mobileOptimized || !enabled) return;
 
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === 'hidden' && data) {
-        // Mobile Safari fix: Force save when tab becomes hidden
+    let isHandlingEvent = false;
+    
+    const handleCriticalSave = () => {
+      if (data && !isHandlingEvent) {
+        isHandlingEvent = true;
         saveData(data);
+        // Reset flag after a brief delay
+        setTimeout(() => { isHandlingEvent = false; }, 100);
+      }
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'hidden') {
+        handleCriticalSave();
       }
     };
 
     const handleBeforeUnload = () => {
-      if (data) {
-        // Final save attempt before page unload
-        saveData(data);
-      }
+      handleCriticalSave();
     };
 
     const handlePageHide = () => {
-      if (data) {
-        // iOS Safari specific: Save on page hide
-        saveData(data);
-      }
+      handleCriticalSave();
     };
 
-    // Add mobile-specific event listeners
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    window.addEventListener('beforeunload', handleBeforeUnload);
-    window.addEventListener('pagehide', handlePageHide);
-
-    // Mobile keyboard handling
+    // Optimized Android keyboard detection
+    let lastHeight = window.innerHeight;
     const handleResize = () => {
-      // Android keyboard detection: Save data when viewport changes
-      if (data && window.innerHeight < screen.height * 0.75) {
-        saveData(data);
+      const currentHeight = window.innerHeight;
+      // Only trigger if height change is significant (keyboard-like)
+      if (Math.abs(currentHeight - lastHeight) > 150) {
+        handleCriticalSave();
+        lastHeight = currentHeight;
       }
     };
 
-    window.addEventListener('resize', handleResize);
+    // Add event listeners with passive option for better performance
+    document.addEventListener('visibilitychange', handleVisibilityChange, { passive: true });
+    window.addEventListener('beforeunload', handleBeforeUnload, { passive: true });
+    window.addEventListener('pagehide', handlePageHide, { passive: true });
+    window.addEventListener('resize', handleResize, { passive: true });
 
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
@@ -177,69 +175,39 @@ export function useAutoSave<T>({
   };
 }
 
-// Bulletproof retrieval with multiple fallback sources
+// Optimized retrieval with smart fallback chain
 export function getAutoSavedData<T>(key: string): { data: T | null; timestamp: number | null } {
-  // Try primary storage first
-  try {
-    const savedData = localStorage.getItem(`autosave_${key}`);
-    const timestamp = localStorage.getItem(`autosave_${key}_timestamp`);
-    
-    if (savedData && timestamp) {
-      return {
-        data: JSON.parse(savedData),
-        timestamp: parseInt(timestamp)
-      };
-    }
-  } catch (error) {
-    console.error('Primary storage failed:', error);
-  }
+  const storageSources = [
+    { name: 'primary', storage: localStorage, prefix: 'autosave_' },
+    { name: 'backup', storage: localStorage, prefix: 'backup_autosave_' },
+    { name: 'session', storage: sessionStorage, prefix: 'session_autosave_' },
+    { name: 'emergency', storage: sessionStorage, prefix: 'emergency_autosave_' }
+  ];
   
-  // Try backup storage
-  try {
-    const backupData = localStorage.getItem(`backup_autosave_${key}`);
-    const backupTimestamp = localStorage.getItem(`backup_autosave_${key}_timestamp`);
-    
-    if (backupData && backupTimestamp) {
-      console.log('Recovered from backup storage');
-      return {
-        data: JSON.parse(backupData),
-        timestamp: parseInt(backupTimestamp)
-      };
+  for (const source of storageSources) {
+    try {
+      const savedData = source.storage.getItem(`${source.prefix}${key}`);
+      const timestamp = source.storage.getItem(`${source.prefix}${key}_timestamp`);
+      
+      if (savedData && timestamp) {
+        const parsedData = JSON.parse(savedData);
+        const parsedTimestamp = parseInt(timestamp);
+        
+        // Validate data integrity
+        if (parsedData && parsedTimestamp && !isNaN(parsedTimestamp)) {
+          if (source.name !== 'primary') {
+            console.log(`Recovered from ${source.name} storage`);
+          }
+          return {
+            data: parsedData,
+            timestamp: parsedTimestamp
+          };
+        }
+      }
+    } catch (error) {
+      console.error(`${source.name} storage failed:`, error);
+      continue;
     }
-  } catch (error) {
-    console.error('Backup storage failed:', error);
-  }
-  
-  // Try session storage fallback
-  try {
-    const sessionData = sessionStorage.getItem(`session_autosave_${key}`);
-    const sessionTimestamp = sessionStorage.getItem(`session_autosave_${key}_timestamp`);
-    
-    if (sessionData && sessionTimestamp) {
-      console.log('Recovered from session storage');
-      return {
-        data: JSON.parse(sessionData),
-        timestamp: parseInt(sessionTimestamp)
-      };
-    }
-  } catch (error) {
-    console.error('Session storage failed:', error);
-  }
-  
-  // Try emergency storage
-  try {
-    const emergencyData = sessionStorage.getItem(`emergency_autosave_${key}`);
-    const emergencyTimestamp = sessionStorage.getItem(`emergency_autosave_${key}_timestamp`);
-    
-    if (emergencyData && emergencyTimestamp) {
-      console.log('Recovered from emergency storage');
-      return {
-        data: JSON.parse(emergencyData),
-        timestamp: parseInt(emergencyTimestamp)
-      };
-    }
-  } catch (error) {
-    console.error('Emergency storage failed:', error);
   }
   
   return { data: null, timestamp: null };
@@ -351,7 +319,7 @@ export async function submitFormWithRetry<T>(
   }
 }
 
-// Enhanced recovery detection
+// Optimized recovery detection with smart content validation
 export function hasRecoverableData(formKey: string): { hasData: boolean; timestamp: number | null; data: any } {
   try {
     const { data, timestamp } = getAutoSavedData(formKey);
@@ -361,10 +329,25 @@ export function hasRecoverableData(formKey: string): { hasData: boolean; timesta
       
       // Only consider data recoverable if it's less than 30 minutes old
       if (ageInMinutes < 30) {
-        // Check if data has meaningful content (not just empty/default values)
-        const hasContent = Object.values(data).some(value => 
-          value !== null && value !== undefined && value !== '' && value !== 0
-        );
+        // Smart content validation: check for meaningful form data
+        const hasContent = Object.entries(data).some(([key, value]) => {
+          // Skip empty values and default form states
+          if (value === null || value === undefined || value === '' || value === 0) return false;
+          
+          // Check for meaningful string content (not just whitespace)
+          if (typeof value === 'string' && value.trim().length > 0) return true;
+          
+          // Check for non-empty arrays
+          if (Array.isArray(value) && value.length > 0) return true;
+          
+          // Check for boolean values (meaningful for form fields)
+          if (typeof value === 'boolean') return true;
+          
+          // Check for meaningful numbers (not just 0)
+          if (typeof value === 'number' && value !== 0) return true;
+          
+          return false;
+        });
         
         if (hasContent) {
           return { hasData: true, timestamp, data };
@@ -378,18 +361,22 @@ export function hasRecoverableData(formKey: string): { hasData: boolean; timesta
   return { hasData: false, timestamp: null, data: null };
 }
 
-// Auto-save form data hook with mobile-optimized recovery
+// Auto-save form data hook with intelligent timing and mobile optimization
 export function useFormAutoSave<T>(
   formKey: string,
   formData: T,
   enabled: boolean = true
 ) {
+  // Smart delay: Shorter for mobile, longer for desktop
+  const isMobile = typeof window !== 'undefined' && window.innerWidth <= 768;
+  const optimizedDelay = isMobile ? 1200 : 2000; // 1.2s mobile, 2s desktop
+  
   const { saveNow, clearSave } = useAutoSave({
     key: formKey,
     data: formData,
     enabled,
-    delay: 1500, // Mobile-optimized: Save every 1.5 seconds
-    mobileOptimized: true
+    delay: optimizedDelay,
+    mobileOptimized: isMobile
   });
 
   const restoreData = useCallback(() => {
