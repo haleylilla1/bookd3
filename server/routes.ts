@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { setupAuthRoutes as setupReplitAuthRoutes, replitAuthMiddleware, getUserId, type ReplitAuthRequest } from "./replit-auth";
+import { requireAuth } from "./unified-auth";
 import { globalErrorHandler, asyncHandler, safeDbOperation, validateUserId, validateNumericId } from "./error-handler";
 import { logError } from "./logger";
 import rateLimit from "express-rate-limit";
@@ -44,8 +44,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     legacyHeaders: false,
   });
 
-  // Setup Replit Auth routes
-  setupReplitAuthRoutes(app);
+  // Setup traditional auth routes using unified-auth.ts
+  const { setupAuthRoutes } = require('./unified-auth');
+  setupAuthRoutes(app, authLimiter, passwordResetLimiter);
 
   // Health check endpoint (no sensitive data)
   app.get('/health', (req, res) => {
