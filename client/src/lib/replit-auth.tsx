@@ -66,16 +66,12 @@ export function useAuth() {
 
 // Bookd Authentication Form Component
 function BookdAuthForm() {
-  const [isLoginMode, setIsLoginMode] = useState(true);
   const [formData, setFormData] = useState({
-    username: '',
     email: '',
     password: '',
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
-
-  const queryClient = useQueryClient();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -83,39 +79,11 @@ function BookdAuthForm() {
     setErrorMessage('');
 
     try {
-      if (isLoginMode) {
-        const response = await apiRequest('POST', '/api/auth/login', {
-          username: formData.email,
-          password: formData.password,
-        });
-        if (response.ok) {
-          const result = await response.json();
-          if (result.redirectUrl) {
-            // Redirect to Replit Auth
-            window.location.href = result.redirectUrl;
-          }
-        } else {
-          throw new Error('Login failed');
-        }
-      } else {
-        const response = await apiRequest('POST', '/api/auth/register', {
-          username: formData.username,
-          email: formData.email,
-          password: formData.password,
-        });
-        if (response.ok) {
-          const result = await response.json();
-          if (result.redirectUrl) {
-            // Redirect to Replit Auth
-            window.location.href = result.redirectUrl;
-          }
-        } else {
-          throw new Error('Registration failed');
-        }
-      }
+      // Instead of making API calls, directly redirect to Replit Auth
+      // This provides seamless authentication experience
+      window.location.href = '/auth/login';
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : 'Authentication failed');
-    } finally {
       setIsSubmitting(false);
     }
   };
@@ -137,20 +105,6 @@ function BookdAuthForm() {
         
         <div className="mt-8 space-y-6">
           <form className="space-y-4" onSubmit={handleSubmit}>
-            {!isLoginMode && (
-              <div>
-                <input
-                  type="text"
-                  name="username"
-                  placeholder="Username"
-                  value={formData.username}
-                  onChange={handleInputChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  required
-                />
-              </div>
-            )}
-            
             <div>
               <input
                 type="email"
@@ -186,18 +140,14 @@ function BookdAuthForm() {
               disabled={isSubmitting}
               className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
             >
-              {isSubmitting ? 'Loading...' : (isLoginMode ? 'Sign In' : 'Create Account')}
+              {isSubmitting ? 'Redirecting...' : 'Continue with Bookd'}
             </button>
           </form>
           
           <div className="text-center">
-            <button
-              type="button"
-              onClick={() => setIsLoginMode(!isLoginMode)}
-              className="text-blue-600 hover:text-blue-500 text-sm"
-            >
-              {isLoginMode ? 'Need an account? Sign up' : 'Already have an account? Sign in'}
-            </button>
+            <p className="mt-2 text-xs text-gray-500">
+              Secure authentication powered by Replit
+            </p>
           </div>
         </div>
       </div>
