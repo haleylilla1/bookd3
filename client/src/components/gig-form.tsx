@@ -22,7 +22,8 @@ import { logMobileError, validateMobileEnvironment } from "@/utils/mobile-debug"
 import ReceiptUpload from "@/components/receipt-upload";
 import { AutoSaveIndicator, useOnlineStatus } from "./auto-save-indicator";
 import { RecoveryDialog } from "./recovery-dialog";
-import { useFormAutoSave, submitFormWithRetry, getAutoSavedData } from "@/lib/auto-save";
+import { useFormAutoSave, submitFormWithRetry, getAutoSavedData, hasRecoverableData } from "@/lib/auto-save";
+import { MobileAutoSaveIndicator, useMobileAutoSaveStatus, MobileRecoveryNotification } from "./mobile-auto-save-indicator";
 
 // ULTRA-SIMPLIFIED SCHEMA - Only validate truly required fields
 const gigFormSchema = z.object({
@@ -125,6 +126,7 @@ export default function GigForm({ onClose }: GigFormProps) {
   const [showRecoveryDialog, setShowRecoveryDialog] = useState(false);
   const [recoveryData, setRecoveryData] = useState<any>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showMobileRecovery, setShowMobileRecovery] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const isOnline = useOnlineStatus();
@@ -203,20 +205,29 @@ export default function GigForm({ onClose }: GigFormProps) {
   // Watch all form data for auto-save
   const formData = form.watch();
   
-  // Auto-save functionality
+  // Auto-save functionality with mobile optimization
   const { saveNow, clearSave, restoreData, checkForRecovery } = useFormAutoSave(
     'gig-form',
     formData,
     !userLoading && user !== null
   );
 
-  // Enhanced recovery detection on mount
+  // Mobile-specific auto-save status
+  const mobileAutoSaveStatus = useMobileAutoSaveStatus('gig-form');
+
+  // Enhanced recovery detection on mount with mobile optimization
   useEffect(() => {
     if (user && !userLoading) {
       const recoveryResult = checkForRecovery();
       if (recoveryResult.hasData) {
         setRecoveryData(recoveryResult.data);
-        setShowRecoveryDialog(true);
+        
+        // Mobile-first approach: Show mobile recovery notification
+        if (window.innerWidth <= 768) {
+          setShowMobileRecovery(true);
+        } else {
+          setShowRecoveryDialog(true);
+        }
       }
     }
   }, [user, userLoading, checkForRecovery]);
@@ -233,12 +244,14 @@ export default function GigForm({ onClose }: GigFormProps) {
     }
   }, [user, userLoading, form]);
 
-  // Auto-save indicator update
+  // Auto-save indicator update with mobile status sync
   useEffect(() => {
     if (formData && Object.keys(formData).length > 0) {
-      setAutoSaveLastSaved(new Date());
+      const now = new Date();
+      setAutoSaveLastSaved(now);
+      mobileAutoSaveStatus.markSaved();
     }
-  }, [formData]);
+  }, [formData, mobileAutoSaveStatus]);
 
   // Bulletproof gig creation - never shows errors to users
   const createGigMutation = useMutation({
@@ -547,11 +560,22 @@ export default function GigForm({ onClose }: GigFormProps) {
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-3">
               <h2 className="text-xl font-semibold text-gray-900">Add New Gig</h2>
-              <AutoSaveIndicator 
-                isSaving={isSubmitting}
-                lastSaved={autoSaveLastSaved}
-                isOnline={isOnline}
-              />
+              {/* Mobile-optimized auto-save indicator */}
+              <div className="hidden md:block">
+                <AutoSaveIndicator 
+                  isSaving={isSubmitting}
+                  lastSaved={autoSaveLastSaved}
+                  isOnline={isOnline}
+                />
+              </div>
+              <div className="md:hidden">
+                <MobileAutoSaveIndicator
+                  isSaving={isSubmitting}
+                  lastSaved={mobileAutoSaveStatus.lastSaved}
+                  hasUnsavedChanges={!autoSaveLastSaved}
+                  storageMethod={mobileAutoSaveStatus.storageMethod}
+                />
+              </div>
             </div>
             <Button variant="ghost" size="sm" onClick={onClose}>
               <X className="w-5 h-5" />
@@ -1218,7 +1242,27 @@ export default function GigForm({ onClose }: GigFormProps) {
         </CardContent>
       </Card>
       
-      {/* Recovery Dialog */}
+      {/* Mobile Recovery Notification */}
+      <MobileRecoveryNotification
+        hasRecoveryData={showMobileRecovery}
+        onRecover={() => {
+          // Restore form data
+          if (recoveryData) {
+            Object.keys(recoveryData).forEach(key => {
+              if (form.setValue) {
+                form.setValue(key as any, recoveryData[key]);
+              }
+            });
+          }
+          setShowMobileRecovery(false);
+        }}
+        onDiscard={() => {
+          clearSave();
+          setShowMobileRecovery(false);
+        }}
+      />
+
+      {/* Desktop Recovery Dialog */}
       <RecoveryDialog
         isOpen={showRecoveryDialog}
         onClose={() => setShowRecoveryDialog(false)}
