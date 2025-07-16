@@ -78,8 +78,14 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
 
   if (!isAuthenticated) {
     // Import and use the traditional auth form
-    const AuthForm = require('../../components/auth-form').default;
-    return <AuthForm />;
+    const AuthForm = React.lazy(() => import('../components/auth-form'));
+    return (
+      <React.Suspense fallback={<div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      </div>}>
+        <AuthForm />
+      </React.Suspense>
+    );
   }
 
   return <>{children}</>;
