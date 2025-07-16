@@ -153,41 +153,43 @@ export function setupAuthRoutes(app: any): void {
     res.redirect(logoutUrl);
   });
 
-  // Get current user endpoint
-  app.get('/api/user', replitAuthMiddleware, (req: ReplitAuthRequest, res: Response) => {
-    res.json({
-      id: req.userId,
-      replitId: req.user?.id,
-      username: req.user?.username,
-      email: req.user?.email,
-      displayName: req.user?.displayName,
-      profileImageUrl: req.user?.profileImageUrl
-    });
-  });
+  // CRITICAL SECURITY FIX: Disable this endpoint - it bypasses authentication
+  // OLD REPLIT AUTH ENDPOINT COMPLETELY DISABLED
+  // app.get('/api/user', replitAuthMiddleware, (req: ReplitAuthRequest, res: Response) => {
+  //   res.json({
+  //     id: req.userId,
+  //     replitId: req.user?.id,
+  //     username: req.user?.username,
+  //     email: req.user?.email,
+  //     displayName: req.user?.displayName,
+  //     profileImageUrl: req.user?.profileImageUrl
+  //   });
+  // });
 
-  // Auth status endpoint (without auth middleware for checking status)
-  app.get('/api/auth/status', async (req: Request, res: Response) => {
-    try {
-      const userInfo = getUserInfo(req);
-      if (userInfo) {
-        const internalUser = await findOrCreateUser(userInfo);
-        res.json({
-          authenticated: true,
-          user: {
-            id: userInfo.id,
-            username: userInfo.name,
-            email: userInfo.email,
-            displayName: userInfo.displayName,
-            profileImageUrl: userInfo.profileImageUrl
-          }
-        });
-      } else {
-        res.json({ authenticated: false });
-      }
-    } catch (error) {
-      res.json({ authenticated: false });
-    }
-  });
+  // CRITICAL SECURITY FIX: Disable this endpoint - it bypasses authentication
+  // OLD REPLIT AUTH STATUS ENDPOINT COMPLETELY DISABLED
+  // app.get('/api/auth/status', async (req: Request, res: Response) => {
+  //   try {
+  //     const userInfo = getUserInfo(req);
+  //     if (userInfo) {
+  //       const internalUser = await findOrCreateUser(userInfo);
+  //       res.json({
+  //         authenticated: true,
+  //         user: {
+  //           id: userInfo.id,
+  //           username: userInfo.name,
+  //           email: userInfo.email,
+  //           displayName: userInfo.displayName,
+  //           profileImageUrl: userInfo.profileImageUrl
+  //         }
+  //       });
+  //     } else {
+  //       res.json({ authenticated: false });
+  //     }
+  //   } catch (error) {
+  //     res.json({ authenticated: false });
+  //   }
+  // });
 }
 
 export default {
