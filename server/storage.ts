@@ -375,18 +375,41 @@ export class DatabaseStorage implements IStorage {
 
   async updateGig(id: number, updateData: Partial<InsertGig>): Promise<Gig | undefined> {
     // SECURITY: This method should only be called after ownership verification in routes
-    const [gig] = await db
-      .update(gigs)
-      .set(updateData)
-      .where(eq(gigs.id, id))
-      .returning();
-    
-    // Invalidate cache for affected user
-    if (gig) {
-      await cache.invalidate(`gigs:${gig.user_id}`);
+    try {
+      // Convert userId to user_id for database compatibility if needed
+      if ('userId' in updateData && updateData.userId !== undefined) {
+        updateData.user_id = updateData.userId;
+        delete updateData.userId;
+      }
+
+      // Ensure receipt arrays are properly formatted for PostgreSQL
+      if (updateData.parkingReceipts) {
+        updateData.parkingReceipts = Array.isArray(updateData.parkingReceipts) 
+          ? updateData.parkingReceipts 
+          : [];
+      }
+      if (updateData.otherExpenseReceipts) {
+        updateData.otherExpenseReceipts = Array.isArray(updateData.otherExpenseReceipts) 
+          ? updateData.otherExpenseReceipts 
+          : [];
+      }
+
+      const [gig] = await db
+        .update(gigs)
+        .set(updateData)
+        .where(eq(gigs.id, id))
+        .returning();
+      
+      // Invalidate cache for affected user
+      if (gig) {
+        await cache.invalidate(`gigs:${gig.user_id}`);
+      }
+      
+      return gig || undefined;
+    } catch (error) {
+      console.error('Error updating gig:', error);
+      throw error;
     }
-    
-    return gig || undefined;
   }
 
   async deleteGig(id: number): Promise<boolean> {
