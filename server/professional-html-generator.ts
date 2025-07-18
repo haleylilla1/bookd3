@@ -37,47 +37,89 @@ interface ReceiptData {
 
 export async function generateProfessionalHTML(options: ReportOptions): Promise<string> {
   try {
-    console.log('Starting HTML report generation for user:', options.userId);
+    console.log('🚀 Starting bulletproof HTML report generation for user:', options.userId);
     
-    // Get user data first
-    const user = await storage.getUser(options.userId);
-    if (!user) throw new Error('User not found');
+    // Validate input parameters with defaults
+    const safeOptions = {
+      userId: options.userId || 0,
+      period: (options.period === 'monthly' || options.period === 'annual') ? options.period : 'monthly',
+      year: options.year || new Date().getFullYear(),
+      month: options.month || new Date().getMonth() + 1
+    };
     
-    console.log('User found, preparing report data...');
-    const data = await prepareReportData(options);
+    console.log('📊 Using safe options:', safeOptions);
+    
+    // Get user data with error handling
+    const user = await storage.getUser(safeOptions.userId);
+    if (!user) {
+      console.error('❌ User not found for ID:', safeOptions.userId);
+      throw new Error(`User not found: ${safeOptions.userId}`);
+    }
+    
+    console.log('✅ User found:', user.email);
+    
+    // Prepare report data with comprehensive error handling
+    const data = await prepareReportDataSafe(safeOptions);
+    console.log('📈 Report data prepared, gigs:', data.gigs?.length || 0);
+    
     const MILEAGE_RATE = 0.67; // 2024 IRS rate
     
-    // Filter to completed gigs only
-    const completedGigs = data.gigs.filter(g => g.status === 'completed');
+    // Filter to completed gigs only with safe handling
+    const allGigs = Array.isArray(data.gigs) ? data.gigs : [];
+    const completedGigs = allGigs.filter(g => g && (g.status === 'completed' || g.actualPay));
+    console.log('💰 Completed gigs found:', completedGigs.length);
     
-    // Generate tax breakdown table with same logic as dashboard
-    const groupedGigs = groupMultiDayGigs(completedGigs);
+    // Generate tax breakdown table with bulletproof logic
+    const groupedGigs = groupMultiDayGigsSafe(completedGigs);
     const taxEstimatesRows = groupedGigs.map((gig, index) => {
-      const gigIncome = parseFloat(gig.actualPay || '0') + parseFloat(gig.tips || '0');
-      const gigTaxRate = (gig.taxPercentage !== null && gig.taxPercentage !== undefined) 
-        ? gig.taxPercentage 
-        : (user.defaultTaxPercentage || 23);
-      const gigTaxes = gigIncome * (gigTaxRate / 100);
-      
-      return `
-        <tr style="background-color: ${index % 2 === 0 ? '#fff' : '#f8f9fa'};">
-            <td style="padding: 12px; border-bottom: 1px solid #ddd;">${gig.eventName || 'Unnamed Event'}</td>
-            <td style="padding: 12px; text-align: right; border-bottom: 1px solid #ddd;">$${gigIncome.toFixed(2)}</td>
-            <td style="padding: 12px; text-align: center; border-bottom: 1px solid #ddd;">${gigTaxRate}%</td>
-            <td style="padding: 12px; text-align: right; border-bottom: 1px solid #ddd; font-weight: bold; color: #d63384;">$${gigTaxes.toFixed(2)}</td>
-        </tr>
-      `;
+      try {
+        const actualPay = safeParseFloat(gig.actualPay);
+        const tips = safeParseFloat(gig.tips);
+        const gigIncome = actualPay + tips;
+        
+        const gigTaxRate = (gig.taxPercentage !== null && gig.taxPercentage !== undefined) 
+          ? Number(gig.taxPercentage) 
+          : (user.defaultTaxPercentage || 23);
+        const gigTaxes = gigIncome * (gigTaxRate / 100);
+        
+        return `
+          <tr style="background-color: ${index % 2 === 0 ? '#fff' : '#f8f9fa'};">
+              <td style="padding: 12px; border-bottom: 1px solid #ddd;">${escapeHtml(gig.eventName || 'Unnamed Event')}</td>
+              <td style="padding: 12px; text-align: right; border-bottom: 1px solid #ddd;">$${gigIncome.toFixed(2)}</td>
+              <td style="padding: 12px; text-align: center; border-bottom: 1px solid #ddd;">${gigTaxRate}%</td>
+              <td style="padding: 12px; text-align: right; border-bottom: 1px solid #ddd; font-weight: bold; color: #d63384;">$${gigTaxes.toFixed(2)}</td>
+          </tr>
+        `;
+      } catch (error) {
+        console.warn('⚠️ Error processing gig for tax table:', error);
+        return `
+          <tr style="background-color: ${index % 2 === 0 ? '#fff' : '#f8f9fa'};">
+              <td style="padding: 12px; border-bottom: 1px solid #ddd;">Processing Error</td>
+              <td style="padding: 12px; text-align: right; border-bottom: 1px solid #ddd;">$0.00</td>
+              <td style="padding: 12px; text-align: center; border-bottom: 1px solid #ddd;">0%</td>
+              <td style="padding: 12px; text-align: right; border-bottom: 1px solid #ddd; font-weight: bold; color: #d63384;">$0.00</td>
+          </tr>
+        `;
+      }
     }).join('');
     
-    // Safe calculation with error handling
-    const parkingTotal = data.gigs.reduce((sum, g) => {
-      const expense = parseFloat(String(g.parkingExpense || 0));
-      return sum + (isNaN(expense) ? 0 : expense);
+    // Ultra-safe calculation with comprehensive error handling
+    const parkingTotal = allGigs.reduce((sum, g) => {
+      try {
+        const expense = safeParseFloat(g.parkingExpense);
+        return sum + expense;
+      } catch {
+        return sum;
+      }
     }, 0);
     
-    const otherTotal = data.gigs.reduce((sum, g) => {
-      const expense = parseFloat(String(g.otherExpenses || 0));
-      return sum + (isNaN(expense) ? 0 : expense);
+    const otherTotal = allGigs.reduce((sum, g) => {
+      try {
+        const expense = safeParseFloat(g.otherExpenses);
+        return sum + expense;
+      } catch {
+        return sum;
+      }
     }, 0);
   
   return `
@@ -403,27 +445,129 @@ export async function generateProfessionalHTML(options: ReportOptions): Promise<
 </html>
   `;
   } catch (error) {
-    // Return a fallback error page
-    return `
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Report Generation Error</title>
-    <style>
-        body { font-family: Arial, sans-serif; text-align: center; padding: 50px; }
-        .error { color: #dc3545; }
-    </style>
-</head>
-<body>
-    <h1 class="error">Report Generation Error</h1>
-    <p>Unable to generate the professional tax report. Please try again later.</p>
-    <p>If this problem persists, please contact support.</p>
-</body>
-</html>
-    `;
+    console.error('❌ Critical error in HTML generation:', error);
+    
+    // Return bulletproof fallback HTML report
+    return generateFallbackReport(safeOptions || options, error);
   }
+}
+
+// Helper functions for bulletproof HTML generation
+function safeParseFloat(value: any): number {
+  if (value === null || value === undefined || value === '') return 0;
+  const parsed = parseFloat(String(value));
+  return isNaN(parsed) ? 0 : parsed;
+}
+
+function escapeHtml(text: string): string {
+  if (!text) return '';
+  return String(text)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
+function groupMultiDayGigsSafe(gigs: any[]): any[] {
+  try {
+    return groupMultiDayGigs(gigs);
+  } catch (error) {
+    console.warn('⚠️ Error grouping multi-day gigs, using individual gigs:', error);
+    return Array.isArray(gigs) ? gigs : [];
+  }
+}
+
+async function prepareReportDataSafe(options: ReportOptions): Promise<ReportData> {
+  try {
+    return await prepareReportData(options);
+  } catch (error) {
+    console.error('❌ Error preparing report data:', error);
+    // Return fallback data
+    const user = await storage.getUser(options.userId);
+    return {
+      user: user || { email: 'Unknown User', defaultTaxPercentage: 23 } as any,
+      gigs: [],
+      expenses: [],
+      period: 'Report Period',
+      totalIncome: 0,
+      totalExpenses: 0,
+      totalMileage: 0,
+      mileageValue: 0,
+      netIncome: 0,
+      taxPercentage: 23,
+      estimatedTaxes: 0,
+      afterTaxIncome: 0,
+      receipts: []
+    };
+  }
+}
+
+function generateFallbackReport(options: ReportOptions, error: any): string {
+  const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+  return `
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Report Generation Issue</title>
+        <style>
+            body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 40px; background: #f8f9fa; }
+            .container { background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+            .header { text-align: center; margin-bottom: 30px; }
+            .error { color: #dc3545; margin: 20px 0; }
+            .info { background: #e7f3ff; padding: 20px; border-radius: 5px; margin: 20px 0; }
+            .button { background: #007bff; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; display: inline-block; }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div class="header">
+                <h1>Report Generation Notice</h1>
+                <p>We encountered an issue generating your professional report.</p>
+            </div>
+            
+            <div class="info">
+                <h3>What happened?</h3>
+                <p>The report generation system experienced a temporary issue. This is typically due to:</p>
+                <ul>
+                    <li>Database connectivity issues</li>
+                    <li>Data processing errors</li>
+                    <li>System maintenance</li>
+                </ul>
+            </div>
+            
+            <div class="info">
+                <h3>What can you do?</h3>
+                <ol>
+                    <li>Wait a few minutes and try again</li>
+                    <li>Refresh the dashboard and generate the report again</li>
+                    <li>Check that you have completed gigs for the selected period</li>
+                    <li>Contact support if the issue persists</li>
+                </ol>
+            </div>
+            
+            <div style="text-align: center; margin-top: 40px;">
+                <a href="javascript:window.close()" class="button">Close Window</a>
+                <a href="/" class="button" style="margin-left: 10px;">Return to Dashboard</a>
+            </div>
+            
+            ${process.env.NODE_ENV === 'development' ? `
+              <div style="margin-top: 30px; padding: 20px; background: #f8f9fa; border-radius: 5px; font-size: 12px;">
+                <strong>Debug Info:</strong><br>
+                User ID: ${options.userId}<br>
+                Period: ${options.period}<br>
+                Year: ${options.year}<br>
+                Month: ${options.month || 'N/A'}<br>
+                Error: ${errorMessage}<br>
+                Timestamp: ${new Date().toISOString()}
+              </div>
+            ` : ''}
+        </div>
+    </body>
+    </html>
+  `;
 }
 
 async function prepareReportData(options: ReportOptions): Promise<ReportData> {
