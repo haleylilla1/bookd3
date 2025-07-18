@@ -59,8 +59,10 @@ export function AddressAutocomplete({
       
       if (response.ok) {
         const data = await response.json();
+        console.log('Autocomplete API response:', data); // Debug log
         setSuggestions(data.suggestions || []);
         setShowSuggestions(data.suggestions && data.suggestions.length > 0);
+        console.log('Setting showSuggestions to:', data.suggestions && data.suggestions.length > 0); // Debug log
         
         // Show helpful message if using fallback suggestions
         if (data.fallback && data.suggestions && data.suggestions.length > 0) {
@@ -87,6 +89,8 @@ export function AddressAutocomplete({
     setInputValue(newValue);
     onChange(newValue);
 
+    console.log('Address input changed:', newValue); // Debug log
+
     // Clear existing timeout
     if (debounceTimeoutRef.current) {
       clearTimeout(debounceTimeoutRef.current);
@@ -94,6 +98,7 @@ export function AddressAutocomplete({
 
     // Set new timeout for API call
     debounceTimeoutRef.current = setTimeout(() => {
+      console.log('Fetching suggestions for:', newValue); // Debug log
       fetchSuggestions(newValue);
     }, 300);
   };
@@ -166,7 +171,7 @@ export function AddressAutocomplete({
 
       {/* Suggestions dropdown */}
       {showSuggestions && suggestions.length > 0 && (
-        <div className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-y-auto">
+        <div className="absolute z-[9999] w-full mt-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md shadow-lg max-h-60 overflow-y-auto">
           {suggestions.map((suggestion, index) => (
             <button
               key={suggestion.placeId}
