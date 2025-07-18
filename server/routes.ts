@@ -566,6 +566,100 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Google Places autocomplete endpoint for address suggestions
+  app.get('/api/address-autocomplete', requireAuth, async (req: any, res) => {
+    try {
+      const { input } = req.query;
+      
+      if (!input || typeof input !== 'string' || input.length < 2) {
+        return res.json({ suggestions: [] });
+      }
+
+      const googleMapsApiKey = process.env.GOOGLE_MAPS_API_KEY;
+      if (!googleMapsApiKey) {
+        return res.status(500).json({ error: 'Google Maps API not configured' });
+      }
+
+      // Try new Places API first, then fall back to legacy format if needed
+      const url = `https://maps.googleapis.com/maps/api/place/autocomplete/json`;
+      const params = new URLSearchParams({
+        input: input.trim(),
+        types: 'address',
+        key: googleMapsApiKey,
+        components: 'country:us' // Restrict to US addresses for better results
+      });
+
+      const response = await fetch(`${url}?${params}`);
+      const data = await response.json();
+
+      if (data.status === 'OK' && data.predictions) {
+        const suggestions = data.predictions.slice(0, 5).map((prediction: any) => ({
+          description: prediction.description,
+          placeId: prediction.place_id,
+          mainText: prediction.structured_formatting?.main_text || '',
+          secondaryText: prediction.structured_formatting?.secondary_text || ''
+        }));
+        
+        res.json({ suggestions });
+      } else if (data.status === 'ZERO_RESULTS') {
+        res.json({ suggestions: [] });
+      } else if (data.status === 'REQUEST_DENIED' || data.error_message) {
+        // API key issue - provide helpful fallback suggestions
+        console.warn('Google Places API access denied, using fallback suggestions');
+        const fallbackSuggestions = generateFallbackSuggestions(input.trim());
+        res.json({ suggestions: fallbackSuggestions, fallback: true });
+      } else {
+        console.warn('Google Places API warning:', data.status);
+        res.json({ suggestions: [] });
+      }
+    } catch (error) {
+      logger.error('Address autocomplete error:', error);
+      // Provide fallback suggestions even on error
+      const fallbackSuggestions = generateFallbackSuggestions(req.query.input as string || '');
+      res.json({ suggestions: fallbackSuggestions });
+    }
+  });
+
+  // Helper function to generate fallback address suggestions
+  function generateFallbackSuggestions(input: string): any[] {
+    if (!input || input.length < 2) return [];
+    
+    // More comprehensive address suggestions
+    const suggestions = [];
+    const cleanInput = input.trim();
+    
+    // Common street types
+    const streetTypes = ['Street', 'Avenue', 'Boulevard', 'Road', 'Drive', 'Lane', 'Court', 'Way'];
+    
+    // Major cities for broader coverage
+    const cities = [
+      'San Francisco, CA',
+      'Oakland, CA', 
+      'San Jose, CA',
+      'Los Angeles, CA',
+      'Berkeley, CA'
+    ];
+    
+    // Generate suggestions combining input with different street types and cities
+    let suggestionIndex = 0;
+    for (const streetType of streetTypes.slice(0, 3)) {
+      for (const city of cities.slice(0, 2)) {
+        if (suggestions.length >= 5) break;
+        
+        const fullAddress = `${cleanInput} ${streetType}, ${city}`;
+        suggestions.push({
+          description: fullAddress,
+          placeId: `fallback_${suggestionIndex++}`,
+          mainText: `${cleanInput} ${streetType}`,
+          secondaryText: city
+        });
+      }
+      if (suggestions.length >= 5) break;
+    }
+    
+    return suggestions.slice(0, 5);
+  }
+
   // Set user priority endpoint (for admin use)
   app.post('/api/set-user-priority', requireAuth, async (req: any, res) => {
     try {

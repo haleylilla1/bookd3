@@ -28,6 +28,7 @@ import { useFormAutoSave, submitFormWithRetry, getAutoSavedData, hasRecoverableD
 import { useRecoverySystem, useMobileRecovery } from "@/hooks/use-recovery-system";
 import { useBulletproofMobileAutoSave } from "@/lib/bulletproof-mobile-autosave";
 import { BulletproofMobileIndicator, useAutoSaveStatus } from "@/components/bulletproof-mobile-indicator";
+import { AddressAutocomplete } from "@/components/address-autocomplete";
 
 // ULTRA-SIMPLIFIED SCHEMA - Only validate truly required fields
 const gigFormSchema = z.object({
@@ -1039,17 +1040,18 @@ export default function GigForm({ onClose }: GigFormProps) {
                 </div>
                 {trackMileage && (
                   <div className="space-y-4">
-                    {/* Starting Address */}
+                    {/* Starting Address with Autocomplete */}
                     <FormField
                       control={form.control}
                       name="startingAddress"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Starting Address</FormLabel>
                           <FormControl>
-                            <Input 
+                            <AddressAutocomplete
+                              label="Starting Address"
                               placeholder="Your home or starting location..."
-                              {...field} 
+                              value={field.value || ''}
+                              onChange={field.onChange}
                             />
                           </FormControl>
                           <FormMessage />
@@ -1057,17 +1059,18 @@ export default function GigForm({ onClose }: GigFormProps) {
                       )}
                     />
 
-                    {/* Ending Address */}
+                    {/* Ending Address with Autocomplete */}
                     <FormField
                       control={form.control}
                       name="endingAddress"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Ending Address</FormLabel>
                           <FormControl>
-                            <Input 
+                            <AddressAutocomplete
+                              label="Ending Address"
                               placeholder="Gig location or final destination..."
-                              {...field} 
+                              value={field.value || ''}
+                              onChange={field.onChange}
                             />
                           </FormControl>
                           <FormMessage />
