@@ -772,7 +772,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         month: month ? parseInt(month as string) : undefined
       };
 
-      logger.info('Generating HTML report', reportOptions);
+      console.log('Generating HTML report', reportOptions);
 
       // Import HTML generator
       const { generateProfessionalHTML } = await import('./professional-html-generator');
@@ -783,7 +783,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.setHeader('Content-Type', 'text/html; charset=utf-8');
       res.send(htmlContent);
     } catch (error) {
-      logger.error('HTML generation error', error as Error, userId);
+      console.error('HTML generation error:', error);
       
       // Send a friendly HTML error page instead of JSON
       const errorHtml = `
