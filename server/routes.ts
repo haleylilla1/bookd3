@@ -169,11 +169,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // User data endpoints - all require authentication
   app.get('/api/user', requireAuth, asyncHandler(async (req: any, res) => {
     const userId = getUserId(req);
-    const user = await safeDbOperation(
-      () => storage.getUser(userId),
-      'Failed to fetch user data',
-      userId
-    );
+    
+    // Check cache first (5-minute TTL for user data)
+    const { cache } = await import('./simple-cache');
+    const cacheKey = `user:${userId}`;
+    let user = cache.get(cacheKey);
+    
+    if (!user) {
+      user = await safeDbOperation(
+        () => storage.getUser(userId),
+        'Failed to fetch user data',
+        userId
+      );
+      
+      if (user) {
+        cache.set(cacheKey, user, 300); // 5-minute cache
+      }
+    }
     
     if (!user) {
       return res.status(404).json({ error: 'User not found' });
@@ -194,6 +206,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return res.status(500).json({ error: 'Failed to update user' });
     }
     
+    // Invalidate caches after user update
+    const { invalidateDashboardCache } = await import('./dashboard-optimized');
+    invalidateDashboardCache(userId);
+    
     res.json(updatedUser);
   }));
 
@@ -201,10 +217,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/gigs', requireAuth, async (req: any, res) => {
     try {
       const userId = getUserId(req);
-      const gigs = await storage.getGigsByUser(userId);
+      
+      // Check cache first (2-minute TTL for gig data)
+      const { cache } = await import('./simple-cache');
+      const cacheKey = `gigs:${userId}`;
+      let gigs = cache.get(cacheKey);
+      
+      if (!gigs) {
+        gigs = await storage.getGigsByUser(userId);
+        cache.set(cacheKey, gigs, 120); // 2-minute cache
+      }
+      
       res.json(gigs);
     } catch (error) {
       res.status(500).json({ error: 'Failed to fetch gigs' });
+    }
+  });
+
+  // ULTRA-OPTIMIZED DASHBOARD ENDPOINT - Single query replaces 5-10 queries
+  app.get('/api/dashboard/optimized', requireAuth, async (req: any, res) => {
+    try {
+      const userId = getUserId(req);
+      const { getDashboardData } = await import('./dashboard-optimized');
+      
+      const dashboardData = await getDashboardData(userId);
+      res.json(dashboardData);
+    } catch (error) {
+      console.error('Optimized dashboard error:', error);
+      res.status(500).json({ error: 'Failed to fetch dashboard data' });
     }
   });
 
@@ -212,6 +252,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = getUserId(req);
       const gig = await storage.createGig({ ...req.body, user_id: userId });
+      
+      // Invalidate caches after gig creation
+      const { cache } = await import('./simple-cache');
+      const { invalidateDashboardCache } = await import('./dashboard-optimized');
+      cache.delete(`gigs:${userId}`);
+      invalidateDashboardCache(userId);
+      
       res.json(gig);
     } catch (error) {
       res.status(500).json({ error: 'Failed to create gig' });
@@ -229,6 +276,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       const updatedGig = await storage.updateGig(gigId, req.body);
+      
+      // Invalidate caches after gig update
+      const { cache } = await import('./simple-cache');
+      const { invalidateDashboardCache } = await import('./dashboard-optimized');
+      cache.delete(`gigs:${userId}`);
+      invalidateDashboardCache(userId);
+      
       res.json(updatedGig);
     } catch (error) {
       res.status(500).json({ error: 'Failed to update gig' });
@@ -246,6 +300,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       await storage.deleteGig(gigId);
+      
+      // Invalidate caches after gig deletion
+      const { cache } = await import('./simple-cache');
+      const { invalidateDashboardCache } = await import('./dashboard-optimized');
+      cache.delete(`gigs:${userId}`);
+      invalidateDashboardCache(userId);
+      
       res.json({ success: true });
     } catch (error) {
       res.status(500).json({ error: 'Failed to delete gig' });
@@ -306,7 +367,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Goal endpoints
   app.get('/api/goals', requireAuth, async (req: any, res) => {
     try {
-      const goals = await storage.getGoalsByUser(getUserId(req));
+      const userId = getUserId(req);
+      
+      // Check cache first (5-minute TTL for goal data)
+      const { cache } = await import('./simple-cache');
+      const cacheKey = `goals:${userId}`;
+      let goals = cache.get(cacheKey);
+      
+      if (!goals) {
+        goals = await storage.getGoalsByUser(userId);
+        cache.set(cacheKey, goals, 300); // 5-minute cache
+      }
+      
       res.json(goals);
     } catch (error) {
       res.status(500).json({ error: 'Failed to fetch goals' });

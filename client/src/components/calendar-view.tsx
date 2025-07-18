@@ -84,11 +84,11 @@ export default function CalendarView() {
 
   // Automatically update gig statuses when calendar loads (once per session)
   useEffect(() => {
-    if (gigs.length > 0 && !hasUpdatedStatusesRef.current) {
+    if (Array.isArray(gigs) && gigs.length > 0 && !hasUpdatedStatusesRef.current) {
       hasUpdatedStatusesRef.current = true;
       updateGigStatusesMutation.mutate();
     }
-  }, [gigs.length]); // Only run when gigs are initially loaded
+  }, [gigs?.length]); // Only run when gigs are initially loaded
 
   const updateGigMutation = useMutation({
     mutationFn: async (gigData: { id: number; data: Partial<Gig> }) => {
@@ -155,7 +155,7 @@ export default function CalendarView() {
 
   // Memoize gigs by date for better performance
   const gigsByDate = useMemo(() => {
-    if (!gigs) return new Map();
+    if (!gigs || !Array.isArray(gigs)) return new Map();
     const gigMap = new Map<string, Gig[]>();
     
     gigs.forEach(gig => {
@@ -199,7 +199,7 @@ export default function CalendarView() {
 
   // Memoize filtered gigs for better performance
   const filteredGigs = useMemo(() => {
-    if (!gigs) return [];
+    if (!gigs || !Array.isArray(gigs)) return [];
     
     const filtered = gigs.filter(gig => {
       if (filterStatus !== "all" && gig.status !== filterStatus) return false;
