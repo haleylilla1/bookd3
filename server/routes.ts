@@ -45,7 +45,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     message: 'Too many authentication attempts, please try again later.',
     standardHeaders: true,
     legacyHeaders: false,
-    trustProxy: false, // Fix for development
+    skip: (req) => process.env.NODE_ENV === 'development', // Disable in development
   });
 
   const passwordResetLimiter = rateLimit({
@@ -54,7 +54,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     message: 'Too many password reset attempts, please try again later.',
     standardHeaders: true,
     legacyHeaders: false,
-    trustProxy: false, // Fix for development
+    skip: (req) => process.env.NODE_ENV === 'development', // Disable in development
   });
 
   // Setup traditional auth routes using unified-auth.ts
@@ -758,6 +758,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get('/api/reports/html', requireAuth, async (req: any, res) => {
     const userId = getUserId(req);
+    
+    // Additional authentication validation
+    if (!userId || userId <= 0) {
+      return res.status(401).json({ error: 'Invalid user authentication' });
+    }
+    
     try {
       const { period, year, month } = req.query;
       

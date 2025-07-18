@@ -345,7 +345,7 @@ export class DatabaseStorage implements IStorage {
       .select()
       .from(gigs)
       .where(and(
-        eq(gigs.user_id, userId),
+        eq(gigs.userId, userId), // Fixed: use userId not user_id
         gte(gigs.date, startDate),
         lte(gigs.date, endDate)
       ))
