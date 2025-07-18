@@ -365,10 +365,21 @@ export default function CalendarView() {
   // Helper function to update existing multi-day gigs
   const updateMultiDayGigs = async (gigIds: number[], updatePayload: any) => {
     try {
-      for (const gigId of gigIds) {
-        const response = await apiRequest("PUT", `/api/gigs/${gigId}`, updatePayload);
-        if (!response.ok) throw new Error(`Failed to update gig ${gigId}`);
-      }
+      const updatePromises = gigIds.map(async (gigId) => {
+        try {
+          const response = await apiRequest("PUT", `/api/gigs/${gigId}`, updatePayload);
+          if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`Failed to update gig ${gigId}: ${errorText}`);
+          }
+          return await response.json();
+        } catch (error) {
+          console.error(`Error updating gig ${gigId}:`, error);
+          throw error;
+        }
+      });
+      
+      await Promise.all(updatePromises);
       
       queryClient.invalidateQueries({ queryKey: ["/api/gigs"] });
       queryClient.invalidateQueries({ queryKey: ["/api/dashboard/stats"] });
@@ -383,7 +394,7 @@ export default function CalendarView() {
       console.error("Error updating multi-day gigs:", error);
       toast({
         title: "Update failed",
-        description: "Some gigs may not have been updated. Please try again.",
+        description: `Failed to update gig: ${error.message}. Please try again.`,
         variant: "destructive",
       });
     }

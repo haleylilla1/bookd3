@@ -291,7 +291,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: 'Gig not found' });
       }
       
-      const updatedGig = await storage.updateGig(gigId, req.body);
+      // Clean up request body for database update
+      const updateData = { ...req.body };
+      
+      // Remove any undefined values that could cause issues
+      Object.keys(updateData).forEach(key => {
+        if (updateData[key] === undefined) {
+          delete updateData[key];
+        }
+      });
+      
+      const updatedGig = await storage.updateGig(gigId, updateData);
+      
+      if (!updatedGig) {
+        return res.status(500).json({ error: 'Failed to update gig - no data returned' });
+      }
       
       // Invalidate caches after gig update
       const { cache } = await import('./simple-cache');
@@ -301,7 +315,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       res.json(updatedGig);
     } catch (error) {
-      res.status(500).json({ error: 'Failed to update gig' });
+      console.error('PUT /api/gigs/:id error:', error);
+      res.status(500).json({ error: 'Failed to update gig', details: error.message });
     }
   });
 
