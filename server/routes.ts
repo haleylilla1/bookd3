@@ -45,6 +45,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     message: 'Too many authentication attempts, please try again later.',
     standardHeaders: true,
     legacyHeaders: false,
+    trustProxy: false, // Fix for development
   });
 
   const passwordResetLimiter = rateLimit({
@@ -53,6 +54,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     message: 'Too many password reset attempts, please try again later.',
     standardHeaders: true,
     legacyHeaders: false,
+    trustProxy: false, // Fix for development
   });
 
   // Setup traditional auth routes using unified-auth.ts
@@ -209,7 +211,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/gigs', requireAuth, async (req: any, res) => {
     try {
       const userId = getUserId(req);
-      const gig = await storage.createGig({ ...req.body, userId });
+      const gig = await storage.createGig({ ...req.body, user_id: userId });
       res.json(gig);
     } catch (error) {
       res.status(500).json({ error: 'Failed to create gig' });
@@ -222,7 +224,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = getUserId(req);
       const existingGig = await storage.getGig(gigId);
       
-      if (!existingGig || existingGig.userId !== userId) {
+      if (!existingGig || existingGig.user_id !== userId) {
         return res.status(404).json({ error: 'Gig not found' });
       }
       
@@ -239,7 +241,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = getUserId(req);
       const existingGig = await storage.getGig(gigId);
       
-      if (!existingGig || existingGig.userId !== userId) {
+      if (!existingGig || existingGig.user_id !== userId) {
         return res.status(404).json({ error: 'Gig not found' });
       }
       
@@ -665,6 +667,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ message: 'Cache cleared successfully' });
     } catch (error) {
       res.status(500).json({ error: 'Failed to clear cache' });
+    }
+  });
+
+  // Debug endpoint to test gig data without authentication (temporary)
+  app.get('/api/debug/gigs/:userId', async (req: any, res) => {
+    if (process.env.NODE_ENV !== 'development') {
+      return res.status(404).json({ error: 'Not found' });
+    }
+    
+    try {
+      const userId = parseInt(req.params.userId);
+      console.log('Debug endpoint called for userId:', userId);
+      
+      // Use storage interface to test
+      const userGigs = await storage.getGigsByUser(userId);
+      console.log('Storage query returned:', userGigs.length, 'gigs');
+      
+      // Clear cache and try again
+      const { cache } = await import('./simple-cache');
+      await cache.invalidate(`gigs:${userId}`);
+      
+      const freshGigs = await storage.getGigsByUser(userId);
+      console.log('Fresh query after cache clear:', freshGigs.length, 'gigs');
+      
+      res.json({ 
+        userId, 
+        cached: userGigs.length,
+        fresh: freshGigs.length,
+        gigs: freshGigs.slice(0, 3),
+        message: 'Storage interface test successful' 
+      });
+    } catch (error) {
+      console.error('Debug endpoint error:', error);
+      res.status(500).json({ error: 'Failed to fetch gigs', details: error.message });
     }
   });
 
