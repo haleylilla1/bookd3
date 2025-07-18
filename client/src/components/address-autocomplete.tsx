@@ -64,7 +64,9 @@ export function AddressAutocomplete({
         
         // Show helpful message if using fallback suggestions
         if (data.fallback && data.suggestions && data.suggestions.length > 0) {
-          console.log('Using address suggestions - Google Places API not available');
+          console.log('Using fallback address suggestions - Google Places API not available');
+        } else if (!data.fallback && data.suggestions && data.suggestions.length > 0) {
+          console.log('Using authentic Google Places suggestions');
         }
       } else {
         setSuggestions([]);
