@@ -36,7 +36,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   }
 
-  // SECURITY: All admin endpoints completely removed for production security
+  // Cache invalidation utility
+  async function invalidateUserCaches(userId: number) {
+    const { cache } = await import('./simple-cache');
+    const { invalidateDashboardCache } = await import('./dashboard-optimized');
+    await cache.invalidate(`gigs:${userId}`);
+    await invalidateDashboardCache(userId);
+  }
   
   // Rate limiting for authentication endpoints
   const authLimiter = rateLimit({
@@ -259,7 +265,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const dashboardData = await getDashboardData(userId);
       res.json(dashboardData);
     } catch (error) {
-      console.error('Optimized dashboard error:', error);
       res.status(500).json({ error: 'Failed to fetch dashboard data' });
     }
   });
@@ -268,13 +273,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = getUserId(req);
       const gig = await storage.createGig({ ...req.body, user_id: userId });
-      
-      // Invalidate caches after gig creation
-      const { cache } = await import('./simple-cache');
-      const { invalidateDashboardCache } = await import('./dashboard-optimized');
-      cache.delete(`gigs:${userId}`);
-      invalidateDashboardCache(userId);
-      
+      await invalidateUserCaches(userId);
       res.json(gig);
     } catch (error) {
       res.status(500).json({ error: 'Failed to create gig' });
@@ -287,18 +286,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = getUserId(req);
       const existingGig = await storage.getGig(gigId);
       
-      if (!existingGig || existingGig.user_id !== userId) {
+      if (!existingGig || existingGig.userId !== userId) {
         return res.status(404).json({ error: 'Gig not found' });
       }
       
-      // Clean up request body for database update
       const updateData = { ...req.body };
-      
-      // Remove any undefined values that could cause issues
       Object.keys(updateData).forEach(key => {
-        if (updateData[key] === undefined) {
-          delete updateData[key];
-        }
+        if (updateData[key] === undefined) delete updateData[key];
       });
       
       const updatedGig = await storage.updateGig(gigId, updateData);
@@ -307,16 +301,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(500).json({ error: 'Failed to update gig - no data returned' });
       }
       
-      // Invalidate caches after gig update
-      const { cache } = await import('./simple-cache');
-      const { invalidateDashboardCache } = await import('./dashboard-optimized');
-      cache.delete(`gigs:${userId}`);
-      invalidateDashboardCache(userId);
-      
+      await invalidateUserCaches(userId);
       res.json(updatedGig);
     } catch (error) {
-      console.error('PUT /api/gigs/:id error:', error);
-      res.status(500).json({ error: 'Failed to update gig', details: error.message });
+      res.status(500).json({ error: 'Failed to update gig' });
     }
   });
 
@@ -326,18 +314,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = getUserId(req);
       const existingGig = await storage.getGig(gigId);
       
-      if (!existingGig || existingGig.user_id !== userId) {
+      if (!existingGig || existingGig.userId !== userId) {
         return res.status(404).json({ error: 'Gig not found' });
       }
       
       await storage.deleteGig(gigId);
-      
-      // Invalidate caches after gig deletion
-      const { cache } = await import('./simple-cache');
-      const { invalidateDashboardCache } = await import('./dashboard-optimized');
-      cache.delete(`gigs:${userId}`);
-      invalidateDashboardCache(userId);
-      
+      await invalidateUserCaches(userId);
       res.json({ success: true });
     } catch (error) {
       res.status(500).json({ error: 'Failed to delete gig' });
@@ -620,11 +602,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         res.json({ suggestions: [] });
       } else if (data.status === 'REQUEST_DENIED' || data.error_message) {
         // API key issue - provide helpful fallback suggestions
-        console.warn('Google Places API access denied, using fallback suggestions');
         const fallbackSuggestions = generateFallbackSuggestions(input.trim());
         res.json({ suggestions: fallbackSuggestions, fallback: true });
       } else {
-        console.warn('Google Places API warning:', data.status);
         res.json({ suggestions: [] });
       }
     } catch (error) {
@@ -793,7 +773,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         month: month ? parseInt(month as string) : undefined
       };
 
-      console.log('Generating HTML report', reportOptions);
 
       // Import HTML generator
       const { generateProfessionalHTML } = await import('./professional-html-generator');
@@ -804,7 +783,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.setHeader('Content-Type', 'text/html; charset=utf-8');
       res.send(htmlContent);
     } catch (error) {
-      console.error('HTML generation error:', error);
       
       // Send a friendly HTML error page instead of JSON
       const errorHtml = `
@@ -924,7 +902,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ...results
       });
     } catch (error) {
-      console.error('System validation error:', error);
       res.status(500).json({ 
         error: 'Validation failed', 
         details: error instanceof Error ? error.message : 'Unknown error' 
@@ -940,7 +917,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     
     try {
       const userId = parseInt(req.params.userId);
-      console.log('Debug endpoint called for userId:', userId);
       
       // Run validation check first
       const { dbValidator } = await import('./database-consistency-check');
@@ -951,7 +927,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Use storage interface to test
       const userGigs = await storage.getGigsByUser(userId);
-      console.log('Storage query returned:', userGigs.length, 'gigs');
       
       res.json({ 
         userId, 
@@ -961,7 +936,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         message: 'Storage interface test successful' 
       });
     } catch (error) {
-      console.error('Debug endpoint error:', error);
       res.status(500).json({ error: 'Failed to fetch gigs', details: error.message });
     }
   });
