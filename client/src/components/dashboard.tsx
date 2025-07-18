@@ -452,7 +452,10 @@ export default function Dashboard() {
   };
 
   const getExpensesBreakdown = () => {
-    return currentPeriodGigs
+    // EXPENSE FIX: Use grouped gigs to prevent showing expenses multiple times for multi-day events
+    const groupedGigs = getGroupedGigs(currentPeriodGigs);
+    
+    return groupedGigs
       .map(gig => {
         const parkingExpense = safeParseFloat(gig.parkingExpense);
         const otherExpenses = safeParseFloat(gig.otherExpenses);
@@ -940,7 +943,10 @@ export default function Dashboard() {
                   <div className="text-right">
                     <p className="font-semibold text-orange-600">${gig.amount.toFixed(2)}</p>
                     <p className="text-xs text-gray-500">
-                      {parseGigDate(gig.date).toLocaleDateString()}
+                      {gig.isMultiDay 
+                        ? `${parseGigDate(gig.startDate!).toLocaleDateString()} - ${parseGigDate(gig.endDate!).toLocaleDateString()}`
+                        : parseGigDate(gig.date).toLocaleDateString()
+                      }
                     </p>
                   </div>
                 </div>
