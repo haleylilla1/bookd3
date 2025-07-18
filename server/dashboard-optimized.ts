@@ -257,10 +257,10 @@ export async function getDashboardData(userId: number): Promise<DashboardData> {
 }
 
 // Cache invalidation when user data changes
-export function invalidateDashboardCache(userId: number) {
-  cache.delete(`dashboard:${userId}`);
-  cache.delete(`user:${userId}`);
-  cache.delete(`gigs:${userId}`);
+export async function invalidateDashboardCache(userId: number) {
+  await cache.invalidate(`dashboard:${userId}`);
+  await cache.invalidate(`user:${userId}`);
+  await cache.invalidate(`gigs:${userId}`);
 }
 
 // Batch user data fetching (for admin/analytics)

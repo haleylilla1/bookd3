@@ -345,7 +345,7 @@ export class DatabaseStorage implements IStorage {
       .select()
       .from(gigs)
       .where(and(
-        eq(gigs.userId, userId), // Fixed: use userId not user_id
+        eq(gigs.userId, userId), // Fixed: use userId (Drizzle property name)
         gte(gigs.date, startDate),
         lte(gigs.date, endDate)
       ))
@@ -364,24 +364,13 @@ export class DatabaseStorage implements IStorage {
       
       return gig;
     } catch (error) {
-      // Log error but return a successful-looking response
-      return {
-        id: Date.now(),
-        ...insertGig,
-        createdAt: new Date(),
-      } as Gig;
+      throw new Error('Failed to create gig');
     }
   }
 
   async updateGig(id: number, updateData: Partial<InsertGig>): Promise<Gig | undefined> {
     // SECURITY: This method should only be called after ownership verification in routes
     try {
-      // Convert userId to user_id for database compatibility if needed
-      if ('userId' in updateData && updateData.userId !== undefined) {
-        updateData.user_id = updateData.userId;
-        delete updateData.userId;
-      }
-
       // Ensure receipt arrays are properly formatted for PostgreSQL
       if (updateData.parkingReceipts) {
         updateData.parkingReceipts = Array.isArray(updateData.parkingReceipts) 
@@ -402,7 +391,7 @@ export class DatabaseStorage implements IStorage {
       
       // Invalidate cache for affected user
       if (gig) {
-        await cache.invalidate(`gigs:${gig.user_id}`);
+        await cache.invalidate(`gigs:${gig.userId}`);
       }
       
       return gig || undefined;
@@ -421,7 +410,7 @@ export class DatabaseStorage implements IStorage {
     
     // Invalidate cache for affected user
     if (gig) {
-      await cache.invalidate(`gigs:${gig.user_id}`);
+      await cache.invalidate(`gigs:${gig.userId}`);
     }
     
     return (result.rowCount || 0) > 0;
