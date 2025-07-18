@@ -37,12 +37,15 @@ interface ReceiptData {
 
 export async function generateProfessionalHTML(options: ReportOptions): Promise<string> {
   try {
-    const data = await prepareReportData(options);
-    const MILEAGE_RATE = 0.67; // 2024 IRS rate
+    console.log('Starting HTML report generation for user:', options.userId);
     
-    // Get user data for tax calculations
+    // Get user data first
     const user = await storage.getUser(options.userId);
     if (!user) throw new Error('User not found');
+    
+    console.log('User found, preparing report data...');
+    const data = await prepareReportData(options);
+    const MILEAGE_RATE = 0.67; // 2024 IRS rate
     
     // Filter to completed gigs only
     const completedGigs = data.gigs.filter(g => g.status === 'completed');
