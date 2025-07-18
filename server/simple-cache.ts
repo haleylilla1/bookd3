@@ -45,6 +45,12 @@ class SimpleCache {
 
   async set(key: string, data: any, ttlSeconds: number = 300): Promise<void> {
     try {
+      // PREVENTION RULE: Never cache empty objects or invalid data
+      if (!data || (typeof data === 'object' && Object.keys(data).length === 0)) {
+        console.warn(`Cache prevention: Blocked caching empty data for key: ${key}`);
+        return;
+      }
+      
       if (this.client) {
         await this.client.setEx(key, ttlSeconds, JSON.stringify(data));
       } else {

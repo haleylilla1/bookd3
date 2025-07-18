@@ -66,6 +66,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json({ status: 'healthy', timestamp: new Date().toISOString() });
   });
 
+  // Field mapping validation endpoint for monitoring
+  app.get('/api/system/validate', requireAuth, asyncHandler(async (req: any, res) => {
+    try {
+      const { FieldMappingValidator } = await import('./field-mapping-validator');
+      const validation = await FieldMappingValidator.validateFieldMappingHealth();
+      res.json(validation);
+    } catch (error) {
+      logError('Field mapping validation failed', error);
+      res.status(500).json({ 
+        status: 'critical',
+        error: 'Validation system failure',
+        timestamp: new Date().toISOString()
+      });
+    }
+  }));
+
   // System monitoring endpoints
   app.get('/api/system-status', requireAuth, asyncHandler(async (req: any, res) => {
     try {
