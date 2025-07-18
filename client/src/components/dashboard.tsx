@@ -135,7 +135,7 @@ export default function Dashboard() {
 
   // Simple period filtering - let calculations handle multi-day logic naturally
   const currentPeriodGigs = useMemo(() => {
-    if (!gigs || gigs.length === 0) return [];
+    if (!gigs || !Array.isArray(gigs) || gigs.length === 0) return [];
     
     return gigs.filter(gig => {
       const gigDate = parseGigDate(gig.date);
@@ -154,7 +154,7 @@ export default function Dashboard() {
 
   // Helper function to group multi-day gigs (prevents double-counting)
   const getGroupedGigs = (gigs: Gig[]): (Gig & { isMultiDay?: boolean; startDate?: string; endDate?: string })[] => {
-    if (!gigs || gigs.length === 0) return [];
+    if (!gigs || !Array.isArray(gigs) || gigs.length === 0) return [];
 
     const sortedGigs = [...gigs].sort((a, b) => parseGigDate(a.date).getTime() - parseGigDate(b.date).getTime());
     const grouped: (Gig & { isMultiDay?: boolean; startDate?: string; endDate?: string })[] = [];
@@ -374,6 +374,7 @@ export default function Dashboard() {
 
   // Get breakdown data for modals with safe parsing
   const getActualEarningsBreakdown = () => {
+    if (!Array.isArray(currentPeriodGigs)) return [];
     const completedGigs = currentPeriodGigs.filter(gig => gig.status === "completed");
     const groupedGigs = getGroupedGigs(completedGigs);
     
@@ -394,6 +395,7 @@ export default function Dashboard() {
   };
 
   const getProjectedEarningsBreakdown = () => {
+    if (!Array.isArray(currentPeriodGigs)) return [];
     const groupedGigs = getGroupedGigs(currentPeriodGigs);
     
     // Calculate amount and filter/sort
@@ -417,6 +419,7 @@ export default function Dashboard() {
   };
 
   const getTaxBreakdown = () => {
+    if (!Array.isArray(currentPeriodGigs)) return [];
     const completedGigs = currentPeriodGigs.filter(gig => gig.status === "completed");
     const groupedGigs = getGroupedGigs(completedGigs);
     
