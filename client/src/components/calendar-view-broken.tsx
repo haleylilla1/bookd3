@@ -126,7 +126,7 @@ export default function CalendarView() {
 
   // Memoize gigs by date for better performance
   const gigsByDate = useMemo(() => {
-    if (!gigs) return new Map();
+    if (!gigs || !Array.isArray(gigs)) return new Map();
     const gigMap = new Map<string, Gig[]>();
     
     gigs.forEach(gig => {
@@ -170,7 +170,7 @@ export default function CalendarView() {
 
   // Memoize filtered gigs for better performance
   const filteredGigs = useMemo(() => {
-    if (!gigs) return [];
+    if (!gigs || !Array.isArray(gigs)) return [];
     
     const filtered = gigs.filter(gig => {
       if (filterStatus !== "all" && gig.status !== filterStatus) return false;

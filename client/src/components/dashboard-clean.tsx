@@ -63,7 +63,7 @@ export default function Dashboard() {
 
   // Filter gigs based on selected period
   const currentPeriodGigs = useMemo(() => {
-    if (!gigs || gigs.length === 0) return [];
+    if (!gigs || !Array.isArray(gigs) || gigs.length === 0) return [];
     
     return gigs.filter(gig => {
       const gigDate = new Date(gig.date);
@@ -93,8 +93,8 @@ export default function Dashboard() {
       };
     }
 
-    const completedGigs = currentPeriodGigs.filter(gig => gig.status === "completed");
-    const upcomingGigs = currentPeriodGigs.filter(gig => gig.status !== "completed");
+    const completedGigs = Array.isArray(currentPeriodGigs) ? currentPeriodGigs.filter(gig => gig.status === "completed") : [];
+    const upcomingGigs = Array.isArray(currentPeriodGigs) ? currentPeriodGigs.filter(gig => gig.status !== "completed") : [];
     
     const actualEarnings = completedGigs.reduce((sum, gig) => 
       sum + parseFloat(gig.actualPay || "0"), 0);
