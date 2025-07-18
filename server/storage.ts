@@ -333,7 +333,7 @@ export class DatabaseStorage implements IStorage {
     if (cached) return cached;
 
     const gigs = await db.select().from(gigs)
-      .where(eq(gigs.userId, userId))
+      .where(eq(gigs.user_id, userId))
       .orderBy(desc(gigs.date));
     
     await cache.set(cacheKey, gigs, 120); // 2 minutes
@@ -345,7 +345,7 @@ export class DatabaseStorage implements IStorage {
       .select()
       .from(gigs)
       .where(and(
-        eq(gigs.userId, userId),
+        eq(gigs.user_id, userId),
         gte(gigs.date, startDate),
         lte(gigs.date, endDate)
       ))
@@ -360,7 +360,7 @@ export class DatabaseStorage implements IStorage {
         .returning();
       
       // Invalidate cache for this user
-      await cache.invalidate(`gigs:${insertGig.userId}`);
+      await cache.invalidate(`gigs:${insertGig.user_id}`);
       
       return gig;
     } catch (error) {
@@ -383,7 +383,7 @@ export class DatabaseStorage implements IStorage {
     
     // Invalidate cache for affected user
     if (gig) {
-      await cache.invalidate(`gigs:${gig.userId}`);
+      await cache.invalidate(`gigs:${gig.user_id}`);
     }
     
     return gig || undefined;
@@ -398,7 +398,7 @@ export class DatabaseStorage implements IStorage {
     
     // Invalidate cache for affected user
     if (gig) {
-      await cache.invalidate(`gigs:${gig.userId}`);
+      await cache.invalidate(`gigs:${gig.user_id}`);
     }
     
     return (result.rowCount || 0) > 0;

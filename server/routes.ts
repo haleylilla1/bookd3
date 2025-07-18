@@ -657,6 +657,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Clear cache endpoint (for troubleshooting)
+  app.post('/api/cache/clear', requireAuth, async (req: any, res) => {
+    try {
+      const { cache } = await import('./simple-cache');
+      await cache.clearAll();
+      res.json({ message: 'Cache cleared successfully' });
+    } catch (error) {
+      res.status(500).json({ error: 'Failed to clear cache' });
+    }
+  });
+
   app.post('/api/gig-types', requireAuth, async (req: any, res) => {
     try {
       const { gigType } = req.body;
