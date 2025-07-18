@@ -42,6 +42,7 @@ import {
 } from "@shared/schema";
 import bcrypt from "bcryptjs";
 import { db } from "./db";
+import { optimizedDb } from "./db-optimizer";
 import { eq, and, gte, lte, desc, count, sql, inArray } from "drizzle-orm";
 
 export interface IStorage {
@@ -151,7 +152,8 @@ export interface IStorage {
 
 export class DatabaseStorage implements IStorage {
   async getUser(id: number): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.id, id));
+    // PERFORMANCE OPTIMIZATION: Use optimized database with caching
+    const user = await optimizedDb.getUser(id);
     return user || undefined;
   }
 
@@ -312,9 +314,9 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getGigsByUser(userId: number): Promise<Gig[]> {
-    return await db.select().from(gigs)
-      .where(eq(gigs.userId, userId))
-      .orderBy(desc(gigs.date));
+    // PERFORMANCE OPTIMIZATION: Use optimized database with caching
+    const userGigs = await optimizedDb.getUserGigs(userId);
+    return userGigs.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
   }
 
   async getGigsByDateRange(userId: number, startDate: string, endDate: string): Promise<Gig[]> {
@@ -331,10 +333,8 @@ export class DatabaseStorage implements IStorage {
 
   async createGig(insertGig: InsertGig): Promise<Gig> {
     try {
-      const [gig] = await db
-        .insert(gigs)
-        .values(insertGig)
-        .returning();
+      // PERFORMANCE OPTIMIZATION: Use optimized database with cache invalidation
+      const gig = await optimizedDb.createGig(insertGig);
       return gig;
     } catch (error) {
       // Log error but return a successful-looking response
@@ -348,11 +348,18 @@ export class DatabaseStorage implements IStorage {
 
   async updateGig(id: number, updateData: Partial<InsertGig>): Promise<Gig | undefined> {
     // SECURITY: This method should only be called after ownership verification in routes
+    // PERFORMANCE OPTIMIZATION: Use optimized database with cache invalidation
     const [gig] = await db
       .update(gigs)
       .set(updateData)
       .where(eq(gigs.id, id))
       .returning();
+    
+    // Invalidate cache for affected user
+    if (gig) {
+      optimizedDb.clearCache(); // Simple cache invalidation for now
+    }
+    
     return gig || undefined;
   }
 

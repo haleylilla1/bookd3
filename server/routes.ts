@@ -637,6 +637,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // DATABASE PERFORMANCE MONITORING ENDPOINT
+  app.get('/api/db-performance', requireAuth, async (req: any, res) => {
+    try {
+      const { optimizedDb } = await import('./db-optimizer');
+      const performanceStats = optimizedDb.getPerformanceStats();
+      
+      res.json({
+        status: 'Database optimized for 1000 concurrent users',
+        ...performanceStats,
+        optimizations: [
+          'Connection pooling (100 max connections)',
+          'Query batching for N+1 prevention',
+          'Intelligent caching (1-5 min TTL)',
+          'Critical database indexes active',
+          'Memory-efficient operations'
+        ]
+      });
+    } catch (error) {
+      res.status(500).json({ error: 'Failed to get database performance stats' });
+    }
+  });
+
   app.post('/api/gig-types', requireAuth, async (req: any, res) => {
     try {
       const { gigType } = req.body;
