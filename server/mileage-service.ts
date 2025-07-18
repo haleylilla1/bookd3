@@ -598,7 +598,7 @@ export class MileageService {
         error: error instanceof Error ? error.message : 'Unknown error'
       });
       
-      return this.fallbackEstimation(origin, destination, waypoints, roundTrip);
+      return this.guaranteedDistanceEstimation(origin, destination, waypoints, roundTrip);
     }
   }
 
@@ -644,6 +644,61 @@ export class MileageService {
     }
 
     throw new Error(`Distance Matrix API error: ${data.status}`);
+  }
+
+  /**
+   * Guaranteed distance estimation - always returns success with reasonable estimates
+   */
+  private async guaranteedDistanceEstimation(
+    origin: string,
+    destination: string,
+    waypoints: string[] = [],
+    roundTrip: boolean = false
+  ): Promise<DistanceCalculationResult> {
+    // This method ALWAYS succeeds with reasonable estimates
+    
+    // First try the enhanced fallback
+    try {
+      return await this.fallbackEstimation(origin, destination, waypoints, roundTrip);
+    } catch (error) {
+      // If even fallback fails, provide basic but reliable estimate
+      return this.basicDistanceEstimation(origin, destination, waypoints, roundTrip);
+    }
+  }
+
+  /**
+   * Basic distance estimation that never fails
+   */
+  private basicDistanceEstimation(
+    origin: string,
+    destination: string,
+    waypoints: string[] = [],
+    roundTrip: boolean = false
+  ): DistanceCalculationResult {
+    // Simple string-based estimation
+    const baseDistance = this.estimateDistanceFromAddresses(origin, destination);
+    let totalDistance = baseDistance;
+    
+    // Add waypoint distances
+    if (waypoints.length > 0) {
+      totalDistance += waypoints.length * 2; // Rough 2 miles per waypoint
+    }
+    
+    // Handle round trip
+    if (roundTrip) {
+      totalDistance *= 2;
+    }
+    
+    // Estimate duration (30 mph average speed)
+    const duration = Math.round(totalDistance * 2); // 2 minutes per mile
+    
+    return {
+      success: true,
+      distance: Math.round(totalDistance * 100) / 100,
+      duration,
+      confidence: 'low',
+      fallbackUsed: true
+    };
   }
 
   /**
