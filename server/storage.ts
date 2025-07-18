@@ -327,13 +327,13 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getGigsByUser(userId: number): Promise<Gig[]> {
-    // Check cache first (2 minute TTL for gig data)
+    // Use proper Drizzle query with caching
     const cacheKey = `gigs:${userId}`;
     const cached = await cache.get(cacheKey);
     if (cached) return cached;
 
     const userGigs = await db.select().from(gigs)
-      .where(eq(gigs.user_id, userId))
+      .where(eq(gigs.userId, userId))
       .orderBy(desc(gigs.date));
     
     await cache.set(cacheKey, userGigs, 120); // 2 minutes
@@ -360,7 +360,7 @@ export class DatabaseStorage implements IStorage {
         .returning();
       
       // Invalidate cache for this user
-      await cache.invalidate(`gigs:${insertGig.user_id}`);
+      await cache.invalidate(`gigs:${insertGig.userId}`);
       
       return gig;
     } catch (error) {
