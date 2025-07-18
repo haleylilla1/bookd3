@@ -14,10 +14,13 @@ class SimpleCache {
         console.log('Redis cache connected');
       } else {
         console.log('No Redis URL - using memory cache fallback');
+        // Clear any existing memory cache on restart
+        this.fallbackCache.clear();
       }
     } catch (error) {
       console.log('Redis connection failed - using memory cache fallback');
       this.client = null;
+      this.fallbackCache.clear();
     }
   }
 

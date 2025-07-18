@@ -332,12 +332,12 @@ export class DatabaseStorage implements IStorage {
     const cached = await cache.get(cacheKey);
     if (cached) return cached;
 
-    const gigs = await db.select().from(gigs)
+    const userGigs = await db.select().from(gigs)
       .where(eq(gigs.user_id, userId))
       .orderBy(desc(gigs.date));
     
-    await cache.set(cacheKey, gigs, 120); // 2 minutes
-    return gigs;
+    await cache.set(cacheKey, userGigs, 120); // 2 minutes
+    return userGigs;
   }
 
   async getGigsByDateRange(userId: number, startDate: string, endDate: string): Promise<Gig[]> {
