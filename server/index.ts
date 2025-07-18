@@ -1,6 +1,7 @@
 import express from "express";
 import cookieParser from "cookie-parser";
 import { registerRoutes } from "./routes";
+import { validateSystemOnStartup } from "./startup-validation";
 import { setupVite, serveStatic } from "./vite";
 import { handleUnhandledRejections, handleUncaughtExceptions } from "./error-handler";
 import { cache } from "./simple-cache";
@@ -47,6 +48,11 @@ async function start() {
   }
   
   const server = await registerRoutes(app);
+  
+  // Run startup validation after routes are registered
+  validateSystemOnStartup().catch(error => {
+    console.error('[STARTUP] Validation failed:', error);
+  });
   
   if (process.env.NODE_ENV === "development") {
     await setupVite(app, server);

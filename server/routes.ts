@@ -670,7 +670,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Debug endpoint to test gig data without authentication (temporary)
+  // Database consistency validation endpoint
+  app.get('/api/system/validate', async (req, res) => {
+    try {
+      const { dbValidator } = await import('./database-consistency-check');
+      const results = await dbValidator.runAllChecks();
+      
+      res.json({
+        system: 'Database Consistency Validation',
+        timestamp: new Date().toISOString(),
+        ...results
+      });
+    } catch (error) {
+      console.error('System validation error:', error);
+      res.status(500).json({ 
+        error: 'Validation failed', 
+        details: error instanceof Error ? error.message : 'Unknown error' 
+      });
+    }
+  });
+
+  // Debug endpoint to test gig data without authentication (development only)
   app.get('/api/debug/gigs/:userId', async (req: any, res) => {
     if (process.env.NODE_ENV !== 'development') {
       return res.status(404).json({ error: 'Not found' });
@@ -680,22 +700,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = parseInt(req.params.userId);
       console.log('Debug endpoint called for userId:', userId);
       
+      // Run validation check first
+      const { dbValidator } = await import('./database-consistency-check');
+      const isValid = await dbValidator.validateUserDataAccess(userId);
+      if (!isValid) {
+        return res.status(500).json({ error: 'Database consistency validation failed' });
+      }
+      
       // Use storage interface to test
       const userGigs = await storage.getGigsByUser(userId);
       console.log('Storage query returned:', userGigs.length, 'gigs');
       
-      // Clear cache and try again
-      const { cache } = await import('./simple-cache');
-      await cache.invalidate(`gigs:${userId}`);
-      
-      const freshGigs = await storage.getGigsByUser(userId);
-      console.log('Fresh query after cache clear:', freshGigs.length, 'gigs');
-      
       res.json({ 
         userId, 
-        cached: userGigs.length,
-        fresh: freshGigs.length,
-        gigs: freshGigs.slice(0, 3),
+        gigs: userGigs.length,
+        validated: true,
+        sample: userGigs.slice(0, 3),
         message: 'Storage interface test successful' 
       });
     } catch (error) {
