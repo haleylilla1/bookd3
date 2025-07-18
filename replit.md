@@ -46,6 +46,8 @@ Bookd is a mobile-first gig worker companion app with comprehensive financial tr
 - 2025-07-16: FRONTEND ERRORS RESOLVED - Fixed user object structure issues (user.name vs user.username) and import path problems
 - 2025-07-16: DUPLICATE ENDPOINTS REMOVED - Eliminated conflicting /api/user endpoints that were causing security bypass
 - 2025-07-16: BULLETPROOF LOGOUT SYSTEM - Changed logout endpoint from /api/auth/logout to /api/logout to bypass middleware conflicts, ensures proper session termination
+- 2025-07-18: DESKTOP LOGIN ISSUE RESOLVED - Fixed AuthGuard component import path causing login page to not redirect properly after authentication
+- 2025-07-18: STATUS COLOR SYSTEM CONFIRMED - "Pending payment" correctly displays with orange color across calendar, dashboard, and gig log components
 - 2025-07-16: COMPREHENSIVE SCALING RESEARCH COMPLETED - Analyzed third-party services and scaling strategies for 1000 concurrent users
 - 2025-07-16: Created detailed scaling plan (SCALING_PLAN_1000_USERS.md) with 4-phase implementation approach
 - 2025-07-16: Researched Replit Auth vs Supabase for production payments: Replit Auth recommended for MVP, Supabase for scale phase
