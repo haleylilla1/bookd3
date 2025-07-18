@@ -27,7 +27,7 @@ import { MobileAutoSaveIndicator, useMobileAutoSaveStatus, MobileRecoveryNotific
 import { useFormAutoSave, submitFormWithRetry, getAutoSavedData, hasRecoverableData } from "@/lib/auto-save";
 import { useRecoverySystem, useMobileRecovery } from "@/hooks/use-recovery-system";
 import { useBulletproofMobileAutoSave } from "@/lib/bulletproof-mobile-autosave";
-import { BulletproofMobileIndicator, useBulletproofMobileIndicator } from "@/components/bulletproof-mobile-indicator";
+import { BulletproofMobileIndicator, useAutoSaveStatus } from "@/components/bulletproof-mobile-indicator";
 
 // ULTRA-SIMPLIFIED SCHEMA - Only validate truly required fields
 const gigFormSchema = z.object({
@@ -152,7 +152,7 @@ export default function GigForm({ onClose }: GigFormProps) {
   });
 
   // Mobile indicator for better UX
-  const { showIndicator } = useBulletproofMobileIndicator('gig-form');
+  const { status, updateStatus } = useAutoSaveStatus();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const isOnline = useOnlineStatus();

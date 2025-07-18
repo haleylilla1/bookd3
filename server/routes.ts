@@ -173,7 +173,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     // Check cache first (5-minute TTL for user data)
     const { cache } = await import('./simple-cache');
     const cacheKey = `user:${userId}`;
-    let user = cache.get(cacheKey);
+    let user = await cache.get(cacheKey);
     
     if (!user) {
       user = await safeDbOperation(
@@ -183,7 +183,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       );
       
       if (user) {
-        cache.set(cacheKey, user, 300); // 5-minute cache
+        await cache.set(cacheKey, user, 300); // 5-minute cache
       }
     }
     
@@ -218,14 +218,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = getUserId(req);
       
-      // Check cache first (2-minute TTL for gig data)
+      // Check cache first (2-minute TTL for gig data)  
       const { cache } = await import('./simple-cache');
       const cacheKey = `gigs:${userId}`;
-      let gigs = cache.get(cacheKey);
+      let gigs = await cache.get(cacheKey);
       
       if (!gigs) {
         gigs = await storage.getGigsByUser(userId);
-        cache.set(cacheKey, gigs, 120); // 2-minute cache
+        await cache.set(cacheKey, gigs, 120); // 2-minute cache
       }
       
       res.json(gigs);
