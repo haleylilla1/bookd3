@@ -1,5 +1,5 @@
 {
-  "timestamp": "2025-07-18T22:17:44.052Z",
+  "timestamp": "2025-07-18T22:44:39.308Z",
   "version": "1.0.0",
   "data": {
     "users": [
@@ -233,6 +233,55 @@
         "updatedAt": "2025-07-09T20:46:47.097Z"
       },
       {
+        "id": 14,
+        "name": "Haley",
+        "email": "haleylilla@gmail.com",
+        "phone": null,
+        "title": "Gig Worker",
+        "defaultTaxPercentage": 23,
+        "customGigTypes": [
+          "Brand Ambassador",
+          "Market Research",
+          "Photo Assistant"
+        ],
+        "homeAddress": "313 16th Street, Huntington Beach CA 92648",
+        "businessName": null,
+        "businessAddress": null,
+        "businessPhone": null,
+        "businessEmail": null,
+        "replitId": null,
+        "googleId": null,
+        "passwordHash": "$2b$10$lsP7Kf7Kfd6o1Iuu1LWNmeyZJePruZCvCZFoly5tj87S2r1.Wd14e",
+        "firstName": null,
+        "lastName": null,
+        "profileImageUrl": null,
+        "isActive": true,
+        "isDeleted": false,
+        "deletedAt": null,
+        "emailVerified": false,
+        "onboardingCompleted": false,
+        "notificationPreferences": {
+          "push": true,
+          "email": true,
+          "reminders": true
+        },
+        "workPreferences": {
+          "workingHours": {
+            "end": "17:00",
+            "start": "09:00"
+          },
+          "primaryGigTypes": [],
+          "preferredClients": []
+        },
+        "trialStartDate": "2025-06-23T21:11:16.317Z",
+        "trialEndDate": "2025-07-23T21:11:16.317Z",
+        "subscriptionStatus": "trial",
+        "subscriptionTier": "trial",
+        "lastLoginAt": "2025-07-18T22:39:18.566Z",
+        "createdAt": "2025-06-23T21:11:16.352Z",
+        "updatedAt": "2025-06-23T21:11:16.352Z"
+      },
+      {
         "id": 5,
         "name": "Lukey",
         "email": "lukey@example.com",
@@ -321,55 +370,6 @@
         "lastLoginAt": "2025-07-18T21:56:04.190Z",
         "createdAt": "2025-07-16T06:44:03.846Z",
         "updatedAt": "2025-07-16T06:44:03.846Z"
-      },
-      {
-        "id": 14,
-        "name": "Haley",
-        "email": "haleylilla@gmail.com",
-        "phone": null,
-        "title": "Gig Worker",
-        "defaultTaxPercentage": 23,
-        "customGigTypes": [
-          "Brand Ambassador",
-          "Market Research",
-          "Photo Assistant"
-        ],
-        "homeAddress": "313 16th Street, Huntington Beach CA 92648",
-        "businessName": null,
-        "businessAddress": null,
-        "businessPhone": null,
-        "businessEmail": null,
-        "replitId": null,
-        "googleId": null,
-        "passwordHash": "$2b$10$Y1zJKHhSaqSa5C5veGHSoOzKpyb5NaC2qwWXJIXcZCia.SJdRgAdG",
-        "firstName": null,
-        "lastName": null,
-        "profileImageUrl": null,
-        "isActive": true,
-        "isDeleted": false,
-        "deletedAt": null,
-        "emailVerified": false,
-        "onboardingCompleted": false,
-        "notificationPreferences": {
-          "push": true,
-          "email": true,
-          "reminders": true
-        },
-        "workPreferences": {
-          "workingHours": {
-            "end": "17:00",
-            "start": "09:00"
-          },
-          "primaryGigTypes": [],
-          "preferredClients": []
-        },
-        "trialStartDate": "2025-06-23T21:11:16.317Z",
-        "trialEndDate": "2025-07-23T21:11:16.317Z",
-        "subscriptionStatus": "trial",
-        "subscriptionTier": "trial",
-        "lastLoginAt": "2025-07-18T21:57:58.732Z",
-        "createdAt": "2025-06-23T21:11:16.352Z",
-        "updatedAt": "2025-06-23T21:11:16.352Z"
       }
     ],
     "gigs": [
