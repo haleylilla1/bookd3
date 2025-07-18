@@ -757,9 +757,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   app.get('/api/reports/html', requireAuth, async (req: any, res) => {
+    const userId = getUserId(req);
     try {
       const { period, year, month } = req.query;
-      const userId = getUserId(req);
       
       if (!period || !year) {
         return res.status(400).json({ error: 'Period and year are required' });
@@ -772,6 +772,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         month: month ? parseInt(month as string) : undefined
       };
 
+      logger.info('Generating HTML report', reportOptions);
+
       // Import HTML generator
       const { generateProfessionalHTML } = await import('./professional-html-generator');
       
@@ -781,8 +783,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.setHeader('Content-Type', 'text/html; charset=utf-8');
       res.send(htmlContent);
     } catch (error) {
-      console.error('HTML generation error:', error);
-      res.status(500).json({ error: 'Failed to generate HTML report' });
+      logger.error('HTML generation error', error as Error, userId);
+      
+      // Send a friendly HTML error page instead of JSON
+      const errorHtml = `
+        <!DOCTYPE html>
+        <html lang="en">
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>Report Generation Error</title>
+            <style>
+                body { font-family: Arial, sans-serif; text-align: center; padding: 50px; background: #f8f9fa; }
+                .error { color: #dc3545; margin-bottom: 20px; }
+                .message { color: #6c757d; margin-bottom: 30px; }
+                .button { 
+                  background: #007bff; color: white; padding: 10px 20px; 
+                  text-decoration: none; border-radius: 5px; display: inline-block; 
+                }
+                .debug { background: #f8f9fa; padding: 15px; margin: 20px; border-left: 4px solid #007bff; text-align: left; }
+            </style>
+        </head>
+        <body>
+            <h1 class="error">Report Generation Error</h1>
+            <p class="message">Unable to generate the professional tax report. Please try again later.</p>
+            <p class="message">If this problem persists, please contact support.</p>
+            <a href="javascript:window.close()" class="button">Close Window</a>
+            ${process.env.NODE_ENV === 'development' ? `
+              <div class="debug">
+                <strong>Debug Info:</strong><br>
+                Error: ${error instanceof Error ? error.message : 'Unknown error'}<br>
+                User ID: ${userId}<br>
+                Timestamp: ${new Date().toISOString()}
+              </div>
+            ` : ''}
+        </body>
+        </html>
+      `;
+      
+      res.status(500).setHeader('Content-Type', 'text/html').send(errorHtml);
     }
   });
 
