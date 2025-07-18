@@ -637,9 +637,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Simple database health check
+  // Simple database health check with cache stats
   app.get('/api/db-health', requireAuth, async (req: any, res) => {
     try {
+      const { cache } = await import('./simple-cache');
       const userCount = await db.select({ count: count() }).from(users);
       const gigCount = await db.select({ count: count() }).from(gigs);
       
@@ -648,6 +649,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         userCount: userCount[0].count,
         gigCount: gigCount[0].count,
         indexes: 'active',
+        cache: cache.getStats(),
         timestamp: new Date().toISOString()
       });
     } catch (error) {

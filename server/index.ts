@@ -3,6 +3,7 @@ import cookieParser from "cookie-parser";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic } from "./vite";
 import { handleUnhandledRejections, handleUncaughtExceptions } from "./error-handler";
+import { cache } from "./simple-cache";
 
 const app = express();
 const port = process.env.PORT || 5000;
@@ -16,6 +17,9 @@ async function start() {
   // Set up global error handlers
   handleUnhandledRejections();
   handleUncaughtExceptions();
+  
+  // Initialize Redis cache
+  cache.init().catch(console.error);
   
   // Start infrastructure systems (simplified and staggered)
   try {
