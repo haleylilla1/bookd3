@@ -234,8 +234,8 @@ export default function Dashboard() {
       return sum + safeParseFloat(gig.tips);
     }, 0);
     
-    // For expenses, use original gigs since each day has separate expenses
-    const totalExpenses = currentPeriodGigs.reduce((sum, gig) => {
+    // EXPENSE FIX: Use grouped gigs to prevent counting expenses multiple times for multi-day events
+    const totalExpenses = groupedGigs.reduce((sum, gig) => {
       const parkingExpense = safeParseFloat(gig.parkingExpense);
       const otherExpenses = safeParseFloat(gig.otherExpenses);
       const mileageDeduction = (gig.mileage || 0) * 0.67;

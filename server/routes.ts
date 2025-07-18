@@ -708,10 +708,21 @@ function groupMultiDayGigs(gigs: any[]): any[] {
         const totalPay = sortedGigs.reduce((sum, g) => sum + (g.actualPay || g.expectedPay || 0), 0);
         const totalTips = sortedGigs.reduce((sum, g) => sum + (g.tips || 0), 0);
         
+        // EXPENSE FIX: Expenses are per-event, not per-day - use only first entry's expenses
+        const firstGig = sortedGigs[0];
+        
         grouped.push({
-          ...sortedGigs[0],
+          ...firstGig,
           actualPay: totalPay,
           tips: totalTips,
+          // Keep expenses from first entry only (expenses are for entire event)
+          parkingExpense: firstGig.parkingExpense,
+          otherExpenses: firstGig.otherExpenses,
+          mileage: firstGig.mileage,
+          parkingExpenseReceipts: firstGig.parkingExpenseReceipts,
+          otherExpenseReceipts: firstGig.otherExpenseReceipts,
+          parkingExpensesReimbursed: firstGig.parkingExpensesReimbursed,
+          otherExpensesReimbursed: firstGig.otherExpensesReimbursed,
           date: firstDate.toISOString().split('T')[0],
           endDate: lastDate.toISOString().split('T')[0],
           isMultiDay: true,
