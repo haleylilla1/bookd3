@@ -81,6 +81,18 @@ class SimpleCache {
     }
   }
 
+  async clearAll(): Promise<void> {
+    try {
+      if (this.client) {
+        await this.client.flushAll();
+      } else {
+        this.fallbackCache.clear();
+      }
+    } catch (error) {
+      // Fail silently
+    }
+  }
+
   private cleanup(): void {
     const now = Date.now();
     for (const [key, entry] of this.fallbackCache.entries()) {
