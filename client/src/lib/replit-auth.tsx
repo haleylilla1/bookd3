@@ -84,7 +84,7 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
   }
 
   if (!isAuthenticated) {
-    // Import and use the traditional auth form
+    // Import and use the advanced auth form with proper React Hook Form
     const AuthForm = React.lazy(() => import('../components/auth-form'));
     return (
       <React.Suspense fallback={<div className="min-h-screen flex items-center justify-center">
