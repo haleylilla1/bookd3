@@ -26,6 +26,8 @@ import { EnhancedRecoveryDialog } from "./enhanced-recovery-dialog";
 import { MobileAutoSaveIndicator, useMobileAutoSaveStatus, MobileRecoveryNotification } from "./mobile-auto-save-indicator";
 import { useFormAutoSave, submitFormWithRetry, getAutoSavedData, hasRecoverableData } from "@/lib/auto-save";
 import { useRecoverySystem, useMobileRecovery } from "@/hooks/use-recovery-system";
+import { useBulletproofMobileAutoSave } from "@/lib/bulletproof-mobile-autosave";
+import { BulletproofMobileIndicator, useBulletproofMobileIndicator } from "@/components/bulletproof-mobile-indicator";
 
 // ULTRA-SIMPLIFIED SCHEMA - Only validate truly required fields
 const gigFormSchema = z.object({
@@ -131,45 +133,26 @@ export default function GigForm({ onClose }: GigFormProps) {
   const [showMobileRecovery, setShowMobileRecovery] = useState(false);
   const [useEnhancedRecovery, setUseEnhancedRecovery] = useState(false);
 
-  // Enhanced recovery system
-  const recoverySystem = useRecoverySystem({
-    formKey: 'gig-form',
-    formType: 'gig',
-    autoCheck: true,
-    onRecoveryFound: (data) => {
-      setRecoveryData(data.data);
-      setUseEnhancedRecovery(true);
-      setShowRecoveryDialog(true);
-    },
-    onRecoveryCleared: () => {
-      setRecoveryData(null);
-      setShowRecoveryDialog(false);
-      setUseEnhancedRecovery(false);
-    }
-  });
-
-  // Optimized recovery system
-  const optimizedRecovery = useOptimizedRecovery({
-    formKey: 'gig-form',
-    formType: 'gig',
-    autoSave: true,
-    saveInterval: 1500,
-    compressionEnabled: true,
-    onRecoveryFound: (data) => {
-      setRecoveryData(data);
-      setUseEnhancedRecovery(true);
-      setShowRecoveryDialog(true);
-    },
-    onSaveSuccess: () => {
+  // BULLETPROOF MOBILE AUTO-SAVE SYSTEM
+  const bulletproofAutoSave = useBulletproofMobileAutoSave({
+    key: 'gig-form',
+    data: form.watch(),
+    enabled: true,
+    onSave: (data) => {
       setAutoSaveLastSaved(new Date());
     },
-    onSaveError: (error) => {
-      console.error('Optimized recovery save error:', error);
+    onError: (error) => {
+      console.error('Bulletproof auto-save error:', error);
+      toast({
+        title: "Auto-save Warning",
+        description: "Having trouble saving form data. Please save manually.",
+        variant: "destructive"
+      });
     }
   });
 
-  // Mobile recovery
-  const mobileRecovery = useMobileRecovery('gig-form', 'gig');
+  // Mobile indicator for better UX
+  const { showIndicator } = useBulletproofMobileIndicator('gig-form');
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const isOnline = useOnlineStatus();
@@ -245,35 +228,19 @@ export default function GigForm({ onClose }: GigFormProps) {
     defaultValues,
   });
 
-  // Watch all form data for auto-save
+  // Watch all form data for bulletproof auto-save
   const formData = form.watch();
   
-  // Auto-save functionality with mobile optimization
-  const { saveNow, clearSave, restoreData, checkForRecovery } = useFormAutoSave(
-    'gig-form',
-    formData,
-    !userLoading && user !== null
-  );
-
-  // Mobile-specific auto-save status
-  const mobileAutoSaveStatus = useMobileAutoSaveStatus('gig-form');
-
-  // Enhanced recovery detection on mount with mobile optimization
-  useEffect(() => {
-    if (user && !userLoading) {
-      const recoveryResult = checkForRecovery();
-      if (recoveryResult.hasData) {
-        setRecoveryData(recoveryResult.data);
-        
-        // Mobile-first approach: Show mobile recovery notification
-        if (window.innerWidth <= 768) {
-          setShowMobileRecovery(true);
-        } else {
-          setShowRecoveryDialog(true);
-        }
-      }
+  // Legacy recovery check for existing saved data
+  const checkForRecovery = () => {
+    const recoveredData = bulletproofAutoSave.recoverData();
+    if (recoveredData) {
+      return { hasData: true, data: recoveredData };
     }
-  }, [user, userLoading, checkForRecovery]);
+    return { hasData: false, data: null };
+  };
+
+  // Enhanced recovery detection on mount (removed - now handled by bulletproof system)
 
   // Update form when user data loads
   useEffect(() => {
@@ -287,14 +254,16 @@ export default function GigForm({ onClose }: GigFormProps) {
     }
   }, [user, userLoading, form]);
 
-  // Auto-save indicator update with mobile status sync
+  // Recovery handling on mount
   useEffect(() => {
-    if (formData && Object.keys(formData).length > 0) {
-      const now = new Date();
-      setAutoSaveLastSaved(now);
-      mobileAutoSaveStatus.markSaved();
+    if (user && !userLoading) {
+      const recoveredData = bulletproofAutoSave.recoverData();
+      if (recoveredData) {
+        setRecoveryData(recoveredData);
+        setShowRecoveryDialog(true);
+      }
     }
-  }, [formData, mobileAutoSaveStatus]);
+  }, [user, userLoading, bulletproofAutoSave]);
 
   // Bulletproof gig creation - never shows errors to users
   const createGigMutation = useMutation({
@@ -1285,98 +1254,59 @@ export default function GigForm({ onClose }: GigFormProps) {
         </CardContent>
       </Card>
       
-      {/* Mobile Recovery Notification */}
-      <MobileRecoveryNotification
-        hasRecoveryData={showMobileRecovery}
-        onRecover={() => {
-          // Restore form data
-          if (recoveryData) {
-            Object.keys(recoveryData).forEach(key => {
-              if (form.setValue) {
-                form.setValue(key as any, recoveryData[key]);
-              }
-            });
-          }
-          setShowMobileRecovery(false);
-        }}
-        onDiscard={() => {
-          clearSave();
-          setShowMobileRecovery(false);
-        }}
-      />
-
-      {/* Recovery Dialog - Optimized Version */}
-      {optimizedRecovery.recoveryData ? (
-        <OptimizedRecoveryDialog
-          isOpen={showRecoveryDialog}
-          onClose={() => setShowRecoveryDialog(false)}
-          onRestore={(data) => {
-            // Restore form data
-            Object.keys(data).forEach(key => {
-              if (form.setValue) {
-                form.setValue(key as any, data[key]);
-              }
-            });
-            optimizedRecovery.clearRecovery();
-            setShowRecoveryDialog(false);
-          }}
-          onDiscard={() => {
-            optimizedRecovery.clearRecovery();
-            setShowRecoveryDialog(false);
-          }}
-          recoveryData={optimizedRecovery.recoveryData.data}
-          timestamp={optimizedRecovery.recoveryData.timestamp}
-          formType="gig"
-          storageSource={optimizedRecovery.recoveryData.storageSource}
-          checksum={optimizedRecovery.recoveryData.checksum}
-          systemStats={optimizedRecovery.systemStats}
-        />
-      ) : useEnhancedRecovery ? (
-        <EnhancedRecoveryDialog
-          isOpen={showRecoveryDialog}
-          onClose={() => setShowRecoveryDialog(false)}
-          onRestore={(data) => {
-            // Restore form data
-            Object.keys(data).forEach(key => {
-              if (form.setValue) {
-                form.setValue(key as any, data[key]);
-              }
-            });
-            setShowRecoveryDialog(false);
-          }}
-          onDiscard={() => {
-            clearSave();
-            setShowRecoveryDialog(false);
-          }}
-          recoveryData={recoveryData}
-          timestamp={recoveryData?.timestamp || Date.now()}
-          formType="gig"
-          storageSource={recoverySystem.recoveryData?.storageSource || 'primary'}
-          autoSaveEnabled={true}
-          onlineStatus={isOnline}
-        />
-      ) : (
-        <RecoveryDialog
-          isOpen={showRecoveryDialog}
-          onClose={() => setShowRecoveryDialog(false)}
-          onRestore={(data) => {
-            // Restore form data
-            Object.keys(data).forEach(key => {
-              if (form.setValue) {
-                form.setValue(key as any, data[key]);
-              }
-            });
-            setShowRecoveryDialog(false);
-          }}
-          onDiscard={() => {
-            clearSave();
-            setShowRecoveryDialog(false);
-          }}
-          recoveryData={recoveryData}
-          timestamp={recoveryData?.timestamp || Date.now()}
-          formType="gig"
+      {/* Bulletproof Mobile Auto-Save Indicator */}
+      {showIndicator && (
+        <BulletproofMobileIndicator 
+          saveStatus={bulletproofAutoSave.saveStatus}
+          lastSaved={bulletproofAutoSave.lastSaved}
+          showDetails={true}
         />
       )}
+
+      {/* Recovery Dialog */}
+      {showRecoveryDialog && recoveryData && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full">
+            <h3 className="font-semibold text-lg mb-4">Restore Unsaved Form Data?</h3>
+            <p className="text-gray-600 mb-4">
+              We found unsaved form data from a previous session. Would you like to restore it?
+            </p>
+            <div className="flex gap-3">
+              <Button 
+                onClick={() => {
+                  Object.keys(recoveryData).forEach(key => {
+                    if (form.setValue && typeof form.setValue === 'function') {
+                      form.setValue(key as any, recoveryData[key]);
+                    }
+                  });
+                  setShowRecoveryDialog(false);
+                  setRecoveryData(null);
+                  toast({
+                    title: "Data Restored",
+                    description: "Your form data has been restored."
+                  });
+                }}
+                className="flex-1"
+              >
+                Restore Data
+              </Button>
+              <Button 
+                variant="outline" 
+                onClick={() => {
+                  bulletproofAutoSave.clearSavedData();
+                  setShowRecoveryDialog(false);
+                  setRecoveryData(null);
+                }}
+                className="flex-1"
+              >
+                Discard
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+
     </div>
   );
 }
