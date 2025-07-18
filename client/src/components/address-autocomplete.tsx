@@ -59,10 +59,13 @@ export function AddressAutocomplete({
       
       if (response.ok) {
         const data = await response.json();
-        console.log('Autocomplete API response:', data); // Debug log
+        console.log('✅ Autocomplete API response:', data); // Debug log
+        console.log('📋 Number of suggestions:', data.suggestions?.length || 0); // Debug log
         setSuggestions(data.suggestions || []);
-        setShowSuggestions(data.suggestions && data.suggestions.length > 0);
-        console.log('Setting showSuggestions to:', data.suggestions && data.suggestions.length > 0); // Debug log
+        const shouldShow = data.suggestions && data.suggestions.length > 0;
+        setShowSuggestions(shouldShow);
+        console.log('👁️ Setting showSuggestions to:', shouldShow); // Debug log
+        console.log('🎯 Current suggestions state:', suggestions); // Debug log
         
         // Show helpful message if using fallback suggestions
         if (data.fallback && data.suggestions && data.suggestions.length > 0) {
@@ -89,18 +92,18 @@ export function AddressAutocomplete({
     setInputValue(newValue);
     onChange(newValue);
 
-    console.log('Address input changed:', newValue); // Debug log
+    console.log('🔍 Address input changed:', newValue); // Debug log
 
     // Clear existing timeout
     if (debounceTimeoutRef.current) {
       clearTimeout(debounceTimeoutRef.current);
     }
 
-    // Set new timeout for API call
+    // Set new timeout for API call - reduced to 100ms for faster response
     debounceTimeoutRef.current = setTimeout(() => {
-      console.log('Fetching suggestions for:', newValue); // Debug log
+      console.log('🌐 Fetching suggestions for:', newValue); // Debug log
       fetchSuggestions(newValue);
-    }, 300);
+    }, 100);
   };
 
   // Handle suggestion selection
