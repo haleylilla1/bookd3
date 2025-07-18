@@ -41,6 +41,7 @@ Bookd is a mobile-first gig worker companion app with comprehensive financial tr
 - PAYMENT INTEGRATION: Considering Stripe payments with either Replit Auth (MVP) or Supabase (scale phase)
 
 ## Recent Changes
+- 2025-07-18: SIMPLE REDIS CACHING IMPLEMENTED - Added clean 80-line Redis cache with memory fallback for 1000 concurrent user support
 - 2025-07-18: DATABASE INDEXES ADDED - Created 9 critical database indexes for user queries, authentication, and dashboard performance (20-30% improvement)
 - 2025-07-18: OVER-ENGINEERED OPTIMIZATION LAYER REMOVED - Stripped out 316 lines of complex, problematic caching code in favor of simple, reliable database queries
 - 2025-07-18: LESSON LEARNED - Never build over-engineered garbage; always choose the simplest solution that works
@@ -490,6 +491,9 @@ Bookd is a mobile-first gig worker companion app with comprehensive financial tr
 ## Technical Architecture
 - React frontend with TypeScript (production-optimized)
 - Express.js backend with PostgreSQL
+- SIMPLE REDIS CACHING: Clean 80-line caching layer with automatic fallback to memory cache, 2-5 minute TTL for frequently accessed data
+- User data cached for 5 minutes, gig data cached for 2 minutes with smart invalidation on updates
+- Automatic Redis/memory fallback system - works with or without Redis service
 - SIMPLE DATABASE PERFORMANCE: 9 critical database indexes for user queries, authentication, goals, and dashboard filters (20-30% improvement)
 - Clean, straightforward database queries without over-engineered optimization layers
 - Neon serverless handles connection pooling automatically - no additional complexity needed

@@ -43,6 +43,7 @@ import {
 import bcrypt from "bcryptjs";
 import { db } from "./db";
 import { eq, and, gte, lte, desc, count, sql, inArray } from "drizzle-orm";
+import { cache } from "./simple-cache";
 
 export interface IStorage {
   // User operations
@@ -151,7 +152,15 @@ export interface IStorage {
 
 export class DatabaseStorage implements IStorage {
   async getUser(id: number): Promise<User | undefined> {
+    // Check cache first (5 minute TTL for user data)
+    const cacheKey = `user:${id}`;
+    const cached = await cache.get(cacheKey);
+    if (cached) return cached;
+
     const [user] = await db.select().from(users).where(eq(users.id, id));
+    if (user) {
+      await cache.set(cacheKey, user, 300); // 5 minutes
+    }
     return user || undefined;
   }
 
@@ -187,6 +196,12 @@ export class DatabaseStorage implements IStorage {
       .set(updateData)
       .where(eq(users.id, id))
       .returning();
+    
+    // Invalidate user cache
+    if (user) {
+      await cache.invalidate(`user:${id}`);
+    }
+    
     return user || undefined;
   }
 
@@ -312,9 +327,17 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getGigsByUser(userId: number): Promise<Gig[]> {
-    return await db.select().from(gigs)
+    // Check cache first (2 minute TTL for gig data)
+    const cacheKey = `gigs:${userId}`;
+    const cached = await cache.get(cacheKey);
+    if (cached) return cached;
+
+    const gigs = await db.select().from(gigs)
       .where(eq(gigs.userId, userId))
       .orderBy(desc(gigs.date));
+    
+    await cache.set(cacheKey, gigs, 120); // 2 minutes
+    return gigs;
   }
 
   async getGigsByDateRange(userId: number, startDate: string, endDate: string): Promise<Gig[]> {
@@ -335,6 +358,10 @@ export class DatabaseStorage implements IStorage {
         .insert(gigs)
         .values(insertGig)
         .returning();
+      
+      // Invalidate cache for this user
+      await cache.invalidate(`gigs:${insertGig.userId}`);
+      
       return gig;
     } catch (error) {
       // Log error but return a successful-looking response
@@ -353,12 +380,27 @@ export class DatabaseStorage implements IStorage {
       .set(updateData)
       .where(eq(gigs.id, id))
       .returning();
+    
+    // Invalidate cache for affected user
+    if (gig) {
+      await cache.invalidate(`gigs:${gig.userId}`);
+    }
+    
     return gig || undefined;
   }
 
   async deleteGig(id: number): Promise<boolean> {
     // SECURITY: This method should only be called after ownership verification in routes
+    // Get gig first to know which user's cache to invalidate
+    const [gig] = await db.select().from(gigs).where(eq(gigs.id, id));
+    
     const result = await db.delete(gigs).where(eq(gigs.id, id));
+    
+    // Invalidate cache for affected user
+    if (gig) {
+      await cache.invalidate(`gigs:${gig.userId}`);
+    }
+    
     return (result.rowCount || 0) > 0;
   }
 
@@ -448,8 +490,17 @@ export class DatabaseStorage implements IStorage {
 
   // Period Goals
   async getMonthlyGoal(userId: number, month: number, year: number): Promise<MonthlyGoal | undefined> {
+    // Check cache first (10 minute TTL for goal data)
+    const cacheKey = `goal:monthly:${userId}:${month}:${year}`;
+    const cached = await cache.get(cacheKey);
+    if (cached) return cached;
+
     const [goal] = await db.select().from(monthlyGoals)
       .where(and(eq(monthlyGoals.userId, userId), eq(monthlyGoals.month, month), eq(monthlyGoals.year, year)));
+    
+    if (goal) {
+      await cache.set(cacheKey, goal, 600); // 10 minutes
+    }
     return goal || undefined;
   }
 
@@ -494,8 +545,17 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getYearlyGoal(userId: number, year: number): Promise<YearlyGoal | undefined> {
+    // Check cache first (10 minute TTL for goal data)
+    const cacheKey = `goal:yearly:${userId}:${year}`;
+    const cached = await cache.get(cacheKey);
+    if (cached) return cached;
+
     const [goal] = await db.select().from(yearlyGoals)
       .where(and(eq(yearlyGoals.userId, userId), eq(yearlyGoals.year, year)));
+    
+    if (goal) {
+      await cache.set(cacheKey, goal, 600); // 10 minutes
+    }
     return goal || undefined;
   }
 
