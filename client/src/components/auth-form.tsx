@@ -209,15 +209,31 @@ export default function AuthForm() {
     },
     onSuccess: (data) => {
       toast({
-        title: "Reset email sent",
-        description: "If an account with that email exists, a reset link has been sent.",
+        title: "Reset email sent", 
+        description: data.developmentResetUrl ? 
+          "Check the console below for your reset link!" : 
+          "If an account with that email exists, a reset link has been sent.",
+        variant: data.developmentResetUrl ? "default" : "default"
       });
 
       if (data.developmentResetUrl) {
         console.log('🔗 Development Reset Link:', data.developmentResetUrl);
+        console.log('📝 Click the link above to reset your password!');
+        
+        // Also show the link in a more visible way for development
+        if (process.env.NODE_ENV !== 'production') {
+          setTimeout(() => {
+            const shouldRedirect = confirm(`Development Mode: Click OK to go directly to password reset, or Cancel to copy the URL manually.\n\nReset URL: ${data.developmentResetUrl}`);
+            if (shouldRedirect) {
+              window.location.href = data.developmentResetUrl;
+            }
+          }, 1000);
+        }
       }
 
-      setMode('login');
+      if (!data.developmentResetUrl) {
+        setMode('login');
+      }
     },
     onError: (error: any) => {
       toast({

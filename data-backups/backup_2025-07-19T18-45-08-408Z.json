@@ -1,5 +1,5 @@
 {
-  "timestamp": "2025-07-19T18:21:15.304Z",
+  "timestamp": "2025-07-19T18:45:09.299Z",
   "version": "1.0.0",
   "data": {
     "users": [
@@ -44,193 +44,9 @@
         "trialEndDate": "2025-08-08T20:46:37.119Z",
         "subscriptionStatus": "trial",
         "subscriptionTier": "trial",
-        "lastLoginAt": null,
+        "lastLoginAt": "2025-07-19T18:25:46.699Z",
         "createdAt": "2025-07-09T20:46:37.154Z",
-        "updatedAt": "2025-07-09T20:46:37.154Z"
-      },
-      {
-        "id": 16,
-        "name": "Bryan Moore",
-        "email": "54bmoore@gmail.com",
-        "phone": null,
-        "title": "Gig Worker",
-        "defaultTaxPercentage": 23,
-        "customGigTypes": [],
-        "homeAddress": null,
-        "businessName": null,
-        "businessAddress": null,
-        "businessPhone": null,
-        "businessEmail": null,
-        "replitId": null,
-        "googleId": null,
-        "passwordHash": "$2b$10$FhS5gMFEajlAxyj4KnDSyuv96QpltKMeIQFULFrvxudzaBHOTALEO",
-        "firstName": null,
-        "lastName": null,
-        "profileImageUrl": null,
-        "isActive": true,
-        "isDeleted": false,
-        "deletedAt": null,
-        "emailVerified": false,
-        "onboardingCompleted": false,
-        "notificationPreferences": {
-          "push": true,
-          "email": true,
-          "reminders": true
-        },
-        "workPreferences": {
-          "workingHours": {
-            "end": "17:00",
-            "start": "09:00"
-          },
-          "primaryGigTypes": [],
-          "preferredClients": []
-        },
-        "trialStartDate": "2025-06-26T17:06:36.161Z",
-        "trialEndDate": "2025-07-26T17:06:36.161Z",
-        "subscriptionStatus": "trial",
-        "subscriptionTier": "trial",
-        "lastLoginAt": null,
-        "createdAt": "2025-06-26T17:06:36.188Z",
-        "updatedAt": "2025-06-26T17:06:36.188Z"
-      },
-      {
-        "id": 23,
-        "name": "haley",
-        "email": "lilla@chapman.edu",
-        "phone": null,
-        "title": "Gig Worker",
-        "defaultTaxPercentage": 23,
-        "customGigTypes": [],
-        "homeAddress": null,
-        "businessName": null,
-        "businessAddress": null,
-        "businessPhone": null,
-        "businessEmail": null,
-        "replitId": null,
-        "googleId": null,
-        "passwordHash": "$2b$10$HBOTvT/fuxhHGUsnri6CIOYacYMxvYP7RxxurLnMV4OfpYXX6DXBa",
-        "firstName": null,
-        "lastName": null,
-        "profileImageUrl": null,
-        "isActive": true,
-        "isDeleted": false,
-        "deletedAt": null,
-        "emailVerified": false,
-        "onboardingCompleted": false,
-        "notificationPreferences": {
-          "push": true,
-          "email": true,
-          "reminders": true
-        },
-        "workPreferences": {
-          "workingHours": {
-            "end": "17:00",
-            "start": "09:00"
-          },
-          "primaryGigTypes": [],
-          "preferredClients": []
-        },
-        "trialStartDate": null,
-        "trialEndDate": null,
-        "subscriptionStatus": "trial",
-        "subscriptionTier": "trial",
-        "lastLoginAt": "2025-07-10T17:07:27.230Z",
-        "createdAt": "2025-07-10T16:14:52.979Z",
-        "updatedAt": "2025-07-10T16:14:52.979Z"
-      },
-      {
-        "id": 19,
-        "name": "Christina Zolotova",
-        "email": "czolotova@gmail.com",
-        "phone": null,
-        "title": "Gig Worker",
-        "defaultTaxPercentage": 23,
-        "customGigTypes": [
-          "Bartending",
-          "Brand ambassador",
-          "Lead event"
-        ],
-        "homeAddress": null,
-        "businessName": null,
-        "businessAddress": null,
-        "businessPhone": null,
-        "businessEmail": null,
-        "replitId": null,
-        "googleId": null,
-        "passwordHash": "$2b$10$O9VHGEdK7Dx4S3o8gciE/.pQztxAbEcHjJTWBdyO1YeyUCm.8nOZu",
-        "firstName": null,
-        "lastName": null,
-        "profileImageUrl": null,
-        "isActive": true,
-        "isDeleted": false,
-        "deletedAt": null,
-        "emailVerified": false,
-        "onboardingCompleted": false,
-        "notificationPreferences": {
-          "push": true,
-          "email": true,
-          "reminders": true
-        },
-        "workPreferences": {
-          "workingHours": {
-            "end": "17:00",
-            "start": "09:00"
-          },
-          "primaryGigTypes": [],
-          "preferredClients": []
-        },
-        "trialStartDate": "2025-06-28T20:52:36.161Z",
-        "trialEndDate": "2025-07-28T20:52:36.161Z",
-        "subscriptionStatus": "trial",
-        "subscriptionTier": "trial",
-        "lastLoginAt": null,
-        "createdAt": "2025-06-28T20:52:36.667Z",
-        "updatedAt": "2025-06-28T20:52:36.667Z"
-      },
-      {
-        "id": 22,
-        "name": "User Two",
-        "email": "user2@bookd.tools",
-        "phone": null,
-        "title": "Gig Worker",
-        "defaultTaxPercentage": 23,
-        "customGigTypes": [],
-        "homeAddress": null,
-        "businessName": null,
-        "businessAddress": null,
-        "businessPhone": null,
-        "businessEmail": null,
-        "replitId": null,
-        "googleId": null,
-        "passwordHash": "$2b$10$M3TR.wE0sklf4cM1K9XHeuRjCfpSOQgPTrpfhRDYB8NTrGLBzsFg2",
-        "firstName": null,
-        "lastName": null,
-        "profileImageUrl": null,
-        "isActive": true,
-        "isDeleted": false,
-        "deletedAt": null,
-        "emailVerified": false,
-        "onboardingCompleted": false,
-        "notificationPreferences": {
-          "push": true,
-          "email": true,
-          "reminders": true
-        },
-        "workPreferences": {
-          "workingHours": {
-            "end": "17:00",
-            "start": "09:00"
-          },
-          "primaryGigTypes": [],
-          "preferredClients": []
-        },
-        "trialStartDate": "2025-07-09T20:46:47.063Z",
-        "trialEndDate": "2025-08-08T20:46:47.063Z",
-        "subscriptionStatus": "trial",
-        "subscriptionTier": "trial",
-        "lastLoginAt": null,
-        "createdAt": "2025-07-09T20:46:47.097Z",
-        "updatedAt": "2025-07-09T20:46:47.097Z"
+        "updatedAt": "2025-07-19T18:21:17.422Z"
       },
       {
         "id": 5,
@@ -247,7 +63,7 @@
         "businessEmail": null,
         "replitId": null,
         "googleId": null,
-        "passwordHash": "$2b$10$EixVHiHkV8gOQbP4cXaCHeBuiYPLaXcD1dXUGJrBfpgbOCKWK7uL2",
+        "passwordHash": "$2b$10$PuS.2pdtgP1eWY1NvGx9le7RZAAN3prGptFISo7lKi8r5aYXsficK",
         "firstName": null,
         "lastName": null,
         "profileImageUrl": null,
@@ -278,23 +94,21 @@
         "updatedAt": "2025-06-20T03:21:16.254Z"
       },
       {
-        "id": 25,
-        "name": "Jessica Rafaela Roessler- Smith",
-        "email": "jroesslersmith@gmail.com",
+        "id": 16,
+        "name": "Bryan Moore",
+        "email": "54bmoore@gmail.com",
         "phone": null,
         "title": "Gig Worker",
         "defaultTaxPercentage": 23,
-        "customGigTypes": [
-          "Brand Ambassador"
-        ],
-        "homeAddress": "4844 Riverton Ave #104 North Hollywood, CA 91601",
-        "businessName": "Jessica Rafaela Roessler- Smith ",
-        "businessAddress": "4844 Riverton Ave #104 North Hollywood, CA 91601",
-        "businessPhone": "7862349137",
-        "businessEmail": "jroesslersmith@gmail.com",
+        "customGigTypes": [],
+        "homeAddress": null,
+        "businessName": null,
+        "businessAddress": null,
+        "businessPhone": null,
+        "businessEmail": null,
         "replitId": null,
         "googleId": null,
-        "passwordHash": "$2b$10$dLXUSw2b4CXSQFghlAHQOerLzC1JViQ22aPgVq7XCvCMmpnxGarPK",
+        "passwordHash": "$2b$10$HYns.2liZYbD9dp49n7Iluadtb2crBt9KhhcfuneQT4Scy9/fJJyC",
         "firstName": null,
         "lastName": null,
         "profileImageUrl": null,
@@ -316,13 +130,13 @@
           "primaryGigTypes": [],
           "preferredClients": []
         },
-        "trialStartDate": null,
-        "trialEndDate": null,
+        "trialStartDate": "2025-06-26T17:06:36.161Z",
+        "trialEndDate": "2025-07-26T17:06:36.161Z",
         "subscriptionStatus": "trial",
         "subscriptionTier": "trial",
-        "lastLoginAt": null,
-        "createdAt": "2025-07-19T03:06:31.193Z",
-        "updatedAt": "2025-07-19T03:06:31.193Z"
+        "lastLoginAt": "2025-07-19T18:25:45.992Z",
+        "createdAt": "2025-06-26T17:06:36.188Z",
+        "updatedAt": "2025-07-19T18:21:17.422Z"
       },
       {
         "id": 14,
@@ -369,7 +183,7 @@
         "trialEndDate": "2025-07-23T21:11:16.317Z",
         "subscriptionStatus": "trial",
         "subscriptionTier": "trial",
-        "lastLoginAt": "2025-07-19T18:20:56.355Z",
+        "lastLoginAt": "2025-07-19T18:42:11.779Z",
         "createdAt": "2025-06-23T21:11:16.352Z",
         "updatedAt": "2025-06-23T21:11:16.352Z"
       },
@@ -414,9 +228,195 @@
         "trialEndDate": null,
         "subscriptionStatus": "trial",
         "subscriptionTier": "trial",
-        "lastLoginAt": "2025-07-19T18:20:56.798Z",
+        "lastLoginAt": "2025-07-19T18:42:12.248Z",
         "createdAt": "2025-07-16T06:44:03.846Z",
         "updatedAt": "2025-07-16T06:44:03.846Z"
+      },
+      {
+        "id": 22,
+        "name": "User Two",
+        "email": "user2@bookd.tools",
+        "phone": null,
+        "title": "Gig Worker",
+        "defaultTaxPercentage": 23,
+        "customGigTypes": [],
+        "homeAddress": null,
+        "businessName": null,
+        "businessAddress": null,
+        "businessPhone": null,
+        "businessEmail": null,
+        "replitId": null,
+        "googleId": null,
+        "passwordHash": "$2b$10$M3TR.wE0sklf4cM1K9XHeuRjCfpSOQgPTrpfhRDYB8NTrGLBzsFg2",
+        "firstName": null,
+        "lastName": null,
+        "profileImageUrl": null,
+        "isActive": true,
+        "isDeleted": false,
+        "deletedAt": null,
+        "emailVerified": false,
+        "onboardingCompleted": false,
+        "notificationPreferences": {
+          "push": true,
+          "email": true,
+          "reminders": true
+        },
+        "workPreferences": {
+          "workingHours": {
+            "end": "17:00",
+            "start": "09:00"
+          },
+          "primaryGigTypes": [],
+          "preferredClients": []
+        },
+        "trialStartDate": "2025-07-09T20:46:47.063Z",
+        "trialEndDate": "2025-08-08T20:46:47.063Z",
+        "subscriptionStatus": "trial",
+        "subscriptionTier": "trial",
+        "lastLoginAt": "2025-07-19T18:42:12.608Z",
+        "createdAt": "2025-07-09T20:46:47.097Z",
+        "updatedAt": "2025-07-19T18:21:17.422Z"
+      },
+      {
+        "id": 23,
+        "name": "haley",
+        "email": "lilla@chapman.edu",
+        "phone": null,
+        "title": "Gig Worker",
+        "defaultTaxPercentage": 23,
+        "customGigTypes": [],
+        "homeAddress": null,
+        "businessName": null,
+        "businessAddress": null,
+        "businessPhone": null,
+        "businessEmail": null,
+        "replitId": null,
+        "googleId": null,
+        "passwordHash": "$2b$10$HYns.2liZYbD9dp49n7Iluadtb2crBt9KhhcfuneQT4Scy9/fJJyC",
+        "firstName": null,
+        "lastName": null,
+        "profileImageUrl": null,
+        "isActive": true,
+        "isDeleted": false,
+        "deletedAt": null,
+        "emailVerified": false,
+        "onboardingCompleted": false,
+        "notificationPreferences": {
+          "push": true,
+          "email": true,
+          "reminders": true
+        },
+        "workPreferences": {
+          "workingHours": {
+            "end": "17:00",
+            "start": "09:00"
+          },
+          "primaryGigTypes": [],
+          "preferredClients": []
+        },
+        "trialStartDate": null,
+        "trialEndDate": null,
+        "subscriptionStatus": "trial",
+        "subscriptionTier": "trial",
+        "lastLoginAt": "2025-07-19T18:25:45.651Z",
+        "createdAt": "2025-07-10T16:14:52.979Z",
+        "updatedAt": "2025-07-19T18:21:17.422Z"
+      },
+      {
+        "id": 25,
+        "name": "Jessica Rafaela Roessler- Smith",
+        "email": "jroesslersmith@gmail.com",
+        "phone": null,
+        "title": "Gig Worker",
+        "defaultTaxPercentage": 23,
+        "customGigTypes": [
+          "Brand Ambassador"
+        ],
+        "homeAddress": "4844 Riverton Ave #104 North Hollywood, CA 91601",
+        "businessName": "Jessica Rafaela Roessler- Smith ",
+        "businessAddress": "4844 Riverton Ave #104 North Hollywood, CA 91601",
+        "businessPhone": "7862349137",
+        "businessEmail": "jroesslersmith@gmail.com",
+        "replitId": null,
+        "googleId": null,
+        "passwordHash": "$2b$10$HYns.2liZYbD9dp49n7Iluadtb2crBt9KhhcfuneQT4Scy9/fJJyC",
+        "firstName": null,
+        "lastName": null,
+        "profileImageUrl": null,
+        "isActive": true,
+        "isDeleted": false,
+        "deletedAt": null,
+        "emailVerified": false,
+        "onboardingCompleted": false,
+        "notificationPreferences": {
+          "push": true,
+          "email": true,
+          "reminders": true
+        },
+        "workPreferences": {
+          "workingHours": {
+            "end": "17:00",
+            "start": "09:00"
+          },
+          "primaryGigTypes": [],
+          "preferredClients": []
+        },
+        "trialStartDate": null,
+        "trialEndDate": null,
+        "subscriptionStatus": "trial",
+        "subscriptionTier": "trial",
+        "lastLoginAt": "2025-07-19T18:25:47.045Z",
+        "createdAt": "2025-07-19T03:06:31.193Z",
+        "updatedAt": "2025-07-19T18:21:17.422Z"
+      },
+      {
+        "id": 19,
+        "name": "Christina Zolotova",
+        "email": "czolotova@gmail.com",
+        "phone": null,
+        "title": "Gig Worker",
+        "defaultTaxPercentage": 23,
+        "customGigTypes": [
+          "Bartending",
+          "Brand ambassador",
+          "Lead event"
+        ],
+        "homeAddress": null,
+        "businessName": null,
+        "businessAddress": null,
+        "businessPhone": null,
+        "businessEmail": null,
+        "replitId": null,
+        "googleId": null,
+        "passwordHash": "$2b$10$HYns.2liZYbD9dp49n7Iluadtb2crBt9KhhcfuneQT4Scy9/fJJyC",
+        "firstName": null,
+        "lastName": null,
+        "profileImageUrl": null,
+        "isActive": true,
+        "isDeleted": false,
+        "deletedAt": null,
+        "emailVerified": false,
+        "onboardingCompleted": false,
+        "notificationPreferences": {
+          "push": true,
+          "email": true,
+          "reminders": true
+        },
+        "workPreferences": {
+          "workingHours": {
+            "end": "17:00",
+            "start": "09:00"
+          },
+          "primaryGigTypes": [],
+          "preferredClients": []
+        },
+        "trialStartDate": "2025-06-28T20:52:36.161Z",
+        "trialEndDate": "2025-07-28T20:52:36.161Z",
+        "subscriptionStatus": "trial",
+        "subscriptionTier": "trial",
+        "lastLoginAt": "2025-07-19T18:25:47.389Z",
+        "createdAt": "2025-06-28T20:52:36.667Z",
+        "updatedAt": "2025-07-19T18:21:17.422Z"
       }
     ],
     "gigs": [
