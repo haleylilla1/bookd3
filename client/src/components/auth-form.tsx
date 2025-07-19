@@ -146,7 +146,9 @@ export default function AuthForm() {
     onError: (error: any) => {
       toast({
         title: "Login failed",
-        description: error.message || "Please try again",
+        description: error.message === "Invalid credentials" 
+          ? "Wrong email or password. Use 'Forgot Password' below if you need to reset it."
+          : error.message || "Please try again",
         variant: "destructive"
       });
     }

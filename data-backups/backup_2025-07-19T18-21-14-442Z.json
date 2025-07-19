@@ -1,5 +1,5 @@
 {
-  "timestamp": "2025-07-19T00:38:57.013Z",
+  "timestamp": "2025-07-19T18:21:15.304Z",
   "version": "1.0.0",
   "data": {
     "users": [
@@ -247,11 +247,11 @@
         "businessEmail": null,
         "replitId": null,
         "googleId": null,
-        "passwordHash": null,
+        "passwordHash": "$2b$10$EixVHiHkV8gOQbP4cXaCHeBuiYPLaXcD1dXUGJrBfpgbOCKWK7uL2",
         "firstName": null,
         "lastName": null,
         "profileImageUrl": null,
-        "isActive": true,
+        "isActive": false,
         "isDeleted": false,
         "deletedAt": null,
         "emailVerified": false,
@@ -278,6 +278,53 @@
         "updatedAt": "2025-06-20T03:21:16.254Z"
       },
       {
+        "id": 25,
+        "name": "Jessica Rafaela Roessler- Smith",
+        "email": "jroesslersmith@gmail.com",
+        "phone": null,
+        "title": "Gig Worker",
+        "defaultTaxPercentage": 23,
+        "customGigTypes": [
+          "Brand Ambassador"
+        ],
+        "homeAddress": "4844 Riverton Ave #104 North Hollywood, CA 91601",
+        "businessName": "Jessica Rafaela Roessler- Smith ",
+        "businessAddress": "4844 Riverton Ave #104 North Hollywood, CA 91601",
+        "businessPhone": "7862349137",
+        "businessEmail": "jroesslersmith@gmail.com",
+        "replitId": null,
+        "googleId": null,
+        "passwordHash": "$2b$10$dLXUSw2b4CXSQFghlAHQOerLzC1JViQ22aPgVq7XCvCMmpnxGarPK",
+        "firstName": null,
+        "lastName": null,
+        "profileImageUrl": null,
+        "isActive": true,
+        "isDeleted": false,
+        "deletedAt": null,
+        "emailVerified": false,
+        "onboardingCompleted": false,
+        "notificationPreferences": {
+          "push": true,
+          "email": true,
+          "reminders": true
+        },
+        "workPreferences": {
+          "workingHours": {
+            "end": "17:00",
+            "start": "09:00"
+          },
+          "primaryGigTypes": [],
+          "preferredClients": []
+        },
+        "trialStartDate": null,
+        "trialEndDate": null,
+        "subscriptionStatus": "trial",
+        "subscriptionTier": "trial",
+        "lastLoginAt": null,
+        "createdAt": "2025-07-19T03:06:31.193Z",
+        "updatedAt": "2025-07-19T03:06:31.193Z"
+      },
+      {
         "id": 14,
         "name": "Haley",
         "email": "haleylilla@gmail.com",
@@ -296,7 +343,7 @@
         "businessEmail": null,
         "replitId": null,
         "googleId": null,
-        "passwordHash": "$2b$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi",
+        "passwordHash": "$2b$10$PuS.2pdtgP1eWY1NvGx9le7RZAAN3prGptFISo7lKi8r5aYXsficK",
         "firstName": null,
         "lastName": null,
         "profileImageUrl": null,
@@ -322,7 +369,7 @@
         "trialEndDate": "2025-07-23T21:11:16.317Z",
         "subscriptionStatus": "trial",
         "subscriptionTier": "trial",
-        "lastLoginAt": "2025-07-18T23:08:11.933Z",
+        "lastLoginAt": "2025-07-19T18:20:56.355Z",
         "createdAt": "2025-06-23T21:11:16.352Z",
         "updatedAt": "2025-06-23T21:11:16.352Z"
       },
@@ -367,7 +414,7 @@
         "trialEndDate": null,
         "subscriptionStatus": "trial",
         "subscriptionTier": "trial",
-        "lastLoginAt": "2025-07-18T21:56:04.190Z",
+        "lastLoginAt": "2025-07-19T18:20:56.798Z",
         "createdAt": "2025-07-16T06:44:03.846Z",
         "updatedAt": "2025-07-16T06:44:03.846Z"
       }
@@ -1576,7 +1623,7 @@
     "yearlyGoals": []
   },
   "stats": {
-    "userCount": 8,
+    "userCount": 9,
     "gigCount": 40,
     "expenseCount": 0,
     "goalCount": 3

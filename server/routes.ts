@@ -1,6 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
+import { PasswordVerificationService } from "./password-verification";
 import { requireAuth } from "./unified-auth";
 
 // Helper function to get user ID from request (unified-auth pattern)
@@ -51,7 +52,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     message: 'Too many authentication attempts, please try again later.',
     standardHeaders: true,
     legacyHeaders: false,
-    skip: (req) => process.env.NODE_ENV === 'development', // Disable in development
+    skip: (req) => process.env.NODE_ENV === 'development' || !process.env.NODE_ENV, // Disable in development or when NODE_ENV undefined
     keyGenerator: (req) => {
       // Use a combination of IP and email to allow multiple users from same IP
       const email = req.body?.email || 'unknown';
@@ -65,7 +66,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     message: 'Too many password reset attempts, please try again later.',
     standardHeaders: true,
     legacyHeaders: false,
-    skip: (req) => process.env.NODE_ENV === 'development', // Disable in development
+    skip: (req) => process.env.NODE_ENV === 'development' || !process.env.NODE_ENV, // Disable in development or when NODE_ENV undefined
   });
 
   // Setup traditional auth routes using unified-auth.ts
