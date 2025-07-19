@@ -18,11 +18,33 @@ export interface AuthStatus {
 // Custom hook for authentication status
 export function useAuth() {
   const queryClient = useQueryClient();
+  
+  // SECURITY DEBUG: Log authentication state changes
+  const debugAuth = (action: string, data?: any) => {
+    console.log(`🔐 AUTH DEBUG: ${action}`, {
+      timestamp: new Date().toISOString(),
+      url: window.location.href,
+      data
+    });
+  };
 
   const { data: user, isLoading, error } = useQuery<User>({
     queryKey: ['/api/user'],
     retry: false,
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    staleTime: 0, // No stale time - always fresh auth check
+    cacheTime: 0, // No cache time - always fresh auth check
+    onSuccess: (userData) => {
+      if (userData) {
+        debugAuth('User authenticated', { 
+          id: userData.id, 
+          email: userData.email, 
+          name: userData.name 
+        });
+      }
+    },
+    onError: (error) => {
+      debugAuth('Authentication failed', { error: error.message });
+    }
   });
 
   const loginMutation = useMutation({

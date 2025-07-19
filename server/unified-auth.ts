@@ -157,10 +157,12 @@ export class PasswordReset {
       const emailSent = await EmailService.sendPasswordResetEmail(email, token);
       
       if (emailSent) {
+        console.log(`✅ Password reset email sent to ${email}`);
       } else {
-        
+        console.log(`❌ Failed to send password reset email to ${email}`);
         if (process.env.NODE_ENV !== 'production') {
           const resetUrl = `https://bookd.tools/?reset_token=${token}`;
+          console.log(`🔗 Development Reset URL: ${resetUrl}`);
         }
       }
 
@@ -512,10 +514,12 @@ export function setupAuthRoutes(app: any, authLimiter?: any, passwordResetLimite
       const token = await PasswordReset.createResetToken(email);
       
       if (process.env.NODE_ENV !== 'production' && token) {
-        const resetUrl = `https://bookd.tools/?reset_token=${token}`;
+        const resetUrl = `${req.protocol}://${req.get('host')}/?reset_token=${token}`;
+        console.log(`🔗 Password Reset URL for ${email}: ${resetUrl}`);
         res.json({ 
           message: "If an account with that email exists, a reset link has been sent to your email",
-          developmentResetUrl: resetUrl
+          developmentResetUrl: resetUrl,
+          resetToken: token
         });
       } else {
         res.json({ 
