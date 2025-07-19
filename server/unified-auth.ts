@@ -367,6 +367,8 @@ export function setupAuthRoutes(app: any, authLimiter?: any, passwordResetLimite
       
       const user = await AuthService.validatePassword(email, password);
       if (!user) {
+        // Log failed login attempts for debugging (without exposing sensitive info)
+        console.log(`Authentication failed for email: ${email.substring(0, 3)}***`);
         return res.status(401).json({ message: "Invalid credentials" });
       }
       
