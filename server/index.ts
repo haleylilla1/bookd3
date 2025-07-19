@@ -1,3 +1,9 @@
+// CRITICAL: Set NODE_ENV if undefined (Replit environment fix)
+if (!process.env.NODE_ENV) {
+  process.env.NODE_ENV = 'development';
+  console.log('⚠️ NODE_ENV was undefined, set to development');
+}
+
 import express from "express";
 import cookieParser from "cookie-parser";
 import { registerRoutes } from "./routes";

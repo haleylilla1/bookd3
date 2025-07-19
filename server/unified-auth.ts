@@ -271,7 +271,8 @@ export class AuthService {
         )
         .limit(1);
 
-      if (!user || !user.passwordHash) {
+      if (!user || !user.passwordHash || user.passwordHash.trim() === '') {
+        console.log(`User not found or invalid password hash for: ${email.substring(0, 3)}***`);
         return null;
       }
 
@@ -368,8 +369,11 @@ export function setupAuthRoutes(app: any, authLimiter?: any, passwordResetLimite
       const user = await AuthService.validatePassword(email, password);
       if (!user) {
         // Log failed login attempts for debugging (without exposing sensitive info)
-        console.log(`Authentication failed for email: ${email.substring(0, 3)}***`);
-        return res.status(401).json({ message: "Invalid credentials" });
+        console.log(`Authentication failed for email: ${email.substring(0, 3)}*** - password hash check failed`);
+        return res.status(401).json({ 
+          message: "Invalid credentials",
+          hint: "If this is your correct email, use 'Forgot Password' to reset your password"
+        });
       }
       
       const sessionId = await SessionManager.createSession(
