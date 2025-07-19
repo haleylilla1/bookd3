@@ -276,6 +276,7 @@ export class AuthService {
       }
 
       const isValid = await bcrypt.compare(password, user.passwordHash);
+      
       if (!isValid) {
         return null;
       }
@@ -392,7 +393,8 @@ export function setupAuthRoutes(app: any, authLimiter?: any, passwordResetLimite
         }
       });
     } catch (error) {
-      res.status(500).json({ message: "Login failed" });
+      console.error('Login error:', error);
+      res.status(500).json({ message: "Login failed", error: "Server error" });
     }
   });
 

@@ -124,7 +124,13 @@ export default function AuthForm() {
       });
 
       if (!response.ok) {
-        const error = await response.json();
+        let error;
+        try {
+          error = await response.json();
+        } catch (e) {
+          // Handle non-JSON responses
+          error = { message: `Login failed (${response.status})` };
+        }
         throw new Error(error.message || "Login failed");
       }
 
@@ -156,7 +162,13 @@ export default function AuthForm() {
       });
 
       if (!response.ok) {
-        const error = await response.json();
+        let error;
+        try {
+          error = await response.json();
+        } catch (e) {
+          // Handle non-JSON responses
+          error = { message: `Registration failed (${response.status})` };
+        }
         throw new Error(error.message || "Registration failed");
       }
 
