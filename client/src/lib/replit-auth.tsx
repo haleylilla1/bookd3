@@ -32,20 +32,23 @@ export function useAuth() {
     queryKey: ['/api/user'],
     retry: false,
     staleTime: 0, // No stale time - always fresh auth check
-    cacheTime: 0, // No cache time - always fresh auth check
-    onSuccess: (userData) => {
-      if (userData) {
-        debugAuth('User authenticated', { 
-          id: userData.id, 
-          email: userData.email, 
-          name: userData.name 
-        });
-      }
-    },
-    onError: (error) => {
-      debugAuth('Authentication failed', { error: error.message });
-    }
+    gcTime: 0, // No garbage collection time - always fresh auth check
   });
+
+  // Debug authentication state changes
+  React.useEffect(() => {
+    if (user) {
+      debugAuth('User authenticated', { 
+        id: user.id, 
+        email: user.email, 
+        name: user.name 
+      });
+    } else if (error) {
+      debugAuth('Authentication failed', { error: error.message });
+    } else if (!isLoading && !user) {
+      debugAuth('No authenticated user', {});
+    }
+  }, [user, error, isLoading]);
 
   const loginMutation = useMutation({
     mutationFn: async (credentials: { email: string; password: string }) => {

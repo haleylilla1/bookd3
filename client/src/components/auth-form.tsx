@@ -74,6 +74,11 @@ export default function AuthForm() {
 
     if (resetToken) {
       console.log('🔑 Reset token detected:', resetToken);
+      console.log('🔐 SECURITY DEBUG: Reset token flow starting', {
+        url: window.location.href,
+        token: resetToken.substring(0, 10) + '...',
+        timestamp: new Date().toISOString()
+      });
       
       // Validate token
       fetch("/api/auth/validate-reset-token", {
@@ -85,6 +90,11 @@ export default function AuthForm() {
       .then(data => {
         if (data.valid) {
           console.log('✅ Token validated for user:', data.user.email);
+          console.log('🔐 SECURITY DEBUG: Token validation successful', {
+            targetUser: data.user.email,
+            userId: data.user.id,
+            timestamp: new Date().toISOString()
+          });
           setMode('reset-password');
           resetPasswordForm.setValue('token', resetToken);
           toast({
