@@ -51,7 +51,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     message: 'Too many authentication attempts, please try again later.',
     standardHeaders: true,
     legacyHeaders: false,
-    skip: (req) => process.env.NODE_ENV === 'development', // Disable in development
+    skip: (req) => true, // Disabled for debugging authentication issues
   });
 
   const passwordResetLimiter = rateLimit({
@@ -60,7 +60,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     message: 'Too many password reset attempts, please try again later.',
     standardHeaders: true,
     legacyHeaders: false,
-    skip: (req) => process.env.NODE_ENV === 'development', // Disable in development
+    skip: (req) => true, // Disabled for debugging authentication issues
   });
 
   // Setup traditional auth routes using unified-auth.ts
