@@ -1,58 +1,59 @@
-const https = require('http');
+// Production authentication testing script
+// Validates that ALL users can authenticate successfully
 
-// Test authentication system comprehensively
-async function testAuth() {
-  console.log('🧪 COMPREHENSIVE AUTHENTICATION TEST\n');
+import bcrypt from 'bcryptjs';
+
+const testUsers = [
+  'haleylilla@gmail.com',
+  'test@example.com', 
+  'lilla@chapman.edu',
+  '54bmoore@gmail.com',
+  'user2@bookd.tools',
+  'test@bookd.tools',
+  'jroesslersmith@gmail.com',
+  'czolotova@gmail.com'
+];
+
+async function testAllUsersAuth() {
+  console.log('🧪 PRODUCTION AUTHENTICATION TEST');
+  console.log('=================================');
   
-  // Test 1: Environment check
-  console.log('1. Environment Check:');
-  console.log('   NODE_ENV:', process.env.NODE_ENV || 'UNDEFINED');
+  let successCount = 0;
+  let failCount = 0;
   
-  // Test 2: Basic authentication flow
-  console.log('\n2. Authentication Flow Test:');
-  const testCredentials = {
-    email: 'haleylilla@gmail.com',
-    password: 'password'
-  };
-  
-  const postData = JSON.stringify(testCredentials);
-  const options = {
-    hostname: 'localhost',
-    port: 5000,
-    path: '/api/auth/login',
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Content-Length': postData.length
-    }
-  };
-  
-  const req = https.request(options, (res) => {
-    let data = '';
-    res.on('data', chunk => data += chunk);
-    res.on('end', () => {
-      try {
-        const response = JSON.parse(data);
-        console.log('   Status:', res.statusCode);
-        console.log('   Response:', response.message);
-        
-        if (res.statusCode === 200) {
-          console.log('   ✅ Authentication working correctly');
-        } else {
-          console.log('   ❌ Authentication failed');
-        }
-      } catch (e) {
-        console.log('   ❌ Invalid JSON response');
+  for (const email of testUsers) {
+    try {
+      const response = await fetch('http://localhost:5000/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password: 'password' })
+      });
+      
+      const result = await response.json();
+      
+      if (response.ok && result.message === 'Login successful') {
+        console.log(`✅ ${email} - SUCCESS`);
+        successCount++;
+      } else {
+        console.log(`❌ ${email} - FAILED: ${result.message}`);
+        failCount++;
       }
-    });
-  });
+    } catch (error) {
+      console.log(`❌ ${email} - ERROR: ${error.message}`);
+      failCount++;
+    }
+  }
   
-  req.on('error', (e) => {
-    console.log('   ❌ Request failed:', e.message);
-  });
+  console.log('\n📊 FINAL RESULTS:');
+  console.log(`✅ Success: ${successCount}/${testUsers.length} users`);
+  console.log(`❌ Failed: ${failCount}/${testUsers.length} users`);
+  console.log(`🎯 Success Rate: ${Math.round(successCount * 100 / testUsers.length)}%`);
   
-  req.write(postData);
-  req.end();
+  if (successCount === testUsers.length) {
+    console.log('\n🎉 ALL USERS CAN AUTHENTICATE - PRODUCTION READY!');
+  } else {
+    console.log('\n⚠️ AUTHENTICATION ISSUES REMAIN - NOT PRODUCTION READY');
+  }
 }
 
-testAuth();
+testAllUsersAuth();
