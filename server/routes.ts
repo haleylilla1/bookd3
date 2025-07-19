@@ -44,23 +44,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
     await invalidateDashboardCache(userId);
   }
   
-  // Rate limiting for authentication endpoints
+  // Rate limiting for authentication endpoints - more permissive for better UX
   const authLimiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 5, // limit each IP to 5 requests per windowMs
+    max: 20, // Increased limit to prevent legitimate users from being blocked
     message: 'Too many authentication attempts, please try again later.',
     standardHeaders: true,
     legacyHeaders: false,
-    skip: (req) => true, // Disabled for debugging authentication issues
+    skip: (req) => process.env.NODE_ENV === 'development', // Disable in development
+    keyGenerator: (req) => {
+      // Use a combination of IP and email to allow multiple users from same IP
+      const email = req.body?.email || 'unknown';
+      return `${req.ip}-${email}`;
+    }
   });
 
   const passwordResetLimiter = rateLimit({
     windowMs: 60 * 60 * 1000, // 1 hour
-    max: 3, // limit each IP to 3 password reset requests per hour
+    max: 5, // Increased to allow legitimate reset attempts
     message: 'Too many password reset attempts, please try again later.',
     standardHeaders: true,
     legacyHeaders: false,
-    skip: (req) => true, // Disabled for debugging authentication issues
+    skip: (req) => process.env.NODE_ENV === 'development', // Disable in development
   });
 
   // Setup traditional auth routes using unified-auth.ts
