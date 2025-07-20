@@ -883,9 +883,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log('🛡️ BULLETPROOF: Graceful fallback served');
       }
       
-      // BULLETPROOF: Always succeed with valid HTML
+      // MEMORY OPTIMIZED: Streaming HTML response to reduce buffer allocations
       res.setHeader('Content-Type', 'text/html; charset=utf-8');
-      res.status(200).send(htmlContent);
+      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+      res.setHeader('Content-Encoding', 'identity'); // Prevent compression buffering
+      res.status(200);
+      
+      // MEMORY OPTIMIZED: Use streaming utility to minimize memory footprint
+      const { MemoryManager } = await import('./memory-management');
+      MemoryManager.streamLargeContent(res, htmlContent);
+      
+      // MEMORY CLEANUP: Force garbage collection after large content
+      MemoryManager.forceGarbageCollection();
+      console.log('🧠 MEMORY: PDF route cleaned up with memory management');
 
     } catch (error) {
       console.error('🚨 CATASTROPHIC ERROR in PDF route:', error);
@@ -966,9 +976,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log('🛡️ BULLETPROOF: Graceful fallback served');
       }
       
-      // BULLETPROOF: Always succeed with valid HTML
+      // MEMORY OPTIMIZED: Streaming HTML response to reduce buffer allocations
       res.setHeader('Content-Type', 'text/html; charset=utf-8');
-      res.status(200).send(htmlContent);
+      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+      res.setHeader('Content-Encoding', 'identity'); // Prevent compression buffering
+      res.status(200);
+      
+      // MEMORY OPTIMIZED: Use streaming utility to minimize memory footprint
+      const { MemoryManager } = await import('./memory-management');
+      MemoryManager.streamLargeContent(res, htmlContent);
+      
+      // MEMORY CLEANUP: Force garbage collection after large content
+      MemoryManager.forceGarbageCollection();
+      console.log('🧠 MEMORY: HTML route cleaned up with memory management');
 
     } catch (error) {
       console.error('🚨 CATASTROPHIC ERROR in HTML route:', error);

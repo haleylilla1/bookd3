@@ -36,6 +36,11 @@ interface ReceiptData {
 }
 
 export async function generateProfessionalHTML(options: ReportOptions): Promise<string> {
+  // MEMORY MANAGEMENT: Clear any large variables and force garbage collection at start
+  if (global.gc) {
+    global.gc();
+  }
+  
   // Validate input parameters with defaults (outside try block)
   const safeOptions = {
     userId: options.userId || 0,
@@ -45,7 +50,7 @@ export async function generateProfessionalHTML(options: ReportOptions): Promise<
   };
 
   try {
-    console.log('🚀 Starting bulletproof HTML report generation for user:', options.userId);
+    console.log('🚀 MEMORY OPTIMIZED: Starting HTML report generation for user:', options.userId);
     
     console.log('📊 Using safe options:', safeOptions);
     
