@@ -491,7 +491,9 @@ export function setupAuthRoutes(app: Express): void {
     }
   });
 
-  // GET CURRENT USER
+  // GET CURRENT USER - DISABLED (conflicted with routes.ts endpoint)
+  // The full user endpoint is now handled in routes.ts to return complete user profile data
+  /*
   app.get('/api/user', requireAuth, async (req: AuthenticatedRequest, res: Response) => {
     try {
       const userId = getUserId(req);
@@ -511,6 +513,7 @@ export function setupAuthRoutes(app: Express): void {
       res.status(500).json({ error: 'Failed to get user' });
     }
   });
+  */
 
   // PASSWORD RESET REQUEST
   app.post('/api/auth/reset-password', async (req: Request, res: Response) => {
