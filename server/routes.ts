@@ -163,14 +163,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     skip: (req) => process.env.NODE_ENV === 'development' || !process.env.NODE_ENV,
   });
 
-  // Reasonable rate limiting for resource-intensive operations
+  // Ultra-permissive rate limiting for mobile users
   const resourceIntensiveLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 25, // 25 requests per 15 minutes for report generation (more reasonable)
-    message: { error: 'Too many report requests, please wait a moment before trying again.' },
+    windowMs: 2 * 60 * 1000, // 2 minutes (very short window)
+    max: 100, // 100 requests per 2 minutes (ultra-permissive)
+    message: { error: 'Please wait 30 seconds before generating another report.' },
     standardHeaders: true,
     legacyHeaders: false,
-    skip: (req) => process.env.NODE_ENV === 'development' || !process.env.NODE_ENV,
+    // Only skip in development, ensure production gets this permissive config
+    skip: (req) => false, // Always apply rate limiting but with generous limits
   });
 
   // Setup bulletproof auth routes using consolidated auth.ts

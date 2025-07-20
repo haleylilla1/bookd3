@@ -1,5 +1,5 @@
 {
-  "timestamp": "2025-07-20T21:07:59.814Z",
+  "timestamp": "2025-07-20T21:27:14.769Z",
   "version": "1.0.0",
   "data": {
     "users": [
@@ -138,7 +138,7 @@
         "trialEndDate": "2025-07-23T21:11:16.317Z",
         "subscriptionStatus": "trial",
         "subscriptionTier": "trial",
-        "lastLoginAt": "2025-07-20T18:11:42.750Z",
+        "lastLoginAt": "2025-07-20T21:17:39.965Z",
         "createdAt": "2025-06-23T21:11:16.352Z",
         "updatedAt": "2025-06-23T21:11:16.352Z"
       },
@@ -284,7 +284,9 @@
         "phone": null,
         "title": "Gig Worker",
         "defaultTaxPercentage": 23,
-        "customGigTypes": [],
+        "customGigTypes": [
+          "Brand ambassador"
+        ],
         "homeAddress": null,
         "businessName": null,
         "businessAddress": null,
@@ -318,7 +320,7 @@
         "trialEndDate": null,
         "subscriptionStatus": "trial",
         "subscriptionTier": "trial",
-        "lastLoginAt": "2025-07-19T18:50:50.380Z",
+        "lastLoginAt": "2025-07-20T21:18:15.380Z",
         "createdAt": "2025-07-10T16:14:52.979Z",
         "updatedAt": "2025-07-19T18:21:17.422Z"
       },
@@ -420,6 +422,34 @@
       }
     ],
     "gigs": [
+      {
+        "id": 113,
+        "userId": 23,
+        "gigType": "Brand ambassador",
+        "eventName": "Yes",
+        "clientName": "N",
+        "date": "2025-07-21",
+        "expectedPay": "200.00",
+        "actualPay": "0.00",
+        "tips": "0.00",
+        "paymentMethod": "Cash",
+        "status": "upcoming",
+        "duties": null,
+        "taxPercentage": 23,
+        "mileage": 25,
+        "notes": null,
+        "parkingExpense": "0.00",
+        "parkingReceipts": [],
+        "parkingReimbursed": false,
+        "otherExpenses": "0.00",
+        "otherExpenseReceipts": [],
+        "otherExpensesReimbursed": false,
+        "gigAddress": null,
+        "distanceMiles": null,
+        "travelTimeMinutes": null,
+        "includeInResume": true,
+        "createdAt": "2025-07-20T21:19:32.203Z"
+      },
       {
         "id": 27,
         "userId": 5,
@@ -1624,7 +1654,7 @@
   },
   "stats": {
     "userCount": 9,
-    "gigCount": 40,
+    "gigCount": 41,
     "expenseCount": 0,
     "goalCount": 3
   }
