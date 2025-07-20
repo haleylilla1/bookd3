@@ -330,8 +330,7 @@ export default function Dashboard() {
       
       const params = new URLSearchParams({
         period: selectedPeriod,
-        year: year.toString(),
-        professional: 'true'
+        year: year.toString()
       });
       
       if (selectedPeriod === 'monthly') {
