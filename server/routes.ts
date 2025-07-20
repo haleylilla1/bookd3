@@ -69,6 +69,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
     skip: (req) => process.env.NODE_ENV === 'development' || !process.env.NODE_ENV, // Disable in development or when NODE_ENV undefined
   });
 
+  // API Rate Limiting for production endpoints
+  const apiLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 100, // 100 requests per 15 minutes per IP (normal user activity)
+    message: { error: 'Too many API requests, please try again later.' },
+    standardHeaders: true,
+    legacyHeaders: false,
+    skip: (req) => process.env.NODE_ENV === 'development' || !process.env.NODE_ENV,
+  });
+
+  // Stricter rate limiting for heavy operations
+  const heavyApiLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes  
+    max: 20, // 20 requests per 15 minutes for heavy operations
+    message: { error: 'Too many heavy operations, please try again later.' },
+    standardHeaders: true,
+    legacyHeaders: false,
+    skip: (req) => process.env.NODE_ENV === 'development' || !process.env.NODE_ENV,
+  });
+
+  // Ultra-strict rate limiting for resource-intensive operations
+  const resourceIntensiveLimiter = rateLimit({
+    windowMs: 60 * 60 * 1000, // 1 hour
+    max: 10, // 10 requests per hour for very heavy operations
+    message: { error: 'Resource limit exceeded, please try again later.' },
+    standardHeaders: true,
+    legacyHeaders: false,
+    skip: (req) => process.env.NODE_ENV === 'development' || !process.env.NODE_ENV,
+  });
+
   // Setup bulletproof auth routes using consolidated auth.ts
   const { setupAuthRoutes } = await import('./auth');
   setupAuthRoutes(app);
@@ -79,7 +109,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Field mapping validation endpoint for monitoring
-  app.get('/api/system/validate', requireAuth, asyncHandler(async (req: any, res) => {
+  app.get('/api/system/validate', apiLimiter, requireAuth, asyncHandler(async (req: any, res) => {
     try {
       const { FieldMappingValidator } = await import('./field-mapping-validator');
       const validation = await FieldMappingValidator.validateFieldMappingHealth();
@@ -195,7 +225,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   }));
 
   // User data endpoints - all require authentication
-  app.get('/api/user', requireAuth, asyncHandler(async (req: any, res) => {
+  app.get('/api/user', apiLimiter, requireAuth, asyncHandler(async (req: any, res) => {
     const userId = getUserId(req);
     
     // Check cache first (5-minute TTL for user data)
@@ -222,7 +252,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json(user);
   }));
 
-  app.put('/api/user', requireAuth, asyncHandler(async (req: any, res) => {
+  app.put('/api/user', apiLimiter, requireAuth, asyncHandler(async (req: any, res) => {
     const userId = getUserId(req);
     const updatedUser = await safeDbOperation(
       () => storage.updateUser(userId, req.body),
@@ -241,8 +271,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json(updatedUser);
   }));
 
-  // Gig endpoints
-  app.get('/api/gigs', requireAuth, async (req: any, res) => {
+  // Gig endpoints - rate limited for production scaling
+  app.get('/api/gigs', apiLimiter, requireAuth, async (req: any, res) => {
     try {
       const userId = getUserId(req);
       
@@ -263,7 +293,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // ULTRA-OPTIMIZED DASHBOARD ENDPOINT - Single query replaces 5-10 queries
-  app.get('/api/dashboard/optimized', requireAuth, async (req: any, res) => {
+  app.get('/api/dashboard/optimized', apiLimiter, requireAuth, async (req: any, res) => {
     try {
       const userId = getUserId(req);
       const { getDashboardData } = await import('./dashboard-optimized');
@@ -275,7 +305,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/gigs', requireAuth, async (req: any, res) => {
+  app.post('/api/gigs', heavyApiLimiter, requireAuth, async (req: any, res) => {
     try {
       const userId = getUserId(req);
       const gig = await storage.createGig({ ...req.body, user_id: userId });
@@ -286,7 +316,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put('/api/gigs/:id', requireAuth, async (req: any, res) => {
+  app.put('/api/gigs/:id', heavyApiLimiter, requireAuth, async (req: any, res) => {
     try {
       const gigId = parseInt(req.params.id);
       const userId = getUserId(req);
@@ -314,7 +344,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete('/api/gigs/:id', requireAuth, async (req: any, res) => {
+  app.delete('/api/gigs/:id', heavyApiLimiter, requireAuth, async (req: any, res) => {
     try {
       const gigId = parseInt(req.params.id);
       const userId = getUserId(req);
@@ -333,7 +363,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Expense endpoints
-  app.get('/api/expenses', requireAuth, async (req: any, res) => {
+  app.get('/api/expenses', apiLimiter, requireAuth, async (req: any, res) => {
     try {
       const expenses = await storage.getExpensesByUser(getUserId(req));
       res.json(expenses);
@@ -342,7 +372,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/expenses', requireAuth, async (req: any, res) => {
+  app.post('/api/expenses', heavyApiLimiter, requireAuth, async (req: any, res) => {
     try {
       const expense = await storage.createExpense({ ...req.body, userId: getUserId(req) });
       res.json(expense);
@@ -351,7 +381,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put('/api/expenses/:id', requireAuth, async (req: any, res) => {
+  app.put('/api/expenses/:id', heavyApiLimiter, requireAuth, async (req: any, res) => {
     try {
       const expenseId = parseInt(req.params.id);
       const existingExpense = await storage.getExpense(expenseId);
@@ -367,7 +397,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete('/api/expenses/:id', requireAuth, async (req: any, res) => {
+  app.delete('/api/expenses/:id', heavyApiLimiter, requireAuth, async (req: any, res) => {
     try {
       const expenseId = parseInt(req.params.id);
       const existingExpense = await storage.getExpense(expenseId);
@@ -384,7 +414,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Goal endpoints
-  app.get('/api/goals', requireAuth, async (req: any, res) => {
+  app.get('/api/goals', apiLimiter, requireAuth, async (req: any, res) => {
     try {
       const userId = getUserId(req);
       
@@ -404,7 +434,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/goals', requireAuth, async (req: any, res) => {
+  app.post('/api/goals', apiLimiter, requireAuth, async (req: any, res) => {
     try {
       const goal = await storage.createGoal({ ...req.body, userId: getUserId(req) });
       res.json(goal);
@@ -413,7 +443,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put('/api/goals/:id', requireAuth, async (req: any, res) => {
+  app.put('/api/goals/:id', apiLimiter, requireAuth, async (req: any, res) => {
     try {
       const goalId = parseInt(req.params.id);
       const existingGoal = await storage.getGoal(goalId);
@@ -429,7 +459,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete('/api/goals/:id', requireAuth, async (req: any, res) => {
+  app.delete('/api/goals/:id', apiLimiter, requireAuth, async (req: any, res) => {
     try {
       const goalId = parseInt(req.params.id);
       const existingGoal = await storage.getGoal(goalId);
@@ -446,7 +476,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Monthly/Yearly goal endpoints
-  app.get('/api/monthly-goals', requireAuth, async (req: any, res) => {
+  app.get('/api/monthly-goals', apiLimiter, requireAuth, async (req: any, res) => {
     try {
       const goals = await storage.getMonthlyGoalsByUser(getUserId(req));
       res.json(goals);
@@ -455,7 +485,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/monthly-goals', requireAuth, async (req: any, res) => {
+  app.post('/api/monthly-goals', apiLimiter, requireAuth, async (req: any, res) => {
     try {
       const goal = await storage.createMonthlyGoal({ ...req.body, userId: getUserId(req) });
       res.json(goal);
@@ -464,7 +494,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get('/api/yearly-goals', requireAuth, async (req: any, res) => {
+  app.get('/api/yearly-goals', apiLimiter, requireAuth, async (req: any, res) => {
     try {
       const goals = await storage.getYearlyGoalsByUser(getUserId(req));
       res.json(goals);
@@ -473,7 +503,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/yearly-goals', requireAuth, async (req: any, res) => {
+  app.post('/api/yearly-goals', apiLimiter, requireAuth, async (req: any, res) => {
     try {
       const goal = await storage.createYearlyGoal({ ...req.body, userId: getUserId(req) });
       res.json(goal);
@@ -482,8 +512,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Distance calculation endpoint (authenticated)
-  app.post('/api/calculate-distance', requireAuth, async (req: any, res) => {
+  // Distance calculation endpoint - resource intensive (Google Maps API calls)
+  app.post('/api/calculate-distance', resourceIntensiveLimiter, requireAuth, async (req: any, res) => {
     try {
       const { startAddress, endAddress, waypoints = [], roundTrip = false } = req.body;
       const userId = getUserId(req);
@@ -696,7 +726,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // PDF report generation endpoints
-  app.get('/api/reports/pdf', requireAuth, async (req: any, res) => {
+  app.get('/api/reports/pdf', resourceIntensiveLimiter, requireAuth, async (req: any, res) => {
     try {
       const { period, year, month, professional } = req.query;
       const userId = getUserId(req);
@@ -767,7 +797,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get('/api/reports/html', requireAuth, async (req: any, res) => {
+  app.get('/api/reports/html', resourceIntensiveLimiter, requireAuth, async (req: any, res) => {
     const userId = getUserId(req);
     
     // Additional authentication validation
@@ -841,7 +871,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Automatic gig status update endpoint
-  app.post('/api/gigs/update-statuses', requireAuth, async (req: any, res) => {
+  app.post('/api/gigs/update-statuses', apiLimiter, requireAuth, async (req: any, res) => {
     try {
       const gigs = await storage.getGigsByUser(getUserId(req));
       const today = new Date();
@@ -866,7 +896,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Custom gig types endpoint
-  app.get('/api/gig-types', requireAuth, async (req: any, res) => {
+  app.get('/api/gig-types', apiLimiter, requireAuth, async (req: any, res) => {
     try {
       const user = await storage.getUser(getUserId(req));
       res.json(user?.customGigTypes || []);
@@ -876,7 +906,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Simple database health check with cache stats
-  app.get('/api/db-health', requireAuth, async (req: any, res) => {
+  app.get('/api/db-health', apiLimiter, requireAuth, async (req: any, res) => {
     try {
       const { cache } = await import('./simple-cache');
       const userCount = await db.select({ count: count() }).from(users);
@@ -896,7 +926,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Clear cache endpoint (for troubleshooting)
-  app.post('/api/cache/clear', requireAuth, async (req: any, res) => {
+  app.post('/api/cache/clear', heavyApiLimiter, requireAuth, async (req: any, res) => {
     try {
       const { cache } = await import('./simple-cache');
       await cache.clearAll();
@@ -906,24 +936,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Database consistency validation endpoint
-  app.get('/api/system/validate', async (req, res) => {
-    try {
-      const { dbValidator } = await import('./database-consistency-check');
-      const results = await dbValidator.runAllChecks();
-      
-      res.json({
-        system: 'Database Consistency Validation',
-        timestamp: new Date().toISOString(),
-        ...results
-      });
-    } catch (error) {
-      res.status(500).json({ 
-        error: 'Validation failed', 
-        details: error instanceof Error ? error.message : 'Unknown error' 
-      });
-    }
-  });
+
 
   // Debug endpoint to test gig data without authentication (development only)
   app.get('/api/debug/gigs/:userId', async (req: any, res) => {
