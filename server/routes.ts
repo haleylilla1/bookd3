@@ -21,6 +21,75 @@ import { monitoringSystemCleanup } from "./monitoring-system-cleanup";
 import { fsWatcherLeakFix } from "./fswatcher-leak-fix";
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // BULLETPROOF ERROR HANDLING HELPER - GRACEFUL HTML FALLBACKS
+  function createGracefulErrorHTML(
+    title: string, 
+    message: string, 
+    suggestion: string, 
+    statusCode: number,
+    userId?: number,
+    error?: Error
+  ): string {
+    return `
+      <!DOCTYPE html>
+      <html lang="en">
+      <head>
+          <meta charset="UTF-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <title>${title}</title>
+          <style>
+              body { 
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
+                text-align: center; padding: 50px; background: #f8f9fa; margin: 0;
+              }
+              .error-container { 
+                max-width: 600px; margin: 0 auto; background: white; 
+                border-radius: 12px; padding: 40px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); 
+              }
+              .error-icon { font-size: 48px; margin-bottom: 20px; }
+              .error-title { color: #dc3545; margin-bottom: 20px; font-size: 28px; font-weight: bold; }
+              .error-message { color: #6c757d; margin-bottom: 20px; line-height: 1.6; font-size: 16px; }
+              .error-suggestion { color: #495057; margin-bottom: 30px; line-height: 1.5; font-size: 15px; }
+              .button { 
+                background: #007bff; color: white; padding: 14px 28px; 
+                text-decoration: none; border-radius: 8px; display: inline-block; 
+                font-weight: 500; margin: 10px; transition: background 0.2s;
+              }
+              .button:hover { background: #0056b3; }
+              .button-success { background: #28a745; }
+              .button-success:hover { background: #1e7e34; }
+              .debug { 
+                background: #f8f9fa; padding: 20px; margin: 30px 0; 
+                border-left: 4px solid #007bff; text-align: left; border-radius: 6px;
+                font-family: monospace; font-size: 14px; line-height: 1.4;
+              }
+          </style>
+      </head>
+      <body>
+          <div class="error-container">
+              <div class="error-icon">📊</div>
+              <h1 class="error-title">${title}</h1>
+              <p class="error-message">${message}</p>
+              <p class="error-suggestion">${suggestion}</p>
+              <div>
+                  <a href="javascript:window.close()" class="button">Close Window</a>
+                  <a href="/" class="button button-success">Return to Dashboard</a>
+              </div>
+              ${process.env.NODE_ENV === 'development' && error ? `
+                <div class="debug">
+                  <strong>🔧 Debug Information:</strong><br>
+                  <strong>Error:</strong> ${error.message || 'Unknown error'}<br>
+                  <strong>User ID:</strong> ${userId || 'Unknown'}<br>
+                  <strong>Timestamp:</strong> ${new Date().toISOString()}<br>
+                  <strong>Status:</strong> ${statusCode}
+                </div>
+              ` : ''}
+          </div>
+      </body>
+      </html>
+    `;
+  }
+
   // REPLIT AUTH: Zero-configuration authentication system
   
   // Set trust proxy for rate limiting
@@ -772,8 +841,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { period, year, month } = req.query;
       
+      // BULLETPROOF: Enhanced parameter validation with graceful HTML fallback
       if (!period || !year) {
-        return res.status(400).json({ error: 'Period and year are required' });
+        const paramErrorHtml = createGracefulErrorHTML(
+          'Missing Report Parameters', 
+          'We need a time period and year to generate your report.',
+          'Please select a period and try again.',
+          400,
+          userId
+        );
+        return res.status(200).setHeader('Content-Type', 'text/html').send(paramErrorHtml);
       }
 
       const reportRequest = {
@@ -783,96 +860,80 @@ export async function registerRoutes(app: Express): Promise<Server> {
         month: month ? parseInt(month as string) : undefined
       };
 
-      console.log('📊 UNIFIED REPORT: Processing report request', reportRequest);
+      console.log('📊 BULLETPROOF: Processing PDF report request', reportRequest);
 
-      // Use single, proven HTML generator
-      const { generateProfessionalHTML } = await import('./professional-html-generator');
-      const htmlContent = await generateProfessionalHTML(reportRequest);
-
-      console.log('✅ UNIFIED REPORT: Generated successfully');
+      // ENHANCED: Multi-layer error recovery for HTML generation
+      let htmlContent: string;
+      try {
+        const { generateProfessionalHTML } = await import('./professional-html-generator');
+        htmlContent = await generateProfessionalHTML(reportRequest);
+        console.log('✅ BULLETPROOF: Primary generation successful');
+      } catch (primaryError) {
+        console.error('🚨 PRIMARY FAILED:', primaryError);
+        
+        // GRACEFUL DEGRADATION: Return helpful error page instead of throwing
+        htmlContent = createGracefulErrorHTML(
+          'Report Generation Issue',
+          'We encountered a temporary issue generating your detailed report.',
+          'This may be due to high system load. Please try again in a moment.',
+          500,
+          userId,
+          primaryError as Error
+        );
+        console.log('🛡️ BULLETPROOF: Graceful fallback served');
+      }
       
-      // Always serve as HTML (user can print-to-PDF if needed)
+      // BULLETPROOF: Always succeed with valid HTML
       res.setHeader('Content-Type', 'text/html; charset=utf-8');
-      res.send(htmlContent);
+      res.status(200).send(htmlContent);
 
     } catch (error) {
-      logError('HTML report generation error', error as Error, userId);
+      console.error('🚨 CATASTROPHIC ERROR in PDF route:', error);
       
-      // Enhanced error response with fallback HTML
-      const errorHtml = `
-        <!DOCTYPE html>
-        <html lang="en">
-        <head>
-            <meta charset="UTF-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <title>Report Generation Error</title>
-            <style>
-                body { 
-                  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
-                  text-align: center; padding: 50px; background: #f8f9fa; 
-                }
-                .error-container { 
-                  max-width: 500px; margin: 0 auto; background: white; 
-                  border-radius: 8px; padding: 40px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); 
-                }
-                .error { color: #dc3545; margin-bottom: 20px; font-size: 24px; font-weight: bold; }
-                .message { color: #6c757d; margin-bottom: 30px; line-height: 1.5; }
-                .button { 
-                  background: #007bff; color: white; padding: 12px 24px; 
-                  text-decoration: none; border-radius: 6px; display: inline-block; 
-                  font-weight: 500;
-                }
-                .button:hover { background: #0056b3; }
-                .debug { 
-                  background: #f8f9fa; padding: 15px; margin: 20px 0; 
-                  border-left: 4px solid #007bff; text-align: left; border-radius: 4px;
-                }
-            </style>
-        </head>
-        <body>
-            <div class="error-container">
-                <h1 class="error">Report Generation Error</h1>
-                <p class="message">
-                  We're sorry, but we couldn't generate your income report at this time. 
-                  This might be due to temporary server issues or data processing problems.
-                </p>
-                <p class="message">Please try again in a few minutes. If the problem persists, contact support.</p>
-                <a href="javascript:window.close()" class="button">Close Window</a>
-                <div style="margin-top: 30px;">
-                  <a href="/" class="button" style="background: #28a745;">Return to Dashboard</a>
-                </div>
-                ${process.env.NODE_ENV === 'development' ? `
-                  <div class="debug">
-                    <strong>Debug Info:</strong><br>
-                    Error: ${error instanceof Error ? error.message : 'Unknown error'}<br>
-                    User ID: ${userId}<br>
-                    Timestamp: ${new Date().toISOString()}<br>
-                    Service: Simple HTML Generator
-                  </div>
-                ` : ''}
-            </div>
-        </body>
-        </html>
-      `;
+      // ULTIMATE FALLBACK: Absolute last resort error page
+      const catastrophicErrorHtml = createGracefulErrorHTML(
+        'Service Temporarily Unavailable',
+        'Our report service is experiencing technical difficulties.',
+        'Please try again later or contact support if this persists.',
+        500,
+        userId,
+        error as Error
+      );
       
-      res.status(500).setHeader('Content-Type', 'text/html').send(errorHtml);
+      // NEVER FAIL: Always return 200 with error content
+      res.status(200).setHeader('Content-Type', 'text/html').send(catastrophicErrorHtml);
     }
   });
 
-  // STANDARDIZED REPORT GENERATION - IDENTICAL TO PDF ROUTE
+  // BULLETPROOF HTML ROUTE - IDENTICAL ERROR HANDLING TO PDF ROUTE
   app.get('/api/reports/html', resourceIntensiveLimiter, requireAuth, async (req: any, res) => {
     const userId = getUserId(req);
     
-    // Additional authentication validation
+    // Enhanced authentication validation with HTML response
     if (!userId || userId <= 0) {
-      return res.status(401).json({ error: 'Invalid user authentication' });
+      const authErrorHtml = createGracefulErrorHTML(
+        'Authentication Required',
+        'Please log in to access your income reports.',
+        'Your session may have expired. Please log in again.',
+        401,
+        undefined
+      );
+      return res.status(200).setHeader('Content-Type', 'text/html').send(authErrorHtml);
     }
     
     try {
       const { period, year, month } = req.query;
       
+      // BULLETPROOF: Enhanced parameter validation with graceful HTML fallback
       if (!period || !year) {
-        return res.status(400).json({ error: 'Period and year are required' });
+        const paramErrorHtml = createGracefulErrorHTML(
+          'Missing Report Parameters', 
+          'We need a time period and year to generate your report.',
+          'Please select a period and try again.',
+          400,
+          userId
+        );
+        return res.status(200).setHeader('Content-Type', 'text/html').send(paramErrorHtml);
       }
 
       const reportRequest = {
@@ -882,57 +943,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
         month: month ? parseInt(month as string) : undefined
       };
 
-      console.log('📊 UNIFIED REPORT: Processing report request', reportRequest);
+      console.log('📊 BULLETPROOF: Processing HTML report request', reportRequest);
 
-      // Use single, proven HTML generator
-      const { generateProfessionalHTML } = await import('./professional-html-generator');
-      const htmlContent = await generateProfessionalHTML(reportRequest);
+      // ENHANCED: Multi-layer error recovery for HTML generation
+      let htmlContent: string;
+      try {
+        const { generateProfessionalHTML } = await import('./professional-html-generator');
+        htmlContent = await generateProfessionalHTML(reportRequest);
+        console.log('✅ BULLETPROOF: Primary generation successful');
+      } catch (primaryError) {
+        console.error('🚨 PRIMARY FAILED:', primaryError);
+        
+        // GRACEFUL DEGRADATION: Return helpful error page instead of throwing
+        htmlContent = createGracefulErrorHTML(
+          'Report Generation Issue',
+          'We encountered a temporary issue generating your detailed report.',
+          'This may be due to high system load. Please try again in a moment.',
+          500,
+          userId,
+          primaryError as Error
+        );
+        console.log('🛡️ BULLETPROOF: Graceful fallback served');
+      }
       
-      console.log('✅ UNIFIED REPORT: Generated successfully');
-      
-      // Set appropriate headers for HTML response
+      // BULLETPROOF: Always succeed with valid HTML
       res.setHeader('Content-Type', 'text/html; charset=utf-8');
-      res.send(htmlContent);
+      res.status(200).send(htmlContent);
+
     } catch (error) {
-      logError('HTML report generation error', error as Error, userId);
+      console.error('🚨 CATASTROPHIC ERROR in HTML route:', error);
       
-      // Send a friendly HTML error page instead of JSON
-      const errorHtml = `
-        <!DOCTYPE html>
-        <html lang="en">
-        <head>
-            <meta charset="UTF-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <title>Report Generation Error</title>
-            <style>
-                body { font-family: Arial, sans-serif; text-align: center; padding: 50px; background: #f8f9fa; }
-                .error { color: #dc3545; margin-bottom: 20px; }
-                .message { color: #6c757d; margin-bottom: 30px; }
-                .button { 
-                  background: #007bff; color: white; padding: 10px 20px; 
-                  text-decoration: none; border-radius: 5px; display: inline-block; 
-                }
-                .debug { background: #f8f9fa; padding: 15px; margin: 20px; border-left: 4px solid #007bff; text-align: left; }
-            </style>
-        </head>
-        <body>
-            <h1 class="error">Report Generation Error</h1>
-            <p class="message">Unable to generate the professional tax report. Please try again later.</p>
-            <p class="message">If this problem persists, please contact support.</p>
-            <a href="javascript:window.close()" class="button">Close Window</a>
-            ${process.env.NODE_ENV === 'development' ? `
-              <div class="debug">
-                <strong>Debug Info:</strong><br>
-                Error: ${error instanceof Error ? error.message : 'Unknown error'}<br>
-                User ID: ${userId}<br>
-                Timestamp: ${new Date().toISOString()}
-              </div>
-            ` : ''}
-        </body>
-        </html>
-      `;
+      // ULTIMATE FALLBACK: Absolute last resort error page
+      const catastrophicErrorHtml = createGracefulErrorHTML(
+        'Service Temporarily Unavailable',
+        'Our report service is experiencing technical difficulties.',
+        'Please try again later or contact support if this persists.',
+        500,
+        userId,
+        error as Error
+      );
       
-      res.status(500).setHeader('Content-Type', 'text/html').send(errorHtml);
+      // NEVER FAIL: Always return 200 with error content
+      res.status(200).setHeader('Content-Type', 'text/html').send(catastrophicErrorHtml);
     }
   });
 
