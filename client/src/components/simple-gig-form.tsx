@@ -146,12 +146,14 @@ export default function SimpleGigForm({ onClose }: SimpleGigFormProps) {
   const [isCalculatingMileage, setIsCalculatingMileage] = useState(false);
   const [mileageError, setMileageError] = useState<string | null>(null);
 
-  // Calculate mileage when addresses change
+  // Only auto-calculate when round trip toggle changes (not when typing addresses)
   useEffect(() => {
-    if (trackMileage && startingAddress && endingAddress && startingAddress !== endingAddress) {
+    // Only auto-calculate if we have a complete previous calculation and round trip changes
+    const currentMileage = form.watch("mileage");
+    if (trackMileage && startingAddress && endingAddress && currentMileage > 0) {
       calculateMileage();
     }
-  }, [startingAddress, endingAddress, isRoundTrip, trackMileage]);
+  }, [isRoundTrip]);
 
   const calculateMileage = async () => {
     if (!startingAddress || !endingAddress) return;
@@ -543,6 +545,10 @@ export default function SimpleGigForm({ onClose }: SimpleGigFormProps) {
                             onChange={(address) => {
                               field.onChange(address);
                               setMileageError(null);
+                              // Auto-calculate when user selects a complete address from autocomplete
+                              if (address && endingAddress && address !== endingAddress) {
+                                setTimeout(() => calculateMileage(), 500);
+                              }
                             }}
                             placeholder="Enter starting address"
                           />
@@ -565,6 +571,10 @@ export default function SimpleGigForm({ onClose }: SimpleGigFormProps) {
                             onChange={(address) => {
                               field.onChange(address);
                               setMileageError(null);
+                              // Auto-calculate when user selects a complete address from autocomplete
+                              if (address && startingAddress && address !== startingAddress) {
+                                setTimeout(() => calculateMileage(), 500);
+                              }
                             }}
                             placeholder="Enter destination address"
                           />
