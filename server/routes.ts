@@ -915,21 +915,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         format: format === 'professional' ? 'professional' : 'mobile' as 'professional' | 'simple' | 'mobile'
       };
 
-      console.log('🌐 SUPABASE HTML: Processing HTML report request', reportRequest);
+      console.log('🌐 HTML REPORT: Processing simple HTML report request', reportRequest);
 
-      // Use unified Supabase PDF Service for HTML generation too
-      const { supabasePDFService } = await import('./supabase-pdf-service');
-      const result = await supabasePDFService.generateReport(reportRequest);
-
-      if (!result.success || !result.data || typeof result.data !== 'string') {
-        throw new Error(result.error || 'HTML report generation failed');
-      }
+      // Use simple, reliable HTML generator (no over-engineering)
+      const { generateProfessionalHTML } = await import('./professional-html-generator');
+      const htmlContent = await generateProfessionalHTML(reportRequest);
       
-      console.log('✅ SUPABASE HTML: HTML report generated successfully');
+      console.log('✅ HTML REPORT: Generated successfully with simple approach');
       
       // Set appropriate headers for HTML response
       res.setHeader('Content-Type', 'text/html; charset=utf-8');
-      res.send(result.data);
+      res.send(htmlContent);
     } catch (error) {
       
       // Send a friendly HTML error page instead of JSON
