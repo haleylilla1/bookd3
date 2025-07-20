@@ -191,22 +191,20 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateUser(id: number, updateData: Partial<InsertUser>): Promise<User | undefined> {
-    console.log(`📝 Storage: Updating user ${id} with:`, updateData);
-    
     const [user] = await db
       .update(users)
       .set(updateData)
       .where(eq(users.id, id))
       .returning();
     
-    // Invalidate user cache and any related caches
+    // Comprehensive cache invalidation for user data
     if (user) {
-      console.log(`🗑️ Storage: Invalidating cache for user ${id}`);
-      await cache.invalidate(`user:${id}`);
-      // Also invalidate any related caches
-      await cache.invalidate(`dashboard:${id}`);
-      await cache.invalidate(`gigs:${id}`);
-      console.log(`✅ Storage: User updated and cache cleared:`, user);
+      await Promise.all([
+        cache.invalidate(`user:${id}`),
+        cache.invalidate(`dashboard:${id}`),
+        cache.invalidate(`gigs:${id}`),
+        cache.invalidate(`goals:${id}`)
+      ]);
     }
     
     return user || undefined;
@@ -398,7 +396,10 @@ export class DatabaseStorage implements IStorage {
       
       // Invalidate cache for affected user
       if (gig) {
-        await cache.invalidate(`gigs:${gig.userId}`);
+        await Promise.all([
+          cache.invalidate(`gigs:${gig.userId}`),
+          cache.invalidate(`dashboard:${gig.userId}`)
+        ]);
       }
       
       return gig || undefined;
@@ -417,7 +418,10 @@ export class DatabaseStorage implements IStorage {
     
     // Invalidate cache for affected user
     if (gig) {
-      await cache.invalidate(`gigs:${gig.userId}`);
+      await Promise.all([
+        cache.invalidate(`gigs:${gig.userId}`),
+        cache.invalidate(`dashboard:${gig.userId}`)
+      ]);
     }
     
     return (result.rowCount || 0) > 0;
@@ -531,6 +535,13 @@ export class DatabaseStorage implements IStorage {
         .set({ goalAmount, updatedAt: new Date() })
         .where(eq(monthlyGoals.id, existing.id))
         .returning();
+      
+      // Invalidate dashboard cache since goals affect dashboard display
+      if (updated) {
+        await cache.invalidate(`dashboard:${updated.userId}`);
+        await cache.invalidate(`goals:${updated.userId}`);
+      }
+      
       return updated;
     } else {
       const [created] = await db.insert(monthlyGoals)
@@ -586,6 +597,13 @@ export class DatabaseStorage implements IStorage {
         .set({ goalAmount, updatedAt: new Date() })
         .where(eq(yearlyGoals.id, existing.id))
         .returning();
+      
+      // Invalidate dashboard cache since goals affect dashboard display
+      if (updated) {
+        await cache.invalidate(`dashboard:${updated.userId}`);
+        await cache.invalidate(`goals:${updated.userId}`);
+      }
+      
       return updated;
     } else {
       const [created] = await db.insert(yearlyGoals)
@@ -664,12 +682,33 @@ export class DatabaseStorage implements IStorage {
       .set(updateData)
       .where(eq(expenses.id, id))
       .returning();
+    
+    // Invalidate user-specific caches since expenses affect dashboard calculations
+    if (expense) {
+      await Promise.all([
+        cache.invalidate(`dashboard:${expense.userId}`),
+        cache.invalidate(`expenses:${expense.userId}`)
+      ]);
+    }
+    
     return expense || undefined;
   }
 
   async deleteExpense(id: number): Promise<boolean> {
     // SECURITY: This method should only be called after ownership verification in routes
+    // Get expense info before deletion for cache invalidation
+    const [expense] = await db.select().from(expenses).where(eq(expenses.id, id));
+    
     const result = await db.delete(expenses).where(eq(expenses.id, id));
+    
+    // Invalidate user-specific caches since expenses affect dashboard calculations
+    if (expense && result.rowCount !== null && result.rowCount > 0) {
+      await Promise.all([
+        cache.invalidate(`expenses:${expense.userId}`),
+        cache.invalidate(`dashboard:${expense.userId}`)
+      ]);
+    }
+    
     return result.rowCount !== null && result.rowCount > 0;
   }
 

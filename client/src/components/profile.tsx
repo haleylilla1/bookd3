@@ -42,18 +42,14 @@ export default function Profile() {
       return response.json();
     },
     onSuccess: async (data) => {
-      console.log("🔄 User update successful, data returned:", data);
-      
       // Clear React Query cache for user data
       queryClient.removeQueries({ queryKey: ["/api/user"] });
-      
-      // Force immediate refetch of user data
-      await queryClient.invalidateQueries({ queryKey: ["/api/user"] });
       
       // Set the updated data directly in cache to ensure immediate UI update
       queryClient.setQueryData(["/api/user"], data);
       
-      console.log("✅ Cache updated with new user data:", data);
+      // Force refetch to ensure consistency
+      await queryClient.invalidateQueries({ queryKey: ["/api/user"] });
       
       toast({
         title: "Success",
