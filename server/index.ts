@@ -28,6 +28,14 @@ async function start() {
   // Initialize advanced cache
   advancedCache.init().catch(console.error);
   
+  // Initialize FSWatcher leak fix (must be first to catch Vite watchers)
+  const { fsWatcherLeakFix } = await import('./fswatcher-leak-fix');
+  console.log('👁️  FSWatcher leak fix active - tracking file watcher creation/cleanup');
+  
+  // Initialize timer leak detection 
+  const { timerLeakDetector } = await import('./timer-leak-detector');
+  console.log('🔍 Timer leak detection active - tracking all timer creation/cleanup');
+  
   // Initialize memory leak fixes
   const { memoryLeakFixer } = await import('./memory-leak-fixes');
   memoryLeakFixer.setupDatabaseConnectionPooling();
