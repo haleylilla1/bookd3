@@ -34,6 +34,8 @@ interface CacheStats {
   warmingHits: number;
   dynamicAdjustments: number;
   batchOperations: number;
+  emergencyCleanups: number;
+  lastEmergencyCleanup: number;
   warnings: string[];
   timestamp: string;
   // Compression and size optimization stats
@@ -161,6 +163,11 @@ class AdvancedCache {
   private totalOriginalSize = 0;
   private totalCompressedSize = 0;
   
+  // Emergency cleanup stats
+  private emergencyCleanups = 0;
+  private lastEmergencyCleanup = 0;
+  private emergencyCleanupCooldown = 5 * 60 * 1000; // 5 minutes cooldown
+  
   // Cache activity tracking for dynamic intervals
   private recentActivity: number[] = [];
   private lastActivityCheck = Date.now();
@@ -190,6 +197,7 @@ class AdvancedCache {
     this.startDynamicCleanup();
     this.startCacheWarming();
     this.startActivityMonitoring();
+    this.startEmergencyMemoryMonitoring();
   }
 
   // Dynamic interval adjustment based on cache activity
@@ -282,6 +290,217 @@ class AdvancedCache {
     setInterval(() => {
       this.cleanupAccessPatterns();
     }, 10 * 60 * 1000); // Every 10 minutes
+  }
+
+  // Emergency memory monitoring and cleanup
+  private startEmergencyMemoryMonitoring(): void {
+    setInterval(() => {
+      this.checkMemoryPressure();
+    }, 30 * 1000); // Check every 30 seconds
+  }
+
+  private checkMemoryPressure(): void {
+    const memoryUsage = process.memoryUsage();
+    const heapUsedMB = memoryUsage.heapUsed / 1024 / 1024;
+    const heapTotalMB = memoryUsage.heapTotal / 1024 / 1024;
+    const utilizationPercent = (heapUsedMB / heapTotalMB) * 100;
+    
+    // Emergency cleanup threshold: >90% memory utilization
+    if (utilizationPercent > 90) {
+      console.log(`🚨 EMERGENCY: Memory utilization at ${utilizationPercent.toFixed(1)}% (${heapUsedMB.toFixed(1)}MB/${heapTotalMB.toFixed(1)}MB)`);
+      this.performEmergencyCleanup(heapUsedMB, heapTotalMB, utilizationPercent);
+    }
+    // Warning threshold: >80% memory utilization  
+    else if (utilizationPercent > 80) {
+      console.log(`⚠️  WARNING: Memory utilization at ${utilizationPercent.toFixed(1)}% (${heapUsedMB.toFixed(1)}MB/${heapTotalMB.toFixed(1)}MB)`);
+      this.performPreventiveCleanup(heapUsedMB, heapTotalMB, utilizationPercent);
+    }
+  }
+
+  private performEmergencyCleanup(heapUsedMB: number, heapTotalMB: number, utilizationPercent: number): void {
+    const startTime = Date.now();
+    const initialEntries = this.fallbackCache.size;
+    const targetReduction = 0.5; // Clear 50% of cache
+    
+    console.log(`🧹 EMERGENCY CLEANUP: Clearing ${(targetReduction * 100)}% of cache entries`);
+    console.log(`📊 Before cleanup: ${initialEntries} entries, ${heapUsedMB.toFixed(1)}MB heap`);
+    
+    if (this.client) {
+      // Redis cleanup - clear 50% of keys
+      this.performEmergencyRedisCleanup(targetReduction);
+    } else {
+      // Memory cache cleanup with priority-based eviction
+      this.performEmergencyMemoryCleanup(targetReduction);
+    }
+    
+    // Force garbage collection if available
+    if (global.gc) {
+      console.log('🗑️  Forcing garbage collection');
+      global.gc();
+    }
+    
+    const endTime = Date.now();
+    const finalEntries = this.fallbackCache.size;
+    const entriesRemoved = initialEntries - finalEntries;
+    const memoryAfter = process.memoryUsage();
+    const heapAfterMB = memoryAfter.heapUsed / 1024 / 1024;
+    
+    console.log(`✅ EMERGENCY CLEANUP COMPLETE:`);
+    console.log(`   Entries removed: ${entriesRemoved}/${initialEntries} (${((entriesRemoved/initialEntries)*100).toFixed(1)}%)`);
+    console.log(`   Memory recovered: ${(heapUsedMB - heapAfterMB).toFixed(1)}MB`);
+    console.log(`   New utilization: ${((heapAfterMB / heapTotalMB) * 100).toFixed(1)}%`);
+    console.log(`   Cleanup duration: ${endTime - startTime}ms`);
+    
+    // Record emergency cleanup stats
+    this.emergencyCleanups = (this.emergencyCleanups || 0) + 1;
+    this.lastEmergencyCleanup = Date.now();
+  }
+
+  private performPreventiveCleanup(heapUsedMB: number, heapTotalMB: number, utilizationPercent: number): void {
+    // Lighter cleanup to prevent reaching emergency threshold
+    const targetReduction = 0.2; // Clear 20% of cache
+    const initialEntries = this.fallbackCache.size;
+    
+    console.log(`🧽 PREVENTIVE CLEANUP: Clearing ${(targetReduction * 100)}% of cache entries`);
+    
+    if (this.client) {
+      this.performPreventiveRedisCleanup(targetReduction);
+    } else {
+      this.performPreventiveMemoryCleanup(targetReduction);
+    }
+    
+    const finalEntries = this.fallbackCache.size;
+    const entriesRemoved = initialEntries - finalEntries;
+    console.log(`   Preventive cleanup: ${entriesRemoved} entries removed`);
+  }
+
+  private performEmergencyMemoryCleanup(targetReduction: number): void {
+    if (!this.fallbackCache || this.fallbackCache.size === 0) return;
+    
+    const totalEntries = this.fallbackCache.size;
+    const targetRemoval = Math.floor(totalEntries * targetReduction);
+    
+    // Create priority list for eviction (oldest + least accessed first)
+    const evictionCandidates: Array<{key: string, entry: CacheEntry, score: number}> = [];
+    const now = Date.now();
+    
+    for (const [key, entry] of this.fallbackCache.entries()) {
+      // Calculate eviction score (higher = more likely to evict)
+      const ageScore = (now - entry.lastAccessed) / (24 * 60 * 60 * 1000); // Days since access
+      const accessScore = 1 / Math.max(entry.accessCount, 1); // Inverse of access count
+      const priorityScore = (10 - entry.priority) / 10; // Inverse of priority (lower priority = higher score)
+      const sizeScore = entry.size / (100 * 1024); // Larger entries get higher eviction score
+      
+      const totalScore = (ageScore * 0.4) + (accessScore * 0.3) + (priorityScore * 0.2) + (sizeScore * 0.1);
+      
+      evictionCandidates.push({ key, entry, score: totalScore });
+    }
+    
+    // Sort by eviction score (highest first = most likely to evict)
+    evictionCandidates.sort((a, b) => b.score - a.score);
+    
+    // Remove top candidates
+    const keysToRemove = evictionCandidates.slice(0, targetRemoval).map(c => c.key);
+    
+    console.log(`🎯 Emergency eviction targets: ${keysToRemove.length} entries`);
+    console.log(`   Criteria: oldest access, lowest frequency, lowest priority, largest size`);
+    
+    this.performBatchDelete(keysToRemove);
+    this.evictions += keysToRemove.length;
+  }
+
+  private performPreventiveMemoryCleanup(targetReduction: number): void {
+    if (!this.fallbackCache || this.fallbackCache.size === 0) return;
+    
+    const totalEntries = this.fallbackCache.size;
+    const targetRemoval = Math.floor(totalEntries * targetReduction);
+    
+    // Focus on expired and low-priority entries for preventive cleanup
+    const candidates: Array<{key: string, entry: CacheEntry, score: number}> = [];
+    const now = Date.now();
+    
+    for (const [key, entry] of this.fallbackCache.entries()) {
+      let score = 0;
+      
+      // Heavily prioritize expired entries
+      if (entry.expires <= now) {
+        score += 1000;
+      }
+      
+      // Age factor (older = higher score)
+      const hoursSinceAccess = (now - entry.lastAccessed) / (60 * 60 * 1000);
+      score += hoursSinceAccess * 10;
+      
+      // Low access count
+      score += (1 / Math.max(entry.accessCount, 1)) * 50;
+      
+      // Low priority
+      score += (10 - entry.priority) * 5;
+      
+      candidates.push({ key, entry, score });
+    }
+    
+    candidates.sort((a, b) => b.score - a.score);
+    const keysToRemove = candidates.slice(0, targetRemoval).map(c => c.key);
+    
+    this.performBatchDelete(keysToRemove);
+    this.evictions += keysToRemove.length;
+  }
+
+  private async performEmergencyRedisCleanup(targetReduction: number): Promise<void> {
+    if (!this.client) return;
+    
+    try {
+      // Get all keys and remove based on TTL and access patterns
+      const keys = await this.client.keys('*');
+      const targetRemoval = Math.floor(keys.length * targetReduction);
+      
+      // Use Redis commands to get key info and prioritize removal
+      const keysWithTtl: Array<{key: string, ttl: number}> = [];
+      
+      for (const key of keys) {
+        const ttl = await this.client.ttl(key);
+        keysWithTtl.push({ key, ttl });
+      }
+      
+      // Sort by TTL (shortest first) and remove
+      keysWithTtl.sort((a, b) => a.ttl - b.ttl);
+      const keysToRemove = keysWithTtl.slice(0, targetRemoval).map(k => k.key);
+      
+      if (keysToRemove.length > 0) {
+        await this.client.del(keysToRemove);
+        console.log(`🗑️  Redis emergency cleanup: ${keysToRemove.length} keys removed`);
+      }
+    } catch (error) {
+      console.error('Emergency Redis cleanup failed:', error);
+    }
+  }
+
+  private async performPreventiveRedisCleanup(targetReduction: number): Promise<void> {
+    if (!this.client) return;
+    
+    try {
+      const keys = await this.client.keys('*');
+      const targetRemoval = Math.floor(keys.length * targetReduction);
+      
+      // Focus on keys with short TTL for preventive cleanup
+      const expiredKeys: string[] = [];
+      
+      for (const key of keys) {
+        const ttl = await this.client.ttl(key);
+        if (ttl <= 60) { // TTL <= 1 minute
+          expiredKeys.push(key);
+          if (expiredKeys.length >= targetRemoval) break;
+        }
+      }
+      
+      if (expiredKeys.length > 0) {
+        await this.client.del(expiredKeys);
+        console.log(`🧽 Redis preventive cleanup: ${expiredKeys.length} near-expired keys removed`);
+      }
+    } catch (error) {
+      console.error('Preventive Redis cleanup failed:', error);
+    }
   }
 
   private cleanupAccessPatterns(): void {
@@ -656,6 +875,8 @@ class AdvancedCache {
       cleanupIntervalMinutes: this.currentCleanupIntervalMs / (60 * 1000),
       averageCleanupDuration: this.cleanupCount > 0 ? Math.round(this.cleanupDurationTotal / this.cleanupCount) : 0,
       totalCleanups: this.cleanupCount,
+      emergencyCleanups: this.emergencyCleanups,
+      lastEmergencyCleanup: this.lastEmergencyCleanup,
       warmingHits: this.warmingHits,
       dynamicAdjustments: this.dynamicAdjustments,
       batchOperations: this.batchOperations,
