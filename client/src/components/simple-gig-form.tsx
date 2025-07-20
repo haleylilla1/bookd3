@@ -171,10 +171,18 @@ export default function SimpleGigForm({ onClose }: SimpleGigFormProps) {
       if (data.status === 'success' && data.distanceMiles) {
         const miles = Math.ceil(data.distanceMiles); // Round up for tax purposes
         form.setValue("mileage", miles);
+        
+        // Enhanced user feedback for debugging
+        const cacheInfo = data.fromCache ? ' (cached)' : ' (fresh calculation)';
+        const tripType = isRoundTrip ? 'ROUND TRIP' : 'ONE WAY';
+        
         toast({
-          title: "Mileage Calculated",
-          description: `${miles} miles ${isRoundTrip ? '(round trip)' : '(one way)'}${data.fromCache ? ' (cached)' : ''}`,
+          title: "✅ Mileage Calculated",
+          description: `${miles} miles - ${tripType}${cacheInfo}`,
         });
+        
+        // Clear any previous errors
+        setMileageError(null);
       } else {
         setMileageError(data.error || "Unable to calculate distance");
       }
@@ -637,12 +645,12 @@ export default function SimpleGigForm({ onClose }: SimpleGigFormProps) {
                       {isCalculatingMileage ? (
                         <>
                           <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                          Calculating...
+                          Calculating {isRoundTrip ? 'Round Trip' : 'Distance'}...
                         </>
                       ) : (
                         <>
                           <Calculator className="w-4 h-4 mr-2" />
-                          Calculate Distance
+                          Calculate {isRoundTrip ? 'Round Trip' : 'Distance'}
                         </>
                       )}
                     </Button>
