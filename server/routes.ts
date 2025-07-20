@@ -255,8 +255,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.put('/api/user', apiLimiter, requireAuth, asyncHandler(async (req: any, res) => {
     const userId = getUserId(req);
     
-    console.log(`🔄 Updating user ${userId} with data:`, req.body);
-    
     const updatedUser = await safeDbOperation(
       () => storage.updateUser(userId, req.body),
       'Failed to update user data',
@@ -264,11 +262,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     );
     
     if (!updatedUser) {
-      console.error(`❌ Failed to update user ${userId}`);
       return res.status(500).json({ error: 'Failed to update user' });
     }
-    
-    console.log(`✅ User ${userId} updated successfully:`, updatedUser);
     
     // Invalidate caches after user update
     const { invalidateDashboardCache } = await import('./dashboard-optimized');
