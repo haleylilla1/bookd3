@@ -596,7 +596,7 @@ export class MileageService {
       ]);
 
       // Call Google Maps Distance Matrix API
-      const result = await this.callDistanceMatrixApi(origin, destinations);
+      const result = await this.callDistanceMatrixApi(origin, destinations, roundTrip);
       
       // Cache the result with coordinates
       const cacheKey = this.generateCacheKey(origin, destination, waypoints, roundTrip);
@@ -618,7 +618,8 @@ export class MileageService {
    */
   private async callDistanceMatrixApi(
     origin: string,
-    destinations: string[]
+    destinations: string[],
+    isRoundTrip: boolean = false
   ): Promise<DistanceCalculationResult> {
     const url = 'https://maps.googleapis.com/maps/api/distancematrix/json';
     const params = new URLSearchParams({
@@ -648,17 +649,77 @@ export class MileageService {
         const distanceMiles = Math.round(totalDistance / 1609.34 * 100) / 100;
         const durationMinutes = Math.round(totalDuration / 60);
         
+        // For round trips with only 2 destinations (origin -> destination -> origin),
+        // if we get back the same distance as one-way, double it
+        if (isRoundTrip && destinations.length === 2 && data.rows[0].elements.length === 2) {
+          // Check if the two segments are roughly equal (indicating it's really one-way distance)
+          const element1 = data.rows[0].elements[0];
+          const element2 = data.rows[0].elements[1];
+          
+          if (element1.status === 'OK' && element2.status === 'OK') {
+            const distance1 = element1.distance.value;
+            const distance2 = element2.distance.value;
+            const ratio = Math.abs(distance1 - distance2) / Math.max(distance1, distance2);
+            
+            // If segments are very similar (within 20%), it's likely a simple round trip
+            if (ratio < 0.2) {
+              logger.debug('🔄 Detected simple round trip, doubling distance', {
+                originalDistance: distanceMiles,
+                segment1: distance1,
+                segment2: distance2,
+                ratio
+              });
+              // Don't double here since we already have both segments
+            }
+          }
+        }
+
         logger.debug('✅ Distance calculation complete', {
           totalDistanceMeters: totalDistance,
           distanceMiles,
           durationMinutes,
-          elementCount: data.rows[0].elements.length
+          elementCount: data.rows[0].elements.length,
+          isRoundTrip,
+          destinations: destinations.length
         });
         
+        // For simple round trips (no waypoints), double the distance if Google Maps
+        // didn't properly calculate the full round trip route
+        let finalDistance = distanceMiles;
+        let finalDuration = durationMinutes;
+        
+        if (isRoundTrip && destinations.length === 2 && !destinations.includes('|')) {
+          // Check if this looks like a one-way distance that needs doubling
+          // If the total distance is suspiciously similar to a one-way trip, double it
+          if (data.rows[0].elements.length === 2) {
+            const element1 = data.rows[0].elements[0];
+            const element2 = data.rows[0].elements[1];
+            
+            if (element1.status === 'OK' && element2.status === 'OK') {
+              const distance1 = element1.distance.value / 1609.34; // Convert to miles
+              const distance2 = element2.distance.value / 1609.34;
+              
+              // If Google Maps returned two segments, use the sum as-is
+              // But if segments are vastly different or one is zero, apply simple doubling
+              if (distance2 < distance1 * 0.1) {
+                // Second segment is too small, likely an error - use simple doubling
+                finalDistance = distance1 * 2;
+                finalDuration = durationMinutes * 2;
+                
+                logger.debug('🔄 Applied simple round trip doubling', {
+                  originalDistance: distance1,
+                  finalDistance,
+                  reason: 'Second segment too small'
+                });
+              }
+            }
+          }
+        }
+
         return {
           success: true,
-          distance: distanceMiles,
-          duration: durationMinutes,
+          distance: Math.round(finalDistance * 100) / 100,
+          duration: Math.round(finalDuration),
           confidence: 'high'
         };
       }
