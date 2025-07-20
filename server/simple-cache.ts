@@ -26,6 +26,8 @@ class SimpleCache {
   private misses = 0;
   private evictions = 0;
   private lastCleanup = Date.now();
+  private cleanupInterval: NodeJS.Timeout | null = null;
+  private expiredEntriesRemoved = 0;
   
   async init() {
     try {
@@ -38,11 +40,15 @@ class SimpleCache {
         console.log('No Redis URL - using memory cache fallback');
         // Clear any existing memory cache on restart
         this.fallbackCache.clear();
+        // Start automatic TTL cleanup for memory cache
+        this.startAutomaticCleanup();
       }
     } catch (error) {
       console.log('Redis connection failed - using memory cache fallback');
       this.client = null;
       this.fallbackCache.clear();
+      // Start automatic TTL cleanup for memory cache
+      this.startAutomaticCleanup();
     }
   }
 
@@ -81,10 +87,13 @@ class SimpleCache {
       if (this.client) {
         await this.client.setEx(key, ttlSeconds, JSON.stringify(data));
       } else {
-        // Memory fallback with strict limits
+        // Memory fallback with strict limits and TTL enforcement
         const size = this.estimateSize(data);
         
-        // Check limits before adding
+        // Immediate cleanup of expired entries before adding new ones
+        this.immediateExpiredCleanup();
+        
+        // Check limits after cleanup
         await this.enforceMemoryLimits();
         
         this.fallbackCache.set(key, {
@@ -130,9 +139,76 @@ class SimpleCache {
         await this.client.flushAll();
       } else {
         this.fallbackCache.clear();
+        this.hits = 0;
+        this.misses = 0;
+        this.evictions = 0;
+        this.expiredEntriesRemoved = 0;
       }
     } catch (error) {
       // Fail silently
+    }
+  }
+
+  // Start automatic cleanup interval for memory cache TTL enforcement
+  private startAutomaticCleanup(): void {
+    if (this.cleanupInterval) {
+      clearInterval(this.cleanupInterval);
+    }
+    
+    // Run TTL cleanup every 5 minutes
+    this.cleanupInterval = setInterval(() => {
+      this.scheduledExpiredCleanup();
+    }, 5 * 60 * 1000); // 5 minutes
+    
+    console.log('🕐 Automatic cache TTL cleanup started (every 5 minutes)');
+  }
+
+  // Stop automatic cleanup (for cleanup on shutdown)
+  private stopAutomaticCleanup(): void {
+    if (this.cleanupInterval) {
+      clearInterval(this.cleanupInterval);
+      this.cleanupInterval = null;
+    }
+  }
+
+  // Immediate cleanup of expired entries (runs when adding new entries)
+  private immediateExpiredCleanup(): void {
+    if (this.client) return; // Only for memory cache
+    
+    const now = Date.now();
+    let removedCount = 0;
+    
+    for (const [key, entry] of this.fallbackCache.entries()) {
+      if (now > entry.expires) {
+        this.fallbackCache.delete(key);
+        removedCount++;
+      }
+    }
+    
+    if (removedCount > 0) {
+      this.expiredEntriesRemoved += removedCount;
+      console.log(`⏰ Immediate TTL cleanup: removed ${removedCount} expired entries`);
+    }
+  }
+
+  // Scheduled cleanup of expired entries (runs every 5 minutes)
+  private scheduledExpiredCleanup(): void {
+    if (this.client) return; // Only for memory cache
+    
+    const now = Date.now();
+    const beforeSize = this.fallbackCache.size;
+    let removedCount = 0;
+    
+    for (const [key, entry] of this.fallbackCache.entries()) {
+      if (now > entry.expires) {
+        this.fallbackCache.delete(key);
+        removedCount++;
+      }
+    }
+    
+    if (removedCount > 0) {
+      this.expiredEntriesRemoved += removedCount;
+      console.log(`🕐 Scheduled TTL cleanup: removed ${removedCount} expired entries (${beforeSize} → ${this.fallbackCache.size})`);
     }
   }
 
@@ -154,25 +230,17 @@ class SimpleCache {
     return totalSize / (1024 * 1024);
   }
 
-  // Regular cleanup of expired entries
+  // Regular cleanup of expired entries (legacy method, now focuses on memory limits)
   private async enforceMemoryLimits(): Promise<void> {
     const now = Date.now();
     
-    // Only run cleanup every 30 seconds
+    // Only run memory limit checks every 30 seconds (TTL cleanup is separate)
     if (now - this.lastCleanup < 30000) return;
     
-    const beforeSize = this.fallbackCache.size;
-    for (const [key, entry] of this.fallbackCache.entries()) {
-      if (now > entry.expires) {
-        this.fallbackCache.delete(key);
-      }
-    }
-    
     this.lastCleanup = now;
-    const cleaned = beforeSize - this.fallbackCache.size;
-    if (cleaned > 0) {
-      console.log(`🧹 Cache cleanup: removed ${cleaned} expired entries`);
-    }
+    
+    // Memory-based cleanup is now separate from TTL cleanup
+    // This method focuses on memory limits, not TTL enforcement
   }
 
   // Force eviction when limits exceeded - uses LRU eviction
@@ -195,8 +263,8 @@ class SimpleCache {
   }
 
   private cleanup(): void {
-    // Legacy cleanup method - now calls enforceMemoryLimits
-    this.enforceMemoryLimits();
+    // Legacy cleanup method - now does immediate TTL cleanup
+    this.immediateExpiredCleanup();
   }
 
   getStats() {
@@ -236,6 +304,8 @@ class SimpleCache {
       hits: this.hits,
       misses: this.misses,
       evictions: this.evictions,
+      expiredEntriesRemoved: this.expiredEntriesRemoved,
+      automaticCleanupActive: !!this.cleanupInterval,
       warnings,
       timestamp: new Date().toISOString()
     };
@@ -256,6 +326,15 @@ class SimpleCache {
       return 'warning';
     }
     return 'healthy';
+  }
+
+  // Cleanup method for graceful shutdown
+  destroy(): void {
+    this.stopAutomaticCleanup();
+    if (this.client) {
+      this.client.disconnect();
+    }
+    this.fallbackCache.clear();
   }
 }
 
