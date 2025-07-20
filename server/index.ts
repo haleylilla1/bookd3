@@ -10,7 +10,7 @@ import { registerRoutes } from "./routes";
 import { validateSystemOnStartup } from "./startup-validation";
 import { setupVite, serveStatic } from "./vite";
 import { handleUnhandledRejections, handleUncaughtExceptions } from "./error-handler";
-import { cache } from "./simple-cache";
+import { advancedCache } from "./advanced-cache";
 
 const app = express();
 const port = process.env.PORT || 5000;
@@ -25,8 +25,8 @@ async function start() {
   handleUnhandledRejections();
   handleUncaughtExceptions();
   
-  // Initialize Redis cache
-  cache.init().catch(console.error);
+  // Initialize advanced cache
+  advancedCache.init().catch(console.error);
   
   // Start infrastructure systems (simplified and staggered)
   try {
