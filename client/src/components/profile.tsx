@@ -25,9 +25,11 @@ export default function Profile() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const { data: user } = useQuery<UserType>({
+  const { data: user, refetch: refetchUser } = useQuery<UserType>({
     queryKey: ["/api/user"],
   });
+
+  console.log("👤 Current user data:", user);
 
   // Initialize form fields when user data loads
   useEffect(() => {
@@ -42,14 +44,18 @@ export default function Profile() {
       return response.json();
     },
     onSuccess: async (data) => {
+      console.log("💾 User update response data:", data);
+      
       // Clear React Query cache for user data
       queryClient.removeQueries({ queryKey: ["/api/user"] });
       
       // Set the updated data directly in cache to ensure immediate UI update
       queryClient.setQueryData(["/api/user"], data);
       
-      // Force refetch to ensure consistency
-      await queryClient.invalidateQueries({ queryKey: ["/api/user"] });
+      // Force immediate refetch from server
+      await refetchUser();
+      
+      console.log("✅ Profile updated successfully");
       
       toast({
         title: "Success",
