@@ -14,6 +14,7 @@ function getUserId(req: any): number {
 import { globalErrorHandler, asyncHandler, safeDbOperation, validateUserId, validateNumericId } from "./error-handler";
 import { logError } from "./logger";
 import rateLimit from "express-rate-limit";
+import { nodeJSMemoryProfiler } from "./nodejs-memory-profiler";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // REPLIT AUTH: Zero-configuration authentication system
@@ -1177,6 +1178,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ success: true });
     } catch (error) {
       res.status(500).json({ error: 'Failed to add gig type' });
+    }
+  });
+
+  // Node.js memory profiling endpoints (no auth needed for monitoring)
+  app.get('/api/memory/stats', async (req, res) => {
+    try {
+      const memoryStats = nodeJSMemoryProfiler.getMemoryStats();
+      res.json(memoryStats);
+    } catch (error) {
+      console.error('Memory stats error:', error);
+      res.status(500).json({ error: 'Failed to get memory stats' });
+    }
+  });
+
+  app.get('/api/memory/analysis', async (req, res) => {
+    try {
+      const analysis = nodeJSMemoryProfiler.getDetailedAnalysis();
+      if (!analysis) {
+        res.json({ message: 'Insufficient data for analysis (need 10+ snapshots)' });
+      } else {
+        res.json(analysis);
+      }
+    } catch (error) {
+      console.error('Memory analysis error:', error);
+      res.status(500).json({ error: 'Failed to analyze memory' });
     }
   });
 
