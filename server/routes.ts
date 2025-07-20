@@ -935,6 +935,166 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Cache statistics and health reporting endpoint
+  app.get('/api/cache/stats', apiLimiter, requireAuth, asyncHandler(async (req: any, res) => {
+    try {
+      const { advancedCache } = await import('./advanced-cache');
+      const { cache: simpleCache } = await import('./simple-cache');
+      const infrastructureManager = await import('./infrastructure-manager');
+      
+      // Get comprehensive cache statistics
+      const advancedStats = advancedCache.getStats();
+      const simpleCacheStats = simpleCache.getStats();
+      const cacheHealth = advancedCache.getCacheHealth();
+      
+      // Get memory monitoring data
+      const memoryStats = process.memoryUsage();
+      const memoryMB = {
+        heap: parseFloat((memoryStats.heapUsed / 1024 / 1024).toFixed(1)),
+        heapTotal: parseFloat((memoryStats.heapTotal / 1024 / 1024).toFixed(1)),
+        rss: parseFloat((memoryStats.rss / 1024 / 1024).toFixed(1)),
+        external: parseFloat((memoryStats.external / 1024 / 1024).toFixed(1))
+      };
+      
+      // Calculate time until next cleanup
+      const now = Date.now();
+      const nextCleanupMs = advancedStats.cleanupIntervalMinutes * 60 * 1000;
+      const timeUntilNextCleanup = Math.max(0, nextCleanupMs - (now % nextCleanupMs));
+      const minutesUntilCleanup = Math.floor(timeUntilNextCleanup / 60000);
+      const secondsUntilCleanup = Math.floor((timeUntilNextCleanup % 60000) / 1000);
+      
+      // Compression efficiency calculations
+      const compressionSavings = advancedStats.totalOriginalSize - advancedStats.totalCompressedSize;
+      const compressionEfficiency = advancedStats.totalOriginalSize > 0 ? 
+        parseFloat(((compressionSavings / advancedStats.totalOriginalSize) * 100).toFixed(1)) : 0;
+      
+      // Health indicators
+      const healthIndicators = {
+        memoryPressure: memoryMB.heap / 500, // Out of ~500MB typical limit
+        cacheUtilization: advancedStats.cacheSize / advancedStats.maxEntries,
+        hitRateHealth: advancedStats.hitRate / 100,
+        compressionEffectiveness: compressionEfficiency / 100,
+        rejectionRate: advancedStats.rejectedLargeEntries / Math.max(1, advancedStats.cacheSize + advancedStats.rejectedLargeEntries)
+      };
+      
+      // Overall health score (0-100)
+      const healthScore = Math.round(
+        (healthIndicators.hitRateHealth * 30) + 
+        ((1 - healthIndicators.memoryPressure) * 25) + 
+        ((1 - healthIndicators.cacheUtilization) * 20) + 
+        (healthIndicators.compressionEffectiveness * 15) + 
+        ((1 - healthIndicators.rejectionRate) * 10)
+      );
+      
+      const response = {
+        timestamp: new Date().toISOString(),
+        health: {
+          status: cacheHealth,
+          score: healthScore,
+          indicators: healthIndicators
+        },
+        memory: {
+          current: memoryMB,
+          usage: {
+            heap: `${memoryMB.heap}MB`,
+            total: `${memoryMB.rss}MB`,
+            percentage: parseFloat(((memoryMB.heap / memoryMB.heapTotal) * 100).toFixed(1))
+          },
+          warnings: memoryMB.heap > 400 ? ['High memory usage'] : []
+        },
+        cache: {
+          advanced: {
+            connected: advancedStats.connected,
+            entries: advancedStats.cacheSize,
+            maxEntries: advancedStats.maxEntries,
+            utilizationPercent: parseFloat(((advancedStats.cacheSize / advancedStats.maxEntries) * 100).toFixed(1)),
+            memoryUsageMB: advancedStats.memoryUsageMB,
+            maxMemoryMB: advancedStats.maxMemoryMB,
+            memoryUtilizationPercent: parseFloat(((advancedStats.memoryUsageMB / advancedStats.maxMemoryMB) * 100).toFixed(1))
+          },
+          simple: {
+            entries: simpleCacheStats.size,
+            maxEntries: simpleCacheStats.maxSize,
+            utilizationPercent: parseFloat(((simpleCacheStats.size / simpleCacheStats.maxSize) * 100).toFixed(1)),
+            memoryUsageMB: simpleCacheStats.memoryUsageMB
+          },
+          performance: {
+            hitRate: advancedStats.hitRate,
+            hits: advancedStats.hits,
+            misses: advancedStats.misses,
+            evictions: advancedStats.evictions,
+            expiredEntriesRemoved: advancedStats.expiredEntriesRemoved
+          }
+        },
+        compression: {
+          enabled: true,
+          threshold: '10KB',
+          maxEntrySize: '100KB',
+          stats: {
+            compressedEntries: advancedStats.compressedEntries,
+            rejectedLargeEntries: advancedStats.rejectedLargeEntries,
+            totalOriginalSizeKB: parseFloat((advancedStats.totalOriginalSize / 1024).toFixed(1)),
+            totalCompressedSizeKB: parseFloat((advancedStats.totalCompressedSize / 1024).toFixed(1)),
+            memorySavedKB: parseFloat((compressionSavings / 1024).toFixed(1)),
+            compressionRatio: advancedStats.compressionRatio,
+            efficiencyPercent: compressionEfficiency
+          }
+        },
+        cleanup: {
+          automaticCleanupActive: advancedStats.automaticCleanupActive,
+          intervalMinutes: advancedStats.cleanupIntervalMinutes,
+          nextCleanupIn: `${minutesUntilCleanup}m ${secondsUntilCleanup}s`,
+          totalCleanups: advancedStats.totalCleanups,
+          averageDurationMs: advancedStats.averageCleanupDuration,
+          dynamicAdjustments: advancedStats.dynamicAdjustments,
+          batchOperations: advancedStats.batchOperations
+        },
+        advanced: {
+          warmingHits: advancedStats.warmingHits,
+          warnings: advancedStats.warnings,
+          lastUpdated: advancedStats.timestamp
+        }
+      };
+      
+      res.json(response);
+    } catch (error) {
+      logError('Cache stats retrieval failed', error);
+      res.status(500).json({ 
+        error: 'Failed to retrieve cache statistics',
+        timestamp: new Date().toISOString(),
+        health: { status: 'unknown', score: 0 }
+      });
+    }
+  }));
+
+  // Cache health check endpoint (lightweight version)
+  app.get('/api/cache/health', apiLimiter, requireAuth, asyncHandler(async (req: any, res) => {
+    try {
+      const { advancedCache } = await import('./advanced-cache');
+      const health = advancedCache.getCacheHealth();
+      const stats = advancedCache.getStats();
+      
+      res.json({
+        status: health,
+        timestamp: new Date().toISOString(),
+        summary: {
+          entries: stats.cacheSize,
+          hitRate: stats.hitRate,
+          memoryUsageMB: stats.memoryUsageMB,
+          compressedEntries: stats.compressedEntries,
+          rejectedEntries: stats.rejectedLargeEntries,
+          warnings: stats.warnings
+        }
+      });
+    } catch (error) {
+      res.status(500).json({ 
+        status: 'error', 
+        timestamp: new Date().toISOString(),
+        error: 'Health check failed' 
+      });
+    }
+  }));
+
   // Simple database health check with cache stats
   app.get('/api/db-health', apiLimiter, requireAuth, async (req: any, res) => {
     try {
