@@ -2,7 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { PasswordVerificationService } from "./password-verification";
-import { requireAuth } from "./unified-auth";
+import { requireAuth } from "./auth";
 
 // Helper function to get user ID from request (unified-auth pattern)
 function getUserId(req: any): number {
@@ -69,9 +69,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     skip: (req) => process.env.NODE_ENV === 'development' || !process.env.NODE_ENV, // Disable in development or when NODE_ENV undefined
   });
 
-  // Setup traditional auth routes using unified-auth.ts
-  const { setupAuthRoutes } = await import('./unified-auth');
-  setupAuthRoutes(app, authLimiter, passwordResetLimiter);
+  // Setup bulletproof auth routes using consolidated auth.ts
+  const { setupAuthRoutes } = await import('./auth');
+  setupAuthRoutes(app);
 
   // Health check endpoint (no sensitive data)
   app.get('/health', (req, res) => {
