@@ -847,7 +847,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                     Error: ${error instanceof Error ? error.message : 'Unknown error'}<br>
                     User ID: ${userId}<br>
                     Timestamp: ${new Date().toISOString()}<br>
-                    Service: Supabase PDF Service
+                    Service: Simple HTML Generator
                   </div>
                 ` : ''}
             </div>
@@ -859,7 +859,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // UNIFIED HTML REPORT GENERATION - ALSO USES SUPABASE SERVICE
+  // SIMPLE HTML REPORT GENERATION - UNIFIED APPROACH
   app.get('/api/reports/html', resourceIntensiveLimiter, requireAuth, async (req: any, res) => {
     const userId = getUserId(req);
     
@@ -869,19 +869,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
     
     try {
-      const { period, year, month, format } = req.query;
+      const { period, year, month } = req.query;
       
       if (!period || !year) {
         return res.status(400).json({ error: 'Period and year are required' });
       }
 
-      // Force mobile format for HTML reports (they're usually for mobile anyway)
       const reportRequest = {
         userId,
         period: period as 'monthly' | 'annual',
         year: parseInt(year as string),
-        month: month ? parseInt(month as string) : undefined,
-        format: format === 'professional' ? 'professional' : 'mobile' as 'professional' | 'simple' | 'mobile'
+        month: month ? parseInt(month as string) : undefined
       };
 
       console.log('🌐 HTML REPORT: Processing simple HTML report request', reportRequest);

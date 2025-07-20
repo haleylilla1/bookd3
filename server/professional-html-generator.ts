@@ -36,16 +36,16 @@ interface ReceiptData {
 }
 
 export async function generateProfessionalHTML(options: ReportOptions): Promise<string> {
+  // Validate input parameters with defaults (outside try block)
+  const safeOptions = {
+    userId: options.userId || 0,
+    period: (options.period === 'monthly' || options.period === 'annual') ? options.period : 'monthly',
+    year: options.year || new Date().getFullYear(),
+    month: options.month || new Date().getMonth() + 1
+  };
+
   try {
     console.log('🚀 Starting bulletproof HTML report generation for user:', options.userId);
-    
-    // Validate input parameters with defaults
-    const safeOptions = {
-      userId: options.userId || 0,
-      period: (options.period === 'monthly' || options.period === 'annual') ? options.period : 'monthly',
-      year: options.year || new Date().getFullYear(),
-      month: options.month || new Date().getMonth() + 1
-    };
     
     console.log('📊 Using safe options:', safeOptions);
     
