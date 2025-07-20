@@ -17,6 +17,7 @@ import ReceiptUpload from "@/components/receipt-upload";
 import { AutoSaveIndicator, useOnlineStatus } from "./auto-save-indicator";
 import { RecoveryDialog } from "./recovery-dialog";
 import { useFormAutoSave, submitFormWithRetry } from "@/lib/auto-save";
+import { AddressAutocomplete } from "./address-autocomplete";
 
 // Utility function to parse dates consistently across timezones (same as dashboard)
 const parseGigDate = (dateString: string): Date => {
@@ -1171,22 +1172,18 @@ function GigEditForm({ gig, onSave, onCancel, isLoading }: GigEditFormProps) {
         <h4 className="font-medium text-sm">Mileage Calculation</h4>
         
         <div className="grid grid-cols-1 gap-3">
-          <div>
-            <label className="block text-xs font-medium mb-1">Starting Address</label>
-            <Input
-              placeholder="Your home or starting location..."
-              value={formData.startingAddress}
-              onChange={(e) => setFormData({ ...formData, startingAddress: e.target.value })}
-            />
-          </div>
-          <div>
-            <label className="block text-xs font-medium mb-1">Ending Address</label>
-            <Input
-              placeholder="Event venue or destination..."
-              value={formData.endingAddress}
-              onChange={(e) => setFormData({ ...formData, endingAddress: e.target.value })}
-            />
-          </div>
+          <AddressAutocomplete
+            label="Starting Address"
+            placeholder="Your home or starting location..."
+            value={formData.startingAddress}
+            onChange={(value) => setFormData({ ...formData, startingAddress: value })}
+          />
+          <AddressAutocomplete
+            label="Ending Address" 
+            placeholder="Event venue or destination..."
+            value={formData.endingAddress}
+            onChange={(value) => setFormData({ ...formData, endingAddress: value })}
+          />
         </div>
 
         <div className="flex items-center gap-2">
