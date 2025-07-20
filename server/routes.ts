@@ -760,78 +760,137 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // PDF report generation endpoints
+  // BULLETPROOF PDF REPORT GENERATION - SUPABASE POWERED
   app.get('/api/reports/pdf', resourceIntensiveLimiter, requireAuth, async (req: any, res) => {
+    const userId = getUserId(req);
+    
+    // Additional authentication validation
+    if (!userId || userId <= 0) {
+      return res.status(401).json({ error: 'Invalid user authentication' });
+    }
+    
     try {
-      const { period, year, month, professional } = req.query;
-      const userId = getUserId(req);
+      const { period, year, month, professional, format } = req.query;
       
       if (!period || !year) {
         return res.status(400).json({ error: 'Period and year are required' });
       }
 
-      const reportOptions = {
+      // Determine format preference
+      let reportFormat: 'professional' | 'simple' | 'mobile' = 'simple';
+      if (professional === 'true' || format === 'professional') {
+        reportFormat = 'professional';
+      } else if (format === 'mobile') {
+        reportFormat = 'mobile';
+      }
+
+      const reportRequest = {
         userId,
         period: period as 'monthly' | 'annual',
         year: parseInt(year as string),
-        month: month ? parseInt(month as string) : undefined
+        month: month ? parseInt(month as string) : undefined,
+        format: reportFormat
       };
 
-      let pdfBuffer: Buffer;
-      
-      try {
-        // Try professional generator first
-        if (professional === 'true') {
-          const { ProfessionalPDFGenerator } = await import('./professional-pdf-generator');
-          const generator = new ProfessionalPDFGenerator();
-          pdfBuffer = await generator.generateReport(reportOptions);
-        } else {
-          // Use mobile generator
-          const { MobilePDFGenerator } = await import('./mobile-pdf');
-          const generator = new MobilePDFGenerator();
-          pdfBuffer = await generator.generateReport(reportOptions);
-        }
-      } catch (importError) {
-        logError('PDF generator import/execution error', importError as Error, userId);
-        // Fallback: Try the other generator
-        try {
-          if (professional === 'true') {
-            const { MobilePDFGenerator } = await import('./mobile-pdf');
-            const generator = new MobilePDFGenerator();
-            pdfBuffer = await generator.generateReport(reportOptions);
-          } else {
-            const { ProfessionalPDFGenerator } = await import('./professional-pdf-generator');
-            const generator = new ProfessionalPDFGenerator();
-            pdfBuffer = await generator.generateReport(reportOptions);
-          }
-        } catch (fallbackError) {
-          logError('Fallback PDF generator also failed', fallbackError as Error, userId);
-          throw new Error('Both PDF generators failed');
-        }
+      console.log('🎯 SUPABASE PDF: Processing report request', reportRequest);
+
+      // Use new Supabase PDF Service - eliminates dual generator confusion
+      const { supabasePDFService } = await import('./supabase-pdf-service');
+      const result = await supabasePDFService.generateReport(reportRequest);
+
+      if (!result.success) {
+        throw new Error(result.error || 'PDF generation failed');
       }
-      
-      // Set appropriate headers for PDF download
-      const filename = `${period}-income-report-${year}${month ? `-${month}` : ''}.pdf`;
-      res.setHeader('Content-Type', 'application/pdf');
-      res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
-      res.setHeader('Content-Length', pdfBuffer.length);
-      
-      res.send(pdfBuffer);
+
+      // Handle different response types
+      if (result.url) {
+        // Redirect to Supabase-hosted PDF
+        console.log('✅ SUPABASE PDF: Redirecting to hosted PDF');
+        res.redirect(result.url);
+      } else if (result.data) {
+        if (typeof result.data === 'string') {
+          // HTML response (mobile fallback)
+          console.log('🌐 SUPABASE PDF: Serving HTML report');
+          res.setHeader('Content-Type', 'text/html; charset=utf-8');
+          res.send(result.data);
+        } else {
+          // PDF buffer response
+          console.log('📄 SUPABASE PDF: Serving PDF buffer');
+          const filename = `${period}-income-report-${year}${month ? `-${month}` : ''}.pdf`;
+          res.setHeader('Content-Type', 'application/pdf');
+          res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+          res.setHeader('Content-Length', result.data.length);
+          res.send(result.data);
+        }
+      } else {
+        throw new Error('No PDF data or URL returned');
+      }
+
     } catch (error) {
-      logError('PDF generation error', error as Error, userId);
+      logError('Supabase PDF generation error', error as Error, userId);
       
-      // Send more specific error message
-      const errorMessage = error instanceof Error 
-        ? error.message 
-        : 'Unknown PDF generation error';
+      // Enhanced error response with fallback HTML
+      const errorHtml = `
+        <!DOCTYPE html>
+        <html lang="en">
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>Report Generation Error</title>
+            <style>
+                body { 
+                  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
+                  text-align: center; padding: 50px; background: #f8f9fa; 
+                }
+                .error-container { 
+                  max-width: 500px; margin: 0 auto; background: white; 
+                  border-radius: 8px; padding: 40px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); 
+                }
+                .error { color: #dc3545; margin-bottom: 20px; font-size: 24px; font-weight: bold; }
+                .message { color: #6c757d; margin-bottom: 30px; line-height: 1.5; }
+                .button { 
+                  background: #007bff; color: white; padding: 12px 24px; 
+                  text-decoration: none; border-radius: 6px; display: inline-block; 
+                  font-weight: 500;
+                }
+                .button:hover { background: #0056b3; }
+                .debug { 
+                  background: #f8f9fa; padding: 15px; margin: 20px 0; 
+                  border-left: 4px solid #007bff; text-align: left; border-radius: 4px;
+                }
+            </style>
+        </head>
+        <body>
+            <div class="error-container">
+                <h1 class="error">Report Generation Error</h1>
+                <p class="message">
+                  We're sorry, but we couldn't generate your income report at this time. 
+                  This might be due to temporary server issues or data processing problems.
+                </p>
+                <p class="message">Please try again in a few minutes. If the problem persists, contact support.</p>
+                <a href="javascript:window.close()" class="button">Close Window</a>
+                <div style="margin-top: 30px;">
+                  <a href="/" class="button" style="background: #28a745;">Return to Dashboard</a>
+                </div>
+                ${process.env.NODE_ENV === 'development' ? `
+                  <div class="debug">
+                    <strong>Debug Info:</strong><br>
+                    Error: ${error instanceof Error ? error.message : 'Unknown error'}<br>
+                    User ID: ${userId}<br>
+                    Timestamp: ${new Date().toISOString()}<br>
+                    Service: Supabase PDF Service
+                  </div>
+                ` : ''}
+            </div>
+        </body>
+        </html>
+      `;
       
-      res.status(500).json({ 
-        error: 'Failed to generate PDF report',
-        details: errorMessage
-      });
+      res.status(500).setHeader('Content-Type', 'text/html').send(errorHtml);
     }
   });
 
+  // UNIFIED HTML REPORT GENERATION - ALSO USES SUPABASE SERVICE
   app.get('/api/reports/html', resourceIntensiveLimiter, requireAuth, async (req: any, res) => {
     const userId = getUserId(req);
     
@@ -841,28 +900,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
     
     try {
-      const { period, year, month } = req.query;
+      const { period, year, month, format } = req.query;
       
       if (!period || !year) {
         return res.status(400).json({ error: 'Period and year are required' });
       }
 
-      const reportOptions = {
+      // Force mobile format for HTML reports (they're usually for mobile anyway)
+      const reportRequest = {
         userId,
         period: period as 'monthly' | 'annual',
         year: parseInt(year as string),
-        month: month ? parseInt(month as string) : undefined
+        month: month ? parseInt(month as string) : undefined,
+        format: format === 'professional' ? 'professional' : 'mobile' as 'professional' | 'simple' | 'mobile'
       };
 
+      console.log('🌐 SUPABASE HTML: Processing HTML report request', reportRequest);
 
-      // Import HTML generator
-      const { generateProfessionalHTML } = await import('./professional-html-generator');
+      // Use unified Supabase PDF Service for HTML generation too
+      const { supabasePDFService } = await import('./supabase-pdf-service');
+      const result = await supabasePDFService.generateReport(reportRequest);
+
+      if (!result.success || !result.data || typeof result.data !== 'string') {
+        throw new Error(result.error || 'HTML report generation failed');
+      }
       
-      const htmlContent = await generateProfessionalHTML(reportOptions);
+      console.log('✅ SUPABASE HTML: HTML report generated successfully');
       
       // Set appropriate headers for HTML response
       res.setHeader('Content-Type', 'text/html; charset=utf-8');
-      res.send(htmlContent);
+      res.send(result.data);
     } catch (error) {
       
       // Send a friendly HTML error page instead of JSON
@@ -902,6 +969,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
       `;
       
       res.status(500).setHeader('Content-Type', 'text/html').send(errorHtml);
+    }
+  });
+
+  // TEST ENDPOINT - Generate sample report to verify Supabase integration
+  app.get('/api/test-supabase-report', resourceIntensiveLimiter, requireAuth, async (req: any, res) => {
+    const userId = getUserId(req);
+    
+    try {
+      console.log('🧪 TESTING: Supabase PDF service with real user data');
+      
+      const testRequest = {
+        userId,
+        period: 'monthly' as 'monthly' | 'annual',
+        year: 2025,
+        month: 7,
+        format: 'simple' as 'professional' | 'simple' | 'mobile'
+      };
+
+      const { supabasePDFService } = await import('./supabase-pdf-service');
+      const result = await supabasePDFService.generateReport(testRequest);
+
+      if (result.success && result.url) {
+        console.log('✅ TEST SUCCESS: Supabase PDF generated', result.url);
+        
+        res.json({
+          success: true,
+          message: 'Supabase PDF service working perfectly!',
+          directLink: result.url,
+          cached: result.cached,
+          example: 'This is exactly like your friend\'s system - direct public Supabase Storage links'
+        });
+      } else {
+        throw new Error(result.error || 'Test failed');
+      }
+      
+    } catch (error) {
+      console.error('🚨 TEST FAILED:', error);
+      res.status(500).json({
+        success: false,
+        error: error instanceof Error ? error.message : 'Test failed',
+        message: 'Supabase PDF service needs debugging'
+      });
     }
   });
 
