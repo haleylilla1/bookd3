@@ -16,6 +16,9 @@ import { logError } from "./logger";
 import rateLimit from "express-rate-limit";
 import { nodeJSMemoryProfiler } from "./nodejs-memory-profiler";
 import { memoryLeakFixer } from "./memory-leak-fixes";
+import { timerLeakDetector } from "./timer-leak-detector";
+import { monitoringSystemCleanup } from "./monitoring-system-cleanup";
+import { fsWatcherLeakFix } from "./fswatcher-leak-fix";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // REPLIT AUTH: Zero-configuration authentication system
@@ -1225,6 +1228,96 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Force cleanup error:', error);
       res.status(500).json({ error: 'Failed to force cleanup' });
+    }
+  });
+
+  app.get('/api/timers/report', async (req, res) => {
+    try {
+      const report = timerLeakDetector.generateReport();
+      res.json(report);
+    } catch (error) {
+      console.error('Timer report error:', error);
+      res.status(500).json({ error: 'Failed to generate timer report' });
+    }
+  });
+
+  app.get('/api/timers/sources', async (req, res) => {
+    try {
+      const timers = timerLeakDetector.getAllTimers();
+      const sourceDetails = timers.reduce((acc: any, timer) => {
+        if (!acc[timer.source]) {
+          acc[timer.source] = {
+            count: 0,
+            timers: []
+          };
+        }
+        acc[timer.source].count++;
+        acc[timer.source].timers.push({
+          type: timer.type,
+          delay: timer.delay,
+          ageMinutes: (Date.now() - timer.createdAt) / 1000 / 60,
+          stack: timer.stack.split('\n').slice(0, 3).join('\n')
+        });
+        return acc;
+      }, {});
+      
+      res.json(sourceDetails);
+    } catch (error) {
+      console.error('Timer sources error:', error);
+      res.status(500).json({ error: 'Failed to get timer sources' });
+    }
+  });
+
+  app.post('/api/timers/cleanup', async (req, res) => {
+    try {
+      const { maxAgeMinutes, cleanupMonitoring } = req.body;
+      let totalCleaned = 0;
+      
+      if (cleanupMonitoring) {
+        // Cleanup monitoring systems specifically
+        totalCleaned += monitoringSystemCleanup.cleanupAllSystems();
+      }
+      
+      if (maxAgeMinutes) {
+        // Cleanup old timers
+        const maxAge = maxAgeMinutes * 60 * 1000;
+        totalCleaned += timerLeakDetector.forceCleanupTimers(maxAge);
+      }
+      
+      res.json({ success: true, timersCleared: totalCleaned });
+    } catch (error) {
+      console.error('Timer cleanup error:', error);
+      res.status(500).json({ error: 'Failed to cleanup timers' });
+    }
+  });
+
+  app.get('/api/monitoring/stats', async (req, res) => {
+    try {
+      const stats = monitoringSystemCleanup.getSystemStats();
+      res.json(stats);
+    } catch (error) {
+      console.error('Monitoring stats error:', error);
+      res.status(500).json({ error: 'Failed to get monitoring stats' });
+    }
+  });
+
+  app.get('/api/fswatchers/stats', async (req, res) => {
+    try {
+      const stats = fsWatcherLeakFix.getWatcherStats();
+      res.json(stats);
+    } catch (error) {
+      console.error('FSWatcher stats error:', error);
+      res.status(500).json({ error: 'Failed to get FSWatcher stats' });
+    }
+  });
+
+  app.post('/api/fswatchers/cleanup', async (req, res) => {
+    try {
+      const cleaned = fsWatcherLeakFix.forceCleanupAllWatchers();
+      res.json({ success: true, watchersCleared: cleaned });
+    } catch (error) {
+      console.error('FSWatcher cleanup error:', error);
+      res.status(500).json({ error: 'Failed to cleanup FSWatchers' });
     }
   });
 
