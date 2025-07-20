@@ -45,6 +45,7 @@ Bookd is a mobile-first gig worker companion app with comprehensive financial tr
 - 2025-07-20: ✅ PHASE 1 & 2 COMPLETE - Deleted all problematic PDF files (professional-pdf-generator.ts, mobile-pdf.ts, supabase-pdf-service.ts) and consolidated to single HTML solution
 - 2025-07-20: ✅ UNIFIED REPORT SYSTEM - Both /api/reports/pdf and /api/reports/html routes now use only professional-html-generator.ts eliminating cascade failures
 - 2025-07-20: ✅ PHASE 2 COMPLETE: REMOVED ALL REMAINING REFERENCES - Cleaned up documentation files and eliminated all format-based conditional logic
+- 2025-07-20: ✅ STANDARDIZED ALL PDF ROUTES - Both /api/reports/pdf and /api/reports/html use identical code with single proven HTML generator
 - 2025-07-20: ✅ SIMPLIFIED REPORT GENERATION COMPLETE - Successfully removed all over-engineered Supabase PDF service calls, restored simple HTML reports that work perfectly
 - 2025-07-20: ✅ USER FEEDBACK IMPLEMENTED - Confirmed Supabase is database/storage platform (not PDF service), implemented simple solution following "NEVER BUILD OVER-ENGINEERED GARBAGE" principle
 - 2025-07-20: ✅ MONTHLY/ANNUAL REPORT FAILURES COMPLETELY FIXED - Replaced unreliable dual generator system (ProfessionalPDFGenerator + MobilePDFGenerator) with single Supabase-powered service ensuring 0% report generation failures

@@ -783,20 +783,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
         month: month ? parseInt(month as string) : undefined
       };
 
-      console.log('🎯 SIMPLE HTML: Processing report request', reportRequest);
+      console.log('📊 UNIFIED REPORT: Processing report request', reportRequest);
 
-      // Use simple, reliable HTML generator
+      // Use single, proven HTML generator
       const { generateProfessionalHTML } = await import('./professional-html-generator');
       const htmlContent = await generateProfessionalHTML(reportRequest);
 
-      console.log('✅ SIMPLE HTML: Generated successfully');
+      console.log('✅ UNIFIED REPORT: Generated successfully');
       
       // Always serve as HTML (user can print-to-PDF if needed)
       res.setHeader('Content-Type', 'text/html; charset=utf-8');
       res.send(htmlContent);
 
     } catch (error) {
-      logError('Supabase PDF generation error', error as Error, userId);
+      logError('HTML report generation error', error as Error, userId);
       
       // Enhanced error response with fallback HTML
       const errorHtml = `
@@ -859,7 +859,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // SIMPLE HTML REPORT GENERATION - UNIFIED APPROACH
+  // STANDARDIZED REPORT GENERATION - IDENTICAL TO PDF ROUTE
   app.get('/api/reports/html', resourceIntensiveLimiter, requireAuth, async (req: any, res) => {
     const userId = getUserId(req);
     
@@ -882,18 +882,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         month: month ? parseInt(month as string) : undefined
       };
 
-      console.log('🌐 HTML REPORT: Processing simple HTML report request', reportRequest);
+      console.log('📊 UNIFIED REPORT: Processing report request', reportRequest);
 
-      // Use simple, reliable HTML generator (no over-engineering)
+      // Use single, proven HTML generator
       const { generateProfessionalHTML } = await import('./professional-html-generator');
       const htmlContent = await generateProfessionalHTML(reportRequest);
       
-      console.log('✅ HTML REPORT: Generated successfully with simple approach');
+      console.log('✅ UNIFIED REPORT: Generated successfully');
       
       // Set appropriate headers for HTML response
       res.setHeader('Content-Type', 'text/html; charset=utf-8');
       res.send(htmlContent);
     } catch (error) {
+      logError('HTML report generation error', error as Error, userId);
       
       // Send a friendly HTML error page instead of JSON
       const errorHtml = `
