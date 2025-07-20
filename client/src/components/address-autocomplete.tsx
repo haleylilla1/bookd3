@@ -106,6 +106,7 @@ export function AddressAutocomplete({
     // Set new timeout for API call - reduced to 100ms for faster response
     debounceTimeoutRef.current = setTimeout(() => {
       console.log('🌐 Fetching suggestions for:', newValue); // Debug log
+      console.log('🔍 About to call fetchSuggestions with query length:', newValue.length);
       fetchSuggestions(newValue);
     }, 100);
   };
@@ -174,6 +175,12 @@ export function AddressAutocomplete({
             <MapPin className="h-4 w-4 text-gray-400" />
           </div>
         )}
+      </div>
+
+      {/* Always show debug info */}
+      <div className="absolute -top-6 left-0 text-xs bg-yellow-200 px-2 py-1 rounded"
+           style={{ fontSize: '10px', zIndex: 100000 }}>
+        Debug: show={showSuggestions ? 'true' : 'false'} | count={suggestions.length} | input={inputValue.length}
       </div>
 
       {/* Suggestions dropdown */}
