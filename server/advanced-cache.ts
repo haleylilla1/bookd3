@@ -1,4 +1,9 @@
 import { createClient } from 'redis';
+import { gzip, gunzip } from 'zlib';
+import { promisify } from 'util';
+
+const gzipAsync = promisify(gzip);
+const gunzipAsync = promisify(gunzip);
 
 interface CacheEntry {
   data: any;
@@ -7,6 +12,8 @@ interface CacheEntry {
   accessCount: number;
   size: number;
   priority: number; // 0-10, higher = more important
+  compressed: boolean; // Track if data is compressed
+  originalSize: number; // Original size before compression
 }
 
 interface CacheStats {
@@ -29,6 +36,12 @@ interface CacheStats {
   batchOperations: number;
   warnings: string[];
   timestamp: string;
+  // Compression and size optimization stats
+  compressionRatio: number;
+  compressedEntries: number;
+  rejectedLargeEntries: number;
+  totalOriginalSize: number;
+  totalCompressedSize: number;
 }
 
 // Priority queue node for efficient TTL management
@@ -126,6 +139,8 @@ class AdvancedCache {
   private expirationQueue = new ExpirationQueue();
   private readonly maxEntries = 1000;
   private readonly maxMemoryMB = 50;
+  private readonly maxEntrySizeKB = 100; // 100KB limit per entry
+  private readonly compressionThresholdKB = 10; // Compress entries larger than 10KB
   private baseCleanupIntervalMs = 5 * 60 * 1000; // 5 minutes base
   private currentCleanupIntervalMs = this.baseCleanupIntervalMs;
   private hits = 0;
@@ -139,6 +154,12 @@ class AdvancedCache {
   private warmingHits = 0;
   private dynamicAdjustments = 0;
   private batchOperations = 0;
+  
+  // Compression and size optimization tracking
+  private compressedEntries = 0;
+  private rejectedLargeEntries = 0;
+  private totalOriginalSize = 0;
+  private totalCompressedSize = 0;
   
   // Cache activity tracking for dynamic intervals
   private recentActivity: number[] = [];
@@ -342,20 +363,58 @@ class AdvancedCache {
       if (this.client) {
         await this.client.setEx(key, ttlSeconds, JSON.stringify(data));
       } else {
-        // Advanced memory cache with priority queue
-        const size = this.estimateSize(data);
-        const expiration = Date.now() + (ttlSeconds * 1000);
+        // Check entry size first
+        const originalSize = this.estimateSize(data);
+        const originalSizeKB = originalSize / 1024;
         
+        // Reject entries larger than 100KB
+        if (originalSizeKB > this.maxEntrySizeKB) {
+          this.rejectedLargeEntries++;
+          console.log(`🚫 Cache entry rejected: ${key} (${originalSizeKB.toFixed(1)}KB > ${this.maxEntrySizeKB}KB limit)`);
+          return;
+        }
+
         // Immediate cleanup before adding
         this.performAdvancedCleanup();
+
+        let finalData = data;
+        let compressed = false;
+        let finalSize = originalSize;
+
+        // Compress large entries (over 10KB)
+        if (originalSizeKB > this.compressionThresholdKB) {
+          try {
+            const serialized = JSON.stringify(data);
+            const compressedBuffer = await gzipAsync(Buffer.from(serialized, 'utf8'));
+            const compressedSize = compressedBuffer.length;
+            
+            // Only use compression if it actually reduces size significantly
+            if (compressedSize < originalSize * 0.8) {
+              finalData = compressedBuffer;
+              finalSize = compressedSize;
+              compressed = true;
+              this.compressedEntries++;
+              this.totalOriginalSize += originalSize;
+              this.totalCompressedSize += compressedSize;
+              
+              console.log(`🗜️  Compressed cache entry: ${key} (${originalSizeKB.toFixed(1)}KB → ${(compressedSize/1024).toFixed(1)}KB, ${((1 - compressedSize/originalSize) * 100).toFixed(1)}% reduction)`);
+            }
+          } catch (compressionError) {
+            console.log(`⚠️  Compression failed for ${key}, storing uncompressed`);
+          }
+        }
+
+        const expiration = Date.now() + (ttlSeconds * 1000);
         
-        // Add to cache
+        // Add to cache with compression metadata
         this.fallbackCache.set(key, {
-          data,
+          data: finalData,
           expires: expiration,
           lastAccessed: Date.now(),
           accessCount: 1,
-          size,
+          size: finalSize,
+          originalSize,
+          compressed,
           priority
         });
 
@@ -371,7 +430,7 @@ class AdvancedCache {
         }
       }
     } catch (error) {
-      // Fail silently
+      console.error(`❌ Cache set error for ${key}:`, error.message);
     }
   }
 
@@ -389,7 +448,7 @@ class AdvancedCache {
           return null;
         }
       } else {
-        // Advanced memory cache with warming detection
+        // Advanced memory cache with warming detection and decompression
         const entry = this.fallbackCache.get(key);
         
         if (entry && Date.now() <= entry.expires) {
@@ -401,6 +460,22 @@ class AdvancedCache {
           // Check if this was a warming hit
           if (this.warmingQueue.includes(key)) {
             this.warmingHits++;
+          }
+          
+          // Decompress data if needed
+          if (entry.compressed && Buffer.isBuffer(entry.data)) {
+            try {
+              const decompressed = await gunzipAsync(entry.data);
+              const decompressedString = decompressed.toString('utf8');
+              return JSON.parse(decompressedString);
+            } catch (decompressionError) {
+              console.error(`❌ Decompression failed for ${key}:`, decompressionError.message);
+              // Remove corrupted entry
+              this.fallbackCache.delete(key);
+              this.expirationQueue.remove(key);
+              this.misses++;
+              return null;
+            }
           }
           
           return entry.data;
@@ -553,6 +628,10 @@ class AdvancedCache {
     const memoryUsage = this.client ? 0 : this.getMemoryUsageMB();
     const hitRate = this.hits + this.misses > 0 ? (this.hits / (this.hits + this.misses)) * 100 : 0;
     
+    // Calculate compression ratio
+    const compressionRatio = this.totalOriginalSize > 0 ? 
+      parseFloat(((this.totalCompressedSize / this.totalOriginalSize) * 100).toFixed(1)) : 0;
+    
     const warnings: string[] = [];
     const usagePercent = this.fallbackCache.size / this.maxEntries;
     const memoryPercent = memoryUsage / this.maxMemoryMB;
@@ -560,6 +639,7 @@ class AdvancedCache {
     if (usagePercent > 0.9) warnings.push('Cache size approaching limit');
     if (memoryPercent > 0.9) warnings.push('Memory usage approaching limit');
     if (this.evictions > 50) warnings.push('High eviction rate detected');
+    if (this.rejectedLargeEntries > 10) warnings.push('Multiple large entries rejected');
 
     return {
       connected: !!this.client,
@@ -580,7 +660,13 @@ class AdvancedCache {
       dynamicAdjustments: this.dynamicAdjustments,
       batchOperations: this.batchOperations,
       warnings,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
+      // Compression and size optimization stats
+      compressionRatio,
+      compressedEntries: this.compressedEntries,
+      rejectedLargeEntries: this.rejectedLargeEntries,
+      totalOriginalSize: this.totalOriginalSize,
+      totalCompressedSize: this.totalCompressedSize
     };
   }
 
