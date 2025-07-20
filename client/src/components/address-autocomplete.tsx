@@ -61,11 +61,15 @@ export function AddressAutocomplete({
         const data = await response.json();
         console.log('✅ Autocomplete API response:', data); // Debug log
         console.log('📋 Number of suggestions:', data.suggestions?.length || 0); // Debug log
-        setSuggestions(data.suggestions || []);
-        const shouldShow = data.suggestions && data.suggestions.length > 0;
+        
+        const newSuggestions = data.suggestions || [];
+        setSuggestions(newSuggestions);
+        const shouldShow = newSuggestions && newSuggestions.length > 0;
         setShowSuggestions(shouldShow);
+        
         console.log('👁️ Setting showSuggestions to:', shouldShow); // Debug log
-        console.log('🎯 Current suggestions state:', suggestions); // Debug log
+        console.log('🎯 New suggestions:', newSuggestions); // Debug log
+        console.log('🔢 Suggestions count:', newSuggestions.length); // Debug log
         
         // Show helpful message if using fallback suggestions
         if (data.fallback && data.suggestions && data.suggestions.length > 0) {
@@ -174,13 +178,24 @@ export function AddressAutocomplete({
 
       {/* Suggestions dropdown */}
       {showSuggestions && suggestions.length > 0 && (
-        <div className="absolute z-[9999] w-full mt-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md shadow-lg max-h-60 overflow-y-auto">
+        <div className="absolute z-[9999] w-full mt-1 bg-white dark:bg-gray-800 border-2 border-blue-500 dark:border-blue-400 rounded-md shadow-xl max-h-60 overflow-y-auto"
+             style={{ 
+               position: 'absolute',
+               top: '100%',
+               left: 0,
+               right: 0,
+               zIndex: 99999,
+               backgroundColor: 'white',
+               border: '2px solid #3b82f6',
+               boxShadow: '0 10px 25px rgba(0,0,0,0.2)'
+             }}>
           {suggestions.map((suggestion, index) => (
             <button
               key={suggestion.placeId}
               type="button"
-              className="w-full px-3 py-2 text-left hover:bg-gray-100 border-b border-gray-100 last:border-b-0 focus:outline-none focus:bg-gray-100"
+              className="w-full px-3 py-2 text-left hover:bg-blue-50 hover:text-blue-900 border-b border-gray-100 last:border-b-0 focus:outline-none focus:bg-blue-50 transition-colors"
               onClick={() => handleSuggestionSelect(suggestion)}
+              onMouseDown={(e) => e.preventDefault()} // Prevent blur from hiding dropdown
             >
               <div className="flex items-start">
                 <MapPin className="h-4 w-4 text-gray-400 mt-1 mr-2 flex-shrink-0" />
@@ -195,6 +210,14 @@ export function AddressAutocomplete({
               </div>
             </button>
           ))}
+        </div>
+      )}
+
+      {/* Debug indicator */}
+      {inputValue.length >= 2 && (
+        <div className="absolute top-0 right-0 bg-green-500 text-white text-xs px-1 rounded"
+             style={{ fontSize: '10px', zIndex: 100000 }}>
+          {suggestions.length}
         </div>
       )}
 
