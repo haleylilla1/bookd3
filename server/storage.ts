@@ -191,15 +191,22 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateUser(id: number, updateData: Partial<InsertUser>): Promise<User | undefined> {
+    console.log(`📝 Storage: Updating user ${id} with:`, updateData);
+    
     const [user] = await db
       .update(users)
       .set(updateData)
       .where(eq(users.id, id))
       .returning();
     
-    // Invalidate user cache
+    // Invalidate user cache and any related caches
     if (user) {
+      console.log(`🗑️ Storage: Invalidating cache for user ${id}`);
       await cache.invalidate(`user:${id}`);
+      // Also invalidate any related caches
+      await cache.invalidate(`dashboard:${id}`);
+      await cache.invalidate(`gigs:${id}`);
+      console.log(`✅ Storage: User updated and cache cleared:`, user);
     }
     
     return user || undefined;

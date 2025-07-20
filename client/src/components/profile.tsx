@@ -42,15 +42,18 @@ export default function Profile() {
       return response.json();
     },
     onSuccess: async (data) => {
+      console.log("🔄 User update successful, data returned:", data);
       
-      // Force cache invalidation and refetch across all user queries
+      // Clear React Query cache for user data
+      queryClient.removeQueries({ queryKey: ["/api/user"] });
+      
+      // Force immediate refetch of user data
       await queryClient.invalidateQueries({ queryKey: ["/api/user"] });
-      await queryClient.refetchQueries({ queryKey: ["/api/user"] });
       
-      // Also invalidate any other user-related queries
-      await queryClient.invalidateQueries({ predicate: (query) => 
-        query.queryKey.some(key => typeof key === 'string' && key.includes('user'))
-      });
+      // Set the updated data directly in cache to ensure immediate UI update
+      queryClient.setQueryData(["/api/user"], data);
+      
+      console.log("✅ Cache updated with new user data:", data);
       
       toast({
         title: "Success",
