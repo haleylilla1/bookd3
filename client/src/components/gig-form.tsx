@@ -158,43 +158,85 @@ export default function GigForm({ onClose }: GigFormProps) {
   const queryClient = useQueryClient();
   const isOnline = useOnlineStatus();
 
-  const { data: user, isLoading: userLoading } = useQuery<User>({
+  const { data: user, isLoading: userLoading, error: userError } = useQuery<User>({
     queryKey: ["/api/user"],
-    staleTime: 0, // Always fetch fresh data
-    refetchOnMount: true, // Always refetch when component mounts
-    refetchOnWindowFocus: true, // Refetch when window gets focus
+    staleTime: 0,
+    retry: false, // Don't retry auth failures
     queryFn: async () => {
-      console.log("Gig Form - Making direct API call to /api/user");
+      console.log("🔧 Gig Form - Fetching user data");
       const response = await fetch("/api/user", {
         credentials: "include"
       });
       if (!response.ok) {
+        console.log("🚨 Gig Form - Auth failed, redirecting to login");
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
       const userData = await response.json();
-      console.log("Gig Form - Direct API response:", userData);
+      console.log("✅ Gig Form - User data loaded successfully");
       return userData;
     }
   });
 
-  // Force cache clear and debug logging
+  // Handle authentication failures
   useEffect(() => {
-    // Clear any stale cache immediately when component mounts
-    queryClient.removeQueries({ queryKey: ["/api/user"] });
-    queryClient.invalidateQueries({ queryKey: ["/api/user"] });
-    
-    console.log("Gig Form - User data:", user);
-    console.log("Gig Form - Custom gig types:", user?.customGigTypes);
-    console.log("Gig Form - User loading:", userLoading);
-    console.log("Gig Form - Full user object keys:", user ? Object.keys(user) : 'none');
-  }, [queryClient]);
-
-  // Additional debug log when user data changes
-  useEffect(() => {
-    if (user) {
-      console.log("Gig Form - User data updated:", user);
+    if (userError && userError.message.includes('401')) {
+      console.log("🚨 Authentication required - redirecting to login");
+      toast({
+        title: "Please log in",
+        description: "Redirecting to login page...",
+        variant: "destructive"
+      });
+      // Redirect to login after a brief delay
+      setTimeout(() => {
+        window.location.href = '/';
+      }, 1500);
     }
-  }, [user]);
+  }, [userError, toast]);
+
+  // Show loading state or error handling
+  if (userLoading) {
+    return (
+      <div className="p-4 max-w-2xl mx-auto">
+        <div className="flex items-center justify-center min-h-64">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+            <p className="text-gray-600">Loading form...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (userError) {
+    return (
+      <div className="p-4 max-w-2xl mx-auto">
+        <div className="flex items-center justify-center min-h-64">
+          <div className="text-center">
+            <p className="text-red-600 mb-4">Authentication required</p>
+            <p className="text-gray-600">Redirecting to login...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <div className="p-4 max-w-2xl mx-auto">
+        <div className="flex items-center justify-center min-h-64">
+          <div className="text-center">
+            <p className="text-gray-600">Please log in to add gigs</p>
+            <button 
+              onClick={() => window.location.href = '/'}
+              className="mt-4 px-4 py-2 bg-primary text-white rounded-md"
+            >
+              Go to Login
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   // Memoize default values to prevent unnecessary re-renders
   const defaultValues = useMemo(() => ({
