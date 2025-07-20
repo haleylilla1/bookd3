@@ -372,10 +372,60 @@ export class SupabasePDFService {
   }
 
   /**
-   * HTML content generation
+   * Comprehensive HTML content generation using professional generator logic
    */
-  private generateHTMLContent(data: ReportData, format: string): string {
+  private async generateHTMLContent(data: ReportData, format: string): Promise<string> {
     const isProfessional = format === 'professional';
+    
+    // Prepare comprehensive report data like professional generators
+    const user = data.user || {};
+    const gigs = Array.isArray(data.gigs) ? data.gigs : [];
+    const completedGigs = gigs.filter(g => g && (g.status === 'completed' || parseFloat(String(g.actualPay || 0)) > 0));
+    
+    // Group multi-day gigs for correct calculations
+    const groupedGigs = this.groupMultiDayGigs(completedGigs);
+    
+    // Calculate comprehensive totals
+    const totalIncome = groupedGigs.reduce((sum, gig) => {
+      const actualPay = parseFloat(String(gig.actualPay || gig.expectedPay || 0));
+      const tips = parseFloat(String(gig.tips || 0));
+      return sum + actualPay + tips;
+    }, 0);
+    
+    const totalMileage = gigs.reduce((sum, gig) => sum + (parseFloat(String(gig.mileage || 0))), 0);
+    const mileageValue = totalMileage * this.MILEAGE_RATE;
+    
+    // Get expense data
+    const expenses = await this.getExpenseData(data.user?.id || 0, data);
+    const totalExpenses = expenses.reduce((sum, exp) => sum + exp.amount, 0);
+    
+    const netIncome = totalIncome - totalExpenses - mileageValue;
+    
+    // Calculate individual gig taxes
+    const estimatedTaxes = groupedGigs.reduce((sum, gig) => {
+      const gigIncome = parseFloat(String(gig.actualPay || gig.expectedPay || 0)) + parseFloat(String(gig.tips || 0));
+      const gigTaxRate = parseFloat(String(gig.taxPercentage || data.user?.defaultTaxPercentage || 0));
+      return sum + (gigIncome * (gigTaxRate / 100));
+    }, 0);
+    
+    // Generate tax breakdown HTML
+    const taxEstimatesRows = groupedGigs.map(gig => {
+      const gigIncome = parseFloat(String(gig.actualPay || gig.expectedPay || 0)) + parseFloat(String(gig.tips || 0));
+      const gigTaxRate = parseFloat(String(gig.taxPercentage || data.user?.defaultTaxPercentage || 0));
+      const gigTaxes = gigIncome * (gigTaxRate / 100);
+      const eventName = String(gig.eventName || 'Unnamed Event').substring(0, 25);
+      
+      return `
+        <tr>
+          <td style="padding: 12px; border-bottom: 1px solid #e9ecef;">${eventName}</td>
+          <td style="padding: 12px; text-align: right; border-bottom: 1px solid #e9ecef;">$${gigIncome.toFixed(2)}</td>
+          <td style="padding: 12px; text-align: center; border-bottom: 1px solid #e9ecef;">${gigTaxRate.toFixed(0)}%</td>
+          <td style="padding: 12px; text-align: right; border-bottom: 1px solid #e9ecef;">$${gigTaxes.toFixed(2)}</td>
+        </tr>
+      `;
+    }).join('');
+    
+    const period = data.metadata?.period || 'Report Period';
     
     return `
 <!DOCTYPE html>
@@ -383,7 +433,7 @@ export class SupabasePDFService {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Income Report - ${data.metadata.period}</title>
+    <title>Freelancer Income Report - ${period}</title>
     <style>
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -394,153 +444,205 @@ export class SupabasePDFService {
             padding: 20px;
             background: #f8f9fa;
         }
-        .report-container {
+        .page {
             background: white;
             border-radius: 8px;
-            padding: 30px;
+            padding: 40px;
+            margin-bottom: 30px;
             box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            page-break-after: always;
         }
-        .header {
-            text-align: center;
-            border-bottom: 2px solid #e9ecef;
-            padding-bottom: 20px;
-            margin-bottom: 30px;
-        }
-        .title {
-            font-size: 28px;
-            font-weight: bold;
-            color: #2c3e50;
-            margin: 0 0 10px 0;
-        }
-        .period {
-            font-size: 18px;
-            color: #6c757d;
-            margin: 0;
-        }
-        .summary-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 20px;
-            margin-bottom: 30px;
-        }
-        .summary-card {
-            background: #f8f9fa;
-            padding: 20px;
-            border-radius: 6px;
-            border-left: 4px solid #007bff;
-        }
-        .summary-label {
-            font-size: 14px;
-            color: #6c757d;
-            margin-bottom: 5px;
-        }
-        .summary-value {
-            font-size: 24px;
-            font-weight: bold;
-            color: #2c3e50;
-        }
-        .gig-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 20px;
-        }
-        .gig-table th,
-        .gig-table td {
-            padding: 12px;
-            text-align: left;
-            border-bottom: 1px solid #e9ecef;
-        }
-        .gig-table th {
-            background: #f8f9fa;
-            font-weight: 600;
-            color: #495057;
-        }
-        .generated-info {
-            margin-top: 30px;
-            padding-top: 20px;
-            border-top: 1px solid #e9ecef;
-            font-size: 12px;
-            color: #6c757d;
-        }
+        .page:last-child { page-break-after: auto; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #e9ecef; }
+        th { background: #f8f9fa; font-weight: 600; color: #495057; }
+        .text-right { text-align: right; }
+        .text-center { text-align: center; }
+        .highlight { color: #27ae60; font-weight: bold; }
+        .tax-highlight { color: #e74c3c; font-weight: bold; }
+        .total-row { background: #e8f4f8; font-weight: bold; border-top: 2px solid #333; }
         @media print {
             body { background: white; }
-            .report-container { box-shadow: none; }
-        }
-        @media (max-width: 600px) {
-            .summary-grid { grid-template-columns: 1fr; }
-            .summary-card { text-align: center; }
+            .page { box-shadow: none; margin-bottom: 0; }
         }
     </style>
 </head>
 <body>
-    <div class="report-container">
-        <div class="header">
-            <h1 class="title">${isProfessional ? 'Professional Income Report' : 'Income Report'}</h1>
-            <p class="period">${data.metadata.period}</p>
-        </div>
-        
-        <div class="summary-grid">
-            <div class="summary-card">
-                <div class="summary-label">Total Income</div>
-                <div class="summary-value">$${data.summary.totalIncome.toFixed(2)}</div>
-            </div>
-            <div class="summary-card">
-                <div class="summary-label">Total Expenses</div>
-                <div class="summary-value">$${data.summary.totalExpenses.toFixed(2)}</div>
-            </div>
-            <div class="summary-card">
-                <div class="summary-label">Net Income</div>
-                <div class="summary-value">$${data.summary.netIncome.toFixed(2)}</div>
-            </div>
-            <div class="summary-card">
-                <div class="summary-label">Completed Gigs</div>
-                <div class="summary-value">${data.summary.completedGigs}</div>
+    <!-- Cover Page -->
+    <div class="page">
+        <div style="text-align: center;">
+            <h1 style="font-size: 32px; margin-bottom: 30px;">FREELANCER INCOME REPORT</h1>
+            <h2 style="font-size: 24px; margin: 20px 0;">${(user.firstName || '') + ' ' + (user.lastName || '') || 'Freelancer'}</h2>
+            <h3 style="font-size: 20px; margin: 20px 0;">${period}</h3>
+            <p style="font-size: 16px; margin: 20px 0;">Generated: ${new Date().toLocaleDateString()}</p>
+            ${user.email ? `<p style="font-size: 16px; margin: 20px 0;">Contact: ${user.email}</p>` : ''}
+            
+            <!-- Executive Summary Box -->
+            <div style="margin-top: 40px; border: 2px solid #333; border-radius: 8px; padding: 30px; text-align: left;">
+                <h3 style="text-align: center; margin-bottom: 20px;">EXECUTIVE SUMMARY</h3>
+                <p><strong>Total Gigs Completed:</strong> ${groupedGigs.length}</p>
+                <p><strong>Gross Income:</strong> $${totalIncome.toFixed(2)}</p>
+                <p><strong>Business Expenses:</strong> $${(totalExpenses + mileageValue).toFixed(2)}</p>
+                <p><strong>Net Income:</strong> $${netIncome.toFixed(2)}</p>
+                <p><strong>Estimated Taxes:</strong> $${estimatedTaxes.toFixed(2)}</p>
+                <p><strong>After-Tax Income:</strong> $${(netIncome - estimatedTaxes).toFixed(2)}</p>
             </div>
         </div>
+    </div>
+
+    <!-- Income Summary Page -->
+    <div class="page">
+        <h2 style="font-size: 24px; margin-bottom: 30px; text-align: center;">INCOME SUMMARY</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Source</th>
+                    <th>Type</th>
+                    <th class="text-right">Amount</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${groupedGigs.map(gig => {
+                  const actualPay = parseFloat(String(gig.actualPay || gig.expectedPay || 0));
+                  const tips = parseFloat(String(gig.tips || 0));
+                  const total = actualPay + tips;
+                  const dateStr = String(gig.date).includes(' - ') ? gig.date : new Date(gig.date).toLocaleDateString();
+                  const source = gig.clientName || 'Direct Client';
+                  const type = gig.gigType || 'Service';
+                  
+                  return `
+                    <tr>
+                        <td>${dateStr}</td>
+                        <td>${source}</td>
+                        <td>${type}</td>
+                        <td class="text-right">$${total.toFixed(2)}</td>
+                    </tr>
+                  `;
+                }).join('')}
+                <tr class="total-row">
+                    <td colspan="3"><strong>TOTAL INCOME</strong></td>
+                    <td class="text-right"><strong>$${totalIncome.toFixed(2)}</strong></td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Detailed Tax Estimates by Gig Page -->
+    <div class="page">
+        <h2 style="font-size: 24px; margin-bottom: 30px; text-align: center;">DETAILED TAX ESTIMATES BY GIG</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Gig</th>
+                    <th class="text-right">Income</th>
+                    <th class="text-center">Tax Rate</th>
+                    <th class="text-right">Tax Estimate</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${taxEstimatesRows}
+                <tr class="total-row">
+                    <td><strong>TOTAL</strong></td>
+                    <td class="text-right"><strong>$${totalIncome.toFixed(2)}</strong></td>
+                    <td class="text-center">-</td>
+                    <td class="text-right tax-highlight"><strong>$${estimatedTaxes.toFixed(2)}</strong></td>
+                </tr>
+            </tbody>
+        </table>
         
-        ${isProfessional ? this.generateProfessionalTables(data) : ''}
+        <div style="margin: 30px 0; padding: 20px; background-color: #f0f8ff; border-left: 4px solid #4a90e2;">
+            <p><strong>Calculation Method:</strong> For each gig, taxes are calculated using the gig's individual tax rate applied to gross income. 
+            Income includes actual pay and tips. These are taxes on gross income before business expense deductions.</p>
+        </div>
+
+        <!-- Tax Due Dates -->
+        <div style="margin-top: 40px;">
+            <h3>2025 TAX PAYMENT DUE DATES:</h3>
+            <ul style="list-style-type: disc; margin-left: 30px;">
+                <li>Q1 2025: April 15, 2025</li>
+                <li>Q2 2025: June 16, 2025</li>
+                <li>Q3 2025: September 15, 2025</li>
+                <li>Q4 2025: January 15, 2026</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- Mileage Summary Page -->
+    <div class="page">
+        <h2 style="font-size: 24px; margin-bottom: 30px; text-align: center;">MILEAGE SUMMARY</h2>
+        <p style="margin-bottom: 20px;">Business mileage calculated at IRS standard rate of $${this.MILEAGE_RATE}/mile for ${new Date().getFullYear()}.</p>
         
-        <div class="generated-info">
-            <p>Report generated on ${new Date().toLocaleString()} by Bookd Financial Tracking</p>
-            <p>Report ID: ${data.metadata.reportId}</p>
+        ${gigs.some(g => parseFloat(String(g.mileage || 0)) > 0) ? `
+        <table>
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Purpose</th>
+                    <th class="text-right">Miles</th>
+                    <th class="text-right">Value</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${gigs.filter(g => parseFloat(String(g.mileage || 0)) > 0).map(gig => {
+                  const miles = parseFloat(String(gig.mileage || 0));
+                  const dateStr = String(gig.date).includes(' - ') ? gig.date : new Date(gig.date).toLocaleDateString();
+                  const purpose = gig.eventName + ' (' + gig.clientName + ')';
+                  const value = miles * this.MILEAGE_RATE;
+                  
+                  return `
+                    <tr>
+                        <td>${dateStr}</td>
+                        <td>${purpose}</td>
+                        <td class="text-right">${Math.round(miles)}</td>
+                        <td class="text-right">$${value.toFixed(2)}</td>
+                    </tr>
+                  `;
+                }).join('')}
+                <tr class="total-row">
+                    <td colspan="2"><strong>TOTAL MILEAGE</strong></td>
+                    <td class="text-right"><strong>${Math.round(totalMileage)} miles</strong></td>
+                    <td class="text-right"><strong>$${mileageValue.toFixed(2)}</strong></td>
+                </tr>
+            </tbody>
+        </table>
+        ` : `
+        <div style="text-align: center; margin: 40px 0;">
+            <p>No mileage recorded for this period.</p>
+        </div>
+        `}
+    </div>
+
+    <!-- Business Expenses & Receipts Page -->
+    <div class="page">
+        <h2 style="font-size: 24px; margin-bottom: 30px; text-align: center;">BUSINESS EXPENSES & RECEIPTS</h2>
+        
+        <div style="text-align: center; padding: 60px 20px; color: #666;">
+            <h3>No Expenses Found</h3>
+            <p>No business expenses were recorded for this period.</p>
+        </div>
+    </div>
+
+    <!-- Summary Totals Page -->
+    <div class="page">
+        <h2 style="font-size: 24px; margin-bottom: 30px; text-align: center;">SUMMARY TOTALS</h2>
+        
+        <div style="font-size: 18px; line-height: 2;">
+            <p><strong>Total Income: $${totalIncome.toFixed(2)}</strong></p>
+            <p><strong>Total Expenses: $${totalExpenses.toFixed(2)}</strong></p>
+            <p><strong>Total Mileage: ${Math.round(totalMileage)} miles</strong></p>
+            <p><strong>Mileage Value: $${mileageValue.toFixed(2)}</strong></p>
+            <p><strong>Net Income: $${netIncome.toFixed(2)}</strong></p>
+            <p><strong>Estimated Taxes: $${estimatedTaxes.toFixed(2)}</strong></p>
+            <p><strong>After-Tax Income: $${(netIncome - estimatedTaxes).toFixed(2)}</strong></p>
+        </div>
+        
+        <div style="margin-top: 40px; padding: 20px; background-color: #f0f8ff; border-left: 4px solid #4a90e2;">
+            <p style="font-style: italic;">This report is generated for tax preparation purposes. Please consult with a tax professional for filing requirements.</p>
         </div>
     </div>
 </body>
 </html>`;
-  }
-
-  private generateProfessionalTables(data: ReportData): string {
-    if (data.gigs.length === 0) return '';
-    
-    return `
-        <h3>Detailed Gig History</h3>
-        <table class="gig-table">
-            <thead>
-                <tr>
-                    <th>Date</th>
-                    <th>Client</th>
-                    <th>Type</th>
-                    <th>Income</th>
-                    <th>Status</th>
-                </tr>
-            </thead>
-            <tbody>
-                ${data.gigs.slice(0, 20).map(gig => {
-                  const gigDate = new Date(gig.date).toLocaleDateString();
-                  const amount = parseFloat(String(gig.actualPay || gig.expectedPay || 0));
-                  return `
-                    <tr>
-                        <td>${gigDate}</td>
-                        <td>${gig.clientName || 'N/A'}</td>
-                        <td>${gig.gigType || 'General'}</td>
-                        <td>$${amount.toFixed(2)}</td>
-                        <td>${gig.status || 'completed'}</td>
-                    </tr>
-                  `;
-                }).join('')}
-            </tbody>
-        </table>
-    `;
   }
 
   /**
@@ -577,13 +679,14 @@ export class SupabasePDFService {
     const summary = this.calculateSummary(groupedGigs, expenses, user);
     
     const metadata: ReportMetadata = {
-      period: request.period === 'monthly' 
-        ? `${new Date(0, request.month! - 1).toLocaleString('default', { month: 'long' })} ${request.year}`
-        : `Annual Report ${request.year}`,
+      period: request.period === 'monthly' ? 
+        `${this.getMonthName(request.month || 1)} ${request.year}` : 
+        `Year ${request.year}`,
+      reportId: `${request.userId}-${request.period}-${request.year}-${request.month || 'annual'}`,
       generatedAt: new Date().toISOString(),
-      version: '2.0',
       userId: request.userId,
-      reportId: this.generateReportId(request)
+      totalGigs: groupedGigs.length,
+      dateRange: { start: startDate.toISOString(), end: endDate.toISOString() }
     };
 
     return {
@@ -596,12 +699,92 @@ export class SupabasePDFService {
   }
 
   /**
-   * Multi-day gig grouping logic (matches dashboard)
+   * Group multi-day gigs to prevent double counting
    */
-  private groupMultiDayGigs(gigs: Gig[]): Gig[] {
-    const grouped = new Map<string, Gig[]>();
+  private groupMultiDayGigs(gigs: any[]): any[] {
+    const groups = new Map();
+    const result: any[] = [];
     
-    gigs.forEach(gig => {
+    for (const gig of gigs) {
+      const gigId = gig.multiDayId || gig.id;
+      const gigKey = `${gigId}-${gig.eventName}-${gig.clientName}`;
+      
+      if (groups.has(gigKey)) {
+        const existing = groups.get(gigKey);
+        existing.endDate = gig.date;
+        existing.date = `${existing.startDate} - ${gig.date}`;
+      } else {
+        const groupedGig = { ...gig };
+        groupedGig.startDate = gig.date;
+        groupedGig.endDate = gig.date;
+        groups.set(gigKey, groupedGig);
+        result.push(groupedGig);
+      }
+    }
+    
+    return result;
+  }
+
+  /**
+   * Calculate comprehensive summary statistics
+   */
+  private calculateSummary(gigs: any[], expenses: any[], user: any): any {
+    const totalIncome = gigs.reduce((sum, gig) => {
+      const actualPay = parseFloat(String(gig.actualPay || gig.expectedPay || 0));
+      const tips = parseFloat(String(gig.tips || 0));
+      return sum + actualPay + tips;
+    }, 0);
+
+    const totalExpenses = expenses.reduce((sum, exp) => sum + exp.amount, 0);
+    const totalMileage = gigs.reduce((sum, gig) => sum + parseFloat(String(gig.mileage || 0)), 0);
+    const mileageValue = totalMileage * this.MILEAGE_RATE;
+    const netIncome = totalIncome - totalExpenses - mileageValue;
+
+    const estimatedTaxes = gigs.reduce((sum, gig) => {
+      const gigIncome = parseFloat(String(gig.actualPay || gig.expectedPay || 0)) + parseFloat(String(gig.tips || 0));
+      const taxRate = parseFloat(String(gig.taxPercentage || user?.defaultTaxPercentage || 0));
+      return sum + (gigIncome * (taxRate / 100));
+    }, 0);
+
+    return {
+      totalIncome,
+      totalExpenses,
+      totalMileage,
+      mileageValue,
+      netIncome,
+      estimatedTaxes,
+      afterTaxIncome: netIncome - estimatedTaxes,
+      completedGigs: gigs.length,
+      avgGigIncome: gigs.length > 0 ? totalIncome / gigs.length : 0
+    };
+  }
+
+  /**
+   * Get expense data (placeholder for future implementation)
+   */
+  private async getExpenseData(userId: number, data: any): Promise<any[]> {
+    // For now, return empty array - can be enhanced when expense tracking is added
+    return [];
+  }
+
+  /**
+   * Get month name from number
+   */
+  private getMonthName(month: number): string {
+    const months = [
+      'January', 'February', 'March', 'April', 'May', 'June',
+      'July', 'August', 'September', 'October', 'November', 'December'
+    ];
+    return months[month - 1] || 'Unknown';
+  }
+
+  /**
+   * Check if user agent is mobile
+   */
+  private isMobileUserAgent(): boolean {
+    // Simple mobile detection - can be enhanced
+    return false; // Default to desktop for now
+  }
       if (gig.isMultiDay && gig.multiDayGroupId) {
         if (!grouped.has(gig.multiDayGroupId)) {
           grouped.set(gig.multiDayGroupId, []);
