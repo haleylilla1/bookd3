@@ -12,8 +12,9 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { insertGigSchema, type InsertGig, type User } from "@shared/schema";
 import { z } from "zod";
-import { X, Loader2, MapPin, Receipt, Calculator } from "lucide-react";
+import { X, Loader2, MapPin, Receipt, Calculator, Navigation } from "lucide-react";
 import ReceiptUpload from "@/components/receipt-upload";
+import { AddressAutocomplete } from "@/components/address-autocomplete";
 
 // Enhanced form schema with mileage and receipt support
 const gigFormSchema = z.object({
@@ -34,6 +35,7 @@ const gigFormSchema = z.object({
   startingAddress: z.string().optional(),
   endingAddress: z.string().optional(),
   mileage: z.number().optional(),
+  isRoundTrip: z.boolean().default(false),
   // Expense tracking with receipts
   trackExpenses: z.boolean().default(false),
   parkingExpense: z.string().optional(),
@@ -112,6 +114,7 @@ export default function SimpleGigForm({ onClose }: SimpleGigFormProps) {
       startingAddress: "",
       endingAddress: "",
       mileage: 0,
+      isRoundTrip: false,
       trackExpenses: false,
       parkingExpense: "",
       parkingReceipts: [],
@@ -135,6 +138,52 @@ export default function SimpleGigForm({ onClose }: SimpleGigFormProps) {
   // Watch form values for conditional rendering
   const trackMileage = form.watch("trackMileage");
   const trackExpenses = form.watch("trackExpenses");
+  const startingAddress = form.watch("startingAddress");
+  const endingAddress = form.watch("endingAddress");
+  const isRoundTrip = form.watch("isRoundTrip");
+
+  // State for mileage calculation
+  const [isCalculatingMileage, setIsCalculatingMileage] = useState(false);
+  const [mileageError, setMileageError] = useState<string | null>(null);
+
+  // Calculate mileage when addresses change
+  useEffect(() => {
+    if (trackMileage && startingAddress && endingAddress && startingAddress !== endingAddress) {
+      calculateMileage();
+    }
+  }, [startingAddress, endingAddress, isRoundTrip, trackMileage]);
+
+  const calculateMileage = async () => {
+    if (!startingAddress || !endingAddress) return;
+
+    setIsCalculatingMileage(true);
+    setMileageError(null);
+
+    try {
+      const response = await apiRequest('POST', '/api/calculate-distance', {
+        startAddress: startingAddress,
+        endAddress: endingAddress,
+        roundTrip: isRoundTrip
+      });
+
+      const data = await response.json();
+      
+      if (data.status === 'success' && data.distanceMiles) {
+        const miles = Math.ceil(data.distanceMiles); // Round up for tax purposes
+        form.setValue("mileage", miles);
+        toast({
+          title: "Mileage Calculated",
+          description: `${miles} miles ${isRoundTrip ? '(round trip)' : '(one way)'}${data.fromCache ? ' (cached)' : ''}`,
+        });
+      } else {
+        setMileageError(data.error || "Unable to calculate distance");
+      }
+    } catch (error) {
+      setMileageError("Failed to calculate mileage. Please enter manually.");
+    } finally {
+      setIsCalculatingMileage(false);
+    }
+  };
 
   // SIMPLE GIG CREATION MUTATION - No complex retry logic
   const createGigMutation = useMutation({
@@ -480,7 +529,15 @@ export default function SimpleGigForm({ onClose }: SimpleGigFormProps) {
                       <FormItem>
                         <FormLabel>Starting Address</FormLabel>
                         <FormControl>
-                          <Input placeholder="123 Main St, City, State" {...field} />
+                          <AddressAutocomplete
+                            label=""
+                            value={field.value || ""}
+                            onChange={(address) => {
+                              field.onChange(address);
+                              setMileageError(null);
+                            }}
+                            placeholder="Enter starting address"
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -494,7 +551,15 @@ export default function SimpleGigForm({ onClose }: SimpleGigFormProps) {
                       <FormItem>
                         <FormLabel>Ending Address</FormLabel>
                         <FormControl>
-                          <Input placeholder="456 Event Ave, City, State" {...field} />
+                          <AddressAutocomplete
+                            label=""
+                            value={field.value || ""}
+                            onChange={(address) => {
+                              field.onChange(address);
+                              setMileageError(null);
+                            }}
+                            placeholder="Enter destination address"
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -502,24 +567,96 @@ export default function SimpleGigForm({ onClose }: SimpleGigFormProps) {
                   />
                 </div>
 
+                {/* Round Trip Toggle */}
                 <FormField
                   control={form.control}
-                  name="mileage"
+                  name="isRoundTrip"
                   render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Total Miles</FormLabel>
+                    <FormItem className="flex flex-row items-start space-x-3 space-y-0">
                       <FormControl>
-                        <Input 
-                          type="number" 
-                          placeholder="0" 
-                          value={field.value || ""}
-                          onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                        <Checkbox
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
                         />
                       </FormControl>
-                      <FormMessage />
+                      <div className="space-y-1 leading-none">
+                        <FormLabel className="flex items-center gap-2">
+                          <Navigation className="w-4 h-4" />
+                          Round Trip (doubles the distance)
+                        </FormLabel>
+                      </div>
                     </FormItem>
                   )}
                 />
+
+                {/* Mileage Calculation Status */}
+                {isCalculatingMileage && (
+                  <div className="flex items-center gap-2 text-blue-600">
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span className="text-sm">Calculating distance...</span>
+                  </div>
+                )}
+
+                {mileageError && (
+                  <div className="text-red-600 text-sm bg-red-50 p-3 rounded">
+                    {mileageError}
+                  </div>
+                )}
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="mileage"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="flex items-center gap-2">
+                          <Calculator className="w-4 h-4" />
+                          Total Miles {isRoundTrip ? "(Round Trip)" : "(One Way)"}
+                        </FormLabel>
+                        <FormControl>
+                          <Input 
+                            type="number" 
+                            placeholder="0" 
+                            value={field.value || ""}
+                            onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <div className="flex items-end">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={calculateMileage}
+                      disabled={!startingAddress || !endingAddress || isCalculatingMileage}
+                      className="w-full"
+                    >
+                      {isCalculatingMileage ? (
+                        <>
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                          Calculating...
+                        </>
+                      ) : (
+                        <>
+                          <Calculator className="w-4 h-4 mr-2" />
+                          Calculate Distance
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </div>
+
+                {form.watch("mileage") > 0 && (
+                  <div className="bg-green-50 p-3 rounded-lg">
+                    <div className="text-sm text-green-800">
+                      <strong>Tax Deduction:</strong> ${(form.watch("mileage") * 0.655).toFixed(2)} 
+                      <span className="text-green-600 ml-2">(at $0.655 per mile)</span>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 
