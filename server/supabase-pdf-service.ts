@@ -785,42 +785,6 @@ export class SupabasePDFService {
     // Simple mobile detection - can be enhanced
     return false; // Default to desktop for now
   }
-      if (gig.isMultiDay && gig.multiDayGroupId) {
-        if (!grouped.has(gig.multiDayGroupId)) {
-          grouped.set(gig.multiDayGroupId, []);
-        }
-        grouped.get(gig.multiDayGroupId)!.push(gig);
-      }
-    });
-
-    const result: Gig[] = [];
-    const processedMultiDay = new Set<string>();
-
-    gigs.forEach(gig => {
-      if (gig.isMultiDay && gig.multiDayGroupId && !processedMultiDay.has(gig.multiDayGroupId)) {
-        const group = grouped.get(gig.multiDayGroupId)!;
-        const consolidated = this.consolidateMultiDayGig(group);
-        result.push(consolidated);
-        processedMultiDay.add(gig.multiDayGroupId);
-      } else if (!gig.isMultiDay) {
-        result.push(gig);
-      }
-    });
-
-    return result;
-  }
-
-  private consolidateMultiDayGig(gigs: Gig[]): Gig {
-    const first = gigs[0];
-    const totalExpectedPay = gigs.reduce((sum, g) => sum + parseFloat(String(g.expectedPay || 0)), 0);
-    const totalActualPay = gigs.reduce((sum, g) => sum + parseFloat(String(g.actualPay || 0)), 0);
-
-    return {
-      ...first,
-      expectedPay: totalExpectedPay,
-      actualPay: totalActualPay > 0 ? totalActualPay : undefined,
-    };
-  }
 
   /**
    * Summary calculations
