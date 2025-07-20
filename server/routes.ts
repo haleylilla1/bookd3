@@ -228,16 +228,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/user', apiLimiter, requireAuth, asyncHandler(async (req: any, res) => {
     const userId = getUserId(req);
     
-    console.log(`🔍 Getting user data for userId: ${userId}`);
+    // Check cache first (5-minute TTL for user data)
+    const { cache } = await import('./simple-cache');
+    const cacheKey = `user:${userId}`;
+    let user = await cache.get(cacheKey);
     
-    // Always fetch fresh data from database - bypass cache for debugging
-    const user = await safeDbOperation(
-      () => storage.getUser(userId),
-      'Failed to fetch user data',
-      userId
-    );
-    
-    console.log(`📊 User data from storage:`, user);
+    if (!user) {
+      user = await safeDbOperation(
+        () => storage.getUser(userId),
+        'Failed to fetch user data',
+        userId
+      );
+      
+      if (user) {
+        await cache.set(cacheKey, user, 300); // 5-minute cache
+      }
+    }
     
     if (!user) {
       return res.status(404).json({ error: 'User not found' });
