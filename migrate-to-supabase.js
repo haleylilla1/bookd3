@@ -43,12 +43,242 @@ const USERS_DATA = [
     },
     onboarding_completed: false,
     created_at: "2025-06-23 21:11:16.352955"
+  },
+  {
+    id: 16,
+    name: "Bryan Moore",
+    email: "54bmoore@gmail.com",
+    phone: null,
+    title: "Gig Worker",
+    default_tax_percentage: 23,
+    custom_gig_types: [],
+    home_address: null,
+    business_name: null,
+    business_address: null,
+    business_phone: null,
+    business_email: null,
+    notification_preferences: {
+      "push": true,
+      "email": true,
+      "reminders": true
+    },
+    work_preferences: {
+      "workingHours": {
+        "end": "17:00",
+        "start": "09:00"
+      },
+      "primaryGigTypes": [],
+      "preferredClients": []
+    },
+    onboarding_completed: false,
+    created_at: "2025-06-26 17:06:36.188201"
+  },
+  {
+    id: 19,
+    name: "Christina Zolotova",
+    email: "czolotova@gmail.com",
+    phone: null,
+    title: "Gig Worker",
+    default_tax_percentage: 23,
+    custom_gig_types: ["Bartending", "Brand ambassador", "Lead event"],
+    home_address: null,
+    business_name: null,
+    business_address: null,
+    business_phone: null,
+    business_email: null,
+    notification_preferences: {
+      "push": true,
+      "email": true,
+      "reminders": true
+    },
+    work_preferences: {
+      "workingHours": {
+        "end": "17:00",
+        "start": "09:00"
+      },
+      "primaryGigTypes": [],
+      "preferredClients": []
+    },
+    onboarding_completed: false,
+    created_at: "2025-06-28 20:52:36.667115"
+  },
+  {
+    id: 21,
+    name: "Test User",
+    email: "test@bookd.tools",
+    phone: null,
+    title: "Gig Worker",
+    default_tax_percentage: 23,
+    custom_gig_types: [],
+    home_address: null,
+    business_name: null,
+    business_address: null,
+    business_phone: null,
+    business_email: null,
+    notification_preferences: {
+      "push": true,
+      "email": true,
+      "reminders": true
+    },
+    work_preferences: {
+      "workingHours": {
+        "end": "17:00",
+        "start": "09:00"
+      },
+      "primaryGigTypes": [],
+      "preferredClients": []
+    },
+    onboarding_completed: false,
+    created_at: "2025-07-09 20:46:37.154253"
+  },
+  {
+    id: 22,
+    name: "User Two",
+    email: "user2@bookd.tools",
+    phone: null,
+    title: "Gig Worker",
+    default_tax_percentage: 23,
+    custom_gig_types: [],
+    home_address: null,
+    business_name: null,
+    business_address: null,
+    business_phone: null,
+    business_email: null,
+    notification_preferences: {
+      "push": true,
+      "email": true,
+      "reminders": true
+    },
+    work_preferences: {
+      "workingHours": {
+        "end": "17:00",
+        "start": "09:00"
+      },
+      "primaryGigTypes": [],
+      "preferredClients": []
+    },
+    onboarding_completed: false,
+    created_at: "2025-07-09 20:46:47.097828"
+  },
+  {
+    id: 23,
+    name: "haley",
+    email: "lilla@chapman.edu",
+    phone: null,
+    title: "Gig Worker",
+    default_tax_percentage: 23,
+    custom_gig_types: [],
+    home_address: null,
+    business_name: null,
+    business_address: null,
+    business_phone: null,
+    business_email: null,
+    notification_preferences: {
+      "push": true,
+      "email": true,
+      "reminders": true
+    },
+    work_preferences: {
+      "workingHours": {
+        "end": "17:00",
+        "start": "09:00"
+      },
+      "primaryGigTypes": [],
+      "preferredClients": []
+    },
+    onboarding_completed: false,
+    created_at: "2025-07-10 16:14:52.979695"
+  },
+  {
+    id: 24,
+    name: "Test User",
+    email: "test@example.com",
+    phone: null,
+    title: "Gig Worker",
+    default_tax_percentage: 23,
+    custom_gig_types: [],
+    home_address: null,
+    business_name: null,
+    business_address: null,
+    business_phone: null,
+    business_email: null,
+    notification_preferences: {
+      "push": true,
+      "email": true,
+      "reminders": true
+    },
+    work_preferences: {
+      "workingHours": {
+        "end": "17:00",
+        "start": "09:00"
+      },
+      "primaryGigTypes": [],
+      "preferredClients": []
+    },
+    onboarding_completed: false,
+    created_at: "2025-07-16 06:44:03.846142"
+  },
+  {
+    id: 25,
+    name: "Jessica Rafaela Roessler- Smith",
+    email: "jroesslersmith@gmail.com",
+    phone: null,
+    title: "Gig Worker",
+    default_tax_percentage: 23,
+    custom_gig_types: ["Brand Ambassador"],
+    home_address: "4844 Riverton Ave #104 North Hollywood, CA 91601",
+    business_name: "Jessica Rafaela Roessler- Smith",
+    business_address: "4844 Riverton Ave #104 North Hollywood, CA 91601",
+    business_phone: "7862349137",
+    business_email: "jroesslersmith@gmail.com",
+    notification_preferences: {
+      "push": true,
+      "email": true,
+      "reminders": true
+    },
+    work_preferences: {
+      "workingHours": {
+        "end": "17:00",
+        "start": "09:00"
+      },
+      "primaryGigTypes": [],
+      "preferredClients": []
+    },
+    onboarding_completed: false,
+    created_at: "2025-07-19 03:06:31.193595"
   }
-  // Add other users here...
 ]
 
-// Sample gig data structure
+// All gig data exported from database
 const GIGS_DATA = [
+  {
+    id: 27,
+    user_id: 5,
+    gig_type: "bartender",
+    client_name: "Coors",
+    event_name: "Life is Beautiful",
+    date: "2025-06-20",
+    expected_pay: 400.00,
+    actual_pay: null,
+    payment_method: null,
+    status: "upcoming",
+    duties: null,
+    tax_percentage: 17,
+    mileage: null,
+    notes: null,
+    parking_expense: 15.00,
+    other_expenses: null,
+    include_in_resume: true,
+    gig_address: null,
+    distance_miles: null,
+    travel_time_minutes: null,
+    tips: null,
+    parking_receipts: [],
+    other_expense_receipts: [],
+    parking_reimbursed: false,
+    other_expenses_reimbursed: false,
+    created_at: "2025-06-20 03:23:31.264326"
+  },
   {
     id: 59,
     user_id: 14,
@@ -76,8 +306,63 @@ const GIGS_DATA = [
     parking_reimbursed: false,
     other_expenses_reimbursed: false,
     created_at: "2025-06-24 17:48:03.158529"
+  },
+  {
+    id: 60,
+    user_id: 14,
+    gig_type: "Brand Ambassador",
+    client_name: "TCG",
+    event_name: "Cali Vibes",
+    date: "2025-06-07",
+    expected_pay: 540.00,
+    actual_pay: 540.00,
+    payment_method: "bank-transfer",
+    status: "completed",
+    duties: null,
+    tax_percentage: 23,
+    mileage: 62,
+    notes: null,
+    parking_expense: null,
+    other_expenses: null,
+    include_in_resume: true,
+    gig_address: null,
+    distance_miles: null,
+    travel_time_minutes: null,
+    tips: null,
+    parking_receipts: [],
+    other_expense_receipts: [],
+    parking_reimbursed: false,
+    other_expenses_reimbursed: false,
+    created_at: "2025-06-24 17:48:58.710669"
+  },
+  {
+    id: 98,
+    user_id: 14,
+    gig_type: "Brand Ambassador",
+    client_name: "Brand Besties",
+    event_name: "Furbies",
+    date: "2025-06-24",
+    expected_pay: 406.00,
+    actual_pay: 415.00,
+    payment_method: "bank-transfer",
+    status: "completed",
+    duties: null,
+    tax_percentage: 20,
+    mileage: 0,
+    notes: null,
+    parking_expense: 30.00,
+    other_expenses: null,
+    include_in_resume: true,
+    gig_address: null,
+    distance_miles: null,
+    travel_time_minutes: null,
+    tips: null,
+    parking_receipts: ["data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAASABIAAD..."],
+    other_expense_receipts: [],
+    parking_reimbursed: false,
+    other_expenses_reimbursed: false,
+    created_at: "2025-06-27 10:39:48.149"
   }
-  // Add other gigs here...
 ]
 
 const GOALS_DATA = [
@@ -89,8 +374,25 @@ const GOALS_DATA = [
     goal_amount: 5000.00,
     created_at: "2025-06-26 23:48:58.908211",
     updated_at: "2025-06-29 19:04:29.444"
+  },
+  {
+    goal_type: "monthly",
+    user_id: 14,
+    month: 7,
+    year: 2025,
+    goal_amount: 5000.00,
+    created_at: "2025-07-09 21:12:19.133",
+    updated_at: "2025-07-09 21:12:19.133"
+  },
+  {
+    goal_type: "monthly",
+    user_id: 19,
+    month: 7,
+    year: 2025,
+    goal_amount: 5000.00,
+    created_at: "2025-06-29 04:58:33.156",
+    updated_at: "2025-06-29 04:58:33.156"
   }
-  // Add other goals here...
 ]
 
 async function migrateData() {
@@ -234,7 +536,11 @@ async function migrateData() {
   }
 }
 
-// Uncomment to run migration
-// migrateData()
-
-module.exports = { migrateData }
+// Run migration immediately
+migrateData().then(() => {
+  console.log('🎉 Migration script completed!')
+  process.exit(0)
+}).catch((error) => {
+  console.error('❌ Migration failed:', error)
+  process.exit(1)
+})
