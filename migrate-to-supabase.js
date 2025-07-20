@@ -5,11 +5,11 @@
  * Run with: node migrate-to-supabase.js
  */
 
-const { createClient } = require('@supabase/supabase-js')
+import { createClient } from '@supabase/supabase-js'
 
-// You'll need to replace these with your actual Supabase credentials
-const SUPABASE_URL = 'https://your-project.supabase.co'
-const SUPABASE_SERVICE_KEY = 'your-service-role-key' // Secret key for admin operations
+// Supabase credentials - Service key will be provided via environment variable
+const SUPABASE_URL = 'https://gwywiuigckemgngpmbxf.supabase.co'
+const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY // Secret key for admin operations
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY)
 
