@@ -163,11 +163,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     skip: (req) => process.env.NODE_ENV === 'development' || !process.env.NODE_ENV,
   });
 
-  // Ultra-strict rate limiting for resource-intensive operations
+  // Reasonable rate limiting for resource-intensive operations
   const resourceIntensiveLimiter = rateLimit({
-    windowMs: 60 * 60 * 1000, // 1 hour
-    max: 10, // 10 requests per hour for very heavy operations
-    message: { error: 'Resource limit exceeded, please try again later.' },
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 25, // 25 requests per 15 minutes for report generation (more reasonable)
+    message: { error: 'Too many report requests, please wait a moment before trying again.' },
     standardHeaders: true,
     legacyHeaders: false,
     skip: (req) => process.env.NODE_ENV === 'development' || !process.env.NODE_ENV,
