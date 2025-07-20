@@ -1,8 +1,8 @@
 import { createClient } from '@supabase/supabase-js'
 
-// These will be set from environment variables
-const supabaseUrl = process.env.VITE_SUPABASE_URL || ''
-const supabaseAnonKey = process.env.VITE_SUPABASE_ANON_KEY || ''
+// Supabase configuration
+const supabaseUrl = process.env.VITE_SUPABASE_URL || 'https://gwywiuigckemgngpmbxf.supabase.co'
+const supabaseAnonKey = process.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd3eXdpdWlnY2tlbWduZ3BtYnhmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTMwMzA5NDEsImV4cCI6MjA2ODYwNjk0MX0.eVas5kb4MF9zpzPHZHTfSY2YlFiOejZ3MVzFD1sEMKk'
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey)
 
