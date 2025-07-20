@@ -15,6 +15,7 @@ import { globalErrorHandler, asyncHandler, safeDbOperation, validateUserId, vali
 import { logError } from "./logger";
 import rateLimit from "express-rate-limit";
 import { nodeJSMemoryProfiler } from "./nodejs-memory-profiler";
+import { memoryLeakFixer } from "./memory-leak-fixes";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // REPLIT AUTH: Zero-configuration authentication system
@@ -1203,6 +1204,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Memory analysis error:', error);
       res.status(500).json({ error: 'Failed to analyze memory' });
+    }
+  });
+
+  app.get('/api/memory/leak-status', async (req, res) => {
+    try {
+      const leakStatus = memoryLeakFixer.getMemoryLeakStatus();
+      res.json(leakStatus);
+    } catch (error) {
+      console.error('Memory leak status error:', error);
+      res.status(500).json({ error: 'Failed to get leak status' });
+    }
+  });
+
+  app.post('/api/memory/force-cleanup', async (req, res) => {
+    try {
+      console.log('🚨 MANUAL MEMORY CLEANUP REQUESTED');
+      memoryLeakFixer.forceMemoryLeakRemediation();
+      res.json({ success: true, message: 'Emergency memory cleanup completed' });
+    } catch (error) {
+      console.error('Force cleanup error:', error);
+      res.status(500).json({ error: 'Failed to force cleanup' });
     }
   });
 

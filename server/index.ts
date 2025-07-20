@@ -28,6 +28,13 @@ async function start() {
   // Initialize advanced cache
   advancedCache.init().catch(console.error);
   
+  // Initialize memory leak fixes
+  const { memoryLeakFixer } = await import('./memory-leak-fixes');
+  memoryLeakFixer.setupDatabaseConnectionPooling();
+  memoryLeakFixer.setupEventListenerCleanup();
+  memoryLeakFixer.setupAggressiveGarbageCollection();
+  memoryLeakFixer.setupProcessCleanup();
+  
   // Start infrastructure systems (simplified and staggered)
   try {
     const { backupSystem } = await import('./backup-system');
