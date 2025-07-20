@@ -29,7 +29,7 @@ export default function Profile() {
     queryKey: ["/api/user"],
   });
 
-  console.log("👤 Current user data:", user);
+
 
   // Initialize form fields when user data loads
   useEffect(() => {
@@ -44,8 +44,6 @@ export default function Profile() {
       return response.json();
     },
     onSuccess: async (data) => {
-      console.log("💾 User update response data:", data);
-      
       // Clear React Query cache for user data
       queryClient.removeQueries({ queryKey: ["/api/user"] });
       
@@ -54,8 +52,6 @@ export default function Profile() {
       
       // Force immediate refetch from server
       await refetchUser();
-      
-      console.log("✅ Profile updated successfully");
       
       toast({
         title: "Success",

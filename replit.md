@@ -41,6 +41,7 @@ Bookd is a mobile-first gig worker companion app with comprehensive financial tr
 - PAYMENT INTEGRATION: Considering Stripe payments with either Replit Auth (MVP) or Supabase (scale phase)
 
 ## Recent Changes  
+- 2025-07-20: ✅ PROFILE DATA DISPLAY ISSUE COMPLETELY FIXED - Resolved conflicting API endpoints that prevented address and custom gig types from displaying after save
 - 2025-07-20: ✅ CACHE INVALIDATION FIX DEPLOYED - Universal solution ensuring all users see immediate updates when saving profile data, eliminating "successfully saved but not displaying" issues
 - 2025-07-20: ✅ COMPREHENSIVE CACHE MANAGEMENT - Enhanced all CRUD operations (gigs, expenses, goals, user data) with proper cache invalidation for 1000+ concurrent users
 - 2025-07-20: ✅ FRONTEND CACHE OPTIMIZATION - React Query cache management with immediate UI updates, data consistency, and strategic invalidation patterns
