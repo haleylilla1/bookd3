@@ -2,6 +2,7 @@ import { logger } from './logger';
 import { monitoringSystem } from './monitoring-system';
 import { backupSystem } from './backup-system';
 import { integrityChecker } from './database-integrity';
+import { advancedCache } from './advanced-cache';
 import fs from 'fs/promises';
 import path from 'path';
 
@@ -36,6 +37,12 @@ export class InfrastructureManager {
     disk: 95,
     responseTime: 5000
   };
+  
+  private memoryThresholds = {
+    warning: 400, // 400MB warning threshold
+    critical: 500, // 500MB emergency cleanup threshold
+    lastCleanup: 0 // Track last emergency cleanup time
+  };
 
   constructor() {
     // Don't start automatically - will be started explicitly
@@ -50,12 +57,20 @@ export class InfrastructureManager {
       this.runHealthChecks();
     }, 5 * 60 * 1000);
 
+    // Run memory monitoring every 30 seconds for responsive memory management
+    setInterval(() => {
+      this.monitorMemoryUsage();
+    }, 30 * 1000);
+
     // Run initial health check after 3 minutes
     setTimeout(() => {
       this.runHealthChecks();
     }, 3 * 60 * 1000);
 
-    logger.info('Infrastructure monitoring started - health checks every 5 minutes');
+    // Start memory monitoring immediately
+    this.monitorMemoryUsage();
+
+    logger.info('Infrastructure monitoring started - health checks every 5 minutes, memory monitoring every 30 seconds');
   }
 
   /**
@@ -71,8 +86,11 @@ export class InfrastructureManager {
       // Backup system health check
       checks.push(await this.checkBackupHealth());
 
-      // System resource check
+      // System resource check (includes memory monitoring)
       checks.push(await this.checkSystemResources());
+      
+      // Memory-specific check
+      checks.push(await this.checkMemoryHealth());
 
       // Monitoring system check
       checks.push(await this.checkMonitoringHealth());
@@ -467,6 +485,181 @@ ${this.healthChecks.map(check =>
     `.trim();
 
     return report;
+  }
+
+  /**
+   * Monitor Node.js memory usage with intelligent cache cleanup
+   */
+  private async monitorMemoryUsage(): Promise<void> {
+    try {
+      const memUsage = process.memoryUsage();
+      const heapUsedMB = memUsage.heapUsed / 1024 / 1024;
+      const heapTotalMB = memUsage.heapTotal / 1024 / 1024;
+      const rssMB = memUsage.rss / 1024 / 1024;
+      const externalMB = memUsage.external / 1024 / 1024;
+      
+      // Log detailed memory information every 2 minutes
+      const now = Date.now();
+      if (!this.lastMemoryLog || (now - this.lastMemoryLog) > 2 * 60 * 1000) {
+        console.log(`🧠 Memory: Heap ${heapUsedMB.toFixed(1)}MB/${heapTotalMB.toFixed(1)}MB, RSS ${rssMB.toFixed(1)}MB, External ${externalMB.toFixed(1)}MB`);
+        this.lastMemoryLog = now;
+      }
+      
+      // Warning threshold (400MB)
+      if (heapUsedMB > this.memoryThresholds.warning && heapUsedMB < this.memoryThresholds.critical) {
+        logger.warn(`⚠️ Memory Warning: Heap usage ${heapUsedMB.toFixed(1)}MB exceeds ${this.memoryThresholds.warning}MB threshold`, {
+          heapUsed: heapUsedMB,
+          heapTotal: heapTotalMB,
+          rss: rssMB,
+          external: externalMB,
+          cacheSize: await this.getCacheSize()
+        });
+      }
+      
+      // Critical threshold (500MB) - trigger emergency cleanup
+      if (heapUsedMB > this.memoryThresholds.critical) {
+        const timeSinceLastCleanup = now - this.memoryThresholds.lastCleanup;
+        
+        // Only run emergency cleanup once every 5 minutes to prevent thrashing
+        if (timeSinceLastCleanup > 5 * 60 * 1000) {
+          logger.error(`🚨 CRITICAL Memory Alert: ${heapUsedMB.toFixed(1)}MB exceeds ${this.memoryThresholds.critical}MB - triggering emergency cleanup`, {
+            heapUsed: heapUsedMB,
+            heapTotal: heapTotalMB,
+            rss: rssMB,
+            external: externalMB
+          });
+          
+          await this.emergencyMemoryCleanup();
+          this.memoryThresholds.lastCleanup = now;
+        }
+      }
+      
+    } catch (error) {
+      logger.error('Memory monitoring failed', { error: error.message });
+    }
+  }
+  
+  private lastMemoryLog: number = 0;
+  
+  /**
+   * Emergency memory cleanup when critical threshold is reached
+   */
+  private async emergencyMemoryCleanup(): Promise<void> {
+    const startTime = Date.now();
+    let cleanupActions: string[] = [];
+    
+    try {
+      // Get memory before cleanup
+      const memBefore = process.memoryUsage().heapUsed / 1024 / 1024;
+      
+      // 1. Force advanced cache cleanup
+      try {
+        const cacheStats = await advancedCache.getStats();
+        if (cacheStats.cacheSize > 100) {
+          // Use advanced cache's emergency cleanup with 50% reduction
+          await advancedCache.emergencyCleanup(0.5);
+          cleanupActions.push(`Advanced cache: reduced from ${cacheStats.cacheSize} entries (50% cleanup)`);
+        }
+      } catch (error) {
+        cleanupActions.push(`Cache cleanup failed: ${error.message}`);
+      }
+      
+      // 2. Force garbage collection if available
+      if (global.gc) {
+        global.gc();
+        cleanupActions.push('Forced garbage collection');
+      } else {
+        cleanupActions.push('GC not available (run with --expose-gc for emergency GC)');
+      }
+      
+      // 3. Clear Node.js internal caches (carefully)
+      if (require.cache) {
+        const moduleCount = Object.keys(require.cache).length;
+        cleanupActions.push(`Module cache: ${moduleCount} modules (preserved for stability)`);
+      }
+      
+      // 4. Check memory after cleanup
+      const memUsageAfter = process.memoryUsage();
+      const heapAfterMB = memUsageAfter.heapUsed / 1024 / 1024;
+      const cleanupDuration = Date.now() - startTime;
+      const memoryReduced = memBefore - heapAfterMB;
+      
+      logger.info(`✅ Emergency cleanup completed in ${cleanupDuration}ms`, {
+        memoryBefore: `${memBefore.toFixed(1)}MB`,
+        memoryAfter: `${heapAfterMB.toFixed(1)}MB`,
+        memoryReduced: `${memoryReduced.toFixed(1)}MB`,
+        actions: cleanupActions,
+        duration: cleanupDuration
+      });
+      
+      // If still critical after cleanup, log severe warning
+      if (heapAfterMB > this.memoryThresholds.critical) {
+        logger.error(`🔥 SEVERE: Memory still critical after cleanup (${heapAfterMB.toFixed(1)}MB) - consider server restart`, {
+          cleanupActions,
+          memoryReduced: `${memoryReduced.toFixed(1)}MB`,
+          recommendedAction: 'Server restart may be required'
+        });
+      }
+      
+    } catch (error) {
+      logger.error('Emergency memory cleanup failed', { 
+        error: error.message,
+        duration: Date.now() - startTime 
+      });
+    }
+  }
+  
+  /**
+   * Get current cache size for memory monitoring
+   */
+  private async getCacheSize(): Promise<number> {
+    try {
+      const stats = await advancedCache.getStats();
+      return stats.cacheSize;
+    } catch (error) {
+      return 0;
+    }
+  }
+  
+  /**
+   * Check memory health status
+   */
+  private async checkMemoryHealth(): Promise<ServiceCheck> {
+    const startTime = Date.now();
+    
+    try {
+      const memUsage = process.memoryUsage();
+      const heapUsedMB = memUsage.heapUsed / 1024 / 1024;
+      const heapTotalMB = memUsage.heapTotal / 1024 / 1024;
+      const rssMB = memUsage.rss / 1024 / 1024;
+      
+      let status: 'healthy' | 'warning' | 'critical' = 'healthy';
+      let message = `Heap: ${heapUsedMB.toFixed(1)}MB/${heapTotalMB.toFixed(1)}MB, RSS: ${rssMB.toFixed(1)}MB`;
+      
+      if (heapUsedMB > this.memoryThresholds.warning) {
+        status = 'warning';
+        message += ` (⚠️ ${this.memoryThresholds.warning}MB+ threshold)`;
+      }
+      
+      if (heapUsedMB > this.memoryThresholds.critical) {
+        status = 'critical';
+        message += ` (🚨 ${this.memoryThresholds.critical}MB+ critical)`;
+      }
+      
+      return {
+        name: 'Memory Health',
+        status,
+        message,
+        responseTime: Date.now() - startTime
+      };
+    } catch (error) {
+      return {
+        name: 'Memory Health',
+        status: 'critical',
+        message: 'Failed to check memory health',
+        responseTime: Date.now() - startTime
+      };
+    }
   }
 }
 

@@ -496,6 +496,59 @@ class AdvancedCache {
     console.log(`⚡ Advanced eviction: removed ${toRemove} entries (priority-aware LRU)`);
   }
 
+  /**
+   * Emergency cleanup for memory pressure situations
+   */
+  async emergencyCleanup(reductionPercentage: number = 0.5): Promise<void> {
+    const startTime = Date.now();
+    const initialSize = this.fallbackCache.size;
+    const targetReduction = Math.floor(initialSize * reductionPercentage);
+    
+    console.log(`🚨 Emergency cache cleanup: removing ${targetReduction} entries (${(reductionPercentage * 100).toFixed(1)}%)`);
+    
+    try {
+      // 1. First remove all expired entries
+      await this.performTTLCleanup();
+      
+      // 2. If we still need to reduce more, remove LRU entries
+      const remainingToRemove = targetReduction - (initialSize - this.fallbackCache.size);
+      
+      if (remainingToRemove > 0) {
+        // Sort by access time and priority for intelligent eviction
+        const entries = Array.from(this.fallbackCache.entries())
+          .sort((a, b) => {
+            const entryA = a[1];
+            const entryB = b[1];
+            
+            // Consider both access time and priority
+            const scoreA = entryA.lastAccessed + (entryA.priority * 60000); // Priority worth 1 minute
+            const scoreB = entryB.lastAccessed + (entryB.priority * 60000);
+            
+            return scoreA - scoreB; // Ascending - remove oldest/lowest priority first
+          });
+        
+        // Remove the least valuable entries
+        const keysToRemove = entries.slice(0, remainingToRemove).map(([key]) => key);
+        
+        for (const key of keysToRemove) {
+          this.fallbackCache.delete(key);
+          this.expirationQueue.remove(key);
+        }
+        
+        console.log(`📦 Emergency cleanup: removed ${keysToRemove.length} LRU entries`);
+      }
+      
+      const finalSize = this.fallbackCache.size;
+      const actualReduction = initialSize - finalSize;
+      const duration = Date.now() - startTime;
+      
+      console.log(`✅ Emergency cleanup completed: ${actualReduction} entries removed in ${duration}ms (${initialSize} → ${finalSize})`);
+      
+    } catch (error) {
+      console.error('❌ Emergency cleanup failed:', error.message);
+    }
+  }
+
   getStats(): CacheStats {
     const memoryUsage = this.client ? 0 : this.getMemoryUsageMB();
     const hitRate = this.hits + this.misses > 0 ? (this.hits / (this.hits + this.misses)) * 100 : 0;
