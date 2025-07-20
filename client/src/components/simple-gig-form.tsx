@@ -7,13 +7,15 @@ import { Input } from "@/components/ui/input";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { insertGigSchema, type InsertGig, type User } from "@shared/schema";
 import { z } from "zod";
-import { X, Loader2 } from "lucide-react";
+import { X, Loader2, MapPin, Receipt, Calculator } from "lucide-react";
+import ReceiptUpload from "@/components/receipt-upload";
 
-// Simple, bulletproof form schema - string inputs for all numeric fields for easier form handling
+// Enhanced form schema with mileage and receipt support
 const gigFormSchema = z.object({
   gigType: z.string().min(1, "Gig type is required"),
   eventName: z.string().min(1, "Event name is required"),
@@ -27,7 +29,19 @@ const gigFormSchema = z.object({
   duties: z.string().optional(),
   taxPercentage: z.number().min(0).max(50).default(23),
   notes: z.string().optional(),
-  // Simplified - no mileage or complex expense tracking in simple form
+  // Mileage tracking
+  trackMileage: z.boolean().default(false),
+  startingAddress: z.string().optional(),
+  endingAddress: z.string().optional(),
+  mileage: z.number().optional(),
+  // Expense tracking with receipts
+  trackExpenses: z.boolean().default(false),
+  parkingExpense: z.string().optional(),
+  parkingReceipts: z.array(z.string()).default([]),
+  parkingReimbursed: z.boolean().default(false),
+  otherExpenses: z.string().optional(),
+  otherExpenseReceipts: z.array(z.string()).default([]),
+  otherExpensesReimbursed: z.boolean().default(false),
 });
 
 type GigFormData = z.infer<typeof gigFormSchema>;
@@ -78,7 +92,7 @@ export default function SimpleGigForm({ onClose }: SimpleGigFormProps) {
     }
   }, [isError, userError, toast]);
 
-  // SIMPLE FORM SETUP - No complex watchers or auto-save
+  // Enhanced form setup with mileage and expense tracking
   const form = useForm<GigFormData>({
     resolver: zodResolver(gigFormSchema),
     defaultValues: {
@@ -94,6 +108,17 @@ export default function SimpleGigForm({ onClose }: SimpleGigFormProps) {
       duties: "",
       taxPercentage: 23,
       notes: "",
+      trackMileage: false,
+      startingAddress: "",
+      endingAddress: "",
+      mileage: 0,
+      trackExpenses: false,
+      parkingExpense: "",
+      parkingReceipts: [],
+      parkingReimbursed: false,
+      otherExpenses: "",
+      otherExpenseReceipts: [],
+      otherExpensesReimbursed: false,
     }
   });
 
@@ -101,8 +126,15 @@ export default function SimpleGigForm({ onClose }: SimpleGigFormProps) {
   useEffect(() => {
     if (user) {
       form.setValue("taxPercentage", user.defaultTaxPercentage || 23);
+      if (user.homeAddress) {
+        form.setValue("startingAddress", user.homeAddress);
+      }
     }
   }, [user, form]);
+
+  // Watch form values for conditional rendering
+  const trackMileage = form.watch("trackMileage");
+  const trackExpenses = form.watch("trackExpenses");
 
   // SIMPLE GIG CREATION MUTATION - No complex retry logic
   const createGigMutation = useMutation({
@@ -156,14 +188,14 @@ export default function SimpleGigForm({ onClose }: SimpleGigFormProps) {
         status: data.status,
         duties: data.duties || null,
         taxPercentage: data.taxPercentage,
-        mileage: 0,
+        mileage: data.mileage || 0,
         notes: data.notes || null,
-        parkingExpense: 0,
-        parkingReceipts: [],
-        parkingReimbursed: false,
-        otherExpenses: 0,
-        otherExpenseReceipts: [],
-        otherExpensesReimbursed: false,
+        parkingExpense: data.parkingExpense ? parseFloat(data.parkingExpense) || 0 : 0,
+        parkingReceipts: data.parkingReceipts || [],
+        parkingReimbursed: data.parkingReimbursed || false,
+        otherExpenses: data.otherExpenses ? parseFloat(data.otherExpenses) || 0 : 0,
+        otherExpenseReceipts: data.otherExpenseReceipts || [],
+        otherExpensesReimbursed: data.otherExpensesReimbursed || false,
       };
 
       await createGigMutation.mutateAsync(gigData);
@@ -414,6 +446,197 @@ export default function SimpleGigForm({ onClose }: SimpleGigFormProps) {
                 )}
               />
             </div>
+
+            {/* Mileage Tracking Toggle */}
+            <FormField
+              control={form.control}
+              name="trackMileage"
+              render={({ field }) => (
+                <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                  <FormControl>
+                    <Checkbox
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                    />
+                  </FormControl>
+                  <div className="space-y-1 leading-none">
+                    <FormLabel className="flex items-center gap-2">
+                      <MapPin className="w-4 h-4" />
+                      Track Mileage
+                    </FormLabel>
+                  </div>
+                </FormItem>
+              )}
+            />
+
+            {/* Mileage Fields */}
+            {trackMileage && (
+              <div className="space-y-4 p-4 border rounded-lg bg-gray-50">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="startingAddress"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Starting Address</FormLabel>
+                        <FormControl>
+                          <Input placeholder="123 Main St, City, State" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="endingAddress"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Ending Address</FormLabel>
+                        <FormControl>
+                          <Input placeholder="456 Event Ave, City, State" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                <FormField
+                  control={form.control}
+                  name="mileage"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Total Miles</FormLabel>
+                      <FormControl>
+                        <Input 
+                          type="number" 
+                          placeholder="0" 
+                          value={field.value || ""}
+                          onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+            )}
+
+            {/* Expense Tracking Toggle */}
+            <FormField
+              control={form.control}
+              name="trackExpenses"
+              render={({ field }) => (
+                <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                  <FormControl>
+                    <Checkbox
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                    />
+                  </FormControl>
+                  <div className="space-y-1 leading-none">
+                    <FormLabel className="flex items-center gap-2">
+                      <Receipt className="w-4 h-4" />
+                      Track Expenses
+                    </FormLabel>
+                  </div>
+                </FormItem>
+              )}
+            />
+
+            {/* Expense Fields */}
+            {trackExpenses && (
+              <div className="space-y-4 p-4 border rounded-lg bg-gray-50">
+                {/* Parking Expenses */}
+                <div className="space-y-3">
+                  <h4 className="font-medium text-sm">Parking Expenses</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <FormField
+                      control={form.control}
+                      name="parkingExpense"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Parking Cost ($)</FormLabel>
+                          <FormControl>
+                            <Input type="number" placeholder="15.00" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="parkingReimbursed"
+                      render={({ field }) => (
+                        <FormItem className="flex flex-row items-start space-x-3 space-y-0 pt-6">
+                          <FormControl>
+                            <Checkbox
+                              checked={field.value}
+                              onCheckedChange={field.onChange}
+                            />
+                          </FormControl>
+                          <div className="space-y-1 leading-none">
+                            <FormLabel>Reimbursed</FormLabel>
+                          </div>
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+
+                  <ReceiptUpload
+                    receipts={form.watch("parkingReceipts") || []}
+                    onReceiptsChange={(receipts) => form.setValue("parkingReceipts", receipts)}
+                    label="Parking Receipt Photos"
+                  />
+                </div>
+
+                {/* Other Expenses */}
+                <div className="space-y-3">
+                  <h4 className="font-medium text-sm">Other Expenses</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <FormField
+                      control={form.control}
+                      name="otherExpenses"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Other Costs ($)</FormLabel>
+                          <FormControl>
+                            <Input type="number" placeholder="25.00" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="otherExpensesReimbursed"
+                      render={({ field }) => (
+                        <FormItem className="flex flex-row items-start space-x-3 space-y-0 pt-6">
+                          <FormControl>
+                            <Checkbox
+                              checked={field.value}
+                              onCheckedChange={field.onChange}
+                            />
+                          </FormControl>
+                          <div className="space-y-1 leading-none">
+                            <FormLabel>Reimbursed</FormLabel>
+                          </div>
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+
+                  <ReceiptUpload
+                    receipts={form.watch("otherExpenseReceipts") || []}
+                    onReceiptsChange={(receipts) => form.setValue("otherExpenseReceipts", receipts)}
+                    label="Other Receipt Photos"
+                  />
+                </div>
+              </div>
+            )}
 
             {/* Notes */}
             <FormField
