@@ -41,6 +41,19 @@ export interface User {
 }
 
 // =============================================================================
+// UTILITY FUNCTIONS
+// =============================================================================
+
+function isValidEmail(email: string): boolean {
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return emailRegex.test(email);
+}
+
+function sanitizeInput(input: string): string {
+  return input.trim().replace(/\s+/g, ' ');
+}
+
+// =============================================================================
 // CORE AUTHENTICATION SERVICE
 // =============================================================================
 
@@ -105,46 +118,65 @@ export class Auth {
   // ==================
 
   static async createUser(email: string, password: string, name: string): Promise<User> {
-    const passwordHash = await bcrypt.hash(password, 10);
-    
-    const [user] = await db
-      .insert(users)
-      .values({
-        email,
-        passwordHash,
-        name,
-        emailVerified: false,
-        isActive: true
-      })
-      .returning();
+    try {
+      const passwordHash = await bcrypt.hash(password, 10);
+      
+      const [user] = await db
+        .insert(users)
+        .values({
+          email: email.toLowerCase().trim(),
+          passwordHash,
+          name: name.trim(),
+          emailVerified: false,
+          isActive: true
+        })
+        .returning();
 
-    return user;
+      if (!user) {
+        throw new Error('Failed to create user in database');
+      }
+
+      return user;
+    } catch (error) {
+      console.error('Error creating user:', error);
+      throw new Error('User creation failed');
+    }
   }
 
   static async validateUser(email: string, password: string): Promise<User | null> {
-    const [user] = await db
-      .select()
-      .from(users)
-      .where(
-        and(
-          eq(users.email, email),
-          eq(users.isActive, true)
+    try {
+      const [user] = await db
+        .select()
+        .from(users)
+        .where(
+          and(
+            eq(users.email, email.toLowerCase().trim()),
+            eq(users.isActive, true)
+          )
         )
-      )
-      .limit(1);
+        .limit(1);
 
-    if (!user || !user.passwordHash) return null;
+      if (!user || !user.passwordHash) return null;
 
-    const isValid = await bcrypt.compare(password, user.passwordHash);
-    if (!isValid) return null;
+      const isValid = await bcrypt.compare(password, user.passwordHash);
+      if (!isValid) return null;
 
-    // Update last login
-    await db
-      .update(users)
-      .set({ lastLoginAt: new Date() })
-      .where(eq(users.id, user.id));
+      // Update last login
+      try {
+        await db
+          .update(users)
+          .set({ lastLoginAt: new Date() })
+          .where(eq(users.id, user.id));
+      } catch (updateError) {
+        // Log but don't fail login if lastLoginAt update fails
+        console.error('Failed to update lastLoginAt:', updateError);
+      }
 
-    return user;
+      return user;
+    } catch (error) {
+      console.error('Error validating user:', error);
+      return null;
+    }
   }
 
   static async getUser(userId: number): Promise<User | null> {
@@ -165,25 +197,36 @@ export class Auth {
   }
 
   static async createResetToken(email: string): Promise<string | null> {
-    const [user] = await db
-      .select()
-      .from(users)
-      .where(eq(users.email, email))
-      .limit(1);
+    try {
+      const [user] = await db
+        .select()
+        .from(users)
+        .where(eq(users.email, email.toLowerCase().trim()))
+        .limit(1);
 
-    if (!user) return null;
+      if (!user) return null;
 
-    const token = this.generateResetToken();
-    const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
+      const token = this.generateResetToken();
+      const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
 
-    await db.insert(passwordResetTokens).values({
-      userId: user.id,
-      token,
-      expiresAt,
-      used: false
-    });
+      // Invalidate any existing reset tokens for this user first
+      await db
+        .update(passwordResetTokens)
+        .set({ used: true })
+        .where(eq(passwordResetTokens.userId, user.id));
 
-    return token;
+      await db.insert(passwordResetTokens).values({
+        userId: user.id,
+        token,
+        expiresAt,
+        used: false
+      });
+
+      return token;
+    } catch (error) {
+      console.error('Error creating reset token:', error);
+      return null;
+    }
   }
 
   static async validateResetToken(token: string): Promise<{ userId: number } | null> {
@@ -327,26 +370,38 @@ export function setupAuthRoutes(app: Express): void {
     try {
       const { email, password, name } = req.body;
 
+      // Input validation
       if (!email || !password || !name) {
         return res.status(400).json({ error: 'Email, password, and name are required' });
+      }
+
+      const sanitizedEmail = email.toLowerCase().trim();
+      const sanitizedName = sanitizeInput(name);
+
+      if (!isValidEmail(sanitizedEmail)) {
+        return res.status(400).json({ error: 'Please enter a valid email address' });
       }
 
       if (password.length < 6) {
         return res.status(400).json({ error: 'Password must be at least 6 characters' });
       }
 
+      if (sanitizedName.length < 2) {
+        return res.status(400).json({ error: 'Name must be at least 2 characters' });
+      }
+
       // Check if user already exists
       const [existingUser] = await db
         .select()
         .from(users)
-        .where(eq(users.email, email))
+        .where(eq(users.email, sanitizedEmail))
         .limit(1);
 
       if (existingUser) {
-        return res.status(400).json({ error: 'User already exists' });
+        return res.status(400).json({ error: 'An account with this email already exists' });
       }
 
-      const user = await Auth.createUser(email, password, name);
+      const user = await Auth.createUser(sanitizedEmail, password, sanitizedName);
       const sessionId = await Auth.createSession(user.id, req.ip, req.get('User-Agent'));
 
       res.cookie('sessionId', sessionId, {
@@ -365,7 +420,13 @@ export function setupAuthRoutes(app: Express): void {
       });
     } catch (error) {
       console.error('Registration error:', error);
-      res.status(500).json({ error: 'Registration failed' });
+      
+      // Handle duplicate email constraint violation
+      if (error.message?.includes('duplicate') || error.message?.includes('unique')) {
+        return res.status(400).json({ error: 'An account with this email already exists' });
+      }
+      
+      res.status(500).json({ error: 'Registration failed. Please try again.' });
     }
   });
 
@@ -374,14 +435,21 @@ export function setupAuthRoutes(app: Express): void {
     try {
       const { email, password } = req.body;
 
+      // Input validation
       if (!email || !password) {
         return res.status(400).json({ error: 'Email and password are required' });
       }
 
-      const user = await Auth.validateUser(email, password);
+      const sanitizedEmail = email.toLowerCase().trim();
+
+      if (!isValidEmail(sanitizedEmail)) {
+        return res.status(400).json({ error: 'Please enter a valid email address' });
+      }
+
+      const user = await Auth.validateUser(sanitizedEmail, password);
       
       if (!user) {
-        return res.status(401).json({ error: 'Invalid credentials' });
+        return res.status(401).json({ error: 'Invalid email or password' });
       }
 
       const sessionId = await Auth.createSession(user.id, req.ip, req.get('User-Agent'));
@@ -402,7 +470,7 @@ export function setupAuthRoutes(app: Express): void {
       });
     } catch (error) {
       console.error('Login error:', error);
-      res.status(500).json({ error: 'Login failed' });
+      res.status(500).json({ error: 'Login failed. Please try again.' });
     }
   });
 
@@ -453,17 +521,26 @@ export function setupAuthRoutes(app: Express): void {
         return res.status(400).json({ error: 'Email is required' });
       }
 
-      const token = await Auth.createResetToken(email);
+      const sanitizedEmail = email.toLowerCase().trim();
+
+      if (!isValidEmail(sanitizedEmail)) {
+        return res.status(400).json({ error: 'Please enter a valid email address' });
+      }
+
+      const token = await Auth.createResetToken(sanitizedEmail);
       
       if (token) {
-        await Auth.sendResetEmail(email, token);
+        await Auth.sendResetEmail(sanitizedEmail, token);
       }
 
       // Always return success to prevent email enumeration
-      res.json({ success: true });
+      res.json({ 
+        success: true, 
+        message: 'If an account with this email exists, you will receive a password reset link.' 
+      });
     } catch (error) {
       console.error('Password reset request error:', error);
-      res.status(500).json({ error: 'Password reset failed' });
+      res.status(500).json({ error: 'Password reset failed. Please try again.' });
     }
   });
 
