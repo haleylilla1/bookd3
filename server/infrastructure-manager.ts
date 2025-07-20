@@ -35,7 +35,9 @@ export class InfrastructureManager {
     memory: 90,
     cpu: 95,
     disk: 95,
-    responseTime: 5000
+    responseTime: 5000,
+    memoryLeakIncrease: 100, // 100MB increase in 10 minutes
+    cacheOverflow: 2000 // Max cache entries
   };
   
   private memoryThresholds = {
@@ -91,6 +93,9 @@ export class InfrastructureManager {
       
       // Memory-specific check
       checks.push(await this.checkMemoryHealth());
+      
+      // Memory leak detection check
+      checks.push(await this.checkMemoryLeakDetection());
 
       // Monitoring system check
       checks.push(await this.checkMonitoringHealth());
@@ -317,6 +322,80 @@ export class InfrastructureManager {
   }
 
   /**
+   * Check for memory leaks and cache overflow
+   */
+  private async checkMemoryLeakDetection(): Promise<ServiceCheck> {
+    const startTime = Date.now();
+    
+    try {
+      const cacheStats = advancedCache.getStats();
+      const responseTime = Date.now() - startTime;
+      
+      const alerts: string[] = [];
+      let status: 'healthy' | 'warning' | 'critical' = 'healthy';
+      
+      // Check for cache overflow
+      if (cacheStats.cacheSize > this.alertThresholds.cacheOverflow) {
+        alerts.push(`Cache overflow: ${cacheStats.cacheSize} > ${this.alertThresholds.cacheOverflow} entries`);
+        status = 'critical';
+      } else if (cacheStats.cacheSize > this.alertThresholds.cacheOverflow * 0.8) {
+        alerts.push(`Cache approaching limit: ${cacheStats.cacheSize}/${this.alertThresholds.cacheOverflow} entries`);
+        status = 'warning';
+      }
+      
+      // Check memory leak alerts
+      if (cacheStats.memoryLeakAlerts > 0) {
+        const timeSinceLastAlert = Date.now() - cacheStats.lastMemoryLeakAlert;
+        const minutesAgo = Math.floor(timeSinceLastAlert / (60 * 1000));
+        
+        if (timeSinceLastAlert < 30 * 60 * 1000) { // Last 30 minutes
+          alerts.push(`Recent memory leak detected (${minutesAgo}m ago)`);
+          status = 'critical';
+        } else if (cacheStats.memoryLeakAlerts > 5) {
+          alerts.push(`Multiple memory leaks detected (${cacheStats.memoryLeakAlerts} total)`);
+          status = 'warning';
+        }
+      }
+      
+      // Check emergency cleanup frequency
+      if (cacheStats.emergencyCleanups > 10) {
+        alerts.push(`Frequent emergency cleanups: ${cacheStats.emergencyCleanups} total`);
+        status = status === 'critical' ? 'critical' : 'warning';
+      }
+      
+      // Memory history tracking
+      if (cacheStats.memoryHistoryLength < 10) {
+        alerts.push('Insufficient memory history for leak detection');
+        status = status === 'critical' ? 'critical' : 'warning';
+      }
+      
+      let message = 'Memory leak detection active';
+      
+      if (alerts.length > 0) {
+        message = alerts.join('; ');
+      } else if (cacheStats.memoryLeakAlerts === 0 && cacheStats.emergencyCleanups === 0) {
+        message = 'No memory leaks detected - system stable';
+      } else {
+        message = `Monitoring active - ${cacheStats.memoryLeakAlerts} leaks, ${cacheStats.emergencyCleanups} cleanups`;
+      }
+      
+      return {
+        name: 'Memory Leak Detection',
+        status,
+        message,
+        responseTime
+      };
+    } catch (error) {
+      return {
+        name: 'Memory Leak Detection',
+        status: 'critical',
+        message: `Memory leak check failed: ${error.message}`,
+        responseTime: Date.now() - startTime
+      };
+    }
+  }
+
+  /**
    * Get current infrastructure health
    */
   async getInfrastructureHealth(): Promise<InfrastructureHealth> {
@@ -415,6 +494,15 @@ export class InfrastructureManager {
     // Memory recommendations
     if (metrics.memory.percentage > 80) {
       recommendations.push('Consider optimizing memory usage or increasing server resources');
+    }
+
+    // Memory leak recommendations
+    const cacheStats = advancedCache.getStats();
+    if (cacheStats.memoryLeakAlerts > 0) {
+      recommendations.push('Memory leaks detected - monitor cache usage and consider cleanup');
+    }
+    if (cacheStats.cacheSize > this.alertThresholds.cacheOverflow * 0.8) {
+      recommendations.push('Cache size approaching limit - consider increasing cache limits or cleanup frequency');
     }
 
     // CPU recommendations

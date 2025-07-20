@@ -36,6 +36,9 @@ interface CacheStats {
   batchOperations: number;
   emergencyCleanups: number;
   lastEmergencyCleanup: number;
+  memoryLeakAlerts: number;
+  lastMemoryLeakAlert: number;
+  memoryHistoryLength: number;
   warnings: string[];
   timestamp: string;
   // Compression and size optimization stats
@@ -167,6 +170,11 @@ class AdvancedCache {
   private emergencyCleanups = 0;
   private lastEmergencyCleanup = 0;
   private emergencyCleanupCooldown = 5 * 60 * 1000; // 5 minutes cooldown
+  
+  // Memory leak detection
+  private memoryHistory: Array<{timestamp: number, heapUsed: number, cacheSize: number}> = [];
+  private memoryLeakAlerts = 0;
+  private lastMemoryLeakAlert = 0;
   
   // Cache activity tracking for dynamic intervals
   private recentActivity: number[] = [];
@@ -304,6 +312,13 @@ class AdvancedCache {
     const heapUsedMB = memoryUsage.heapUsed / 1024 / 1024;
     const heapTotalMB = memoryUsage.heapTotal / 1024 / 1024;
     const utilizationPercent = (heapUsedMB / heapTotalMB) * 100;
+    const cacheSize = this.fallbackCache.size;
+    
+    // Record memory history for leak detection
+    this.recordMemoryHistory(heapUsedMB, cacheSize);
+    
+    // Check for memory leaks
+    this.detectMemoryLeaks(heapUsedMB, cacheSize);
     
     // Emergency cleanup threshold: >90% memory utilization
     if (utilizationPercent > 90) {
@@ -314,6 +329,202 @@ class AdvancedCache {
     else if (utilizationPercent > 80) {
       console.log(`⚠️  WARNING: Memory utilization at ${utilizationPercent.toFixed(1)}% (${heapUsedMB.toFixed(1)}MB/${heapTotalMB.toFixed(1)}MB)`);
       this.performPreventiveCleanup(heapUsedMB, heapTotalMB, utilizationPercent);
+    }
+  }
+
+  private recordMemoryHistory(heapUsedMB: number, cacheSize: number): void {
+    const now = Date.now();
+    
+    // Add current reading
+    this.memoryHistory.push({
+      timestamp: now,
+      heapUsed: heapUsedMB,
+      cacheSize: cacheSize
+    });
+    
+    // Keep only last 10 minutes of data (20 readings at 30-second intervals)
+    const tenMinutesAgo = now - (10 * 60 * 1000);
+    this.memoryHistory = this.memoryHistory.filter(entry => entry.timestamp > tenMinutesAgo);
+  }
+
+  private detectMemoryLeaks(currentHeapMB: number, currentCacheSize: number): void {
+    const now = Date.now();
+    
+    // Check cooldown period (5 minutes between alerts)
+    if (this.lastMemoryLeakAlert && (now - this.lastMemoryLeakAlert) < 5 * 60 * 1000) {
+      return;
+    }
+    
+    // Need at least 10 minutes of data
+    if (this.memoryHistory.length < 10) {
+      return;
+    }
+    
+    const tenMinutesAgo = now - (10 * 60 * 1000);
+    const oldestReading = this.memoryHistory.find(entry => entry.timestamp >= tenMinutesAgo);
+    
+    if (!oldestReading) return;
+    
+    const memoryIncrease = currentHeapMB - oldestReading.heapUsed;
+    const cacheGrowth = currentCacheSize - oldestReading.cacheSize;
+    
+    let leakDetected = false;
+    let alertMessage = '';
+    
+    // Alert 1: Memory increase >100MB in 10 minutes
+    if (memoryIncrease > 100) {
+      leakDetected = true;
+      alertMessage += `🚨 MEMORY LEAK ALERT: Memory increased by ${memoryIncrease.toFixed(1)}MB in 10 minutes (${oldestReading.heapUsed.toFixed(1)}MB → ${currentHeapMB.toFixed(1)}MB)`;
+    }
+    
+    // Alert 2: Cache size exceeds 2000 entries
+    if (currentCacheSize > 2000) {
+      leakDetected = true;
+      if (alertMessage) alertMessage += '\n';
+      alertMessage += `🚨 CACHE OVERFLOW ALERT: Cache size exceeded limit (${currentCacheSize} > 2000 entries)`;
+    }
+    
+    // Alert 3: Unusual cache growth rate
+    if (cacheGrowth > 500 && currentCacheSize > 1000) {
+      leakDetected = true;
+      if (alertMessage) alertMessage += '\n';
+      alertMessage += `⚠️  CACHE GROWTH ALERT: Rapid cache growth detected (+${cacheGrowth} entries in 10 minutes)`;
+    }
+    
+    if (leakDetected) {
+      console.log(alertMessage);
+      console.log(`📊 Memory trend: ${oldestReading.heapUsed.toFixed(1)}MB → ${currentHeapMB.toFixed(1)}MB (${memoryIncrease > 0 ? '+' : ''}${memoryIncrease.toFixed(1)}MB)`);
+      console.log(`📊 Cache trend: ${oldestReading.cacheSize} → ${currentCacheSize} entries (${cacheGrowth > 0 ? '+' : ''}${cacheGrowth})`);
+      
+      // Trigger immediate cleanup
+      this.performMemoryLeakCleanup(memoryIncrease, currentCacheSize, cacheGrowth);
+      
+      // Record alert
+      this.memoryLeakAlerts++;
+      this.lastMemoryLeakAlert = now;
+    }
+  }
+
+  private performMemoryLeakCleanup(memoryIncrease: number, cacheSize: number, cacheGrowth: number): void {
+    const startTime = Date.now();
+    console.log(`🧹 MEMORY LEAK CLEANUP: Initiating aggressive cleanup procedures`);
+    
+    let cleanupPercentage = 0.3; // Default 30% cleanup
+    
+    // Determine cleanup intensity based on severity
+    if (memoryIncrease > 200 || cacheSize > 3000) {
+      cleanupPercentage = 0.7; // 70% cleanup for severe leaks
+      console.log(`🚨 SEVERE LEAK: Performing 70% cleanup (memory: +${memoryIncrease.toFixed(1)}MB, cache: ${cacheSize} entries)`);
+    } else if (memoryIncrease > 100 || cacheSize > 2000) {
+      cleanupPercentage = 0.5; // 50% cleanup for moderate leaks
+      console.log(`⚠️  MODERATE LEAK: Performing 50% cleanup (memory: +${memoryIncrease.toFixed(1)}MB, cache: ${cacheSize} entries)`);
+    } else {
+      console.log(`💡 MINOR LEAK: Performing 30% cleanup (cache growth: +${cacheGrowth} entries)`);
+    }
+    
+    const initialEntries = this.fallbackCache.size;
+    const initialMemory = process.memoryUsage().heapUsed / 1024 / 1024;
+    
+    if (this.client) {
+      this.performMemoryLeakRedisCleanup(cleanupPercentage);
+    } else {
+      this.performMemoryLeakMemoryCleanup(cleanupPercentage);
+    }
+    
+    // Force multiple garbage collections for memory leaks
+    if (global.gc) {
+      console.log('🗑️  Forcing aggressive garbage collection (3 cycles)');
+      for (let i = 0; i < 3; i++) {
+        global.gc();
+      }
+    }
+    
+    const endTime = Date.now();
+    const finalEntries = this.fallbackCache.size;
+    const finalMemory = process.memoryUsage().heapUsed / 1024 / 1024;
+    const entriesRemoved = initialEntries - finalEntries;
+    const memoryRecovered = initialMemory - finalMemory;
+    
+    console.log(`✅ MEMORY LEAK CLEANUP COMPLETE:`);
+    console.log(`   Cleanup intensity: ${(cleanupPercentage * 100).toFixed(0)}%`);
+    console.log(`   Entries removed: ${entriesRemoved}/${initialEntries}`);
+    console.log(`   Memory recovered: ${memoryRecovered.toFixed(1)}MB`);
+    console.log(`   Cleanup duration: ${endTime - startTime}ms`);
+    
+    // Clear memory history to prevent false positives
+    this.memoryHistory = [];
+  }
+
+  private performMemoryLeakMemoryCleanup(cleanupPercentage: number): void {
+    if (!this.fallbackCache || this.fallbackCache.size === 0) return;
+    
+    const totalEntries = this.fallbackCache.size;
+    const targetRemoval = Math.floor(totalEntries * cleanupPercentage);
+    
+    // Aggressive cleanup - prioritize by memory usage and age
+    const candidates: Array<{key: string, entry: CacheEntry, score: number}> = [];
+    const now = Date.now();
+    
+    for (const [key, entry] of this.fallbackCache.entries()) {
+      // Aggressive scoring for memory leak cleanup
+      const ageHours = (now - entry.lastAccessed) / (60 * 60 * 1000);
+      const sizeKB = entry.size / 1024;
+      
+      // Heavy penalty for large, old entries
+      const score = (ageHours * 10) + (sizeKB * 2) + (1 / Math.max(entry.accessCount, 1)) * 100;
+      
+      candidates.push({ key, entry, score });
+    }
+    
+    // Sort by score (highest = most likely to be leaked/problematic)
+    candidates.sort((a, b) => b.score - a.score);
+    
+    const keysToRemove = candidates.slice(0, targetRemoval).map(c => c.key);
+    
+    console.log(`🎯 Memory leak cleanup targets: ${keysToRemove.length} entries (${(cleanupPercentage * 100).toFixed(0)}% of cache)`);
+    console.log(`   Focus: Large entries, old entries, low-frequency access`);
+    
+    this.performBatchDelete(keysToRemove);
+    this.evictions += keysToRemove.length;
+  }
+
+  private async performMemoryLeakRedisCleanup(cleanupPercentage: number): Promise<void> {
+    if (!this.client) return;
+    
+    try {
+      const keys = await this.client.keys('*');
+      const targetRemoval = Math.floor(keys.length * cleanupPercentage);
+      
+      // Get keys with memory usage info
+      const keyInfo: Array<{key: string, memory: number, ttl: number}> = [];
+      
+      for (const key of keys.slice(0, Math.min(keys.length, 1000))) { // Limit for performance
+        try {
+          const memory = await this.client.memoryUsage(key) || 1000;
+          const ttl = await this.client.ttl(key);
+          keyInfo.push({ key, memory, ttl });
+        } catch (error) {
+          // If memoryUsage not available, use TTL only
+          const ttl = await this.client.ttl(key);
+          keyInfo.push({ key, memory: 1000, ttl });
+        }
+      }
+      
+      // Sort by memory usage (largest first) and TTL
+      keyInfo.sort((a, b) => {
+        const scoreA = a.memory + (a.ttl < 300 ? 10000 : 0); // Prioritize short TTL
+        const scoreB = b.memory + (b.ttl < 300 ? 10000 : 0);
+        return scoreB - scoreA;
+      });
+      
+      const keysToRemove = keyInfo.slice(0, targetRemoval).map(k => k.key);
+      
+      if (keysToRemove.length > 0) {
+        await this.client.del(keysToRemove);
+        console.log(`🗑️  Redis memory leak cleanup: ${keysToRemove.length} keys removed`);
+      }
+    } catch (error) {
+      console.error('Memory leak Redis cleanup failed:', error);
     }
   }
 
@@ -877,6 +1088,9 @@ class AdvancedCache {
       totalCleanups: this.cleanupCount,
       emergencyCleanups: this.emergencyCleanups,
       lastEmergencyCleanup: this.lastEmergencyCleanup,
+      memoryLeakAlerts: this.memoryLeakAlerts,
+      lastMemoryLeakAlert: this.lastMemoryLeakAlert,
+      memoryHistoryLength: this.memoryHistory.length,
       warmingHits: this.warmingHits,
       dynamicAdjustments: this.dynamicAdjustments,
       batchOperations: this.batchOperations,
