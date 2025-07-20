@@ -176,6 +176,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   }));
 
+  // Cache monitoring endpoint with detailed stats and health warnings
+  app.get('/api/cache-stats', apiLimiter, requireAuth, asyncHandler(async (req: any, res) => {
+    try {
+      const { cache } = await import('./simple-cache');
+      const stats = cache.getStats();
+      const health = cache.getCacheHealth();
+      
+      res.json({
+        ...stats,
+        health,
+        recommendations: health === 'critical' 
+          ? ['Cache at critical levels - implement Redis for production scaling', 'Consider clearing cache to free memory']
+          : health === 'warning'
+          ? ['Monitor cache usage - consider Redis if problems persist', 'High cache activity detected']
+          : ['Cache performing optimally']
+      });
+    } catch (error) {
+      logError('Cache stats fetch failed', error);
+      res.status(500).json({ error: 'Failed to get cache stats' });
+    }
+  }));
+
   app.get('/api/alerts', requireAuth, asyncHandler(async (req: any, res) => {
     try {
       const { alertingSystem } = await import('./alerting-system');
