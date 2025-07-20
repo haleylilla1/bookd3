@@ -488,6 +488,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { startAddress, endAddress, waypoints = [], roundTrip = false } = req.body;
       const userId = getUserId(req);
       
+      console.log('🔍 Distance calculation request received:', {
+        userId,
+        startAddress,
+        endAddress,
+        waypoints,
+        roundTrip
+      });
+      
       if (!startAddress || !endAddress) {
         return res.status(400).json({ 
           status: 'error',
@@ -516,12 +524,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
           fallbackUsed: result.fallbackUsed
         });
       } else {
+        console.log('❌ Distance calculation failed:', result);
         res.status(400).json({ 
           status: 'error',
           error: result.error 
         });
       }
     } catch (error) {
+      console.log('💥 Distance calculation exception:', error);
       logger.error('Distance calculation error:', error);
       res.status(500).json({ 
         status: 'error',

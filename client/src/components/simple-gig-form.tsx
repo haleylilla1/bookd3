@@ -175,6 +175,7 @@ export default function SimpleGigForm({ onClose }: SimpleGigFormProps) {
       });
 
       const data = await response.json();
+      console.log('🚗 Mileage calculation response:', data);
       
       if (data.status === 'success' && data.distanceMiles) {
         const miles = Math.ceil(data.distanceMiles); // Round up for tax purposes
