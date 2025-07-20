@@ -150,7 +150,7 @@ export default function SimpleGigForm({ onClose }: SimpleGigFormProps) {
   useEffect(() => {
     // Only auto-calculate if we have a complete previous calculation and round trip changes
     const currentMileage = form.watch("mileage");
-    if (trackMileage && startingAddress && endingAddress && currentMileage > 0) {
+    if (trackMileage && startingAddress && endingAddress && currentMileage && currentMileage > 0) {
       calculateMileage();
     }
   }, [isRoundTrip]);
@@ -168,20 +168,17 @@ export default function SimpleGigForm({ onClose }: SimpleGigFormProps) {
         roundTrip: isRoundTrip
       });
 
+      console.log('🚗 Mileage calculation request:', {
+        startAddress: startingAddress,
+        endAddress: endingAddress,
+        roundTrip: isRoundTrip
+      });
+
       const data = await response.json();
       
       if (data.status === 'success' && data.distanceMiles) {
         const miles = Math.ceil(data.distanceMiles); // Round up for tax purposes
         form.setValue("mileage", miles);
-        
-        // Enhanced user feedback for debugging
-        const cacheInfo = data.fromCache ? ' (cached)' : ' (fresh calculation)';
-        const tripType = isRoundTrip ? 'ROUND TRIP' : 'ONE WAY';
-        
-        toast({
-          title: "✅ Mileage Calculated",
-          description: `${miles} miles - ${tripType}${cacheInfo}`,
-        });
         
         // Clear any previous errors
         setMileageError(null);

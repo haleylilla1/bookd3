@@ -578,6 +578,17 @@ export class MileageService {
         destinations.push(origin);
       }
 
+      // Debug logging for round trip
+      logger.debug('🔄 Distance calculation setup', {
+        userId,
+        origin,
+        destination,
+        waypoints,
+        roundTrip,
+        destinations,
+        destinationCount: destinations.length
+      });
+
       // Get coordinates for caching enhancement
       const [originValidation, destinationValidation] = await Promise.all([
         this.validateAddress(origin),
@@ -634,10 +645,20 @@ export class MileageService {
       }
 
       if (hasValidRoute) {
+        const distanceMiles = Math.round(totalDistance / 1609.34 * 100) / 100;
+        const durationMinutes = Math.round(totalDuration / 60);
+        
+        logger.debug('✅ Distance calculation complete', {
+          totalDistanceMeters: totalDistance,
+          distanceMiles,
+          durationMinutes,
+          elementCount: data.rows[0].elements.length
+        });
+        
         return {
           success: true,
-          distance: Math.round(totalDistance / 1609.34 * 100) / 100, // Convert to miles
-          duration: Math.round(totalDuration / 60), // Convert to minutes
+          distance: distanceMiles,
+          duration: durationMinutes,
           confidence: 'high'
         };
       }
