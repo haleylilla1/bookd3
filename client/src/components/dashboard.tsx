@@ -66,9 +66,10 @@ export default function Dashboard() {
     },
   });
 
-  // Fetch gigs for calculations
+  // Fetch gigs for calculations (lightweight version for dashboard performance)
   const { data: gigs = [], isLoading: gigsLoading, error: gigsError } = useQuery<Gig[]>({
-    queryKey: ["/api/gigs"],
+    queryKey: ["/api/gigs", { lightweight: true }],
+    queryFn: () => fetch('/api/gigs?lightweight=true').then(res => res.json()),
     retry: 1,
   });
 
