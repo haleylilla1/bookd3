@@ -373,22 +373,7 @@ export default function Dashboard() {
     const completedGigs = currentPeriodGigs.filter(gig => gig.status === "completed");
     const groupedGigs = getGroupedGigs(completedGigs);
     
-    // Debug date parsing for earnings breakdown
-    console.log('🔍 EARNINGS BREAKDOWN DEBUG:', {
-      completedGigsCount: completedGigs.length,
-      groupedGigsCount: groupedGigs.length,
-      rawDates: completedGigs.map(g => ({ id: g.id, date: g.date })),
-      groupedResults: groupedGigs.map(g => ({
-        id: g.id,
-        isMultiDay: g.isMultiDay,
-        originalDate: g.date,
-        startDate: g.startDate,
-        endDate: g.endDate,
-        parsedDisplay: g.isMultiDay 
-          ? `${parseGigDate(g.startDate!).toLocaleDateString()} - ${parseGigDate(g.endDate!).toLocaleDateString()}`
-          : parseGigDate(g.date).toLocaleDateString()
-      }))
-    });
+
     
     return groupedGigs
       .map(gig => {
