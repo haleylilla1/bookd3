@@ -1,8 +1,11 @@
-import type { Express } from "express";
+import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { PasswordVerificationService } from "./password-verification";
 import { requireAuth } from "./auth";
+import { db } from "./db";
+import { users, gigs } from "@shared/schema";
+import { count } from "drizzle-orm";
 
 // Helper function to get user ID from request (unified-auth pattern)
 function getUserId(req: any): number {
@@ -13,6 +16,20 @@ function getUserId(req: any): number {
 }
 import { globalErrorHandler, asyncHandler, safeDbOperation, validateUserId, validateNumericId } from "./error-handler";
 import { logError } from "./logger";
+
+// Create logger fallback for missing logger references
+const logger = {
+  error: (message: string, error?: unknown) => {
+    console.error(`[ERROR] ${message}:`, error);
+    logError(message, error as Error);
+  },
+  info: (message: string, data?: unknown) => {
+    console.log(`[INFO] ${message}:`, data);
+  },
+  warn: (message: string, data?: unknown) => {
+    console.warn(`[WARN] ${message}:`, data);
+  }
+};
 import rateLimit from "express-rate-limit";
 import { nodeJSMemoryProfiler } from "./nodejs-memory-profiler";
 import { memoryLeakFixer } from "./memory-leak-fixes";
@@ -184,13 +201,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Field mapping validation endpoint for monitoring
-  app.get('/api/system/validate', apiLimiter, requireAuth, asyncHandler(async (req: any, res) => {
+  app.get('/api/system/validate', apiLimiter, requireAuth, asyncHandler(async (req: any, res: Response) => {
     try {
       const { FieldMappingValidator } = await import('./field-mapping-validator');
       const validation = await FieldMappingValidator.validateFieldMappingHealth();
       res.json(validation);
     } catch (error) {
-      logError('Field mapping validation failed', error);
+      logError('Field mapping validation failed', error as Error);
       res.status(500).json({ 
         status: 'critical',
         error: 'Validation system failure',
@@ -200,7 +217,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   }));
 
   // System monitoring endpoints
-  app.get('/api/system-status', requireAuth, asyncHandler(async (req: any, res) => {
+  app.get('/api/system-status', requireAuth, asyncHandler(async (req: any, res: Response) => {
     try {
       const { monitoringSystem } = await import('./monitoring-system');
       const { infrastructureManager } = await import('./infrastructure-manager');
@@ -216,12 +233,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         timestamp: new Date().toISOString()
       });
     } catch (error) {
-      logError('System status check failed', error);
+      logError('System status check failed', error as Error);
       res.status(500).json({ error: 'Failed to check system status' });
     }
   }));
 
-  app.get('/api/health-report', requireAuth, asyncHandler(async (req: any, res) => {
+  app.get('/api/health-report', requireAuth, asyncHandler(async (req: any, res: Response) => {
     try {
       const { infrastructureManager } = await import('./infrastructure-manager');
       const report = await infrastructureManager.generateStatusReport();
@@ -229,12 +246,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.setHeader('Content-Type', 'text/plain');
       res.send(report);
     } catch (error) {
-      logError('Health report generation failed', error);
+      logError('Health report generation failed', error as Error);
       res.status(500).json({ error: 'Failed to generate health report' });
     }
   }));
 
-  app.get('/api/metrics-history', requireAuth, asyncHandler(async (req: any, res) => {
+  app.get('/api/metrics-history', requireAuth, asyncHandler(async (req: any, res: Response) => {
     try {
       const { monitoringSystem } = await import('./monitoring-system');
       const hours = parseInt(req.query.hours as string) || 24;
@@ -246,13 +263,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         timestamp: new Date().toISOString()
       });
     } catch (error) {
-      logError('Metrics history fetch failed', error);
+      logError('Metrics history fetch failed', error as Error);
       res.status(500).json({ error: 'Failed to fetch metrics history' });
     }
   }));
 
   // Cache monitoring endpoint with detailed stats and health warnings
-  app.get('/api/cache-stats', apiLimiter, requireAuth, asyncHandler(async (req: any, res) => {
+  app.get('/api/cache-stats', apiLimiter, requireAuth, asyncHandler(async (req: any, res: Response) => {
     try {
       const { advancedCache } = await import('./advanced-cache');
       const stats = advancedCache.getStats();
@@ -275,12 +292,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
           : ['Advanced cache performing optimally with O(log n) cleanup']
       });
     } catch (error) {
-      logError('Cache stats fetch failed', error);
+      logError('Cache stats fetch failed', error as Error);
       res.status(500).json({ error: 'Failed to get cache stats' });
     }
   }));
 
-  app.get('/api/alerts', requireAuth, asyncHandler(async (req: any, res) => {
+  app.get('/api/alerts', requireAuth, asyncHandler(async (req: any, res: Response) => {
     try {
       const { alertingSystem } = await import('./alerting-system');
       const activeOnly = req.query.active === 'true';
@@ -293,12 +310,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         timestamp: new Date().toISOString()
       });
     } catch (error) {
-      logError('Alerts fetch failed', error);
+      logError('Alerts fetch failed', error as Error);
       res.status(500).json({ error: 'Failed to fetch alerts' });
     }
   }));
 
-  app.get('/api/alerts-report', requireAuth, asyncHandler(async (req: any, res) => {
+  app.get('/api/alerts-report', requireAuth, asyncHandler(async (req: any, res: Response) => {
     try {
       const { alertingSystem } = await import('./alerting-system');
       const report = alertingSystem.generateAlertReport();
@@ -306,12 +323,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.setHeader('Content-Type', 'text/plain');
       res.send(report);
     } catch (error) {
-      logError('Alert report generation failed', error);
+      logError('Alert report generation failed', error as Error);
       res.status(500).json({ error: 'Failed to generate alert report' });
     }
   }));
 
-  app.post('/api/alerts/:id/resolve', requireAuth, asyncHandler(async (req: any, res) => {
+  app.post('/api/alerts/:id/resolve', requireAuth, asyncHandler(async (req: any, res: Response) => {
     try {
       const { alertingSystem } = await import('./alerting-system');
       const alertId = req.params.id;
@@ -323,13 +340,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         res.status(404).json({ error: 'Alert not found or already resolved' });
       }
     } catch (error) {
-      logError('Alert resolution failed', error);
+      logError('Alert resolution failed', error as Error);
       res.status(500).json({ error: 'Failed to resolve alert' });
     }
   }));
 
   // User data endpoints - all require authentication
-  app.get('/api/user', apiLimiter, requireAuth, asyncHandler(async (req: any, res) => {
+  app.get('/api/user', apiLimiter, requireAuth, asyncHandler(async (req: any, res: Response) => {
     const userId = getUserId(req);
     
     // Check cache first (5-minute TTL for user data)
@@ -356,7 +373,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json(user);
   }));
 
-  app.put('/api/user', apiLimiter, requireAuth, asyncHandler(async (req: any, res) => {
+  app.put('/api/user', apiLimiter, requireAuth, asyncHandler(async (req: any, res: Response) => {
     const userId = getUserId(req);
     
     const updatedUser = await safeDbOperation(
@@ -377,7 +394,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   }));
 
   // Gig endpoints - rate limited for production scaling
-  app.get('/api/gigs', apiLimiter, requireAuth, async (req: any, res) => {
+  app.get('/api/gigs', apiLimiter, requireAuth, async (req: any, res: Response) => {
     try {
       const userId = getUserId(req);
       
@@ -398,7 +415,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // ULTRA-OPTIMIZED DASHBOARD ENDPOINT - Single query replaces 5-10 queries
-  app.get('/api/dashboard/optimized', apiLimiter, requireAuth, async (req: any, res) => {
+  app.get('/api/dashboard/optimized', apiLimiter, requireAuth, async (req: any, res: Response) => {
     try {
       const userId = getUserId(req);
       const { getDashboardData } = await import('./dashboard-optimized');
@@ -477,7 +494,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/expenses', heavyApiLimiter, requireAuth, async (req: any, res) => {
+  app.post('/api/expenses', heavyApiLimiter, requireAuth, async (req: any, res: Response) => {
     try {
       const expense = await storage.createExpense({ ...req.body, userId: getUserId(req) });
       res.json(expense);
@@ -486,7 +503,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put('/api/expenses/:id', heavyApiLimiter, requireAuth, async (req: any, res) => {
+  app.put('/api/expenses/:id', heavyApiLimiter, requireAuth, async (req: any, res: Response) => {
     try {
       const expenseId = parseInt(req.params.id);
       const existingExpense = await storage.getExpense(expenseId);
@@ -502,7 +519,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete('/api/expenses/:id', heavyApiLimiter, requireAuth, async (req: any, res) => {
+  app.delete('/api/expenses/:id', heavyApiLimiter, requireAuth, async (req: any, res: Response) => {
     try {
       const expenseId = parseInt(req.params.id);
       const existingExpense = await storage.getExpense(expenseId);
@@ -519,7 +536,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Goal endpoints
-  app.get('/api/goals', apiLimiter, requireAuth, async (req: any, res) => {
+  app.get('/api/goals', apiLimiter, requireAuth, async (req: any, res: Response) => {
     try {
       const userId = getUserId(req);
       
@@ -539,7 +556,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/goals', apiLimiter, requireAuth, async (req: any, res) => {
+  app.post('/api/goals', apiLimiter, requireAuth, async (req: any, res: Response) => {
     try {
       const goal = await storage.createGoal({ ...req.body, userId: getUserId(req) });
       res.json(goal);
@@ -548,7 +565,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put('/api/goals/:id', apiLimiter, requireAuth, async (req: any, res) => {
+  app.put('/api/goals/:id', apiLimiter, requireAuth, async (req: any, res: Response) => {
     try {
       const goalId = parseInt(req.params.id);
       const existingGoal = await storage.getGoal(goalId);
@@ -564,7 +581,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete('/api/goals/:id', apiLimiter, requireAuth, async (req: any, res) => {
+  app.delete('/api/goals/:id', apiLimiter, requireAuth, async (req: any, res: Response) => {
     try {
       const goalId = parseInt(req.params.id);
       const existingGoal = await storage.getGoal(goalId);
@@ -581,36 +598,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Monthly/Yearly goal endpoints
-  app.get('/api/monthly-goals', apiLimiter, requireAuth, async (req: any, res) => {
+  app.get('/api/monthly-goals', apiLimiter, requireAuth, async (req: any, res: Response) => {
     try {
-      const goals = await storage.getMonthlyGoalsByUser(getUserId(req));
+      const goals = await storage.getGoalsByUser(getUserId(req));
       res.json(goals);
     } catch (error) {
       res.status(500).json({ error: 'Failed to fetch monthly goals' });
     }
   });
 
-  app.post('/api/monthly-goals', apiLimiter, requireAuth, async (req: any, res) => {
+  app.post('/api/monthly-goals', apiLimiter, requireAuth, async (req: any, res: Response) => {
     try {
-      const goal = await storage.createMonthlyGoal({ ...req.body, userId: getUserId(req) });
+      const goal = await storage.createGoal({ ...req.body, userId: getUserId(req) });
       res.json(goal);
     } catch (error) {
       res.status(500).json({ error: 'Failed to create monthly goal' });
     }
   });
 
-  app.get('/api/yearly-goals', apiLimiter, requireAuth, async (req: any, res) => {
+  app.get('/api/yearly-goals', apiLimiter, requireAuth, async (req: any, res: Response) => {
     try {
-      const goals = await storage.getYearlyGoalsByUser(getUserId(req));
+      const goals = await storage.getGoalsByUser(getUserId(req));
       res.json(goals);
     } catch (error) {
       res.status(500).json({ error: 'Failed to fetch yearly goals' });
     }
   });
 
-  app.post('/api/yearly-goals', apiLimiter, requireAuth, async (req: any, res) => {
+  app.post('/api/yearly-goals', apiLimiter, requireAuth, async (req: any, res: Response) => {
     try {
-      const goal = await storage.createYearlyGoal({ ...req.body, userId: getUserId(req) });
+      const goal = await storage.createGoal({ ...req.body, userId: getUserId(req) });
       res.json(goal);
     } catch (error) {
       res.status(500).json({ error: 'Failed to create yearly goal' });
@@ -618,7 +635,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Distance calculation endpoint - resource intensive (Google Maps API calls)
-  app.post('/api/calculate-distance', resourceIntensiveLimiter, requireAuth, async (req: any, res) => {
+  app.post('/api/calculate-distance', resourceIntensiveLimiter, requireAuth, async (req: any, res: Response) => {
     try {
       const { startAddress, endAddress, waypoints = [], roundTrip = false } = req.body;
       const userId = getUserId(req);
@@ -645,7 +662,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         userId,
         startAddress,
         endAddress,
-        waypoints.filter(w => w?.trim()),
+        waypoints.filter((w: any) => w?.trim()),
         roundTrip
       );
       
@@ -1158,10 +1175,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
             memoryUtilizationPercent: parseFloat(((advancedStats.memoryUsageMB / advancedStats.maxMemoryMB) * 100).toFixed(1))
           },
           simple: {
-            entries: simpleCacheStats.size,
-            maxEntries: simpleCacheStats.maxSize,
-            utilizationPercent: parseFloat(((simpleCacheStats.size / simpleCacheStats.maxSize) * 100).toFixed(1)),
-            memoryUsageMB: simpleCacheStats.memoryUsageMB
+            entries: simpleCacheStats.cacheSize || 0,
+            maxEntries: simpleCacheStats.maxEntries || 1000,
+            utilizationPercent: parseFloat((((simpleCacheStats.cacheSize || 0) / (simpleCacheStats.maxEntries || 1000)) * 100).toFixed(1)),
+            memoryUsageMB: simpleCacheStats.memoryUsageMB || 0
           },
           performance: {
             hitRate: advancedStats.hitRate,
@@ -1203,7 +1220,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       res.json(response);
     } catch (error) {
-      logError('Cache stats retrieval failed', error);
+      logError('Cache stats retrieval failed', error as Error);
       res.status(500).json({ 
         error: 'Failed to retrieve cache statistics',
         timestamp: new Date().toISOString(),
@@ -1213,7 +1230,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   }));
 
   // Cache health check endpoint (lightweight version)
-  app.get('/api/cache/health', apiLimiter, requireAuth, asyncHandler(async (req: any, res) => {
+  app.get('/api/cache/health', apiLimiter, requireAuth, asyncHandler(async (req: any, res: Response) => {
     try {
       const { advancedCache } = await import('./advanced-cache');
       const health = advancedCache.getCacheHealth();
@@ -1241,7 +1258,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   }));
 
   // Simple database health check with cache stats
-  app.get('/api/db-health', apiLimiter, requireAuth, async (req: any, res) => {
+  app.get('/api/db-health', apiLimiter, requireAuth, async (req: any, res: Response) => {
     try {
       const { cache } = await import('./simple-cache');
       const userCount = await db.select({ count: count() }).from(users);
@@ -1261,7 +1278,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Clear cache endpoint (for troubleshooting)
-  app.post('/api/cache/clear', heavyApiLimiter, requireAuth, async (req: any, res) => {
+  app.post('/api/cache/clear', heavyApiLimiter, requireAuth, async (req: any, res: Response) => {
     try {
       const { cache } = await import('./simple-cache');
       await cache.clearAll();
@@ -1274,7 +1291,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
 
   // Debug endpoint to test gig data without authentication (development only)
-  app.get('/api/debug/gigs/:userId', async (req: any, res) => {
+  app.get('/api/debug/gigs/:userId', async (req: any, res: Response) => {
     if (process.env.NODE_ENV !== 'development') {
       return res.status(404).json({ error: 'Not found' });
     }
@@ -1300,11 +1317,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         message: 'Storage interface test successful' 
       });
     } catch (error) {
-      res.status(500).json({ error: 'Failed to fetch gigs', details: error.message });
+      res.status(500).json({ error: 'Failed to fetch gigs', details: (error as Error).message });
     }
   });
 
-  app.post('/api/gig-types', requireAuth, async (req: any, res) => {
+  app.post('/api/gig-types', requireAuth, async (req: any, res: Response) => {
     try {
       const { gigType } = req.body;
       const user = await storage.getUser(getUserId(req));
