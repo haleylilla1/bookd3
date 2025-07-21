@@ -234,7 +234,10 @@ export async function generateProfessionalHTML(options: ReportOptions): Promise<
                           const actualPay = parseFloat(gig.actualPay || '0');
                           const tips = parseFloat(gig.tips || '0');
                           const total = actualPay + tips;
-                          const dateStr = gig.date.includes(' - ') ? gig.date : new Date(gig.date).toLocaleDateString();
+                          // Handle date ranges for multi-day gigs - fix timezone issues
+                          const dateStr = gig.date.includes(' - ') 
+                            ? gig.date.split(' - ').map(d => new Date(d + 'T00:00:00').toLocaleDateString()).join(' - ')
+                            : new Date(gig.date + 'T00:00:00').toLocaleDateString();
                           const source = gig.clientName || 'Direct Client';
                           const type = gig.gigType || 'Service';
                           
@@ -274,7 +277,10 @@ export async function generateProfessionalHTML(options: ReportOptions): Promise<
                     <tbody>
                         ${data.gigs.filter(g => (parseInt(String(g.mileage || 0)) || 0) > 0).map(gig => {
                           const miles = parseInt(String(gig.mileage || 0)) || 0;
-                          const dateStr = gig.date.includes(' - ') ? gig.date : new Date(gig.date).toLocaleDateString();
+                          // Handle date ranges for multi-day gigs - fix timezone issues
+                          const dateStr = gig.date.includes(' - ') 
+                            ? gig.date.split(' - ').map(d => new Date(d + 'T00:00:00').toLocaleDateString()).join(' - ')
+                            : new Date(gig.date + 'T00:00:00').toLocaleDateString();
                           const purpose = `${gig.eventName || 'Event'} (${gig.clientName || 'Client'})`;
                           const value = (miles * MILEAGE_RATE);
                           
