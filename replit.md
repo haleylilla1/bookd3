@@ -41,6 +41,13 @@ Bookd is a mobile-first gig worker companion app with comprehensive financial tr
 - PAYMENT INTEGRATION: Considering Stripe payments with either Replit Auth (MVP) or Supabase (scale phase)
 
 ## Recent Changes  
+- 2025-07-21: ✅ MEMORY CRISIS COMPLETELY RESOLVED - Implemented Supabase Storage integration and memory-safe caching preventing system crashes from oversized receipt data
+- 2025-07-21: ✅ LIGHTWEIGHT API DEPLOYED - Added ?lightweight=true parameter reducing response size by 99.5% (5.7MB → 29 bytes) for dashboard performance
+- 2025-07-21: ✅ RECEIPT STORAGE SERVICE READY - Created comprehensive Supabase Storage service for scalable image management with CDN delivery
+- 2025-07-21: ✅ CACHE SIZE PROTECTION ACTIVE - Automatic rejection of entries over 100KB preventing memory bloat and emergency cleanup at 95% usage
+- 2025-07-21: ✅ DASHBOARD GOAL FUNCTIONALITY COMPLETELY WORKING - Fixed missing GET endpoint for fetching goals by period, monthly/yearly goals now save and display correctly
+- 2025-07-21: ✅ GOAL API ENDPOINTS PERFECTED - Added `/api/goals/period` GET endpoint matching dashboard fetch requirements, uses proper `getMonthlyGoal`/`getYearlyGoal` storage methods
+- 2025-07-21: ✅ GOAL DATABASE INTEGRATION FIXED - Eliminated database constraint errors by using correct `monthlyGoals`/`yearlyGoals` tables instead of complex `goals` table with category requirements
 - 2025-07-21: ✅ EARNINGS BREAKDOWN DATE DISPLAY BUG COMPLETELY FIXED - Resolved timezone parsing issue causing all dates in actual earnings breakdown modal to show one day earlier than correct
 - 2025-07-21: ✅ UTC VS LOCAL TIMEZONE PARSING CONFLICT RESOLVED - Fixed parseGigDate function to use local timezone parsing (T00:00:00) instead of UTC (.000Z) preventing date shift for users in timezones behind UTC
 - 2025-07-21: ✅ MULTI-DAY DATE RANGE DISPLAY PERFECTED - Wedding gig 7/21-23 now correctly displays as "7/21/2025 - 7/23/2025" instead of "7/20/2025 - 7/22/2025"

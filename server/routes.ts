@@ -397,19 +397,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/gigs', apiLimiter, requireAuth, async (req: any, res: Response) => {
     try {
       const userId = getUserId(req);
+      const lightweight = req.query.lightweight === 'true';
       
-      // Check cache first (2-minute TTL for gig data)  
+      // Calculate cache entry size BEFORE caching to prevent memory issues
       const { cache } = await import('./simple-cache');
-      const cacheKey = `gigs:${userId}`;
+      const cacheKey = `gigs:${userId}:${lightweight}`;
       let gigs = await cache.get(cacheKey);
       
       if (!gigs) {
         gigs = await storage.getGigsByUser(userId);
-        await cache.set(cacheKey, gigs, 120); // 2-minute cache
+        
+        // Check size before caching - prevent 5MB cache entries
+        const dataSize = JSON.stringify(gigs).length;
+        console.log(`📊 Gig data size for user ${userId}: ${Math.round(dataSize/1024)}KB`);
+        
+        if (dataSize > 100000) { // 100KB limit
+          console.log(`🚫 Gig data too large (${Math.round(dataSize/1024)}KB) - not caching to prevent memory issues`);
+          
+          // For oversized data, return lightweight version without receipt images
+          if (lightweight) {
+            gigs = gigs.map(gig => ({
+              ...gig,
+              parking_receipts: gig.parking_receipts?.length ? ['[receipts available]'] : null,
+              other_expense_receipts: gig.other_expense_receipts?.length ? ['[receipts available]'] : null,
+              notes: gig.notes?.length > 500 ? gig.notes.substring(0, 500) + '...' : gig.notes,
+              duties: gig.duties?.length > 500 ? gig.duties.substring(0, 500) + '...' : gig.duties
+            }));
+          }
+        } else {
+          // Safe to cache - under size limit
+          await cache.set(cacheKey, gigs, 120);
+        }
       }
       
       res.json(gigs);
     } catch (error) {
+      console.error('❌ Failed to fetch gigs:', error);
       res.status(500).json({ error: 'Failed to fetch gigs' });
     }
   });
