@@ -14,7 +14,7 @@ type TimePeriod = "monthly" | "annual";
 
 // Utility function to parse dates consistently across timezones
 const parseGigDate = (dateString: string): Date => {
-  return new Date(dateString + 'T00:00:00');
+  return new Date(dateString + 'T00:00:00.000Z');
 };
 
 export default function Dashboard() {
@@ -120,11 +120,7 @@ export default function Dashboard() {
     },
   });
 
-  // UTC date parsing function to avoid timezone issues
-  const parseGigDate = (dateString: string): Date => {
-    // Use UTC parsing to match server-side logic
-    return new Date(dateString + 'T00:00:00.000Z');
-  };
+
 
   // Safe numeric parsing function
   const safeParseFloat = (value: string | null | undefined): number => {
