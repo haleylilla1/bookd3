@@ -14,7 +14,7 @@ type TimePeriod = "monthly" | "annual";
 
 // Utility function to parse dates consistently across timezones
 const parseGigDate = (dateString: string): Date => {
-  return new Date(dateString + 'T00:00:00.000Z');
+  return new Date(dateString + 'T00:00:00');
 };
 
 export default function Dashboard() {
