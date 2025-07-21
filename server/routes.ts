@@ -634,6 +634,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Period-specific goal fetch endpoint (for dashboard)
+  app.get('/api/goals/period', apiLimiter, requireAuth, async (req: any, res: Response) => {
+    try {
+      const { period, date: dateString } = req.query as { period: string; date: string };
+      const userId = getUserId(req);
+      
+      // Parse the date to extract year and month
+      const date = new Date(dateString);
+      const year = date.getFullYear();
+      const month = date.getMonth() + 1;
+      
+      if (period === 'monthly') {
+        // Fetch monthly goal
+        const goal = await storage.getMonthlyGoal(userId, month, year);
+        if (goal) {
+          res.json(goal);
+        } else {
+          res.status(404).json({ error: 'No goal found for this period' });
+        }
+      } else {
+        // Fetch yearly goal
+        const goal = await storage.getYearlyGoal(userId, year);
+        if (goal) {
+          res.json(goal);
+        } else {
+          res.status(404).json({ error: 'No goal found for this period' });
+        }
+      }
+    } catch (error) {
+      console.error('Goal fetch error:', error);
+      res.status(500).json({ error: 'Failed to fetch goal' });
+    }
+  });
+
   // Period-specific goal update endpoint (for dashboard)
   app.post('/api/goals/period/:period/:date', apiLimiter, requireAuth, async (req: any, res: Response) => {
     try {
