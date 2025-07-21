@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
@@ -16,12 +16,13 @@ import { X, Loader2, MapPin, Receipt, Calculator, Navigation } from "lucide-reac
 import ReceiptUpload from "@/components/receipt-upload";
 import { AddressAutocomplete } from "@/components/address-autocomplete";
 
-// Enhanced form schema with mileage and receipt support
+// Enhanced form schema with mileage, receipt support, and multi-day functionality
 const gigFormSchema = z.object({
   gigType: z.string().min(1, "Gig type is required"),
   eventName: z.string().min(1, "Event name is required"),
   clientName: z.string().min(1, "Client name is required"),
-  date: z.string().min(1, "Date is required"),
+  startDate: z.string().min(1, "Start date is required"),
+  endDate: z.string().optional(),
   expectedPay: z.string().optional(),
   actualPay: z.string().optional(),
   tips: z.string().optional(),
@@ -47,6 +48,35 @@ const gigFormSchema = z.object({
 });
 
 type GigFormData = z.infer<typeof gigFormSchema>;
+
+// Multi-day gig helper function
+function generateDateRange(startDate: string, endDate?: string): string[] {
+  const dates: string[] = [];
+  
+  // Single day gig
+  if (!endDate?.trim() || endDate === startDate) {
+    return [startDate];
+  }
+
+  // Multi-day gig
+  const start = new Date(startDate + 'T00:00:00');
+  const end = new Date(endDate + 'T00:00:00');
+  
+  if (start > end) return [startDate];
+  if (start.getTime() === end.getTime()) return [startDate];
+  
+  const current = new Date(start);
+  let dayCount = 0;
+  const MAX_DAYS = 30; // Safety limit
+  
+  while (current <= end && dayCount < MAX_DAYS) {
+    dates.push(current.toISOString().split('T')[0]);
+    current.setDate(current.getDate() + 1);
+    dayCount++;
+  }
+  
+  return dates;
+}
 
 interface SimpleGigFormProps {
   onClose: () => void;
@@ -101,7 +131,8 @@ export default function SimpleGigForm({ onClose }: SimpleGigFormProps) {
       gigType: "",
       eventName: "",
       clientName: "",
-      date: new Date().toISOString().split('T')[0],
+      startDate: new Date().toISOString().split('T')[0],
+      endDate: "",
       expectedPay: "",
       actualPay: "",
       tips: "",
@@ -141,10 +172,37 @@ export default function SimpleGigForm({ onClose }: SimpleGigFormProps) {
   const startingAddress = form.watch("startingAddress");
   const endingAddress = form.watch("endingAddress");
   const isRoundTrip = form.watch("isRoundTrip");
+  const startDate = form.watch("startDate");
+  const endDate = form.watch("endDate");
 
   // State for mileage calculation
   const [isCalculatingMileage, setIsCalculatingMileage] = useState(false);
   const [mileageError, setMileageError] = useState<string | null>(null);
+
+  // MULTI-DAY GIG DETECTION - Simple and clear for users
+  const multiDayInfo = useMemo(() => {
+    if (!startDate) return { isMultiDay: false, dayCount: 1, dateRange: [] };
+
+    if (!endDate?.trim() || endDate === startDate) {
+      return { isMultiDay: false, dayCount: 1, dateRange: [startDate] };
+    }
+
+    const start = new Date(startDate + 'T00:00:00');
+    const end = new Date(endDate + 'T00:00:00');
+    
+    if (start > end || start.getTime() === end.getTime()) {
+      return { isMultiDay: false, dayCount: 1, dateRange: [startDate] };
+    }
+
+    const dateRange = generateDateRange(startDate, endDate);
+    const dayCount = dateRange.length;
+    
+    return { 
+      isMultiDay: dayCount > 1, 
+      dayCount, 
+      dateRange 
+    };
+  }, [startDate, endDate]);
 
   // Only auto-calculate when round trip toggle changes (not when typing addresses)
   useEffect(() => {
@@ -231,10 +289,14 @@ export default function SimpleGigForm({ onClose }: SimpleGigFormProps) {
     setIsSubmitting(true);
 
     try {
-      // Convert form data to gig data with safe parsing
-      const gigData: InsertGig = {
-        userId: user.id,
-        date: data.date,
+      // Multi-day gig creation logic - same as edit form
+      const gigDates = generateDateRange(data.startDate, data.endDate);
+      
+      // Create multiple gigs for multi-day events (same total payment/expenses across all days)
+      for (const gigDate of gigDates) {
+        const gigData: InsertGig = {
+          userId: user.id,
+          date: gigDate,
         gigType: data.gigType,
         eventName: data.eventName,
         clientName: data.clientName,
@@ -253,9 +315,10 @@ export default function SimpleGigForm({ onClose }: SimpleGigFormProps) {
         otherExpenses: data.otherExpenses ? parseFloat(data.otherExpenses) || 0 : 0,
         otherExpenseReceipts: data.otherExpenseReceipts || [],
         otherExpensesReimbursed: data.otherExpensesReimbursed || false,
-      };
+        };
 
-      await createGigMutation.mutateAsync(gigData);
+        await createGigMutation.mutateAsync(gigData);
+      }
     } catch (error) {
       console.error("Submit error:", error);
     } finally {
@@ -355,10 +418,24 @@ export default function SimpleGigForm({ onClose }: SimpleGigFormProps) {
 
               <FormField
                 control={form.control}
-                name="date"
+                name="startDate"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Date *</FormLabel>
+                    <FormLabel>Start Date *</FormLabel>
+                    <FormControl>
+                      <Input type="date" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="endDate"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>End Date (Optional)</FormLabel>
                     <FormControl>
                       <Input type="date" {...field} />
                     </FormControl>
@@ -367,6 +444,21 @@ export default function SimpleGigForm({ onClose }: SimpleGigFormProps) {
                 )}
               />
             </div>
+
+            {/* MULTI-DAY INDICATOR */}
+            {multiDayInfo.isMultiDay && (
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                  <span className="text-blue-800 font-medium">
+                    Multi-day gig: {multiDayInfo.dayCount} days ({new Date(startDate + 'T00:00:00').toLocaleDateString()} to {new Date(endDate + 'T00:00:00').toLocaleDateString()})
+                  </span>
+                </div>
+                <p className="text-blue-700 text-sm mt-1">
+                  This will create {multiDayInfo.dayCount} separate calendar entries. All payments and expenses will be totaled across all days.
+                </p>
+              </div>
+            )}
 
             {/* Payment Info */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -820,10 +912,12 @@ export default function SimpleGigForm({ onClose }: SimpleGigFormProps) {
                 {isSubmitting ? (
                   <>
                     <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Saving...
+                    Creating gig{multiDayInfo.isMultiDay ? 's' : ''}...
                   </>
                 ) : (
-                  "Save Gig"
+                  multiDayInfo.isMultiDay 
+                    ? `Create ${multiDayInfo.dayCount} Day Gig` 
+                    : "Save Gig"
                 )}
               </Button>
               <Button type="button" variant="outline" onClick={onClose}>
