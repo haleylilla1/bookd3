@@ -634,6 +634,50 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Period-specific goal update endpoint (for dashboard)
+  app.post('/api/goals/period/:period/:date', apiLimiter, requireAuth, async (req: any, res: Response) => {
+    try {
+      const { period, date: dateString } = req.params;
+      const { goalAmount } = req.body;
+      const userId = getUserId(req);
+      
+      // Parse the date to extract year and month
+      const date = new Date(dateString);
+      const year = date.getFullYear();
+      const month = date.getMonth() + 1;
+      
+      // Determine goal type and period
+      const goalType = period === 'monthly' ? 'monthly' : 'yearly';
+      const goalPeriod = period === 'monthly' ? `${year}-${month.toString().padStart(2, '0')}` : year.toString();
+      
+      // Check if goal already exists for this period
+      const existingGoals = await storage.getGoalsByUser(userId);
+      const existingGoal = existingGoals.find(goal => 
+        goal.goalType === goalType && goal.period === goalPeriod
+      );
+      
+      if (existingGoal) {
+        // Update existing goal
+        const updatedGoal = await storage.updateGoal(existingGoal.id, {
+          goalAmount: parseFloat(goalAmount),
+        });
+        res.json(updatedGoal);
+      } else {
+        // Create new goal
+        const newGoal = await storage.createGoal({
+          userId,
+          goalType,
+          period: goalPeriod,
+          goalAmount: parseFloat(goalAmount),
+        });
+        res.json(newGoal);
+      }
+    } catch (error) {
+      console.error('Goal update error:', error);
+      res.status(500).json({ error: 'Failed to update goal' });
+    }
+  });
+
   // Distance calculation endpoint - resource intensive (Google Maps API calls)
   app.post('/api/calculate-distance', resourceIntensiveLimiter, requireAuth, async (req: any, res: Response) => {
     try {
