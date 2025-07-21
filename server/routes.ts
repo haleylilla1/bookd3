@@ -646,31 +646,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const year = date.getFullYear();
       const month = date.getMonth() + 1;
       
-      // Determine goal type and period
-      const goalType = period === 'monthly' ? 'monthly' : 'yearly';
-      const goalPeriod = period === 'monthly' ? `${year}-${month.toString().padStart(2, '0')}` : year.toString();
-      
-      // Check if goal already exists for this period
-      const existingGoals = await storage.getGoalsByUser(userId);
-      const existingGoal = existingGoals.find(goal => 
-        goal.goalType === goalType && goal.period === goalPeriod
-      );
-      
-      if (existingGoal) {
-        // Update existing goal
-        const updatedGoal = await storage.updateGoal(existingGoal.id, {
-          goalAmount: parseFloat(goalAmount),
-        });
-        res.json(updatedGoal);
+      if (period === 'monthly') {
+        // Use setMonthlyGoal which handles both creation and updating
+        const goal = await storage.setMonthlyGoal(userId, month, year, goalAmount.toString());
+        res.json(goal);
       } else {
-        // Create new goal
-        const newGoal = await storage.createGoal({
-          userId,
-          goalType,
-          period: goalPeriod,
-          goalAmount: parseFloat(goalAmount),
-        });
-        res.json(newGoal);
+        // Use setYearlyGoal which handles both creation and updating
+        const goal = await storage.setYearlyGoal(userId, year, goalAmount.toString());
+        res.json(goal);
       }
     } catch (error) {
       console.error('Goal update error:', error);
