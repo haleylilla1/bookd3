@@ -41,6 +41,10 @@ Bookd is a mobile-first gig worker companion app with comprehensive financial tr
 - PAYMENT INTEGRATION: Considering Stripe payments with either Replit Auth (MVP) or Supabase (scale phase)
 
 ## Recent Changes  
+- 2025-07-21: ✅ EARNINGS BREAKDOWN DATE DISPLAY BUG COMPLETELY FIXED - Resolved timezone parsing issue causing all dates in actual earnings breakdown modal to show one day earlier than correct
+- 2025-07-21: ✅ UTC VS LOCAL TIMEZONE PARSING CONFLICT RESOLVED - Fixed parseGigDate function to use local timezone parsing (T00:00:00) instead of UTC (.000Z) preventing date shift for users in timezones behind UTC
+- 2025-07-21: ✅ MULTI-DAY DATE RANGE DISPLAY PERFECTED - Wedding gig 7/21-23 now correctly displays as "7/21/2025 - 7/23/2025" instead of "7/20/2025 - 7/22/2025"
+- 2025-07-21: ✅ ALL GIGS DATE ACCURACY CONFIRMED - Single day gigs (7/8, 7/10, 7/16-17) now display correct dates in earnings breakdown modal
 - 2025-07-21: ✅ PHANTOM REFERENCE ELIMINATION COMPLETE - Removed corrupted mileage-service-backup.ts from old backup folder and cleared TypeScript compilation cache to prevent hallucination errors
 - 2025-07-21: ✅ MAPITERATOR ERRORS COMPLETELY RESOLVED - Fixed all ES2015 iteration errors in advanced-cache.ts, simple-cache.ts, and scaling-optimizations.ts using Array.from() conversions
 - 2025-07-21: ✅ TYPE CASTING FIXES APPLIED - Added proper (error as Error) type assertions for all unknown error handling throughout cache and server systems
