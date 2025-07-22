@@ -55,18 +55,13 @@ export function getAllUserMappings(): UserMapping[] {
  * Works with both session-based and stateless authentication
  */
 export function getDatabaseUserIdFromSession(req: any): number {
-  console.log('🔍 getDatabaseUserIdFromSession called - req.currentUser:', req.currentUser);
-  console.log('🔍 req.session exists:', !!req.session);
-  
   // First check if middleware has already provided the current user
   if (req.currentUser && req.currentUser.id) {
-    console.log('✅ Found currentUser with id:', req.currentUser.id);
     return req.currentUser.id;
   }
   
   // Fallback to session-based authentication
   if (req.session?.supabaseUserId) {
-    console.log('🔄 Using session fallback for supabaseUserId:', req.session.supabaseUserId);
     const databaseId = supabaseIdToDatabaseId(req.session.supabaseUserId);
     if (!databaseId) {
       throw new Error(`No database mapping found for Supabase ID: ${req.session.supabaseUserId}`);
@@ -74,7 +69,6 @@ export function getDatabaseUserIdFromSession(req: any): number {
     return databaseId;
   }
   
-  console.log('❌ No authentication found - throwing error');
   throw new Error('No authenticated user found');
 }
 export function getDatabaseUserIdFromSupabase(supabaseUserId: string): number | null {

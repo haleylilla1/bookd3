@@ -140,15 +140,22 @@ export async function signOutProxy(req: Request, res: Response) {
       await supabaseAdmin.auth.admin.signOut(req.session.supabaseAccessToken);
     }
 
-    req.session.destroy((err: any) => {
-      if (err) {
-        console.error('Session destroy error:', err);
-        return res.status(500).json({ error: { message: 'Failed to sign out' } });
-      }
-      
+    // Safely destroy session if it exists
+    if (req.session && typeof req.session.destroy === 'function') {
+      req.session.destroy((err: any) => {
+        if (err) {
+          console.error('Session destroy error:', err);
+          return res.status(500).json({ error: { message: 'Failed to sign out' } });
+        }
+        
+        res.clearCookie('connect.sid');
+        return res.json({ message: 'Signed out successfully' });
+      });
+    } else {
+      // No session to destroy, just clear cookies and respond
       res.clearCookie('connect.sid');
       return res.json({ message: 'Signed out successfully' });
-    });
+    }
 
   } catch (error: any) {
     console.error('Signout proxy error:', error);
@@ -268,7 +275,6 @@ export async function requireSupabaseAuth(req: Request, res: Response, next: any
     
     // Add user info to request for downstream use
     (req as any).currentUser = currentUser;
-    console.log('🔧 Added currentUser to request:', { id: currentUser.id, email: currentUser.email });
     next();
   } catch (error) {
     console.error('Auth middleware error:', error);
