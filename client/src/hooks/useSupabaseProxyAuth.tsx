@@ -159,10 +159,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(null);
       queryClient.setQueryData(['/api/auth/user'], null);
       queryClient.clear(); // Clear all cached data
-      toast({
-        title: "Signed out successfully",
-        description: "You have been signed out of your account.",
-      });
+      
+      // Force page reload to redirect to auth page
+      window.location.href = '/auth';
     },
     onError: (error: Error) => {
       console.error('❌ Sign out failed:', error.message);
