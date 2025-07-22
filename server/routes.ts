@@ -2,7 +2,7 @@ import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { PasswordVerificationService } from "./password-verification";
-import { requireAuth, getUserId } from "./supabase-auth";
+import { requireAuth, getUserId, getDatabaseUserId } from "./supabase-auth";
 import { 
   signUpProxy, 
   signInProxy, 
@@ -200,6 +200,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/auth/signout', signOutProxy);
   app.get('/api/auth/user', getCurrentUserProxy);
   app.post('/api/auth/reset-password', passwordResetLimiter, resetPasswordProxy);
+
+  // Import user mapping system
+  const { getDatabaseUserIdFromSupabase } = await import('./user-id-mapping');
 
   // Legacy auth routes (keeping for backward compatibility)
   const { setupAuthRoutes } = await import('./auth');
@@ -406,7 +409,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Gig endpoints - rate limited for production scaling
   app.get('/api/gigs', apiLimiter, requireAuth, async (req: any, res: Response) => {
     try {
-      const userId = getUserId(req);
+      const userId = getDatabaseUserId(req);
+      
+      if (!userId) {
+        console.error('🚨 No database user mapping found for authenticated user');
+        return res.status(400).json({ error: 'User mapping not found' });
+      }
       const lightweight = req.query.lightweight === 'true';
       
       // Calculate cache entry size BEFORE caching to prevent memory issues
@@ -465,7 +473,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // ULTRA-OPTIMIZED DASHBOARD ENDPOINT - Single query replaces 5-10 queries
   app.get('/api/dashboard/optimized', apiLimiter, requireAuth, async (req: any, res: Response) => {
     try {
-      const userId = getUserId(req);
+      const userId = getDatabaseUserId(req);
+      
+      if (!userId) {
+        return res.status(400).json({ error: 'User mapping not found' });
+      }
       const { getDashboardData } = await import('./dashboard-optimized');
       
       const dashboardData = await getDashboardData(userId);
@@ -477,7 +489,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/gigs', heavyApiLimiter, requireAuth, async (req: any, res) => {
     try {
-      const userId = getUserId(req);
+      const userId = getDatabaseUserId(req);
+      
+      if (!userId) {
+        return res.status(400).json({ error: 'User mapping not found' });
+      }
       const gig = await storage.createGig({ ...req.body, user_id: userId });
       await invalidateUserCaches(userId);
       res.json(gig);
@@ -489,7 +505,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.put('/api/gigs/:id', heavyApiLimiter, requireAuth, async (req: any, res) => {
     try {
       const gigId = parseInt(req.params.id);
-      const userId = getUserId(req);
+      const userId = getDatabaseUserId(req);
+      
+      if (!userId) {
+        return res.status(400).json({ error: 'User mapping not found' });
+      }
       const existingGig = await storage.getGig(gigId);
       
       if (!existingGig || existingGig.userId !== userId) {
@@ -517,7 +537,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.delete('/api/gigs/:id', heavyApiLimiter, requireAuth, async (req: any, res) => {
     try {
       const gigId = parseInt(req.params.id);
-      const userId = getUserId(req);
+      const userId = getDatabaseUserId(req);
+      
+      if (!userId) {
+        return res.status(400).json({ error: 'User mapping not found' });
+      }
       const existingGig = await storage.getGig(gigId);
       
       if (!existingGig || existingGig.userId !== userId) {

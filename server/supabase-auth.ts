@@ -55,3 +55,17 @@ export function getUserId(req: Request): string {
   }
   return authReq.userId
 }
+
+/**
+ * Gets the database user ID (integer) for the current Supabase authenticated user
+ * This is the key function all data endpoints should use instead of getUserId
+ */
+export function getDatabaseUserId(req: Request): number | null {
+  // First get the Supabase user ID
+  const supabaseUserId = getUserId(req);
+  
+  // Import mapping function dynamically to avoid circular imports
+  const { getDatabaseUserIdFromSupabase } = require('./user-id-mapping');
+  
+  return getDatabaseUserIdFromSupabase(supabaseUserId);
+}
