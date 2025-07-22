@@ -91,16 +91,20 @@ export default function CalendarView() {
     }
   }, [gigs?.length]); // Only run when gigs are initially loaded
 
+  // Simple utility to refresh cache after mutations
+  const refreshCache = () => {
+    queryClient.removeQueries({ queryKey: ["/api/gigs"] });
+    queryClient.invalidateQueries({ queryKey: ["/api/gigs"] });
+    queryClient.invalidateQueries({ queryKey: ["/api/dashboard/stats"] });
+  };
+
   const updateGigMutation = useMutation({
     mutationFn: async (gigData: { id: number; data: Partial<Gig> }) => {
       const response = await apiRequest("PUT", `/api/gigs/${gigData.id}`, gigData.data);
       return response.json();
     },
     onSuccess: () => {
-      // Force immediate cache refresh - remove cached data first
-      queryClient.removeQueries({ queryKey: ["/api/gigs"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/gigs"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/dashboard/stats"] });
+      refreshCache();
       toast({
         title: "Success",
         description: "Gig updated successfully!",
@@ -121,8 +125,7 @@ export default function CalendarView() {
       await apiRequest("DELETE", `/api/gigs/${gigId}`);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/gigs"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/dashboard/stats"] });
+      refreshCache();
       toast({
         title: "Success",
         description: "Gig deleted successfully!",
@@ -346,11 +349,7 @@ export default function CalendarView() {
         if (!response.ok) throw new Error(`Failed to create gig for ${date}`);
       }
       
-      // Force immediate cache refresh - remove cached data first
-      queryClient.removeQueries({ queryKey: ["/api/gigs"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/gigs"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/dashboard/stats"] });
-      
+      refreshCache();
       toast({
         title: "Multi-day gig recreated",
         description: `Created ${newDates.length} days from ${startDate} to ${endDate}`,
@@ -386,11 +385,7 @@ export default function CalendarView() {
       
       await Promise.all(updatePromises);
       
-      // Force immediate cache refresh - remove cached data first
-      queryClient.removeQueries({ queryKey: ["/api/gigs"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/gigs"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/dashboard/stats"] });
-      
+      refreshCache();
       toast({
         title: "Multi-day gig updated",
         description: `Updated ${gigIds.length} days of ${editingGig!.eventName}`,

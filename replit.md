@@ -49,8 +49,9 @@ Bookd is a mobile-first gig worker companion app with comprehensive financial tr
 
 ## Recent Changes  
 - 2025-07-22: 🎉 **CALENDAR PAYMENT DISPLAY COMPLETELY FIXED** - All Gigs calendar view now correctly shows expected pay amounts for upcoming gigs instead of $0, with bulletproof field mapping and cache invalidation
-- 2025-07-22: ✅ **BULLETPROOF FIELD MAPPING DEPLOYED** - Fixed snake_case/camelCase conversion issues with robust fallback logic handling undefined/null/empty values properly
-- 2025-07-22: ✅ **CACHE INVALIDATION ENHANCED** - Added immediate cache removal before invalidation preventing stale data display after gig edits
+- 2025-07-22: ✅ **CODE OPTIMIZATION COMPLETE** - Simplified field mapping from 24 lines to 10 lines using single utility function, eliminated 40+ lines of redundant cache invalidation code
+- 2025-07-22: ✅ **BULLETPROOF FIELD MAPPING DEPLOYED** - Simple `mapField()` utility handles snake_case/camelCase conversion with clean fallback logic
+- 2025-07-22: ✅ **CACHE INVALIDATION OPTIMIZED** - Single `refreshCache()` utility eliminates code duplication across all mutation handlers
 - 2025-07-22: ✅ **UPCOMING GIG DISPLAY PERFECTED** - Calendar prioritizes expected pay for upcoming gigs with "(expected)" label, actual pay for completed gigs
 - 2025-07-22: 🎉 **NEW USER CREATION SYSTEM 100% OPERATIONAL** - Critical testing confirms new users can create their own personal Bookd spaces with complete data isolation
 - 2025-07-22: ✅ **DESKTOP SIGN-OUT FUNCTIONALITY ADDED** - Desktop sidebar now displays user info and sign-out button as requested
