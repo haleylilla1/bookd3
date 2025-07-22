@@ -653,8 +653,8 @@ async function prepareReportData(options: ReportOptions): Promise<ReportData> {
         description: 'Parking expense',
         gigName: gig.eventName || 'Unnamed Event',
         clientName: gig.clientName || 'Direct Client',
-        reimbursed: Boolean((gig as any).parkingReimbursed),
-        receipts: Array.isArray((gig as any).parkingReceipts) ? (gig as any).parkingReceipts : []
+        reimbursed: Boolean((gig as any).parking_reimbursed),
+        receipts: Array.isArray((gig as any).parking_receipts) ? (gig as any).parking_receipts : []
       });
     }
     if (parseFloat(gig.otherExpenses || '0') > 0) {
@@ -665,8 +665,8 @@ async function prepareReportData(options: ReportOptions): Promise<ReportData> {
         description: 'Other business expense',
         gigName: gig.eventName || 'Unnamed Event',
         clientName: gig.clientName || 'Direct Client',
-        reimbursed: Boolean((gig as any).otherExpensesReimbursed),
-        receipts: Array.isArray((gig as any).otherExpenseReceipts) ? (gig as any).otherExpenseReceipts : []
+        reimbursed: Boolean((gig as any).other_expenses_reimbursed),
+        receipts: Array.isArray((gig as any).other_expense_receipts) ? (gig as any).other_expense_receipts : []
       });
     }
   });
