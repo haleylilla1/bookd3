@@ -26,7 +26,7 @@ interface ReportData {
 
 interface ReceiptData {
   date: string;
-  type: 'parking' | 'other';
+  type: 'parking' | 'other' | 'combined';
   amount: number;
   description: string;
   gigName: string;
@@ -360,10 +360,11 @@ export async function generateProfessionalHTML(options: ReportOptions): Promise<
                                     <h3 style="margin: 0 0 5px 0; font-size: 18px; color: #333;">${receipt.gigName}</h3>
                                     <p style="margin: 0; color: #666; font-size: 14px;">Client: ${receipt.clientName}</p>
                                     <p style="margin: 5px 0 0 0; color: #666; font-size: 14px;">Date: ${new Date(receipt.date).toLocaleDateString()}</p>
+                                    <p style="margin: 5px 0 0 0; color: #444; font-size: 14px; font-style: italic;">${receipt.description}</p>
                                 </div>
                                 <div style="text-align: right;">
                                     <div style="font-size: 20px; font-weight: bold; color: #198754;">$${receipt.amount.toFixed(2)}</div>
-                                    <div style="font-size: 12px; text-transform: uppercase; color: #666; margin-top: 5px;">${receipt.type === 'parking' ? 'Parking' : 'Other'} Expense</div>
+                                    <div style="font-size: 12px; text-transform: uppercase; color: #666; margin-top: 5px;">Business Expense</div>
                                     ${receipt.reimbursed ? 
                                         '<div style="background-color: #d1ecf1; color: #0c5460; padding: 3px 8px; border-radius: 12px; font-size: 11px; margin-top: 5px; display: inline-block;">✓ REIMBURSED</div>' : 
                                         '<div style="background-color: #fff3cd; color: #856404; padding: 3px 8px; border-radius: 12px; font-size: 11px; margin-top: 5px; display: inline-block;">TAX DEDUCTIBLE</div>'
