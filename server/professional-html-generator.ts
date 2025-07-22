@@ -645,28 +645,37 @@ async function prepareReportData(options: ReportOptions): Promise<ReportData> {
   const receipts: ReceiptData[] = [];
   
   completedGigs.forEach(gig => {
-    if (parseFloat(gig.parkingExpense || '0') > 0) {
+    // Add parking expenses (check both expense amount and receipt existence)
+    const parkingAmount = parseFloat(gig.parkingExpense || '0');
+    const parkingReceipts = Array.isArray((gig as any).parking_receipts) ? (gig as any).parking_receipts : [];
+    
+    if (parkingAmount > 0 || parkingReceipts.length > 0) {
       receipts.push({
         date: gig.date,
         type: 'parking' as const,
-        amount: parseFloat(gig.parkingExpense || '0'),
-        description: 'Parking expense',
+        amount: parkingAmount,
+        description: parkingAmount > 0 ? 'Parking expense' : 'Parking receipt (no expense recorded)',
         gigName: gig.eventName || 'Unnamed Event',
         clientName: gig.clientName || 'Direct Client',
         reimbursed: Boolean((gig as any).parking_reimbursed),
-        receipts: Array.isArray((gig as any).parking_receipts) ? (gig as any).parking_receipts : []
+        receipts: parkingReceipts
       });
     }
-    if (parseFloat(gig.otherExpenses || '0') > 0) {
+    
+    // Add other expenses (check both expense amount and receipt existence)  
+    const otherAmount = parseFloat(gig.otherExpenses || '0');
+    const otherReceipts = Array.isArray((gig as any).other_expense_receipts) ? (gig as any).other_expense_receipts : [];
+    
+    if (otherAmount > 0 || otherReceipts.length > 0) {
       receipts.push({
         date: gig.date,
         type: 'other' as const,
-        amount: parseFloat(gig.otherExpenses || '0'),
-        description: 'Other business expense',
+        amount: otherAmount,
+        description: otherAmount > 0 ? 'Other business expense' : 'Other expense receipt (no amount recorded)',
         gigName: gig.eventName || 'Unnamed Event',
         clientName: gig.clientName || 'Direct Client',
         reimbursed: Boolean((gig as any).other_expenses_reimbursed),
-        receipts: Array.isArray((gig as any).other_expense_receipts) ? (gig as any).other_expense_receipts : []
+        receipts: otherReceipts
       });
     }
   });
