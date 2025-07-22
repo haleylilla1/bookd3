@@ -1,77 +1,135 @@
-import { useState, useEffect, createContext, useContext, ReactNode } from 'react'
-import { User, AuthError } from '@supabase/supabase-js'
-import { supabase } from '@/lib/supabase'
+import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { supabase } from '@/lib/supabase';
+import { useToast } from '@/hooks/use-toast';
+import type { User } from '@supabase/supabase-js';
 
 interface AuthContextType {
-  user: User | null
-  loading: boolean
-  signUp: (email: string, password: string, name?: string) => Promise<{ error?: AuthError | null }>
-  signIn: (email: string, password: string) => Promise<{ error?: AuthError | null }>
-  signOut: () => Promise<void>
-  resetPassword: (email: string) => Promise<{ error?: AuthError | null }>
+  user: User | null;
+  loading: boolean;
+  signUp: (email: string, password: string, name?: string) => Promise<{ error?: any }>;
+  signIn: (email: string, password: string) => Promise<{ error?: any }>;
+  signOut: () => Promise<void>;
+  resetPassword: (email: string) => Promise<{ error?: any }>;
 }
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined)
+const AuthContext = createContext<AuthContextType | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null)
-  const [loading, setLoading] = useState(true)
+  const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
+  const { toast } = useToast();
 
   useEffect(() => {
     // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ?? null)
-      setLoading(false)
-    })
-
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        setUser(session?.user ?? null)
-        setLoading(false)
+    const getInitialSession = async () => {
+      try {
+        const { data: { session }, error } = await supabase.auth.getSession();
+        if (error) {
+          console.error('Error getting initial session:', error);
+        } else {
+          setUser(session?.user ?? null);
+        }
+      } catch (error) {
+        console.error('Network error getting session:', error);
+        // Don't show error toast for initial load
+      } finally {
+        setLoading(false);
       }
-    )
+    };
 
-    return () => subscription.unsubscribe()
-  }, [])
+    getInitialSession();
+
+    // Listen for auth state changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        console.log('Auth state changed:', event);
+        setUser(session?.user ?? null);
+        setLoading(false);
+      }
+    );
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, []);
 
   const signUp = async (email: string, password: string, name?: string) => {
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: {
-          name: name || email.split('@')[0]
+    try {
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: name ? { name } : undefined
         }
+      });
+
+      if (error) {
+        return { error };
       }
-    })
-    return { error: error || null }
-  }
+
+      if (data.user) {
+        toast({
+          title: 'Check Your Email',
+          description: 'Please check your email to confirm your account.',
+        });
+      }
+
+      return { error: null };
+    } catch (networkError: any) {
+      console.error('Network error during sign up:', networkError);
+      return { 
+        error: {
+          message: 'Connection failed. Please check your internet connection and try again.',
+          name: 'NetworkError'
+        }
+      };
+    }
+  };
 
   const signIn = async (email: string, password: string) => {
     try {
-      const { error } = await supabase.auth.signInWithPassword({
+      const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password
-      })
-      return { error: error || null }
+      });
+
+      return { error: error || null };
     } catch (networkError: any) {
-      console.error('Network error during sign in:', networkError)
-      // Return a proper AuthError-compatible structure
+      console.error('Network error during sign in:', networkError);
       return { 
-        error: null  // Return null to maintain type consistency
-      }
+        error: {
+          message: 'Connection failed. Please check your internet connection and try again.',
+          name: 'NetworkError'
+        }
+      };
     }
-  }
+  };
 
   const signOut = async () => {
-    await supabase.auth.signOut()
-  }
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) {
+        console.error('Error signing out:', error);
+      }
+    } catch (networkError) {
+      console.error('Network error during sign out:', networkError);
+    }
+  };
 
   const resetPassword = async (email: string) => {
-    const { error } = await supabase.auth.resetPasswordForEmail(email)
-    return { error: error || null }
-  }
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email);
+      return { error: error || null };
+    } catch (networkError: any) {
+      console.error('Network error during password reset:', networkError);
+      return { 
+        error: {
+          message: 'Connection failed. Please check your internet connection and try again.',
+          name: 'NetworkError'
+        }
+      };
+    }
+  };
 
   return (
     <AuthContext.Provider value={{
@@ -84,13 +142,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }}>
       {children}
     </AuthContext.Provider>
-  )
+  );
 }
 
 export function useAuth() {
-  const context = useContext(AuthContext)
+  const context = useContext(AuthContext);
   if (!context) {
-    throw new Error('useAuth must be used within an AuthProvider')
+    throw new Error('useAuth must be used within an AuthProvider');
   }
-  return context
+  return context;
 }
