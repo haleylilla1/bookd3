@@ -408,8 +408,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         gigs = await storage.getGigsByUser(userId);
         
         // Simple field mapping - use camelCase or fallback to snake_case
-        const mapField = (obj, camelCase, snake_case) => obj[camelCase] || obj[snake_case];
-        gigs = gigs.map(gig => ({
+        const mapField = (obj: any, camelCase: string, snake_case: string) => obj[camelCase] || obj[snake_case];
+        gigs = gigs.map((gig: any) => ({
           ...gig,
           expectedPay: mapField(gig, 'expectedPay', 'expected_pay'),
           actualPay: mapField(gig, 'actualPay', 'actual_pay'),
@@ -431,7 +431,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           
           // For oversized data, return lightweight version without receipt images
           if (lightweight) {
-            gigs = gigs.map(gig => ({
+            gigs = gigs.map((gig: any) => ({
               ...gig,
               parking_receipts: gig.parking_receipts?.length ? ['[receipts available]'] : null,
               other_expense_receipts: gig.other_expense_receipts?.length ? ['[receipts available]'] : null,
@@ -585,7 +585,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       if (!goals) {
         goals = await storage.getGoalsByUser(userId);
-        cache.set(cacheKey, goals, 300); // 5-minute cache
+        await cache.set(cacheKey, goals, 300); // 5-minute cache
       }
       
       res.json(goals);
@@ -1187,7 +1187,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Custom gig types endpoint
-  app.get('/api/gig-types', apiLimiter, requireAuth, async (req: any, res) => {
+  app.get('/api/gig-types', apiLimiter, requireAuth, async (req: any, res: Response) => {
     try {
       const user = await storage.getUser(getUserId(req));
       res.json(user?.customGigTypes || []);
@@ -1276,7 +1276,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           simple: {
             entries: simpleCacheStats.cacheSize || 0,
             maxEntries: simpleCacheStats.maxEntries || 1000,
-            utilizationPercent: parseFloat((((simpleCacheStats.cacheSize || 0) / (simpleCacheStats.maxEntries || 1000)) * 100).toFixed(1)),
+            utilizationPercent: parseFloat((((simpleCacheStats.cacheSize || 0) / Math.max(1, (simpleCacheStats.maxEntries || 1000))) * 100).toFixed(1)),
             memoryUsageMB: simpleCacheStats.memoryUsageMB || 0
           },
           performance: {
