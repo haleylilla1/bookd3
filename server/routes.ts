@@ -407,6 +407,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!gigs) {
         gigs = await storage.getGigsByUser(userId);
         
+        // FIELD MAPPING FIX: Ensure camelCase field names for frontend compatibility
+        gigs = gigs.map(gig => ({
+          ...gig,
+          expectedPay: gig.expectedPay || gig.expected_pay,
+          actualPay: gig.actualPay || gig.actual_pay,
+          eventName: gig.eventName || gig.event_name,
+          clientName: gig.clientName || gig.client_name,
+          gigType: gig.gigType || gig.gig_type,
+          parkingExpense: gig.parkingExpense || gig.parking_expense,
+          otherExpenses: gig.otherExpenses || gig.other_expenses,
+          parkingReceipts: gig.parkingReceipts || gig.parking_receipts,
+          otherExpenseReceipts: gig.otherExpenseReceipts || gig.other_expense_receipts
+        }));
+        
         // Check size before caching - prevent 5MB cache entries
         const dataSize = JSON.stringify(gigs).length;
         console.log(`📊 Gig data size for user ${userId}: ${Math.round(dataSize/1024)}KB`);
