@@ -666,16 +666,20 @@ async function prepareReportData(options: ReportOptions): Promise<ReportData> {
     const otherAmount = parseFloat(gig.otherExpenses || '0');
     const otherReceipts = Array.isArray((gig as any).other_expense_receipts) ? (gig as any).other_expense_receipts : [];
     
-    if (otherAmount > 0 || otherReceipts.length > 0) {
+    // SPECIAL CASE: Check if parking_receipts exist but are stored under "other expenses" category
+    const specialParkingReceipts = Array.isArray((gig as any).parking_receipts) ? (gig as any).parking_receipts : [];
+    const allOtherReceipts = [...otherReceipts, ...specialParkingReceipts];
+    
+    if (otherAmount > 0 || allOtherReceipts.length > 0) {
       receipts.push({
         date: gig.date,
         type: 'other' as const,
         amount: otherAmount,
-        description: otherAmount > 0 ? 'Other business expense' : 'Other expense receipt (no amount recorded)',
+        description: otherAmount > 0 ? 'Other business expense' : 'Business expense receipt',
         gigName: gig.eventName || 'Unnamed Event',
         clientName: gig.clientName || 'Direct Client',
         reimbursed: Boolean((gig as any).other_expenses_reimbursed),
-        receipts: otherReceipts
+        receipts: allOtherReceipts
       });
     }
   });
