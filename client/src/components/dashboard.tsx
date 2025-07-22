@@ -173,9 +173,9 @@ export default function Dashboard() {
         const nextDate = parseGigDate(nextGig.date);
         const dayDiff = (nextDate.getTime() - lastGigDate.getTime()) / (1000 * 60 * 60 * 24);
         
-        if (nextGig.eventName === currentGig.eventName &&
-            nextGig.clientName === currentGig.clientName &&
-            nextGig.gigType === currentGig.gigType &&
+        if ((nextGig.eventName || nextGig.event_name) === (currentGig.eventName || currentGig.event_name) &&
+            (nextGig.clientName || nextGig.client_name) === (currentGig.clientName || currentGig.client_name) &&
+            (nextGig.gigType || nextGig.gig_type) === (currentGig.gigType || currentGig.gig_type) &&
             dayDiff > 0 && dayDiff <= 7) {
           similarGigs.push(nextGig);
           processed.add(nextGig.id);
