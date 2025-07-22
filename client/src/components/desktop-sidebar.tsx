@@ -1,6 +1,7 @@
-import { Calendar, LayoutDashboard, User, FileText, Plus } from "lucide-react";
+import { Calendar, LayoutDashboard, User, FileText, Plus, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Screen } from "@/pages/home";
+import { useAuth } from "@/hooks/useAuth";
 
 interface DesktopSidebarProps {
   currentScreen: Screen;
@@ -8,6 +9,7 @@ interface DesktopSidebarProps {
 }
 
 export default function DesktopSidebar({ currentScreen, onScreenChange }: DesktopSidebarProps) {
+  const { logout, user } = useAuth();
   const navItems = [
     {
       id: "calendar" as Screen,
@@ -71,9 +73,26 @@ export default function DesktopSidebar({ currentScreen, onScreenChange }: Deskto
         </ul>
       </nav>
 
-      {/* Footer */}
-      <div className="p-4 border-t border-gray-200">
-        <p className="text-xs text-gray-500 text-center">
+      {/* Footer with user info and logout */}
+      <div className="p-4 border-t border-gray-200 space-y-3">
+        {user && (
+          <div className="text-sm">
+            <p className="font-medium text-gray-900 truncate">{user.name}</p>
+            <p className="text-xs text-gray-500 truncate">{user.email}</p>
+          </div>
+        )}
+        
+        <Button
+          onClick={() => logout()}
+          variant="ghost"
+          size="sm" 
+          className="w-full justify-start text-gray-700 hover:text-red-600 hover:bg-red-50"
+        >
+          <LogOut className="w-4 h-4 mr-2" />
+          Sign Out
+        </Button>
+        
+        <p className="text-xs text-gray-400 text-center">
           Desktop Version
         </p>
       </div>

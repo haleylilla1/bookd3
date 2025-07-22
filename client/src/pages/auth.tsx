@@ -174,8 +174,29 @@ export default function AuthPage() {
     } catch (error) {
       console.error("Network error:", error);
       
-      // More specific error handling for different types of errors
-      let errorMessage = "Unable to connect to the server. Please try again.";
+      // Network error - could be CORS, network connectivity, or server down
+      toast({
+        title: isLogin ? "Connection Error" : "Registration Error",
+        description: "Unable to connect to server. Please check your internet connection and try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const resetForm = () => {
+    setFormData({
+      name: "",
+      email: "",
+      password: "",
+      confirmPassword: ""
+    });
+  };
+
+  const switchMode = () => {
+    setIsLogin(!isLogin);
+    resetForm();
       
       if (error instanceof SyntaxError) {
         errorMessage = "Server response error. Please try again.";
