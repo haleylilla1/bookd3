@@ -75,36 +75,46 @@ export default function SupabaseAuthPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!validateForm()) return;
+    if (!validateForm()) {
+      return;
+    }
 
     setLoading(true);
 
     try {
+      let result;
+      
       if (isLogin) {
-        const { error } = await signIn(formData.email.trim(), formData.password);
-        if (error) {
-          throw new Error(error.message);
+        result = await signIn(formData.email.trim(), formData.password);
+        if (!result.error) {
+          toast({
+            title: 'Welcome Back',
+            description: 'Successfully logged in to Bookd.',
+          });
+          setLocation('/');
+        } else {
+          toast({
+            title: 'Login Failed',
+            description: result.error.message || 'Invalid email or password.',
+            variant: 'destructive',
+          });
         }
-        toast({
-          title: 'Success',
-          description: 'Logged in successfully!',
-        });
-        setLocation('/');
       } else {
-        const { error } = await signUp(formData.email.trim(), formData.password, formData.name.trim());
-        if (error) {
-          throw new Error(error.message);
+        result = await signUp(formData.email.trim(), formData.password, formData.name.trim());
+        if (result.error) {
+          toast({
+            title: 'Registration Failed',
+            description: result.error.message || 'Unable to create account.',
+            variant: 'destructive',
+          });
         }
-        toast({
-          title: 'Success',
-          description: 'Account created successfully! Please check your email to verify your account.',
-        });
-        setLocation('/');
+        // Success toast is handled in signUp function
       }
     } catch (error) {
+      console.error('Authentication error:', error);
       toast({
-        title: isLogin ? 'Login Failed' : 'Registration Failed',
-        description: error instanceof Error ? error.message : 'An unexpected error occurred',
+        title: 'Connection Error',
+        description: 'Please check your internet connection and try again.',
         variant: 'destructive',
       });
     } finally {
@@ -112,161 +122,213 @@ export default function SupabaseAuthPage() {
     }
   };
 
-  const handlePasswordReset = async () => {
+  const handleResetPassword = async () => {
     if (!formData.email.trim()) {
       toast({
         title: 'Email Required',
-        description: 'Please enter your email address to reset your password.',
+        description: 'Please enter your email address first.',
         variant: 'destructive',
       });
       return;
     }
 
-    try {
-      const { error } = await resetPassword(formData.email.trim());
-      if (error) {
-        throw new Error(error.message);
-      }
+    setLoading(true);
+    const result = await resetPassword(formData.email.trim());
+    
+    if (!result.error) {
       toast({
         title: 'Reset Email Sent',
         description: 'Check your email for password reset instructions.',
       });
-    } catch (error) {
+    } else {
       toast({
         title: 'Reset Failed',
-        description: error instanceof Error ? error.message : 'Failed to send reset email',
+        description: result.error.message || 'Unable to send reset email.',
         variant: 'destructive',
       });
     }
+    
+    setLoading(false);
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100 px-4">
-      <Card className="w-full max-w-md">
-        <CardHeader className="space-y-1">
-          <CardTitle className="text-2xl font-bold text-center text-slate-800">
-            {isLogin ? 'Welcome back' : 'Create account'}
-          </CardTitle>
-          <CardDescription className="text-center text-slate-600">
-            {isLogin ? 'Sign in to your Bookd account' : 'Get started with Bookd today'}
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {!isLogin && (
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-slate-700">
-                  Full Name
-                </label>
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
+      <div className="w-full max-w-6xl grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
+        {/* Left Column - Auth Form */}
+        <Card className="w-full max-w-md mx-auto">
+          <CardHeader className="text-center">
+            <div className="mx-auto w-12 h-12 bg-blue-600 rounded-lg flex items-center justify-center mb-4">
+              <span className="text-white font-bold text-xl">B</span>
+            </div>
+            <CardTitle className="text-2xl font-bold text-gray-900">
+              {isLogin ? 'Welcome Back' : 'Get Started'}
+            </CardTitle>
+            <CardDescription>
+              {isLogin ? 'Sign in to your Bookd account' : 'Create your Bookd account'}
+            </CardDescription>
+          </CardHeader>
+          
+          <CardContent>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              {!isLogin && (
+                <div>
+                  <Input
+                    type="text"
+                    placeholder="Full Name"
+                    value={formData.name}
+                    onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+                    required={!isLogin}
+                    disabled={loading}
+                    className="h-12"
+                  />
+                </div>
+              )}
+
+              <div>
                 <Input
-                  type="text"
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  placeholder="Enter your full name"
-                  className="w-full"
-                  style={{ fontSize: '16px' }}
+                  type="email"
+                  placeholder="Email Address"
+                  value={formData.email}
+                  onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
+                  required
+                  disabled={loading}
+                  className="h-12"
                 />
               </div>
-            )}
-            
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-slate-700">
-                Email Address
-              </label>
-              <Input
-                type="email"
-                value={formData.email}
-                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                placeholder="Enter your email"
-                className="w-full"
-                style={{ fontSize: '16px' }}
-              />
-            </div>
 
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-slate-700">
-                Password
-              </label>
               <div className="relative">
                 <Input
-                  type={showPassword ? 'text' : 'password'}
+                  type={showPassword ? "text" : "password"}
+                  placeholder="Password"
                   value={formData.password}
-                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                  placeholder="Enter your password"
-                  className="w-full pr-10"
-                  style={{ fontSize: '16px' }}
+                  onChange={(e) => setFormData(prev => ({ ...prev, password: e.target.value }))}
+                  required
+                  disabled={loading}
+                  className="h-12 pr-12"
                 />
                 <Button
                   type="button"
                   variant="ghost"
                   size="sm"
+                  className="absolute right-0 top-0 h-12 px-3"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                  disabled={loading}
                 >
-                  {showPassword ? (
-                    <EyeOff className="h-4 w-4 text-slate-500" />
-                  ) : (
-                    <Eye className="h-4 w-4 text-slate-500" />
-                  )}
+                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </Button>
               </div>
-            </div>
 
-            {!isLogin && (
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-slate-700">
-                  Confirm Password
-                </label>
-                <Input
-                  type={showPassword ? 'text' : 'password'}
-                  value={formData.confirmPassword}
-                  onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
-                  placeholder="Confirm your password"
-                  className="w-full"
-                  style={{ fontSize: '16px' }}
-                />
+              {!isLogin && (
+                <div>
+                  <Input
+                    type="password"
+                    placeholder="Confirm Password"
+                    value={formData.confirmPassword}
+                    onChange={(e) => setFormData(prev => ({ ...prev, confirmPassword: e.target.value }))}
+                    required={!isLogin}
+                    disabled={loading}
+                    className="h-12"
+                  />
+                </div>
+              )}
+
+              <Button
+                type="submit"
+                disabled={loading}
+                className="w-full h-12 bg-blue-600 hover:bg-blue-700"
+              >
+                {loading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    {isLogin ? 'Signing In...' : 'Creating Account...'}
+                  </>
+                ) : (
+                  isLogin ? 'Sign In' : 'Create Account'
+                )}
+              </Button>
+            </form>
+
+            {isLogin && (
+              <div className="mt-4">
+                <Button
+                  variant="ghost"
+                  onClick={handleResetPassword}
+                  disabled={loading}
+                  className="w-full text-blue-600 hover:text-blue-700"
+                >
+                  Forgot Password?
+                </Button>
               </div>
             )}
 
-            <Button
-              type="submit"
-              className="w-full bg-slate-800 hover:bg-slate-900 text-white"
-              disabled={loading}
-            >
-              {loading ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  {isLogin ? 'Signing in...' : 'Creating account...'}
-                </>
-              ) : (
-                isLogin ? 'Sign In' : 'Create Account'
-              )}
-            </Button>
-          </form>
+            <div className="mt-6 text-center">
+              <p className="text-sm text-gray-600">
+                {isLogin ? "Don't have an account?" : 'Already have an account?'}
+                {' '}
+                <button
+                  type="button"
+                  onClick={() => setIsLogin(!isLogin)}
+                  className="font-medium text-blue-600 hover:text-blue-500"
+                  disabled={loading}
+                >
+                  {isLogin ? 'Sign up' : 'Sign in'}
+                </button>
+              </p>
+            </div>
+          </CardContent>
+        </Card>
 
-          <div className="mt-4 space-y-2">
-            {isLogin && (
-              <Button
-                type="button"
-                variant="ghost"
-                onClick={handlePasswordReset}
-                className="w-full text-sm text-slate-600 hover:text-slate-800"
-              >
-                Forgot your password?
-              </Button>
-            )}
-            
-            <Button
-              type="button"
-              variant="ghost"
-              onClick={() => setIsLogin(!isLogin)}
-              className="w-full text-sm text-slate-600 hover:text-slate-800"
-            >
-              {isLogin ? "Don't have an account? Sign up" : 'Already have an account? Sign in'}
-            </Button>
+        {/* Right Column - Hero Section */}
+        <div className="text-center lg:text-left">
+          <h1 className="text-4xl lg:text-5xl font-bold text-gray-900 mb-6">
+            Track Your Gigs.
+            <br />
+            <span className="text-blue-600">Work Different.</span>
+          </h1>
+          <p className="text-xl text-gray-600 mb-8 max-w-lg">
+            The comprehensive financial companion for gig workers. Track earnings, manage expenses, 
+            and generate professional reports with ease.
+          </p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-left">
+            <div className="flex items-start space-x-3">
+              <div className="w-6 h-6 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0 mt-1">
+                <div className="w-2 h-2 bg-green-600 rounded-full"></div>
+              </div>
+              <div>
+                <h3 className="font-medium text-gray-900">Calendar Management</h3>
+                <p className="text-sm text-gray-600">Organize gigs with smart calendar integration</p>
+              </div>
+            </div>
+            <div className="flex items-start space-x-3">
+              <div className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0 mt-1">
+                <div className="w-2 h-2 bg-blue-600 rounded-full"></div>
+              </div>
+              <div>
+                <h3 className="font-medium text-gray-900">Expense Tracking</h3>
+                <p className="text-sm text-gray-600">Automatic mileage and receipt management</p>
+              </div>
+            </div>
+            <div className="flex items-start space-x-3">
+              <div className="w-6 h-6 bg-purple-100 rounded-full flex items-center justify-center flex-shrink-0 mt-1">
+                <div className="w-2 h-2 bg-purple-600 rounded-full"></div>
+              </div>
+              <div>
+                <h3 className="font-medium text-gray-900">Professional Reports</h3>
+                <p className="text-sm text-gray-600">Generate tax-ready income reports</p>
+              </div>
+            </div>
+            <div className="flex items-start space-x-3">
+              <div className="w-6 h-6 bg-orange-100 rounded-full flex items-center justify-center flex-shrink-0 mt-1">
+                <div className="w-2 h-2 bg-orange-600 rounded-full"></div>
+              </div>
+              <div>
+                <h3 className="font-medium text-gray-900">Dashboard Analytics</h3>
+                <p className="text-sm text-gray-600">Real-time earnings and goal tracking</p>
+              </div>
+            </div>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     </div>
   );
 }
