@@ -8,7 +8,8 @@ Bookd is a mobile-first gig worker companion app with comprehensive financial tr
 - HTTPS redirect middleware implemented ensuring all traffic uses secure connections
 - DNS configuration completed with Squarespace: A records for @ and www, TXT verification record
 - **BULLETPROOF NEW USER CREATION SYSTEM**: 100% confirmed working - new users get their own personal Bookd space with complete isolation
-- Backend registration system tested and verified: Users 26-31 successfully created with unique IDs and isolated database spaces
+- Backend registration system tested and verified: Users 26-32 successfully created with unique IDs and isolated database spaces
+- **PASSWORD LENGTH VALIDATION CONFIRMED**: System properly accepts passwords of any length ≥6 characters (tested with 3-character rejection, 6-character acceptance, and 70+ character acceptance)
 - Enhanced frontend error messaging displays specific validation errors ("Email already exists", "Password too short")
 - Desktop sign-out functionality added with user info display in sidebar
 - ENTERPRISE-GRADE AUTHENTICATION: Complete database-backed session system with comprehensive password reset functionality
