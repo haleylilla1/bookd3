@@ -410,15 +410,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // FIELD MAPPING FIX: Ensure camelCase field names for frontend compatibility
         gigs = gigs.map(gig => ({
           ...gig,
-          expectedPay: gig.expectedPay || gig.expected_pay,
-          actualPay: gig.actualPay || gig.actual_pay,
-          eventName: gig.eventName || gig.event_name,
-          clientName: gig.clientName || gig.client_name,
-          gigType: gig.gigType || gig.gig_type,
-          parkingExpense: gig.parkingExpense || gig.parking_expense,
-          otherExpenses: gig.otherExpenses || gig.other_expenses,
-          parkingReceipts: gig.parkingReceipts || gig.parking_receipts,
-          otherExpenseReceipts: gig.otherExpenseReceipts || gig.other_expense_receipts
+          // Use proper fallback logic that handles undefined/null/empty values
+          expectedPay: (gig.expectedPay !== undefined && gig.expectedPay !== null && gig.expectedPay !== '') 
+            ? gig.expectedPay 
+            : gig.expected_pay,
+          actualPay: (gig.actualPay !== undefined && gig.actualPay !== null && gig.actualPay !== '') 
+            ? gig.actualPay 
+            : gig.actual_pay,
+          eventName: (gig.eventName !== undefined && gig.eventName !== null && gig.eventName !== '') 
+            ? gig.eventName 
+            : gig.event_name,
+          clientName: (gig.clientName !== undefined && gig.clientName !== null && gig.clientName !== '') 
+            ? gig.clientName 
+            : gig.client_name,
+          gigType: (gig.gigType !== undefined && gig.gigType !== null && gig.gigType !== '') 
+            ? gig.gigType 
+            : gig.gig_type,
+          parkingExpense: (gig.parkingExpense !== undefined && gig.parkingExpense !== null && gig.parkingExpense !== '') 
+            ? gig.parkingExpense 
+            : gig.parking_expense,
+          otherExpenses: (gig.otherExpenses !== undefined && gig.otherExpenses !== null && gig.otherExpenses !== '') 
+            ? gig.otherExpenses 
+            : gig.other_expenses,
+          parkingReceipts: (gig.parkingReceipts !== undefined && gig.parkingReceipts !== null) 
+            ? gig.parkingReceipts 
+            : gig.parking_receipts,
+          otherExpenseReceipts: (gig.otherExpenseReceipts !== undefined && gig.otherExpenseReceipts !== null) 
+            ? gig.otherExpenseReceipts 
+            : gig.other_expense_receipts
         }));
         
         // Check size before caching - prevent 5MB cache entries
