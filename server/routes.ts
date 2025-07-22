@@ -408,7 +408,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Gig endpoints - rate limited for production scaling
   app.get('/api/gigs', apiLimiter, requireSupabaseAuth, async (req: any, res: Response) => {
     try {
-      const userId = getDatabaseUserId(req);
+      const userId = getDatabaseUserIdFromSession(req);
       
       if (!userId) {
         console.error('🚨 No database user mapping found for authenticated user');
@@ -472,7 +472,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // ULTRA-OPTIMIZED DASHBOARD ENDPOINT - Single query replaces 5-10 queries
   app.get('/api/dashboard/optimized', apiLimiter, requireSupabaseAuth, async (req: any, res: Response) => {
     try {
-      const userId = getDatabaseUserId(req);
+      const userId = getDatabaseUserIdFromSession(req);
       
       if (!userId) {
         return res.status(400).json({ error: 'User mapping not found' });
@@ -488,7 +488,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/gigs', heavyApiLimiter, requireSupabaseAuth, async (req: any, res) => {
     try {
-      const userId = getDatabaseUserId(req);
+      const userId = getDatabaseUserIdFromSession(req);
       
       if (!userId) {
         return res.status(400).json({ error: 'User mapping not found' });
@@ -504,7 +504,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.put('/api/gigs/:id', heavyApiLimiter, requireSupabaseAuth, async (req: any, res) => {
     try {
       const gigId = parseInt(req.params.id);
-      const userId = getDatabaseUserId(req);
+      const userId = getDatabaseUserIdFromSession(req);
       
       if (!userId) {
         return res.status(400).json({ error: 'User mapping not found' });
@@ -536,7 +536,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.delete('/api/gigs/:id', heavyApiLimiter, requireSupabaseAuth, async (req: any, res) => {
     try {
       const gigId = parseInt(req.params.id);
-      const userId = getDatabaseUserId(req);
+      const userId = getDatabaseUserIdFromSession(req);
       
       if (!userId) {
         return res.status(400).json({ error: 'User mapping not found' });
