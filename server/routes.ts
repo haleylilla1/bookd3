@@ -3,6 +3,14 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { PasswordVerificationService } from "./password-verification";
 import { requireAuth, getUserId } from "./supabase-auth";
+import { 
+  signUpProxy, 
+  signInProxy, 
+  signOutProxy, 
+  getCurrentUserProxy, 
+  resetPasswordProxy,
+  requireSupabaseAuth 
+} from "./supabase-auth-proxy";
 import { db } from "./db";
 import { users, gigs } from "@shared/schema";
 import { count } from "drizzle-orm";
