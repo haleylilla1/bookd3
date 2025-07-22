@@ -792,25 +792,24 @@ export default function SimpleGigForm({ onClose }: SimpleGigFormProps) {
 
             {/* Expense Fields */}
             {trackExpenses && (
-              <div className="space-y-4 p-4 border rounded-lg bg-gray-50">
-                {/* Parking Expenses */}
-                <div className="space-y-3">
-                  <h4 className="font-medium text-sm">Parking Expenses</h4>
+              <div className="space-y-6">
+                {/* Parking Section */}
+                <div className="space-y-3 p-4 bg-blue-50 rounded-lg border">
+                  <h4 className="font-medium text-blue-900">Parking</h4>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <FormField
                       control={form.control}
                       name="parkingExpense"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Parking Cost ($)</FormLabel>
+                          <FormLabel>Amount ($)</FormLabel>
                           <FormControl>
-                            <Input type="number" placeholder="15.00" {...field} />
+                            <Input type="number" placeholder="0.00" {...field} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
                       )}
                     />
-
                     <FormField
                       control={form.control}
                       name="parkingReimbursed"
@@ -829,32 +828,30 @@ export default function SimpleGigForm({ onClose }: SimpleGigFormProps) {
                       )}
                     />
                   </div>
-
                   <ReceiptUpload
                     receipts={form.watch("parkingReceipts") || []}
                     onReceiptsChange={(receipts) => form.setValue("parkingReceipts", receipts)}
-                    label="Parking Receipt Photos"
+                    label="Upload Receipt Photos"
                   />
                 </div>
 
-                {/* Other Expenses */}
-                <div className="space-y-3">
-                  <h4 className="font-medium text-sm">Other Expenses</h4>
+                {/* Other Expenses Section */}
+                <div className="space-y-3 p-4 bg-green-50 rounded-lg border">
+                  <h4 className="font-medium text-green-900">Other Expenses</h4>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <FormField
                       control={form.control}
                       name="otherExpenses"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Other Costs ($)</FormLabel>
+                          <FormLabel>Amount ($)</FormLabel>
                           <FormControl>
-                            <Input type="number" placeholder="25.00" {...field} />
+                            <Input type="number" placeholder="0.00" {...field} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
                       )}
                     />
-
                     <FormField
                       control={form.control}
                       name="otherExpensesReimbursed"
@@ -877,7 +874,7 @@ export default function SimpleGigForm({ onClose }: SimpleGigFormProps) {
                   <ReceiptUpload
                     receipts={form.watch("otherExpenseReceipts") || []}
                     onReceiptsChange={(receipts) => form.setValue("otherExpenseReceipts", receipts)}
-                    label="Other Receipt Photos"
+                    label="Upload Receipt Photos"
                   />
                 </div>
               </div>

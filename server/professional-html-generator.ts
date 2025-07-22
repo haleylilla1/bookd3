@@ -650,18 +650,6 @@ async function prepareReportData(options: ReportOptions): Promise<ReportData> {
     const parkingAmount = parseFloat(gig.parkingExpense || '0');
     const otherAmount = parseFloat(gig.otherExpenses || '0');
     
-    // DEBUG: Log gig data to see what fields are available
-    console.log('🔍 GIG DEBUG:', {
-      gigName: gig.eventName,
-      parkingAmount,
-      otherAmount,
-      availableFields: Object.keys(gig),
-      parking_receipts: (gig as any).parking_receipts,
-      parkingReceipts: (gig as any).parkingReceipts,
-      other_expense_receipts: (gig as any).other_expense_receipts,
-      otherExpenseReceipts: (gig as any).otherExpenseReceipts
-    });
-    
     // Get receipt photos - try both database and interface field names
     const parkingReceipts = Array.isArray((gig as any).parking_receipts) 
       ? (gig as any).parking_receipts 
@@ -673,14 +661,6 @@ async function prepareReportData(options: ReportOptions): Promise<ReportData> {
       : Array.isArray((gig as any).otherExpenseReceipts) 
         ? (gig as any).otherExpenseReceipts 
         : [];
-        
-    console.log('📸 RECEIPT DEBUG:', {
-      gigName: gig.eventName,
-      parkingReceipts: parkingReceipts.length,
-      otherReceipts: otherReceipts.length,
-      parkingReceiptsData: parkingReceipts,
-      otherReceiptsData: otherReceipts
-    });
     
     // Create SEPARATE entries for parking and other expenses to avoid confusion
     
