@@ -87,14 +87,14 @@ export async function signInProxy(req: Request, res: Response) {
     if (data.user && data.session) {
       console.log('✅ User signed in successfully:', data.user.email);
       
-      // Ensure session exists and store session info
-      if (!req.session) {
-        return res.status(500).json({ error: { message: 'Session not initialized' } });
+      // Store session data if session is available
+      if (req.session) {
+        req.session.supabaseUserId = data.user.id;
+        req.session.supabaseAccessToken = data.session.access_token;
+        req.session.supabaseEmail = data.user.email;
+      } else {
+        console.warn('⚠️ Session not available, authentication will use stateless mode');
       }
-      
-      req.session.supabaseUserId = data.user.id;
-      req.session.supabaseAccessToken = data.session.access_token;
-      req.session.supabaseEmail = data.user.email;
 
       return res.json({ 
         user: {
