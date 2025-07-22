@@ -256,10 +256,22 @@ export async function resetPasswordProxy(req: Request, res: Response) {
   }
 }
 
-// Middleware to check authentication
-export function requireSupabaseAuth(req: Request, res: Response, next: any) {
-  if (!req.session.supabaseUserId) {
-    return res.status(401).json({ error: { message: 'Authentication required' } });
+// Middleware to check authentication - works with sessions or stateless fallback
+export async function requireSupabaseAuth(req: Request, res: Response, next: any) {
+  try {
+    // First, try to get current user (this handles both session and stateless cases)
+    const currentUser = await getCurrentUserProxy(req, res);
+    
+    if (!currentUser) {
+      return res.status(401).json({ error: { message: 'Authentication required' } });
+    }
+    
+    // Add user info to request for downstream use
+    (req as any).currentUser = currentUser;
+    console.log('🔧 Added currentUser to request:', { id: currentUser.id, email: currentUser.email });
+    next();
+  } catch (error) {
+    console.error('Auth middleware error:', error);
+    return res.status(401).json({ error: { message: 'Authentication failed' } });
   }
-  next();
 }
