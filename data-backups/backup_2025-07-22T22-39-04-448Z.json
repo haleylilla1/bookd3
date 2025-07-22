@@ -1,5 +1,5 @@
 {
-  "timestamp": "2025-07-22T22:25:49.286Z",
+  "timestamp": "2025-07-22T22:39:04.694Z",
   "version": "1.0.0",
   "data": {
     "users": [
@@ -1046,14 +1046,14 @@
         "createdAt": "2025-07-20T21:19:32.203Z"
       },
       {
-        "id": 125,
+        "id": 127,
         "userId": 35,
         "gigType": "H",
         "eventName": "H",
         "clientName": "H",
-        "date": "2025-07-22",
+        "date": "2025-07-24",
         "expectedPay": "600.00",
-        "actualPay": "0.00",
+        "actualPay": "600.00",
         "tips": "0.00",
         "paymentMethod": "Cash",
         "status": "upcoming",
@@ -1071,7 +1071,7 @@
         "distanceMiles": null,
         "travelTimeMinutes": null,
         "includeInResume": true,
-        "createdAt": "2025-07-22T22:18:22.068Z"
+        "createdAt": "2025-07-22T22:18:22.842Z"
       },
       {
         "id": 126,
@@ -1081,7 +1081,7 @@
         "clientName": "H",
         "date": "2025-07-23",
         "expectedPay": "600.00",
-        "actualPay": "0.00",
+        "actualPay": "600.00",
         "tips": "0.00",
         "paymentMethod": "Cash",
         "status": "upcoming",
@@ -1102,13 +1102,41 @@
         "createdAt": "2025-07-22T22:18:22.644Z"
       },
       {
-        "id": 127,
+        "id": 125,
         "userId": 35,
         "gigType": "H",
         "eventName": "H",
         "clientName": "H",
-        "date": "2025-07-24",
+        "date": "2025-07-22",
         "expectedPay": "600.00",
+        "actualPay": "600.00",
+        "tips": "0.00",
+        "paymentMethod": "Cash",
+        "status": "upcoming",
+        "duties": null,
+        "taxPercentage": 23,
+        "mileage": 0,
+        "notes": null,
+        "parkingExpense": "0.00",
+        "parkingReceipts": [],
+        "parkingReimbursed": false,
+        "otherExpenses": "0.00",
+        "otherExpenseReceipts": [],
+        "otherExpensesReimbursed": false,
+        "gigAddress": null,
+        "distanceMiles": null,
+        "travelTimeMinutes": null,
+        "includeInResume": true,
+        "createdAt": "2025-07-22T22:18:22.068Z"
+      },
+      {
+        "id": 130,
+        "userId": 35,
+        "gigType": "o",
+        "eventName": "o",
+        "clientName": "o",
+        "date": "2025-07-28",
+        "expectedPay": "500.00",
         "actualPay": "0.00",
         "tips": "0.00",
         "paymentMethod": "Cash",
@@ -1127,7 +1155,7 @@
         "distanceMiles": null,
         "travelTimeMinutes": null,
         "includeInResume": true,
-        "createdAt": "2025-07-22T22:18:22.842Z"
+        "createdAt": "2025-07-22T22:38:30.288Z"
       },
       {
         "id": 98,
@@ -1246,6 +1274,34 @@
         "travelTimeMinutes": null,
         "includeInResume": true,
         "createdAt": "2025-07-14T03:08:52.540Z"
+      },
+      {
+        "id": 131,
+        "userId": 35,
+        "gigType": "o",
+        "eventName": "o",
+        "clientName": "o",
+        "date": "2025-07-29",
+        "expectedPay": "500.00",
+        "actualPay": "0.00",
+        "tips": "0.00",
+        "paymentMethod": "Cash",
+        "status": "upcoming",
+        "duties": null,
+        "taxPercentage": 23,
+        "mileage": 0,
+        "notes": null,
+        "parkingExpense": "0.00",
+        "parkingReceipts": [],
+        "parkingReimbursed": false,
+        "otherExpenses": "0.00",
+        "otherExpenseReceipts": [],
+        "otherExpensesReimbursed": false,
+        "gigAddress": null,
+        "distanceMiles": null,
+        "travelTimeMinutes": null,
+        "includeInResume": true,
+        "createdAt": "2025-07-22T22:38:30.588Z"
       },
       {
         "id": 104,
@@ -2351,7 +2407,7 @@
   },
   "stats": {
     "userCount": 19,
-    "gigCount": 49,
+    "gigCount": 51,
     "expenseCount": 0,
     "goalCount": 3
   }

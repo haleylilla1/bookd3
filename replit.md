@@ -48,9 +48,10 @@ Bookd is a mobile-first gig worker companion app with comprehensive financial tr
 - GITHUB BACKUP COMPLETED: Full project successfully backed up to https://github.com/haleylilla1/bookd3.git (6,096 files, 29.7MB) ensuring all work is safely stored in cloud version control
 
 ## Recent Changes  
-- 2025-07-22: ✅ **PAYMENT DISPLAY LOGIC FIXED** - All Gigs view in calendar now correctly shows expected pay ($600) for upcoming gigs instead of $0, with specialized display logic that prioritizes expected pay for upcoming status
-- 2025-07-22: ✅ **FIELD MAPPING BUG RESOLVED** - Fixed snake_case/camelCase field mapping between database (expected_pay) and frontend (expectedPay) ensuring proper payment data display across all components
-- 2025-07-22: ✅ **UPCOMING GIG PAYMENT DISPLAY IMPROVED** - Calendar now shows "expected" label specifically for upcoming gigs while completed gigs show actual payment amounts
+- 2025-07-22: 🎉 **CALENDAR PAYMENT DISPLAY COMPLETELY FIXED** - All Gigs calendar view now correctly shows expected pay amounts for upcoming gigs instead of $0, with bulletproof field mapping and cache invalidation
+- 2025-07-22: ✅ **BULLETPROOF FIELD MAPPING DEPLOYED** - Fixed snake_case/camelCase conversion issues with robust fallback logic handling undefined/null/empty values properly
+- 2025-07-22: ✅ **CACHE INVALIDATION ENHANCED** - Added immediate cache removal before invalidation preventing stale data display after gig edits
+- 2025-07-22: ✅ **UPCOMING GIG DISPLAY PERFECTED** - Calendar prioritizes expected pay for upcoming gigs with "(expected)" label, actual pay for completed gigs
 - 2025-07-22: 🎉 **NEW USER CREATION SYSTEM 100% OPERATIONAL** - Critical testing confirms new users can create their own personal Bookd spaces with complete data isolation
 - 2025-07-22: ✅ **DESKTOP SIGN-OUT FUNCTIONALITY ADDED** - Desktop sidebar now displays user info and sign-out button as requested
 - 2025-07-22: ✅ **ENHANCED REGISTRATION ERROR HANDLING** - Frontend now displays specific error messages ("Email already exists", "Password too short") instead of generic "Registration failed"
