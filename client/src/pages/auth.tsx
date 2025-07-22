@@ -153,19 +153,21 @@ export default function AuthPage() {
           const contentType = response.headers.get("content-type");
           if (contentType && contentType.includes("application/json")) {
             error = await response.json();
+            console.error(`${isLogin ? 'Login' : 'Registration'} error:`, error);
           } else {
-            error = { message: "Authentication failed" };
+            // Non-JSON error - might be HTML error page
+            const errorText = await response.text();
+            console.error(`Non-JSON error response:`, errorText.substring(0, 200));
+            error = { message: `Server error: ${response.status} ${response.statusText}` };
           }
         } catch (jsonError) {
           console.error("Error JSON parsing failed:", jsonError);
-          error = { message: "Authentication failed" };
+          error = { message: `Authentication failed: ${response.status} ${response.statusText}` };
         }
-        
-        console.error("Auth error:", error);
         
         toast({
           title: isLogin ? "Login Failed" : "Registration Failed",
-          description: error.message || "Please try again.",
+          description: error.error || error.message || "Please try again.",
           variant: "destructive",
         });
       }
