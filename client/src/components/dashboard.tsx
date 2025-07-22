@@ -244,7 +244,8 @@ export default function Dashboard() {
         const payAmount = gig.actualPay ? safeParseFloat(gig.actualPay) : safeParseFloat(gig.expectedPay);
         return sum + payAmount + safeParseFloat(gig.tips);
       } else {
-        return sum + safeParseFloat(gig.expectedPay);
+        // For upcoming/pending gigs, use expected pay (this should show the expected amount, not $0)
+        return sum + safeParseFloat(gig.expectedPay) + safeParseFloat(gig.tips);
       }
     }, 0);
 
@@ -615,12 +616,12 @@ export default function Dashboard() {
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Projected Earnings</p>
+                <p className="text-sm font-medium text-gray-600">Expected Earnings</p>
                 <p className="text-2xl font-bold text-blue-600">
                   ${periodStats.projectedEarnings.toFixed(2)}
                 </p>
                 <p className="text-xs text-gray-500 mt-1">
-                  From {periodStats.totalGigs} total gigs
+                  From {periodStats.totalGigs} total gigs (includes upcoming)
                 </p>
               </div>
               <TrendingUp className="w-8 h-8 text-blue-500" />
