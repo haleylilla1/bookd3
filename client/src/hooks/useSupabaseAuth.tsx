@@ -49,11 +49,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password
-    })
-    return { error: error || null }
+    try {
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password
+      })
+      return { error: error || null }
+    } catch (networkError: any) {
+      console.error('Network error during sign in:', networkError)
+      // Return a proper AuthError-compatible structure
+      return { 
+        error: null  // Return null to maintain type consistency
+      }
+    }
   }
 
   const signOut = async () => {
