@@ -194,6 +194,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Setup bulletproof auth routes using consolidated auth.ts
+  // Supabase Authentication Proxy Endpoints (memory-optimized)
+  app.post('/api/auth/signup', authLimiter, signUpProxy);
+  app.post('/api/auth/signin', authLimiter, signInProxy);
+  app.post('/api/auth/signout', signOutProxy);
+  app.get('/api/auth/user', getCurrentUserProxy);
+  app.post('/api/auth/reset-password', passwordResetLimiter, resetPasswordProxy);
+
+  // Legacy auth routes (keeping for backward compatibility)
   const { setupAuthRoutes } = await import('./auth');
   setupAuthRoutes(app);
 

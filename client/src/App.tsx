@@ -2,9 +2,9 @@ import { Route, Switch } from 'wouter';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { queryClient } from '@/lib/queryClient';
 import { Toaster } from '@/components/ui/toaster';
-import { AuthProvider, useAuth } from '@/hooks/useSupabaseAuth';
+import { AuthProvider, useAuth } from '@/hooks/useSupabaseProxyAuth';
 import HomePage from '@/pages/home';
-import SupabaseAuthPage from '@/pages/supabase-auth';
+import SupabaseProxyAuthPage from '@/pages/supabase-proxy-auth';
 import NotFound from '@/pages/not-found';
 import { RecoverySystemProvider } from '@/components/recovery-system-provider';
 import { GlobalRecoveryIndicator } from '@/components/global-recovery-indicator';
@@ -28,9 +28,9 @@ function AppRouter() {
       {user ? (
         <Route path="/" component={HomePage} />
       ) : (
-        <Route path="/" component={SupabaseAuthPage} />
+        <Route path="/" component={SupabaseProxyAuthPage} />
       )}
-      <Route path="/auth" component={SupabaseAuthPage} />
+      <Route path="/auth" component={SupabaseProxyAuthPage} />
       <Route component={NotFound} />
     </Switch>
   );
