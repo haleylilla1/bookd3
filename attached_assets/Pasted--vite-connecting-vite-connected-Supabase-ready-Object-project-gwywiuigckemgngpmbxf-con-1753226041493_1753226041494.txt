@@ -1,0 +1,18 @@
+[vite] connecting...
+[vite] connected.
+Supabase ready: 
+Object {project: "gwywiuigckemgngpmbxf", configured: true}
+@supabase/gotrue-js: Navigator LockManager returned a null lock when using #request without ifAvailable set to true, it appears this browser is not following the LockManager spec https://developer.mozilla.org/en-US/docs/Web/API/LockManager/request
+Auth state changed: INITIAL_SESSION
+Failed to fetch
+Failed to fetch
+at window.fetch (https://9241ca97-bae4-487c-84a8-65319233affb-00-h8twrz8csfou.kirk.replit.dev/__replco/static/devtools/eruda/3.2.3/eruda.js:2:218642)
+at https://9241ca97-bae4-487c-84a8-65319233affb-00-h8twrz8csfou.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@supabase_supabase-js.js?v=ced546ab:4361:23
+at _handleRequest2 (https://9241ca97-bae4-487c-84a8-65319233affb-00-h8twrz8csfou.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@supabase_supabase-js.js?v=ced546ab:4642:20)
+at _request (https://9241ca97-bae4-487c-84a8-65319233affb-00-h8twrz8csfou.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@supabase_supabase-js.js?v=ced546ab:4632:22)
+at SupabaseAuthClient.signInWithPassword (https://9241ca97-bae4-487c-84a8-65319233affb-00-h8twrz8csfou.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@supabase_supabase-js.js?v=ced546ab:5433:21)
+at signIn (https://9241ca97-bae4-487c-84a8-65319233affb-00-h8twrz8csfou.kirk.replit.dev/src/hooks/useSupabaseAuth.tsx:85:51)
+at handleSubmit (https://9241ca97-bae4-487c-84a8-65319233affb-00-h8twrz8csfou.kirk.replit.dev/src/pages/supabase-auth.tsx:94:24)
+at HTMLUnknownElement.callCallback2 (https://9241ca97-bae4-487c-84a8-65319233affb-00-h8twrz8csfou.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-UPELNCPK.js?v=ced546ab:3674:22)
+at Object.invokeGuardedCallbackDev (https://9241ca97-bae4-487c-84a8-65319233affb-00-h8twrz8csfou.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-UPELNCPK.js?v=ced546ab:3699:24)
+at invokeGuardedCallback (https://9241ca97-bae4-487c-84a8-65319233affb-00-h8twrz8csfou.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-UPELNCPK.js?v=ced546ab:3733:39)
