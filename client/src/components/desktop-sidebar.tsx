@@ -1,7 +1,7 @@
 import { Calendar, LayoutDashboard, User, FileText, Plus, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Screen } from "@/pages/home";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuth } from "@/hooks/useSupabaseProxyAuth";
 
 interface DesktopSidebarProps {
   currentScreen: Screen;
@@ -9,7 +9,7 @@ interface DesktopSidebarProps {
 }
 
 export default function DesktopSidebar({ currentScreen, onScreenChange }: DesktopSidebarProps) {
-  const { logout, user } = useAuth();
+  const { signOut, user } = useAuth();
   const navItems = [
     {
       id: "calendar" as Screen,
@@ -83,7 +83,7 @@ export default function DesktopSidebar({ currentScreen, onScreenChange }: Deskto
         )}
         
         <Button
-          onClick={() => logout()}
+          onClick={() => signOut()}
           variant="ghost"
           size="sm" 
           className="w-full justify-start text-gray-700 hover:text-red-600 hover:bg-red-50"
