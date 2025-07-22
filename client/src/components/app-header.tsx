@@ -29,7 +29,7 @@ interface AppHeaderProps {
 }
 
 export default function AppHeader({ currentScreen, onScreenChange }: AppHeaderProps) {
-  const { user, signOut, loading } = useAuth();
+  const { user, signOutMutation } = useAuth();
   const [, setLocation] = useLocation();
 
   if (!user) return null;
@@ -126,9 +126,9 @@ export default function AppHeader({ currentScreen, onScreenChange }: AppHeaderPr
               
               <DropdownMenuSeparator />
               
-              <DropdownMenuItem onClick={() => signOut()} disabled={loading}>
+              <DropdownMenuItem onClick={() => signOutMutation.mutate()} disabled={signOutMutation.isPending}>
                 <LogOut className="mr-2 h-4 w-4" />
-                <span>{loading ? 'Signing out...' : 'Sign out'}</span>
+                <span>{signOutMutation.isPending ? 'Signing out...' : 'Sign out'}</span>
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>

@@ -2,20 +2,19 @@ import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { PasswordVerificationService } from "./password-verification";
-import { requireAuth, getUserId, getDatabaseUserId } from "./supabase-auth";
 import { 
   signUpProxy, 
   signInProxy, 
   signOutProxy, 
   getCurrentUserProxy, 
   resetPasswordProxy,
-  requireSupabaseAuth 
+  requireSupabaseAuth
 } from "./supabase-auth-proxy";
 import { db } from "./db";
 import { users, gigs } from "@shared/schema";
 import { count } from "drizzle-orm";
 
-// getUserId is now imported from supabase-auth.ts
+import { getDatabaseUserIdFromSession } from "./user-id-mapping";
 import { globalErrorHandler, asyncHandler, safeDbOperation, validateUserId, validateNumericId } from "./error-handler";
 import { logError } from "./logger";
 
@@ -214,7 +213,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Field mapping validation endpoint for monitoring
-  app.get('/api/system/validate', apiLimiter, requireAuth, asyncHandler(async (req: any, res: Response) => {
+  app.get('/api/system/validate', apiLimiter, requireSupabaseAuth, asyncHandler(async (req: any, res: Response) => {
     try {
       const { FieldMappingValidator } = await import('./field-mapping-validator');
       const validation = await FieldMappingValidator.validateFieldMappingHealth();
@@ -230,7 +229,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   }));
 
   // System monitoring endpoints
-  app.get('/api/system-status', requireAuth, asyncHandler(async (req: any, res: Response) => {
+  app.get('/api/system-status', requireSupabaseAuth, asyncHandler(async (req: any, res: Response) => {
     try {
       const { monitoringSystem } = await import('./monitoring-system');
       const { infrastructureManager } = await import('./infrastructure-manager');
@@ -251,7 +250,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   }));
 
-  app.get('/api/health-report', requireAuth, asyncHandler(async (req: any, res: Response) => {
+  app.get('/api/health-report', requireSupabaseAuth, asyncHandler(async (req: any, res: Response) => {
     try {
       const { infrastructureManager } = await import('./infrastructure-manager');
       const report = await infrastructureManager.generateStatusReport();
@@ -264,7 +263,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   }));
 
-  app.get('/api/metrics-history', requireAuth, asyncHandler(async (req: any, res: Response) => {
+  app.get('/api/metrics-history', requireSupabaseAuth, asyncHandler(async (req: any, res: Response) => {
     try {
       const { monitoringSystem } = await import('./monitoring-system');
       const hours = parseInt(req.query.hours as string) || 24;
@@ -282,7 +281,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   }));
 
   // Cache monitoring endpoint with detailed stats and health warnings
-  app.get('/api/cache-stats', apiLimiter, requireAuth, asyncHandler(async (req: any, res: Response) => {
+  app.get('/api/cache-stats', apiLimiter, requireSupabaseAuth, asyncHandler(async (req: any, res: Response) => {
     try {
       const { advancedCache } = await import('./advanced-cache');
       const stats = advancedCache.getStats();
@@ -310,7 +309,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   }));
 
-  app.get('/api/alerts', requireAuth, asyncHandler(async (req: any, res: Response) => {
+  app.get('/api/alerts', requireSupabaseAuth, asyncHandler(async (req: any, res: Response) => {
     try {
       const { alertingSystem } = await import('./alerting-system');
       const activeOnly = req.query.active === 'true';
@@ -328,7 +327,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   }));
 
-  app.get('/api/alerts-report', requireAuth, asyncHandler(async (req: any, res: Response) => {
+  app.get('/api/alerts-report', requireSupabaseAuth, asyncHandler(async (req: any, res: Response) => {
     try {
       const { alertingSystem } = await import('./alerting-system');
       const report = alertingSystem.generateAlertReport();
@@ -341,7 +340,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   }));
 
-  app.post('/api/alerts/:id/resolve', requireAuth, asyncHandler(async (req: any, res: Response) => {
+  app.post('/api/alerts/:id/resolve', requireSupabaseAuth, asyncHandler(async (req: any, res: Response) => {
     try {
       const { alertingSystem } = await import('./alerting-system');
       const alertId = req.params.id;
@@ -359,8 +358,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   }));
 
   // User data endpoints - all require authentication
-  app.get('/api/user', apiLimiter, requireAuth, asyncHandler(async (req: any, res: Response) => {
-    const userId = getUserId(req);
+  app.get('/api/user', apiLimiter, requireSupabaseAuth, asyncHandler(async (req: any, res: Response) => {
+    const userId = getDatabaseUserIdFromSession(req);
     
     // Check cache first (5-minute TTL for user data)
     const { cache } = await import('./simple-cache');
@@ -386,8 +385,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json(user);
   }));
 
-  app.put('/api/user', apiLimiter, requireAuth, asyncHandler(async (req: any, res: Response) => {
-    const userId = getUserId(req);
+  app.put('/api/user', apiLimiter, requireSupabaseAuth, asyncHandler(async (req: any, res: Response) => {
+    const userId = getDatabaseUserIdFromSession(req);
     
     const updatedUser = await safeDbOperation(
       () => storage.updateUser(userId, req.body),
@@ -407,7 +406,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   }));
 
   // Gig endpoints - rate limited for production scaling
-  app.get('/api/gigs', apiLimiter, requireAuth, async (req: any, res: Response) => {
+  app.get('/api/gigs', apiLimiter, requireSupabaseAuth, async (req: any, res: Response) => {
     try {
       const userId = getDatabaseUserId(req);
       
@@ -471,7 +470,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // ULTRA-OPTIMIZED DASHBOARD ENDPOINT - Single query replaces 5-10 queries
-  app.get('/api/dashboard/optimized', apiLimiter, requireAuth, async (req: any, res: Response) => {
+  app.get('/api/dashboard/optimized', apiLimiter, requireSupabaseAuth, async (req: any, res: Response) => {
     try {
       const userId = getDatabaseUserId(req);
       
@@ -487,7 +486,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/gigs', heavyApiLimiter, requireAuth, async (req: any, res) => {
+  app.post('/api/gigs', heavyApiLimiter, requireSupabaseAuth, async (req: any, res) => {
     try {
       const userId = getDatabaseUserId(req);
       
@@ -502,7 +501,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put('/api/gigs/:id', heavyApiLimiter, requireAuth, async (req: any, res) => {
+  app.put('/api/gigs/:id', heavyApiLimiter, requireSupabaseAuth, async (req: any, res) => {
     try {
       const gigId = parseInt(req.params.id);
       const userId = getDatabaseUserId(req);
@@ -534,7 +533,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete('/api/gigs/:id', heavyApiLimiter, requireAuth, async (req: any, res) => {
+  app.delete('/api/gigs/:id', heavyApiLimiter, requireSupabaseAuth, async (req: any, res) => {
     try {
       const gigId = parseInt(req.params.id);
       const userId = getDatabaseUserId(req);
@@ -557,30 +556,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Expense endpoints
-  app.get('/api/expenses', apiLimiter, requireAuth, async (req: any, res) => {
+  app.get('/api/expenses', apiLimiter, requireSupabaseAuth, async (req: any, res) => {
     try {
-      const expenses = await storage.getExpensesByUser(getUserId(req));
+      const expenses = await storage.getExpensesByUser(getDatabaseUserIdFromSession(req));
       res.json(expenses);
     } catch (error) {
       res.status(500).json({ error: 'Failed to fetch expenses' });
     }
   });
 
-  app.post('/api/expenses', heavyApiLimiter, requireAuth, async (req: any, res: Response) => {
+  app.post('/api/expenses', heavyApiLimiter, requireSupabaseAuth, async (req: any, res: Response) => {
     try {
-      const expense = await storage.createExpense({ ...req.body, userId: getUserId(req) });
+      const expense = await storage.createExpense({ ...req.body, userId: getDatabaseUserIdFromSession(req) });
       res.json(expense);
     } catch (error) {
       res.status(500).json({ error: 'Failed to create expense' });
     }
   });
 
-  app.put('/api/expenses/:id', heavyApiLimiter, requireAuth, async (req: any, res: Response) => {
+  app.put('/api/expenses/:id', heavyApiLimiter, requireSupabaseAuth, async (req: any, res: Response) => {
     try {
       const expenseId = parseInt(req.params.id);
       const existingExpense = await storage.getExpense(expenseId);
       
-      if (!existingExpense || existingExpense.userId !== getUserId(req)) {
+      if (!existingExpense || existingExpense.userId !== getDatabaseUserIdFromSession(req)) {
         return res.status(404).json({ error: 'Expense not found' });
       }
       
@@ -591,12 +590,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete('/api/expenses/:id', heavyApiLimiter, requireAuth, async (req: any, res: Response) => {
+  app.delete('/api/expenses/:id', heavyApiLimiter, requireSupabaseAuth, async (req: any, res: Response) => {
     try {
       const expenseId = parseInt(req.params.id);
       const existingExpense = await storage.getExpense(expenseId);
       
-      if (!existingExpense || existingExpense.userId !== getUserId(req)) {
+      if (!existingExpense || existingExpense.userId !== getDatabaseUserIdFromSession(req)) {
         return res.status(404).json({ error: 'Expense not found' });
       }
       
@@ -608,9 +607,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Goal endpoints
-  app.get('/api/goals', apiLimiter, requireAuth, async (req: any, res: Response) => {
+  app.get('/api/goals', apiLimiter, requireSupabaseAuth, async (req: any, res: Response) => {
     try {
-      const userId = getUserId(req);
+      const userId = getDatabaseUserIdFromSession(req);
       
       // Check cache first (5-minute TTL for goal data)
       const { cache } = await import('./simple-cache');
@@ -628,21 +627,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/goals', apiLimiter, requireAuth, async (req: any, res: Response) => {
+  app.post('/api/goals', apiLimiter, requireSupabaseAuth, async (req: any, res: Response) => {
     try {
-      const goal = await storage.createGoal({ ...req.body, userId: getUserId(req) });
+      const goal = await storage.createGoal({ ...req.body, userId: getDatabaseUserIdFromSession(req) });
       res.json(goal);
     } catch (error) {
       res.status(500).json({ error: 'Failed to create goal' });
     }
   });
 
-  app.put('/api/goals/:id', apiLimiter, requireAuth, async (req: any, res: Response) => {
+  app.put('/api/goals/:id', apiLimiter, requireSupabaseAuth, async (req: any, res: Response) => {
     try {
       const goalId = parseInt(req.params.id);
       const existingGoal = await storage.getGoal(goalId);
       
-      if (!existingGoal || existingGoal.userId !== getUserId(req)) {
+      if (!existingGoal || existingGoal.userId !== getDatabaseUserIdFromSession(req)) {
         return res.status(404).json({ error: 'Goal not found' });
       }
       
@@ -653,12 +652,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete('/api/goals/:id', apiLimiter, requireAuth, async (req: any, res: Response) => {
+  app.delete('/api/goals/:id', apiLimiter, requireSupabaseAuth, async (req: any, res: Response) => {
     try {
       const goalId = parseInt(req.params.id);
       const existingGoal = await storage.getGoal(goalId);
       
-      if (!existingGoal || existingGoal.userId !== getUserId(req)) {
+      if (!existingGoal || existingGoal.userId !== getDatabaseUserIdFromSession(req)) {
         return res.status(404).json({ error: 'Goal not found' });
       }
       
@@ -670,36 +669,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Monthly/Yearly goal endpoints
-  app.get('/api/monthly-goals', apiLimiter, requireAuth, async (req: any, res: Response) => {
+  app.get('/api/monthly-goals', apiLimiter, requireSupabaseAuth, async (req: any, res: Response) => {
     try {
-      const goals = await storage.getGoalsByUser(getUserId(req));
+      const goals = await storage.getGoalsByUser(getDatabaseUserIdFromSession(req));
       res.json(goals);
     } catch (error) {
       res.status(500).json({ error: 'Failed to fetch monthly goals' });
     }
   });
 
-  app.post('/api/monthly-goals', apiLimiter, requireAuth, async (req: any, res: Response) => {
+  app.post('/api/monthly-goals', apiLimiter, requireSupabaseAuth, async (req: any, res: Response) => {
     try {
-      const goal = await storage.createGoal({ ...req.body, userId: getUserId(req) });
+      const goal = await storage.createGoal({ ...req.body, userId: getDatabaseUserIdFromSession(req) });
       res.json(goal);
     } catch (error) {
       res.status(500).json({ error: 'Failed to create monthly goal' });
     }
   });
 
-  app.get('/api/yearly-goals', apiLimiter, requireAuth, async (req: any, res: Response) => {
+  app.get('/api/yearly-goals', apiLimiter, requireSupabaseAuth, async (req: any, res: Response) => {
     try {
-      const goals = await storage.getGoalsByUser(getUserId(req));
+      const goals = await storage.getGoalsByUser(getDatabaseUserIdFromSession(req));
       res.json(goals);
     } catch (error) {
       res.status(500).json({ error: 'Failed to fetch yearly goals' });
     }
   });
 
-  app.post('/api/yearly-goals', apiLimiter, requireAuth, async (req: any, res: Response) => {
+  app.post('/api/yearly-goals', apiLimiter, requireSupabaseAuth, async (req: any, res: Response) => {
     try {
-      const goal = await storage.createGoal({ ...req.body, userId: getUserId(req) });
+      const goal = await storage.createGoal({ ...req.body, userId: getDatabaseUserIdFromSession(req) });
       res.json(goal);
     } catch (error) {
       res.status(500).json({ error: 'Failed to create yearly goal' });
@@ -707,10 +706,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Period-specific goal fetch endpoint (for dashboard)
-  app.get('/api/goals/period', apiLimiter, requireAuth, async (req: any, res: Response) => {
+  app.get('/api/goals/period', apiLimiter, requireSupabaseAuth, async (req: any, res: Response) => {
     try {
       const { period, date: dateString } = req.query as { period: string; date: string };
-      const userId = getUserId(req);
+      const userId = getDatabaseUserIdFromSession(req);
       
       // Parse the date to extract year and month
       const date = new Date(dateString);
@@ -741,11 +740,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Period-specific goal update endpoint (for dashboard)
-  app.post('/api/goals/period/:period/:date', apiLimiter, requireAuth, async (req: any, res: Response) => {
+  app.post('/api/goals/period/:period/:date', apiLimiter, requireSupabaseAuth, async (req: any, res: Response) => {
     try {
       const { period, date: dateString } = req.params;
       const { goalAmount } = req.body;
-      const userId = getUserId(req);
+      const userId = getDatabaseUserIdFromSession(req);
       
       // Parse the date to extract year and month
       const date = new Date(dateString);
@@ -768,10 +767,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Distance calculation endpoint - resource intensive (Google Maps API calls)
-  app.post('/api/calculate-distance', resourceIntensiveLimiter, requireAuth, async (req: any, res: Response) => {
+  app.post('/api/calculate-distance', resourceIntensiveLimiter, requireSupabaseAuth, async (req: any, res: Response) => {
     try {
       const { startAddress, endAddress, waypoints = [], roundTrip = false } = req.body;
-      const userId = getUserId(req);
+      const userId = getDatabaseUserIdFromSession(req);
       
       console.log('🔍 Distance calculation request received:', {
         userId,
@@ -826,7 +825,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Address validation endpoint
-  app.post('/api/validate-address', requireAuth, async (req: any, res) => {
+  app.post('/api/validate-address', requireSupabaseAuth, async (req: any, res) => {
     try {
       const { address } = req.body;
       
@@ -844,9 +843,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Mileage service statistics endpoint
-  app.get('/api/mileage-stats', requireAuth, async (req: any, res) => {
+  app.get('/api/mileage-stats', requireSupabaseAuth, async (req: any, res) => {
     try {
-      const userId = getUserId(req);
+      const userId = getDatabaseUserIdFromSession(req);
       const { mileageService } = await import('./mileage-service');
       
       const systemStats = mileageService.getStats();
@@ -865,7 +864,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Google Places autocomplete endpoint for address suggestions
-  app.get('/api/address-autocomplete', requireAuth, async (req: any, res) => {
+  app.get('/api/address-autocomplete', requireSupabaseAuth, async (req: any, res) => {
     try {
       const { input } = req.query;
       
@@ -957,10 +956,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   }
 
   // Set user priority endpoint (for admin use)
-  app.post('/api/set-user-priority', requireAuth, async (req: any, res) => {
+  app.post('/api/set-user-priority', requireSupabaseAuth, async (req: any, res) => {
     try {
       const { userId, priority } = req.body;
-      const requestingUserId = getUserId(req);
+      const requestingUserId = getDatabaseUserIdFromSession(req);
       
       // Simple admin check (you could enhance this with proper admin roles)
       if (requestingUserId !== 1) { // Assume user ID 1 is admin
@@ -981,8 +980,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // SIMPLE HTML REPORT GENERATION - NO OVER-ENGINEERING
-  app.get('/api/reports/pdf', resourceIntensiveLimiter, requireAuth, async (req: any, res) => {
-    const userId = getUserId(req);
+  app.get('/api/reports/pdf', resourceIntensiveLimiter, requireSupabaseAuth, async (req: any, res) => {
+    const userId = getDatabaseUserIdFromSession(req);
     
     // Additional authentication validation
     if (!userId || userId <= 0) {
@@ -1067,8 +1066,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // BULLETPROOF HTML ROUTE - IDENTICAL ERROR HANDLING TO PDF ROUTE
-  app.get('/api/reports/html', resourceIntensiveLimiter, requireAuth, async (req: any, res) => {
-    const userId = getUserId(req);
+  app.get('/api/reports/html', resourceIntensiveLimiter, requireSupabaseAuth, async (req: any, res) => {
+    const userId = getDatabaseUserIdFromSession(req);
     
     // Enhanced authentication validation with HTML response
     if (!userId || userId <= 0) {
@@ -1160,8 +1159,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // TEST ENDPOINT - Generate sample HTML report
-  app.get('/api/test-html-report', resourceIntensiveLimiter, requireAuth, async (req: any, res) => {
-    const userId = getUserId(req);
+  app.get('/api/test-html-report', resourceIntensiveLimiter, requireSupabaseAuth, async (req: any, res) => {
+    const userId = getDatabaseUserIdFromSession(req);
     
     try {
       console.log('🧪 TESTING: Simple HTML report generation');
@@ -1196,9 +1195,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Automatic gig status update endpoint
-  app.post('/api/gigs/update-statuses', apiLimiter, requireAuth, async (req: any, res) => {
+  app.post('/api/gigs/update-statuses', apiLimiter, requireSupabaseAuth, async (req: any, res) => {
     try {
-      const gigs = await storage.getGigsByUser(getUserId(req));
+      const gigs = await storage.getGigsByUser(getDatabaseUserIdFromSession(req));
       const today = new Date();
       today.setHours(0, 0, 0, 0);
       
@@ -1221,9 +1220,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Custom gig types endpoint
-  app.get('/api/gig-types', apiLimiter, requireAuth, async (req: any, res: Response) => {
+  app.get('/api/gig-types', apiLimiter, requireSupabaseAuth, async (req: any, res: Response) => {
     try {
-      const user = await storage.getUser(getUserId(req));
+      const user = await storage.getUser(getDatabaseUserIdFromSession(req));
       res.json(user?.customGigTypes || []);
     } catch (error) {
       res.status(500).json({ error: 'Failed to fetch gig types' });
@@ -1231,7 +1230,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Cache statistics and health reporting endpoint
-  app.get('/api/cache/stats', apiLimiter, requireAuth, asyncHandler(async (req: any, res) => {
+  app.get('/api/cache/stats', apiLimiter, requireSupabaseAuth, asyncHandler(async (req: any, res) => {
     try {
       const { advancedCache } = await import('./advanced-cache');
       const { cache: simpleCache } = await import('./simple-cache');
@@ -1363,7 +1362,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   }));
 
   // Cache health check endpoint (lightweight version)
-  app.get('/api/cache/health', apiLimiter, requireAuth, asyncHandler(async (req: any, res: Response) => {
+  app.get('/api/cache/health', apiLimiter, requireSupabaseAuth, asyncHandler(async (req: any, res: Response) => {
     try {
       const { advancedCache } = await import('./advanced-cache');
       const health = advancedCache.getCacheHealth();
@@ -1391,7 +1390,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   }));
 
   // Simple database health check with cache stats
-  app.get('/api/db-health', apiLimiter, requireAuth, async (req: any, res: Response) => {
+  app.get('/api/db-health', apiLimiter, requireSupabaseAuth, async (req: any, res: Response) => {
     try {
       const { cache } = await import('./simple-cache');
       const userCount = await db.select({ count: count() }).from(users);
@@ -1411,7 +1410,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Clear cache endpoint (for troubleshooting)
-  app.post('/api/cache/clear', heavyApiLimiter, requireAuth, async (req: any, res: Response) => {
+  app.post('/api/cache/clear', heavyApiLimiter, requireSupabaseAuth, async (req: any, res: Response) => {
     try {
       const { cache } = await import('./simple-cache');
       await cache.clearAll();
@@ -1454,10 +1453,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/gig-types', requireAuth, async (req: any, res: Response) => {
+  app.post('/api/gig-types', requireSupabaseAuth, async (req: any, res: Response) => {
     try {
       const { gigType } = req.body;
-      const user = await storage.getUser(getUserId(req));
+      const user = await storage.getUser(getDatabaseUserIdFromSession(req));
       
       if (!user) {
         return res.status(404).json({ error: 'User not found' });
@@ -1466,7 +1465,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const customGigTypes = user.customGigTypes || [];
       if (!customGigTypes.includes(gigType)) {
         customGigTypes.push(gigType);
-        await storage.updateUser(getUserId(req), { customGigTypes });
+        await storage.updateUser(getDatabaseUserIdFromSession(req), { customGigTypes });
       }
       
       res.json({ success: true });
