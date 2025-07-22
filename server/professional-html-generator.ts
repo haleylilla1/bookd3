@@ -641,45 +641,40 @@ async function prepareReportData(options: ReportOptions): Promise<ReportData> {
   const taxPercentage = user.defaultTaxPercentage || 23;
   const afterTaxIncome = netIncome - estimatedTaxes;
 
-  // Prepare receipts data with photos and reimbursement status
+  // SIMPLIFIED RECEIPT PROCESSING: Show all expense receipts for each gig
   const receipts: ReceiptData[] = [];
   
   completedGigs.forEach(gig => {
-    // Add parking expenses (check both expense amount and receipt existence)
+    // Get all expense amounts
     const parkingAmount = parseFloat(gig.parkingExpense || '0');
-    const parkingReceipts = Array.isArray((gig as any).parking_receipts) ? (gig as any).parking_receipts : [];
-    
-    if (parkingAmount > 0 || parkingReceipts.length > 0) {
-      receipts.push({
-        date: gig.date,
-        type: 'parking' as const,
-        amount: parkingAmount,
-        description: parkingAmount > 0 ? 'Parking expense' : 'Parking receipt (no expense recorded)',
-        gigName: gig.eventName || 'Unnamed Event',
-        clientName: gig.clientName || 'Direct Client',
-        reimbursed: Boolean((gig as any).parking_reimbursed),
-        receipts: parkingReceipts
-      });
-    }
-    
-    // Add other expenses (check both expense amount and receipt existence)  
     const otherAmount = parseFloat(gig.otherExpenses || '0');
+    const totalExpenses = parkingAmount + otherAmount;
+    
+    // Get ALL receipt photos from both fields (user-friendly approach)
+    const parkingReceipts = Array.isArray((gig as any).parking_receipts) ? (gig as any).parking_receipts : [];
     const otherReceipts = Array.isArray((gig as any).other_expense_receipts) ? (gig as any).other_expense_receipts : [];
+    const allReceiptPhotos = [...parkingReceipts, ...otherReceipts];
     
-    // SPECIAL CASE: Check if parking_receipts exist but are stored under "other expenses" category
-    const specialParkingReceipts = Array.isArray((gig as any).parking_receipts) ? (gig as any).parking_receipts : [];
-    const allOtherReceipts = [...otherReceipts, ...specialParkingReceipts];
-    
-    if (otherAmount > 0 || allOtherReceipts.length > 0) {
+    // Create ONE expense entry per gig if there are ANY expenses or receipts
+    if (totalExpenses > 0 || allReceiptPhotos.length > 0) {
+      // Build detailed description
+      let expenseDescription = 'Business expenses';
+      const expenseBreakdown = [];
+      if (parkingAmount > 0) expenseBreakdown.push(`Parking: $${parkingAmount.toFixed(2)}`);
+      if (otherAmount > 0) expenseBreakdown.push(`Other: $${otherAmount.toFixed(2)}`);
+      if (expenseBreakdown.length > 0) {
+        expenseDescription += ` (${expenseBreakdown.join(', ')})`;
+      }
+      
       receipts.push({
         date: gig.date,
-        type: 'other' as const,
-        amount: otherAmount,
-        description: otherAmount > 0 ? 'Other business expense' : 'Business expense receipt',
+        type: 'combined' as const,
+        amount: totalExpenses,
+        description: expenseDescription,
         gigName: gig.eventName || 'Unnamed Event',
         clientName: gig.clientName || 'Direct Client',
-        reimbursed: Boolean((gig as any).other_expenses_reimbursed),
-        receipts: allOtherReceipts
+        reimbursed: Boolean((gig as any).parking_reimbursed || (gig as any).other_expenses_reimbursed),
+        receipts: allReceiptPhotos
       });
     }
   });
