@@ -407,10 +407,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!gigs) {
         gigs = await storage.getGigsByUser(userId);
         
-        // FIELD MAPPING FIX: Ensure camelCase field names for frontend compatibility
+        // FIELD MAPPING FIX: Bulletproof fallback logic for snake_case/camelCase compatibility
         gigs = gigs.map(gig => ({
           ...gig,
-          // Use proper fallback logic that handles undefined/null/empty values
           expectedPay: (gig.expectedPay !== undefined && gig.expectedPay !== null && gig.expectedPay !== '') 
             ? gig.expectedPay 
             : gig.expected_pay,

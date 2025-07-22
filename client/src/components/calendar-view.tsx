@@ -97,6 +97,8 @@ export default function CalendarView() {
       return response.json();
     },
     onSuccess: () => {
+      // Force immediate cache refresh - remove cached data first
+      queryClient.removeQueries({ queryKey: ["/api/gigs"] });
       queryClient.invalidateQueries({ queryKey: ["/api/gigs"] });
       queryClient.invalidateQueries({ queryKey: ["/api/dashboard/stats"] });
       toast({
@@ -344,6 +346,8 @@ export default function CalendarView() {
         if (!response.ok) throw new Error(`Failed to create gig for ${date}`);
       }
       
+      // Force immediate cache refresh - remove cached data first
+      queryClient.removeQueries({ queryKey: ["/api/gigs"] });
       queryClient.invalidateQueries({ queryKey: ["/api/gigs"] });
       queryClient.invalidateQueries({ queryKey: ["/api/dashboard/stats"] });
       
@@ -382,6 +386,8 @@ export default function CalendarView() {
       
       await Promise.all(updatePromises);
       
+      // Force immediate cache refresh - remove cached data first
+      queryClient.removeQueries({ queryKey: ["/api/gigs"] });
       queryClient.invalidateQueries({ queryKey: ["/api/gigs"] });
       queryClient.invalidateQueries({ queryKey: ["/api/dashboard/stats"] });
       
