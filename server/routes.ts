@@ -2,18 +2,12 @@ import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { PasswordVerificationService } from "./password-verification";
-import { requireAuth } from "./auth";
+import { requireAuth, getUserId } from "./supabase-auth";
 import { db } from "./db";
 import { users, gigs } from "@shared/schema";
 import { count } from "drizzle-orm";
 
-// Helper function to get user ID from request (unified-auth pattern)
-function getUserId(req: any): number {
-  if (!req.userId) {
-    throw new Error('User not authenticated');
-  }
-  return req.userId;
-}
+// getUserId is now imported from supabase-auth.ts
 import { globalErrorHandler, asyncHandler, safeDbOperation, validateUserId, validateNumericId } from "./error-handler";
 import { logError } from "./logger";
 
