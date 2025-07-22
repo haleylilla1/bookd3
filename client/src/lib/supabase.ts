@@ -1,7 +1,25 @@
 import { createClient } from '@supabase/supabase-js'
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://gwywiuigckemgngpmbxf.supabase.co'
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd3eXdpdWlnY2tlbWduZ3BtYnhmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTExMzQ4NzMsImV4cCI6MjA2NjcxMDg3M30.hOYBcF1VQkZRJU4KuNMTT_5SFUZiUX7ZF-nUmH7lw68'
+// Use hardcoded values for now since environment variables appear to have incorrect format
+const supabaseUrl = 'https://gwywiuigckemgngpmbxf.supabase.co'
+const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd3eXdpdWlnY2tlbWduZ3BtYnhmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTMwMzA5NDEsImV4cCI6MjA2ODYwNjk0MX0.eVas5kb4MF9zpzPHZHTfSY2YlFiOejZ3MVzFD1sEMKk'
+
+// Validate required environment variables
+if (!supabaseUrl || !supabaseAnonKey) {
+  console.error('Missing Supabase environment variables:', {
+    VITE_SUPABASE_URL: !!supabaseUrl,
+    VITE_SUPABASE_ANON_KEY: !!supabaseAnonKey
+  })
+  throw new Error('Missing required Supabase environment variables. Please check your .env file.')
+}
+
+// Validate URL format
+try {
+  new URL(supabaseUrl)
+} catch (error) {
+  console.error('Invalid Supabase URL:', supabaseUrl)
+  throw new Error('Invalid VITE_SUPABASE_URL format. Please provide a valid URL.')
+}
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey)
 
