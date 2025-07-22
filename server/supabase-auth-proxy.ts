@@ -87,7 +87,11 @@ export async function signInProxy(req: Request, res: Response) {
     if (data.user && data.session) {
       console.log('✅ User signed in successfully:', data.user.email);
       
-      // Store session info in server-side session
+      // Ensure session exists and store session info
+      if (!req.session) {
+        return res.status(500).json({ error: { message: 'Session not initialized' } });
+      }
+      
       req.session.supabaseUserId = data.user.id;
       req.session.supabaseAccessToken = data.session.access_token;
       req.session.supabaseEmail = data.user.email;
@@ -112,7 +116,7 @@ export async function signInProxy(req: Request, res: Response) {
 export async function signOutProxy(req: Request, res: Response) {
   try {
     // Clear server-side session
-    if (req.session.supabaseAccessToken) {
+    if (req.session && req.session.supabaseAccessToken) {
       // Optionally invalidate Supabase session
       await supabaseAdmin.auth.admin.signOut(req.session.supabaseAccessToken);
     }
@@ -135,7 +139,8 @@ export async function signOutProxy(req: Request, res: Response) {
 
 export async function getCurrentUserProxy(req: Request, res: Response) {
   try {
-    if (!req.session.supabaseUserId) {
+    // Check if session exists first
+    if (!req.session || !req.session.supabaseUserId) {
       return res.status(401).json({ error: { message: 'Not authenticated' } });
     }
 
