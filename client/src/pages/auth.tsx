@@ -197,22 +197,6 @@ export default function AuthPage() {
   const switchMode = () => {
     setIsLogin(!isLogin);
     resetForm();
-      
-      if (error instanceof SyntaxError) {
-        errorMessage = "Server response error. Please try again.";
-        console.error("JSON parsing failed - server may have returned non-JSON response");
-      } else if (error instanceof TypeError) {
-        errorMessage = "Network connection failed. Please check your connection.";
-      }
-      
-      toast({
-        title: "Connection Error",
-        description: errorMessage,
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
-    }
   };
 
   const inputStyle = {

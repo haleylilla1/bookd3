@@ -1,5 +1,5 @@
 {
-  "timestamp": "2025-07-22T16:30:36.037Z",
+  "timestamp": "2025-07-22T22:10:36.567Z",
   "version": "1.0.0",
   "data": {
     "users": [
@@ -278,6 +278,96 @@
         "updatedAt": "2025-07-19T18:21:17.422Z"
       },
       {
+        "id": 29,
+        "name": "Mobile Tester",
+        "email": "mobiletesting@newuser.com",
+        "phone": null,
+        "title": "Gig Worker",
+        "defaultTaxPercentage": 23,
+        "customGigTypes": [],
+        "homeAddress": null,
+        "businessName": null,
+        "businessAddress": null,
+        "businessPhone": null,
+        "businessEmail": null,
+        "replitId": null,
+        "googleId": null,
+        "passwordHash": "$2b$10$vpAD.91yrzeRFxKgP0ZIVOCcErtnqQJslIewGIiGU9f8m.SEfeErW",
+        "firstName": null,
+        "lastName": null,
+        "profileImageUrl": null,
+        "isActive": true,
+        "isDeleted": false,
+        "deletedAt": null,
+        "emailVerified": false,
+        "onboardingCompleted": false,
+        "notificationPreferences": {
+          "push": true,
+          "email": true,
+          "reminders": true
+        },
+        "workPreferences": {
+          "workingHours": {
+            "end": "17:00",
+            "start": "09:00"
+          },
+          "primaryGigTypes": [],
+          "preferredClients": []
+        },
+        "trialStartDate": null,
+        "trialEndDate": null,
+        "subscriptionStatus": "trial",
+        "subscriptionTier": "trial",
+        "lastLoginAt": null,
+        "createdAt": "2025-07-22T22:09:19.428Z",
+        "updatedAt": "2025-07-22T22:09:19.428Z"
+      },
+      {
+        "id": 30,
+        "name": "New User Test",
+        "email": "newuser2024@testmail.com",
+        "phone": null,
+        "title": "Gig Worker",
+        "defaultTaxPercentage": 23,
+        "customGigTypes": [],
+        "homeAddress": null,
+        "businessName": null,
+        "businessAddress": null,
+        "businessPhone": null,
+        "businessEmail": null,
+        "replitId": null,
+        "googleId": null,
+        "passwordHash": "$2b$10$UNGhdJOCduOt7UqgFykiFOvhMpmCmWUB.IsvMM10rL4UUHWJOd9wG",
+        "firstName": null,
+        "lastName": null,
+        "profileImageUrl": null,
+        "isActive": true,
+        "isDeleted": false,
+        "deletedAt": null,
+        "emailVerified": false,
+        "onboardingCompleted": false,
+        "notificationPreferences": {
+          "push": true,
+          "email": true,
+          "reminders": true
+        },
+        "workPreferences": {
+          "workingHours": {
+            "end": "17:00",
+            "start": "09:00"
+          },
+          "primaryGigTypes": [],
+          "preferredClients": []
+        },
+        "trialStartDate": null,
+        "trialEndDate": null,
+        "subscriptionStatus": "trial",
+        "subscriptionTier": "trial",
+        "lastLoginAt": null,
+        "createdAt": "2025-07-22T22:10:30.224Z",
+        "updatedAt": "2025-07-22T22:10:30.224Z"
+      },
+      {
         "id": 25,
         "name": "Jessica Rafaela Roessler- Smith",
         "email": "jroesslersmith@gmail.com",
@@ -420,6 +510,141 @@
         "lastLoginAt": "2025-07-22T03:53:59.916Z",
         "createdAt": "2025-07-10T16:14:52.979Z",
         "updatedAt": "2025-07-19T18:21:17.422Z"
+      },
+      {
+        "id": 26,
+        "name": "New Test User",
+        "email": "testuser12345@example.com",
+        "phone": null,
+        "title": "Gig Worker",
+        "defaultTaxPercentage": 23,
+        "customGigTypes": [],
+        "homeAddress": null,
+        "businessName": null,
+        "businessAddress": null,
+        "businessPhone": null,
+        "businessEmail": null,
+        "replitId": null,
+        "googleId": null,
+        "passwordHash": "$2b$10$jBS9vEH6F6rLBH7Vv2WzZekd5u9qF0H0Fznef1tz6V5iw9mtaDwWi",
+        "firstName": null,
+        "lastName": null,
+        "profileImageUrl": null,
+        "isActive": true,
+        "isDeleted": false,
+        "deletedAt": null,
+        "emailVerified": false,
+        "onboardingCompleted": false,
+        "notificationPreferences": {
+          "push": true,
+          "email": true,
+          "reminders": true
+        },
+        "workPreferences": {
+          "workingHours": {
+            "end": "17:00",
+            "start": "09:00"
+          },
+          "primaryGigTypes": [],
+          "preferredClients": []
+        },
+        "trialStartDate": null,
+        "trialEndDate": null,
+        "subscriptionStatus": "trial",
+        "subscriptionTier": "trial",
+        "lastLoginAt": null,
+        "createdAt": "2025-07-22T22:02:57.376Z",
+        "updatedAt": "2025-07-22T22:02:57.376Z"
+      },
+      {
+        "id": 27,
+        "name": "Test",
+        "email": "existing@example.com",
+        "phone": null,
+        "title": "Gig Worker",
+        "defaultTaxPercentage": 23,
+        "customGigTypes": [],
+        "homeAddress": null,
+        "businessName": null,
+        "businessAddress": null,
+        "businessPhone": null,
+        "businessEmail": null,
+        "replitId": null,
+        "googleId": null,
+        "passwordHash": "$2b$10$szjkJ.NfESgYx4DSiiSAOODQm9Lq1lVmB.BGicJpdr2VHnQzZZKBe",
+        "firstName": null,
+        "lastName": null,
+        "profileImageUrl": null,
+        "isActive": true,
+        "isDeleted": false,
+        "deletedAt": null,
+        "emailVerified": false,
+        "onboardingCompleted": false,
+        "notificationPreferences": {
+          "push": true,
+          "email": true,
+          "reminders": true
+        },
+        "workPreferences": {
+          "workingHours": {
+            "end": "17:00",
+            "start": "09:00"
+          },
+          "primaryGigTypes": [],
+          "preferredClients": []
+        },
+        "trialStartDate": null,
+        "trialEndDate": null,
+        "subscriptionStatus": "trial",
+        "subscriptionTier": "trial",
+        "lastLoginAt": null,
+        "createdAt": "2025-07-22T22:03:36.204Z",
+        "updatedAt": "2025-07-22T22:03:36.204Z"
+      },
+      {
+        "id": 28,
+        "name": "Mobile User",
+        "email": "mobiletest@example.com",
+        "phone": null,
+        "title": "Gig Worker",
+        "defaultTaxPercentage": 23,
+        "customGigTypes": [],
+        "homeAddress": null,
+        "businessName": null,
+        "businessAddress": null,
+        "businessPhone": null,
+        "businessEmail": null,
+        "replitId": null,
+        "googleId": null,
+        "passwordHash": "$2b$10$jdIYQRz.XUepEcSNqxKiuOmyqxvjUOJU3dSLyQjWC/D8biAIMn86W",
+        "firstName": null,
+        "lastName": null,
+        "profileImageUrl": null,
+        "isActive": true,
+        "isDeleted": false,
+        "deletedAt": null,
+        "emailVerified": false,
+        "onboardingCompleted": false,
+        "notificationPreferences": {
+          "push": true,
+          "email": true,
+          "reminders": true
+        },
+        "workPreferences": {
+          "workingHours": {
+            "end": "17:00",
+            "start": "09:00"
+          },
+          "primaryGigTypes": [],
+          "preferredClients": []
+        },
+        "trialStartDate": null,
+        "trialEndDate": null,
+        "subscriptionStatus": "trial",
+        "subscriptionTier": "trial",
+        "lastLoginAt": null,
+        "createdAt": "2025-07-22T22:08:28.244Z",
+        "updatedAt": "2025-07-22T22:08:28.244Z"
       }
     ],
     "gigs": [
@@ -1616,34 +1841,6 @@
         "createdAt": "2025-06-23T23:24:13.307Z"
       },
       {
-        "id": 91,
-        "userId": 14,
-        "gigType": "Brand Ambassador",
-        "eventName": "Spot Saver LA",
-        "clientName": "Brand Besties",
-        "date": "2025-07-18",
-        "expectedPay": "168.00",
-        "actualPay": null,
-        "tips": null,
-        "paymentMethod": "Cash",
-        "status": "pending payment",
-        "duties": null,
-        "taxPercentage": 23,
-        "mileage": 78,
-        "notes": null,
-        "parkingExpense": null,
-        "parkingReceipts": [],
-        "parkingReimbursed": false,
-        "otherExpenses": null,
-        "otherExpenseReceipts": [],
-        "otherExpensesReimbursed": false,
-        "gigAddress": null,
-        "distanceMiles": null,
-        "travelTimeMinutes": null,
-        "includeInResume": true,
-        "createdAt": "2025-06-29T06:10:24.090Z"
-      },
-      {
         "id": 123,
         "userId": 23,
         "gigType": "Brand Ambassador",
@@ -1698,6 +1895,34 @@
         "travelTimeMinutes": null,
         "includeInResume": true,
         "createdAt": "2025-07-22T03:54:54.695Z"
+      },
+      {
+        "id": 91,
+        "userId": 14,
+        "gigType": "Brand Ambassador",
+        "eventName": "Spot Saver LA",
+        "clientName": "Brand Besties",
+        "date": "2025-07-18",
+        "expectedPay": "168.00",
+        "actualPay": null,
+        "tips": null,
+        "paymentMethod": "Cash",
+        "status": "pending_payment",
+        "duties": null,
+        "taxPercentage": 23,
+        "mileage": 78,
+        "notes": null,
+        "parkingExpense": "0.00",
+        "parkingReceipts": [],
+        "parkingReimbursed": false,
+        "otherExpenses": "0.00",
+        "otherExpenseReceipts": [],
+        "otherExpensesReimbursed": false,
+        "gigAddress": null,
+        "distanceMiles": null,
+        "travelTimeMinutes": null,
+        "includeInResume": true,
+        "createdAt": "2025-06-29T06:10:24.090Z"
       },
       {
         "id": 97,
@@ -1805,7 +2030,7 @@
     ]
   },
   "stats": {
-    "userCount": 9,
+    "userCount": 14,
     "gigCount": 46,
     "expenseCount": 0,
     "goalCount": 3
