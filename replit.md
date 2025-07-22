@@ -39,6 +39,7 @@ Bookd is a mobile-first gig worker companion app with comprehensive financial tr
 - SCALING PRIORITY: User confirmed app works well currently and needs it ready for 1000 people
 - THIRD-PARTY SERVICES: Open to using external services like Supabase, Redis, Cloudinary for production scaling
 - PAYMENT INTEGRATION: Considering Stripe payments with either Replit Auth (MVP) or Supabase (scale phase)
+- RECEIPT UPLOAD SIMPLIFICATION: Only camera and upload buttons needed - remove file chooser option for cleaner mobile experience
 
 ## Recent Changes  
 - 2025-07-22: 🎉 SIMPLIFIED EXPENSE FORM DESIGN IMPLEMENTED - Redesigned both Add Gig and Edit Gig forms with clean two-section layout: blue "Parking" section and green "Other Expenses" section

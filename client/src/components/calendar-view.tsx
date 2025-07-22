@@ -1242,14 +1242,15 @@ function GigEditForm({ gig, onSave, onCancel, isLoading }: GigEditFormProps) {
 
 
       {/* Expense Section */}
-      <div className="border-t pt-3 space-y-3">
+      <div className="border-t pt-3 space-y-4">
         <h4 className="font-medium text-sm">Expenses & Receipts</h4>
         
-        {/* Expense Fields */}
-        <div className="space-y-2">
+        {/* Parking Section */}
+        <div className="space-y-3 p-3 bg-blue-50 rounded-lg border">
+          <h5 className="font-medium text-blue-900 text-xs">Parking</h5>
           <div className="grid grid-cols-2 gap-2">
             <div>
-              <label className="block text-xs font-medium mb-1">Parking</label>
+              <label className="block text-xs font-medium mb-1">Amount ($)</label>
               <Input
                 type="number"
                 placeholder="0.00"
@@ -1257,8 +1258,31 @@ function GigEditForm({ gig, onSave, onCancel, isLoading }: GigEditFormProps) {
                 onChange={(e) => setFormData({ ...formData, parkingExpense: e.target.value })}
               />
             </div>
+            <div className="flex items-center pt-4">
+              <Checkbox
+                id="parkingReimbursed"
+                checked={formData.parkingReimbursed}
+                onCheckedChange={(checked) => setFormData({ ...formData, parkingReimbursed: checked })}
+              />
+              <label htmlFor="parkingReimbursed" className="text-xs ml-2">
+                Reimbursed
+              </label>
+            </div>
+          </div>
+          <ReceiptUpload
+            label="Upload Receipt Photos"
+            receipts={formData.parkingReceipts}
+            onReceiptsChange={(receipts) => setFormData({ ...formData, parkingReceipts: receipts })}
+            maxFiles={3}
+          />
+        </div>
+
+        {/* Other Expenses Section */}
+        <div className="space-y-3 p-3 bg-green-50 rounded-lg border">
+          <h5 className="font-medium text-green-900 text-xs">Other Expenses</h5>
+          <div className="grid grid-cols-2 gap-2">
             <div>
-              <label className="block text-xs font-medium mb-1">Other Expenses</label>
+              <label className="block text-xs font-medium mb-1">Amount ($)</label>
               <Input
                 type="number"
                 placeholder="0.00"
@@ -1266,47 +1290,23 @@ function GigEditForm({ gig, onSave, onCancel, isLoading }: GigEditFormProps) {
                 onChange={(e) => setFormData({ ...formData, otherExpenses: e.target.value })}
               />
             </div>
+            <div className="flex items-center pt-4">
+              <Checkbox
+                id="otherExpensesReimbursed"
+                checked={formData.otherExpensesReimbursed}
+                onCheckedChange={(checked) => setFormData({ ...formData, otherExpensesReimbursed: checked })}
+              />
+              <label htmlFor="otherExpensesReimbursed" className="text-xs ml-2">
+                Reimbursed
+              </label>
+            </div>
           </div>
-        </div>
-
-        {/* Receipt Uploads */}
-        <div className="space-y-2">
           <ReceiptUpload
-            label="Parking Receipts"
-            receipts={formData.parkingReceipts}
-            onReceiptsChange={(receipts) => setFormData({ ...formData, parkingReceipts: receipts })}
-            maxFiles={3}
-          />
-          <ReceiptUpload
-            label="Other Expense Receipts"
+            label="Upload Receipt Photos"
             receipts={formData.otherExpenseReceipts}
             onReceiptsChange={(receipts) => setFormData({ ...formData, otherExpenseReceipts: receipts })}
             maxFiles={3}
           />
-        </div>
-
-        {/* Reimbursement Tracking */}
-        <div className="space-y-2">
-          <div className="flex items-center space-x-2">
-            <Checkbox
-              id="parkingReimbursed"
-              checked={formData.parkingReimbursed}
-              onCheckedChange={(checked) => setFormData({ ...formData, parkingReimbursed: checked })}
-            />
-            <label htmlFor="parkingReimbursed" className="text-sm">
-              Parking expense was reimbursed
-            </label>
-          </div>
-          <div className="flex items-center space-x-2">
-            <Checkbox
-              id="otherExpensesReimbursed"
-              checked={formData.otherExpensesReimbursed}
-              onCheckedChange={(checked) => setFormData({ ...formData, otherExpensesReimbursed: checked })}
-            />
-            <label htmlFor="otherExpensesReimbursed" className="text-sm">
-              Other expenses were reimbursed
-            </label>
-          </div>
         </div>
       </div>
 
