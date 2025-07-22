@@ -17,6 +17,8 @@ import { count } from "drizzle-orm";
 import { getDatabaseUserIdFromSession } from "./user-id-mapping";
 import { globalErrorHandler, asyncHandler, safeDbOperation, validateUserId, validateNumericId } from "./error-handler";
 import { logError } from "./logger";
+import { bulletproofAuth, cleanupUserSession } from './auth-middleware-hardened';
+import { authRateLimit, getSecurityMetrics } from './auth-security-hardening';
 
 // Create logger fallback for missing logger references
 const logger = {
@@ -194,11 +196,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Setup bulletproof auth routes using consolidated auth.ts
   // Supabase Authentication Proxy Endpoints (memory-optimized)
-  app.post('/api/auth/signup', authLimiter, signUpProxy);
-  app.post('/api/auth/signin', authLimiter, signInProxy);
+  app.post('/api/auth/signup', authRateLimit, signUpProxy);
+  app.post('/api/auth/signin', authRateLimit, signInProxy);
   app.post('/api/auth/signout', signOutProxy);
   app.get('/api/auth/user', getCurrentUserProxy);
   app.post('/api/auth/reset-password', passwordResetLimiter, resetPasswordProxy);
+
+  // SECURITY MONITORING ENDPOINTS
+  app.get('/api/security/metrics', bulletproofAuth, (req, res) => {
+    try {
+      const metrics = getSecurityMetrics();
+      res.json({
+        success: true,
+        data: metrics,
+        timestamp: new Date().toISOString()
+      });
+    } catch (error: any) {
+      console.error('Security metrics error:', error);
+      res.status(500).json({ error: { message: 'Failed to retrieve security metrics' } });
+    }
+  });
 
   // Import user mapping system
   const { getDatabaseUserIdFromSupabase } = await import('./user-id-mapping');
