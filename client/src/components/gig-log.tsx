@@ -225,12 +225,18 @@ export default function GigLog() {
                       </div>
                       <div className="flex items-center gap-1">
                         <DollarSign className="w-4 h-4" />
-                        {gig.actualPay 
-                          ? formatCurrency(parseFloat(gig.actualPay))
-                          : gig.expectedPay 
-                            ? `${formatCurrency(parseFloat(gig.expectedPay))} (expected)`
-                            : "No pay set"
-                        }
+                        {(() => {
+                          const actualPay = gig.actualPay ? parseFloat(gig.actualPay) : 0;
+                          const expectedPay = gig.expectedPay ? parseFloat(gig.expectedPay) : 0;
+                          
+                          if (actualPay > 0) {
+                            return formatCurrency(actualPay);
+                          } else if (expectedPay > 0) {
+                            return `${formatCurrency(expectedPay)} (expected)`;
+                          } else {
+                            return "No pay set";
+                          }
+                        })()}
                       </div>
                     </div>
 
