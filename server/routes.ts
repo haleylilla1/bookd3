@@ -407,36 +407,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!gigs) {
         gigs = await storage.getGigsByUser(userId);
         
-        // FIELD MAPPING FIX: Bulletproof fallback logic for snake_case/camelCase compatibility
+        // Simple field mapping - use camelCase or fallback to snake_case
+        const mapField = (obj, camelCase, snake_case) => obj[camelCase] || obj[snake_case];
         gigs = gigs.map(gig => ({
           ...gig,
-          expectedPay: (gig.expectedPay !== undefined && gig.expectedPay !== null && gig.expectedPay !== '') 
-            ? gig.expectedPay 
-            : gig.expected_pay,
-          actualPay: (gig.actualPay !== undefined && gig.actualPay !== null && gig.actualPay !== '') 
-            ? gig.actualPay 
-            : gig.actual_pay,
-          eventName: (gig.eventName !== undefined && gig.eventName !== null && gig.eventName !== '') 
-            ? gig.eventName 
-            : gig.event_name,
-          clientName: (gig.clientName !== undefined && gig.clientName !== null && gig.clientName !== '') 
-            ? gig.clientName 
-            : gig.client_name,
-          gigType: (gig.gigType !== undefined && gig.gigType !== null && gig.gigType !== '') 
-            ? gig.gigType 
-            : gig.gig_type,
-          parkingExpense: (gig.parkingExpense !== undefined && gig.parkingExpense !== null && gig.parkingExpense !== '') 
-            ? gig.parkingExpense 
-            : gig.parking_expense,
-          otherExpenses: (gig.otherExpenses !== undefined && gig.otherExpenses !== null && gig.otherExpenses !== '') 
-            ? gig.otherExpenses 
-            : gig.other_expenses,
-          parkingReceipts: (gig.parkingReceipts !== undefined && gig.parkingReceipts !== null) 
-            ? gig.parkingReceipts 
-            : gig.parking_receipts,
-          otherExpenseReceipts: (gig.otherExpenseReceipts !== undefined && gig.otherExpenseReceipts !== null) 
-            ? gig.otherExpenseReceipts 
-            : gig.other_expense_receipts
+          expectedPay: mapField(gig, 'expectedPay', 'expected_pay'),
+          actualPay: mapField(gig, 'actualPay', 'actual_pay'),
+          eventName: mapField(gig, 'eventName', 'event_name'),
+          clientName: mapField(gig, 'clientName', 'client_name'),
+          gigType: mapField(gig, 'gigType', 'gig_type'),
+          parkingExpense: mapField(gig, 'parkingExpense', 'parking_expense'),
+          otherExpenses: mapField(gig, 'otherExpenses', 'other_expenses'),
+          parkingReceipts: mapField(gig, 'parkingReceipts', 'parking_receipts'),
+          otherExpenseReceipts: mapField(gig, 'otherExpenseReceipts', 'other_expense_receipts')
         }));
         
         // Check size before caching - prevent 5MB cache entries
