@@ -990,84 +990,86 @@ export default function GigForm({ onClose }: GigFormProps) {
                   <Switch checked={trackExpenses} onCheckedChange={setTrackExpenses} />
                 </div>
                 {trackExpenses && (
-                  <div className="space-y-4">
-                    {/* Parking Expense */}
-                    <div className="space-y-2">
-                      <FormField
-                        control={form.control}
-                        name="parkingExpense"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Parking Expense</FormLabel>
-                            <FormControl>
-                              <Input type="number" placeholder="0.00" {...field} />
-                            </FormControl>
-                          </FormItem>
-                        )}
-                      />
+                  <div className="space-y-6">
+                    {/* Parking Section */}
+                    <div className="space-y-3 p-4 bg-blue-50 rounded-lg border">
+                      <h4 className="font-medium text-blue-900">Parking</h4>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <FormField
+                          control={form.control}
+                          name="parkingExpense"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Amount ($)</FormLabel>
+                              <FormControl>
+                                <Input type="number" placeholder="0.00" {...field} />
+                              </FormControl>
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name="parkingReimbursed"
+                          render={({ field }) => (
+                            <FormItem className="flex flex-row items-start space-x-3 space-y-0 pt-6">
+                              <FormControl>
+                                <Checkbox
+                                  checked={field.value}
+                                  onCheckedChange={field.onChange}
+                                />
+                              </FormControl>
+                              <div className="space-y-1 leading-none">
+                                <FormLabel className="text-sm">Reimbursed</FormLabel>
+                              </div>
+                            </FormItem>
+                          )}
+                        />
+                      </div>
                       <ReceiptUpload
-                        label="Parking Receipts"
+                        label="Upload Receipt Photos"
                         receipts={form.getValues("parkingReceipts")}
                         onReceiptsChange={(receipts) => form.setValue("parkingReceipts", receipts)}
                       />
-                      <FormField
-                        control={form.control}
-                        name="parkingReimbursed"
-                        render={({ field }) => (
-                          <FormItem className="flex flex-row items-start space-x-3 space-y-0">
-                            <FormControl>
-                              <Checkbox
-                                checked={field.value}
-                                onCheckedChange={field.onChange}
-                              />
-                            </FormControl>
-                            <div className="space-y-1 leading-none">
-                              <FormLabel className="text-sm">
-                                Parking expense was reimbursed
-                              </FormLabel>
-                            </div>
-                          </FormItem>
-                        )}
-                      />
                     </div>
 
-                    {/* Other Expenses */}
-                    <div className="space-y-2">
-                      <FormField
-                        control={form.control}
-                        name="otherExpenses"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Other Expenses</FormLabel>
-                            <FormControl>
-                              <Input type="number" placeholder="0.00" {...field} />
-                            </FormControl>
-                          </FormItem>
-                        )}
-                      />
+                    {/* Other Expenses Section */}
+                    <div className="space-y-3 p-4 bg-green-50 rounded-lg border">
+                      <h4 className="font-medium text-green-900">Other Expenses</h4>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <FormField
+                          control={form.control}
+                          name="otherExpenses"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Amount ($)</FormLabel>
+                              <FormControl>
+                                <Input type="number" placeholder="0.00" {...field} />
+                              </FormControl>
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name="otherExpensesReimbursed"
+                          render={({ field }) => (
+                            <FormItem className="flex flex-row items-start space-x-3 space-y-0 pt-6">
+                              <FormControl>
+                                <Checkbox
+                                  checked={field.value}
+                                  onCheckedChange={field.onChange}
+                                />
+                              </FormControl>
+                              <div className="space-y-1 leading-none">
+                                <FormLabel className="text-sm">Reimbursed</FormLabel>
+                              </div>
+                            </FormItem>
+                          )}
+                        />
+                      </div>
                       <ReceiptUpload
-                        label="Other Expense Receipts"
+                        label="Upload Receipt Photos"
                         receipts={form.getValues("otherExpenseReceipts")}
                         onReceiptsChange={(receipts) => form.setValue("otherExpenseReceipts", receipts)}
-                      />
-                      <FormField
-                        control={form.control}
-                        name="otherExpensesReimbursed"
-                        render={({ field }) => (
-                          <FormItem className="flex flex-row items-start space-x-3 space-y-0">
-                            <FormControl>
-                              <Checkbox
-                                checked={field.value}
-                                onCheckedChange={field.onChange}
-                              />
-                            </FormControl>
-                            <div className="space-y-1 leading-none">
-                              <FormLabel className="text-sm">
-                                Other expenses were reimbursed
-                              </FormLabel>
-                            </div>
-                          </FormItem>
-                        )}
                       />
                     </div>
                   </div>

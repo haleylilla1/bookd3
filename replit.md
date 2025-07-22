@@ -41,9 +41,12 @@ Bookd is a mobile-first gig worker companion app with comprehensive financial tr
 - PAYMENT INTEGRATION: Considering Stripe payments with either Replit Auth (MVP) or Supabase (scale phase)
 
 ## Recent Changes  
-- 2025-07-22: 🎉 RECEIPT DISPLAY SYSTEM PERFECTED - Redesigned report logic to show separate "Parking expenses" and "Other business expenses" entries matching exactly how users input data in forms
+- 2025-07-22: 🎉 SIMPLIFIED EXPENSE FORM DESIGN IMPLEMENTED - Redesigned both Add Gig and Edit Gig forms with clean two-section layout: blue "Parking" section and green "Other Expenses" section
+- 2025-07-22: ✅ FORM CLARITY ACHIEVED - Each section now contains: Amount field, Reimbursed checkbox, Upload Receipt Photos - no more confusion about where to put amounts vs receipts
+- 2025-07-22: ✅ VISUAL SECTION SEPARATION - Color-coded sections (blue for parking, green for other expenses) make it crystal clear which receipts belong to which expense category
+- 2025-07-22: ✅ CONSISTENT LABELING - Standardized "Amount ($)", "Reimbursed", and "Upload Receipt Photos" labels across both sections in both Add and Edit forms
+- 2025-07-22: ✅ RECEIPT DISPLAY SYSTEM PERFECTED - Reports show separate "Parking expenses" and "Other business expenses" entries matching exactly how users input data in forms
 - 2025-07-22: ✅ USER CONFUSION ELIMINATED - Vegas tradeshow now correctly shows: "Parking expenses ($0)" with 3 receipt photos + "Other business expenses ($105.72)" with no photos - matching exactly what user entered
-- 2025-07-22: ✅ FORM-TO-REPORT CONSISTENCY - Reports now mirror the form structure: parking receipts with parking expenses, other receipts with other expenses - no more confusing cross-field combinations
 - 2025-07-22: ✅ FIELD NAMING COMPATIBILITY - Added support for both database field names (parking_receipts) and interface names (parkingReceipts) ensuring bulletproof receipt retrieval across different data sources
 - 2025-07-22: 🎉 SUPABASE STORAGE MIGRATION 100% COMPLETE - Successfully migrated ALL 11 receipt images from 5 gigs to cloud storage with perfect success rate
 - 2025-07-22: ✅ RECEIPT CLOUD STORAGE OPERATIONAL - All receipts now served via CDN at https://gwywiuigckemgngpmbxf.supabase.co/storage/v1/object/public/receipts/ 
