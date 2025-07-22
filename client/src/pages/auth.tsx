@@ -292,6 +292,11 @@ export default function AuthPage() {
                     {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </Button>
                 </div>
+                {!isLogin && (
+                  <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
+                    Password must be at least 6 characters long
+                  </p>
+                )}
               </div>
 
               {!isLogin && (
