@@ -1,5 +1,5 @@
 {
-  "timestamp": "2025-07-22T22:41:25.075Z",
+  "timestamp": "2025-07-23T00:12:14.203Z",
   "version": "1.0.0",
   "data": {
     "users": [
@@ -183,7 +183,7 @@
         "trialEndDate": "2025-07-23T21:11:16.317Z",
         "subscriptionStatus": "trial",
         "subscriptionTier": "trial",
-        "lastLoginAt": "2025-07-22T13:29:19.036Z",
+        "lastLoginAt": "2025-07-23T00:02:06.722Z",
         "createdAt": "2025-06-23T21:11:16.352Z",
         "updatedAt": "2025-06-23T21:11:16.352Z"
       },
