@@ -372,9 +372,14 @@ export async function generateProfessionalHTML(options: ReportOptions): Promise<
                                     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px;">
                                         ${receipt.receipts.map((receiptImg, index) => `
                                             <div style="border: 2px solid #ddd; border-radius: 8px; overflow: hidden; background-color: #fff; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-                                                <img src="${receiptImg}" alt="Receipt ${index + 1}" 
+                                                <!-- Debug: Show the URL -->
+                                                <div style="padding: 8px; font-size: 10px; background: #e3f2fd; word-break: break-all; color: #1976d2;">
+                                                    URL: ${receiptImg}
+                                                </div>
+                                                <img src="${receiptImg}" alt="Receipt ${index + 1}" crossorigin="anonymous" 
                                                      style="width: 100%; height: 250px; object-fit: contain; display: block; background-color: #f8f9fa;" 
-                                                     onerror="this.style.display='none'; this.nextElementSibling.innerHTML='<span style=color:red>Image failed to load</span>'" />
+                                                     onload="console.log('Image loaded:', this.src)" 
+                                                     onerror="console.error('Image failed to load:', this.src); this.style.display='none'; this.nextElementSibling.innerHTML='<span style=\"color:red; padding: 20px; display: block;\">❌ Image failed to load</span>'" />
                                                 <div style="padding: 12px; text-align: center; font-size: 14px; font-weight: 500; color: #333; background-color: #f8f9fa; border-top: 1px solid #ddd;">
                                                     Receipt Photo ${index + 1}
                                                 </div>
