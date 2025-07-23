@@ -1,8 +1,57 @@
 {
-  "timestamp": "2025-07-23T00:09:16.551Z",
+  "timestamp": "2025-07-23T00:27:39.163Z",
   "version": "1.0.0",
   "data": {
     "users": [
+      {
+        "id": 14,
+        "name": "Haley",
+        "email": "haleylilla@gmail.com",
+        "phone": null,
+        "title": "Gig Worker",
+        "defaultTaxPercentage": 23,
+        "customGigTypes": [
+          "Brand Ambassador",
+          "Market Research",
+          "Photo Assistant"
+        ],
+        "homeAddress": "313 16th Street, Huntington Beach CA 92648",
+        "businessName": "",
+        "businessAddress": "",
+        "businessPhone": "",
+        "businessEmail": "",
+        "replitId": null,
+        "googleId": null,
+        "passwordHash": "$2b$10$PuS.2pdtgP1eWY1NvGx9le7RZAAN3prGptFISo7lKi8r5aYXsficK",
+        "firstName": null,
+        "lastName": null,
+        "profileImageUrl": null,
+        "isActive": true,
+        "isDeleted": false,
+        "deletedAt": null,
+        "emailVerified": false,
+        "onboardingCompleted": false,
+        "notificationPreferences": {
+          "push": true,
+          "email": true,
+          "reminders": true
+        },
+        "workPreferences": {
+          "workingHours": {
+            "end": "17:00",
+            "start": "09:00"
+          },
+          "primaryGigTypes": [],
+          "preferredClients": []
+        },
+        "trialStartDate": "2025-06-23T21:11:16.317Z",
+        "trialEndDate": "2025-07-23T21:11:16.317Z",
+        "subscriptionStatus": "trial",
+        "subscriptionTier": "trial",
+        "lastLoginAt": "2025-07-23T00:13:09.342Z",
+        "createdAt": "2025-06-23T21:11:16.352Z",
+        "updatedAt": "2025-06-23T21:11:16.352Z"
+      },
       {
         "id": 21,
         "name": "Test User",
@@ -137,55 +186,6 @@
         "lastLoginAt": "2025-07-19T18:25:45.992Z",
         "createdAt": "2025-06-26T17:06:36.188Z",
         "updatedAt": "2025-07-19T18:21:17.422Z"
-      },
-      {
-        "id": 14,
-        "name": "Haley",
-        "email": "haleylilla@gmail.com",
-        "phone": null,
-        "title": "Gig Worker",
-        "defaultTaxPercentage": 23,
-        "customGigTypes": [
-          "Brand Ambassador",
-          "Market Research",
-          "Photo Assistant"
-        ],
-        "homeAddress": "313 16th Street, Huntington Beach CA 92648",
-        "businessName": "",
-        "businessAddress": "",
-        "businessPhone": "",
-        "businessEmail": "",
-        "replitId": null,
-        "googleId": null,
-        "passwordHash": "$2b$10$PuS.2pdtgP1eWY1NvGx9le7RZAAN3prGptFISo7lKi8r5aYXsficK",
-        "firstName": null,
-        "lastName": null,
-        "profileImageUrl": null,
-        "isActive": true,
-        "isDeleted": false,
-        "deletedAt": null,
-        "emailVerified": false,
-        "onboardingCompleted": false,
-        "notificationPreferences": {
-          "push": true,
-          "email": true,
-          "reminders": true
-        },
-        "workPreferences": {
-          "workingHours": {
-            "end": "17:00",
-            "start": "09:00"
-          },
-          "primaryGigTypes": [],
-          "preferredClients": []
-        },
-        "trialStartDate": "2025-06-23T21:11:16.317Z",
-        "trialEndDate": "2025-07-23T21:11:16.317Z",
-        "subscriptionStatus": "trial",
-        "subscriptionTier": "trial",
-        "lastLoginAt": "2025-07-23T00:02:06.722Z",
-        "createdAt": "2025-06-23T21:11:16.352Z",
-        "updatedAt": "2025-06-23T21:11:16.352Z"
       },
       {
         "id": 24,
@@ -1276,6 +1276,36 @@
         "createdAt": "2025-07-14T03:08:52.540Z"
       },
       {
+        "id": 95,
+        "userId": 14,
+        "gigType": "Brand Ambassador",
+        "eventName": "OC Fair",
+        "clientName": "RMD",
+        "date": "2025-07-26",
+        "expectedPay": "1200.00",
+        "actualPay": null,
+        "tips": null,
+        "paymentMethod": "Cash",
+        "status": "completed",
+        "duties": null,
+        "taxPercentage": 23,
+        "mileage": 0,
+        "notes": null,
+        "parkingExpense": "10.00",
+        "parkingReceipts": [
+          "https://gwywiuigckemgngpmbxf.supabase.co/storage/v1/object/public/receipts/receipts/14/1753229657004_receipt_1.jpg"
+        ],
+        "parkingReimbursed": false,
+        "otherExpenses": null,
+        "otherExpenseReceipts": [],
+        "otherExpensesReimbursed": false,
+        "gigAddress": null,
+        "distanceMiles": null,
+        "travelTimeMinutes": null,
+        "includeInResume": true,
+        "createdAt": "2025-06-29T06:10:57.963Z"
+      },
+      {
         "id": 131,
         "userId": 35,
         "gigType": "o",
@@ -1302,6 +1332,36 @@
         "travelTimeMinutes": null,
         "includeInResume": true,
         "createdAt": "2025-07-22T22:38:30.588Z"
+      },
+      {
+        "id": 96,
+        "userId": 14,
+        "gigType": "Brand Ambassador",
+        "eventName": "OC Fair",
+        "clientName": "RMD",
+        "date": "2025-07-27",
+        "expectedPay": "1200.00",
+        "actualPay": null,
+        "tips": null,
+        "paymentMethod": "Cash",
+        "status": "completed",
+        "duties": null,
+        "taxPercentage": 23,
+        "mileage": 0,
+        "notes": null,
+        "parkingExpense": "10.00",
+        "parkingReceipts": [
+          "https://gwywiuigckemgngpmbxf.supabase.co/storage/v1/object/public/receipts/receipts/14/1753229656942_receipt_1.jpg"
+        ],
+        "parkingReimbursed": false,
+        "otherExpenses": null,
+        "otherExpenseReceipts": [],
+        "otherExpensesReimbursed": false,
+        "gigAddress": null,
+        "distanceMiles": null,
+        "travelTimeMinutes": null,
+        "includeInResume": true,
+        "createdAt": "2025-06-29T06:10:58.167Z"
       },
       {
         "id": 104,
@@ -1370,13 +1430,15 @@
         "actualPay": null,
         "tips": null,
         "paymentMethod": "Cash",
-        "status": "upcoming",
+        "status": "completed",
         "duties": null,
         "taxPercentage": 23,
         "mileage": 0,
         "notes": null,
-        "parkingExpense": null,
-        "parkingReceipts": [],
+        "parkingExpense": "10.00",
+        "parkingReceipts": [
+          "https://gwywiuigckemgngpmbxf.supabase.co/storage/v1/object/public/receipts/receipts/14/1753229656888_receipt_1.jpg"
+        ],
         "parkingReimbursed": false,
         "otherExpenses": null,
         "otherExpenseReceipts": [],
@@ -1386,34 +1448,6 @@
         "travelTimeMinutes": null,
         "includeInResume": true,
         "createdAt": "2025-06-29T06:10:57.495Z"
-      },
-      {
-        "id": 94,
-        "userId": 14,
-        "gigType": "Brand Ambassador",
-        "eventName": "OC Fair",
-        "clientName": "RMD",
-        "date": "2025-07-25",
-        "expectedPay": "1200.00",
-        "actualPay": null,
-        "tips": null,
-        "paymentMethod": "Cash",
-        "status": "upcoming",
-        "duties": null,
-        "taxPercentage": 23,
-        "mileage": 0,
-        "notes": null,
-        "parkingExpense": null,
-        "parkingReceipts": [],
-        "parkingReimbursed": false,
-        "otherExpenses": null,
-        "otherExpenseReceipts": [],
-        "otherExpensesReimbursed": false,
-        "gigAddress": null,
-        "distanceMiles": null,
-        "travelTimeMinutes": null,
-        "includeInResume": true,
-        "createdAt": "2025-06-29T06:10:57.792Z"
       },
       {
         "id": 69,
@@ -1536,23 +1570,25 @@
         "createdAt": "2025-06-29T06:09:57.796Z"
       },
       {
-        "id": 95,
+        "id": 94,
         "userId": 14,
         "gigType": "Brand Ambassador",
         "eventName": "OC Fair",
         "clientName": "RMD",
-        "date": "2025-07-26",
+        "date": "2025-07-25",
         "expectedPay": "1200.00",
         "actualPay": null,
         "tips": null,
         "paymentMethod": "Cash",
-        "status": "upcoming",
+        "status": "completed",
         "duties": null,
         "taxPercentage": 23,
         "mileage": 0,
         "notes": null,
-        "parkingExpense": null,
-        "parkingReceipts": [],
+        "parkingExpense": "10.00",
+        "parkingReceipts": [
+          "https://gwywiuigckemgngpmbxf.supabase.co/storage/v1/object/public/receipts/receipts/14/1753229656895_receipt_1.jpg"
+        ],
         "parkingReimbursed": false,
         "otherExpenses": null,
         "otherExpenseReceipts": [],
@@ -1561,35 +1597,7 @@
         "distanceMiles": null,
         "travelTimeMinutes": null,
         "includeInResume": true,
-        "createdAt": "2025-06-29T06:10:57.963Z"
-      },
-      {
-        "id": 96,
-        "userId": 14,
-        "gigType": "Brand Ambassador",
-        "eventName": "OC Fair",
-        "clientName": "RMD",
-        "date": "2025-07-27",
-        "expectedPay": "1200.00",
-        "actualPay": null,
-        "tips": null,
-        "paymentMethod": "Cash",
-        "status": "upcoming",
-        "duties": null,
-        "taxPercentage": 23,
-        "mileage": 0,
-        "notes": null,
-        "parkingExpense": null,
-        "parkingReceipts": [],
-        "parkingReimbursed": false,
-        "otherExpenses": null,
-        "otherExpenseReceipts": [],
-        "otherExpensesReimbursed": false,
-        "gigAddress": null,
-        "distanceMiles": null,
-        "travelTimeMinutes": null,
-        "includeInResume": true,
-        "createdAt": "2025-06-29T06:10:58.167Z"
+        "createdAt": "2025-06-29T06:10:57.792Z"
       },
       {
         "id": 66,
@@ -2308,7 +2316,9 @@
         "mileage": 69,
         "notes": null,
         "parkingExpense": null,
-        "parkingReceipts": [],
+        "parkingReceipts": [
+          "https://gwywiuigckemgngpmbxf.supabase.co/storage/v1/object/public/receipts/receipts/14/1753230455977_receipt_1.jpg"
+        ],
         "parkingReimbursed": false,
         "otherExpenses": null,
         "otherExpenseReceipts": [],
