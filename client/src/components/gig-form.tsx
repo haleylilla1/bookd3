@@ -173,6 +173,7 @@ export default function GigForm({ onClose }: GigFormProps) {
       }
       const userData = await response.json();
       console.log("✅ Gig Form - User data loaded successfully");
+      console.log("🔍 User customGigTypes:", userData.customGigTypes);
       return userData;
     }
   });
