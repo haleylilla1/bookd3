@@ -39,6 +39,9 @@ import { monitoringSystemCleanup } from "./monitoring-system-cleanup";
 import { fsWatcherLeakFix } from "./fswatcher-leak-fix";
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Setup authentication routes first
+  const { setupAuthRoutes } = await import('./auth');
+  setupAuthRoutes(app);
   // BULLETPROOF ERROR HANDLING HELPER - GRACEFUL HTML FALLBACKS
   function createGracefulErrorHTML(
     title: string, 
@@ -193,8 +196,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Setup bulletproof auth routes using consolidated auth.ts
-  const { setupAuthRoutes } = await import('./auth');
-  setupAuthRoutes(app);
+  // (Already called above in the main setup)
 
   // Health check endpoint (no sensitive data)
   app.get('/health', (req, res) => {
