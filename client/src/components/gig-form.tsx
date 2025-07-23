@@ -678,7 +678,11 @@ export default function GigForm({ onClose }: GigFormProps) {
                         position="popper"
                         sideOffset={4}
                       >
-                        {user?.customGigTypes && user.customGigTypes.length > 0 ? (
+                        {(() => {
+                          console.log("🔍 Add Gig Form - User data:", user);
+                          console.log("🔍 Add Gig Form - CustomGigTypes:", user?.customGigTypes);
+                          return user?.customGigTypes && user.customGigTypes.length > 0;
+                        })() ? (
                           <>
                             {user.customGigTypes.map((gigType) => (
                               <SelectItem 
