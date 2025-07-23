@@ -28,7 +28,12 @@ async function start() {
   // Initialize advanced cache
   advancedCache.init().catch(console.error);
   
-  // Initialize FSWatcher leak fix (must be first to catch Vite watchers)
+  // PHASE 2: Initialize Vite optimization before watchers  
+  const { viteOptimization } = await import('./vite-optimization');
+  viteOptimization.applyRuntimeOptimizations();
+  viteOptimization.monitorWatchingEfficiency();
+  
+  // Initialize FSWatcher leak fix (must be after Vite optimization)
   const { fsWatcherLeakFix } = await import('./fswatcher-leak-fix');
   console.log('👁️  FSWatcher leak fix active - tracking file watcher creation/cleanup');
   
