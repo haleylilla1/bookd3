@@ -1,0 +1,13 @@
+{
+  "version": "5.0.0",
+  "ignore_dirs": [
+    "node_modules",
+    "dist", 
+    "build",
+    "data-backups",
+    "server-backup-20250721",
+    "server-backup-clean-20250721", 
+    "server-backup-current-20250723-000445",
+    "attached_assets"
+  ]
+}
