@@ -368,14 +368,19 @@ export async function generateProfessionalHTML(options: ReportOptions): Promise<
                             <!-- Receipt Photos -->
                             ${receipt.receipts.length > 0 ? `
                                 <div style="margin-top: 15px;">
-                                    <h4 style="font-size: 14px; color: #666; margin-bottom: 10px;">Receipt Photos:</h4>
+                                    <h4 style="font-size: 14px; color: #666; margin-bottom: 10px;">Receipt Photos (${receipt.receipts.length}):</h4>
                                     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
-                                        ${receipt.receipts.map((receiptImg, index) => `
+                                        ${receipt.receipts.map((receiptImg, index) => {
+                                          // Debug: Log each receipt URL
+                                          console.log(`🖼️  Receipt ${index + 1} URL for ${receipt.gigName}:`, receiptImg.substring(0, 100) + '...');
+                                          return `
                                             <div style="border: 1px solid #ddd; border-radius: 6px; overflow: hidden; background-color: #f8f9fa;">
-                                                <img src="${receiptImg}" alt="Receipt ${index + 1}" style="width: 100%; height: 200px; object-fit: cover; display: block;" />
+                                                <img src="${receiptImg}" alt="Receipt ${index + 1}" style="width: 100%; height: 200px; object-fit: cover; display: block;" 
+                                                     onerror="console.error('Failed to load receipt image:', '${receiptImg}'); this.style.display='none'; this.nextSibling.innerHTML='Image failed to load';" />
                                                 <div style="padding: 8px; text-align: center; font-size: 12px; color: #666;">Receipt ${index + 1}</div>
                                             </div>
-                                        `).join('')}
+                                          `;
+                                        }).join('')}
                                     </div>
                                 </div>
                             ` : `
@@ -640,6 +645,9 @@ async function prepareReportData(options: ReportOptions): Promise<ReportData> {
   
   completedGigs.forEach(gig => {
     if (parseFloat(gig.parkingExpense || '0') > 0) {
+      const parkingReceipts = Array.isArray((gig as any).parkingReceipts) ? (gig as any).parkingReceipts : [];
+      console.log(`📊 Processing parking receipts for ${gig.eventName}:`, parkingReceipts.length, 'receipts');
+      
       receipts.push({
         date: gig.date,
         type: 'parking' as const,
@@ -648,10 +656,13 @@ async function prepareReportData(options: ReportOptions): Promise<ReportData> {
         gigName: gig.eventName || 'Unnamed Event',
         clientName: gig.clientName || 'Direct Client',
         reimbursed: Boolean((gig as any).parkingReimbursed),
-        receipts: Array.isArray((gig as any).parkingReceipts) ? (gig as any).parkingReceipts : []
+        receipts: parkingReceipts
       });
     }
     if (parseFloat(gig.otherExpenses || '0') > 0) {
+      const otherReceipts = Array.isArray((gig as any).otherExpenseReceipts) ? (gig as any).otherExpenseReceipts : [];
+      console.log(`📊 Processing other receipts for ${gig.eventName}:`, otherReceipts.length, 'receipts');
+      
       receipts.push({
         date: gig.date,
         type: 'other' as const,
@@ -660,7 +671,7 @@ async function prepareReportData(options: ReportOptions): Promise<ReportData> {
         gigName: gig.eventName || 'Unnamed Event',
         clientName: gig.clientName || 'Direct Client',
         reimbursed: Boolean((gig as any).otherExpensesReimbursed),
-        receipts: Array.isArray((gig as any).otherExpenseReceipts) ? (gig as any).otherExpenseReceipts : []
+        receipts: otherReceipts
       });
     }
   });
