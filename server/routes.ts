@@ -16,6 +16,7 @@ function getUserId(req: any): number {
 }
 import { globalErrorHandler, asyncHandler, safeDbOperation, validateUserId, validateNumericId } from "./error-handler";
 import { logError } from "./logger";
+import { receiptStorage } from "./receipt-storage";
 
 // Create logger fallback for missing logger references
 const logger = {
@@ -430,10 +431,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/gigs', heavyApiLimiter, requireAuth, async (req: any, res) => {
     try {
       const userId = getUserId(req);
-      const gig = await storage.createGig({ ...req.body, user_id: userId });
+      const gigData = { ...req.body, user_id: userId };
+      
+      // Upload receipt photos to Supabase storage if they exist
+      if (gigData.parkingReceipts && gigData.parkingReceipts.length > 0) {
+        console.log('📸 Uploading parking receipts to storage...');
+        gigData.parkingReceipts = await receiptStorage.uploadMultipleReceipts(userId, gigData.parkingReceipts);
+      }
+      
+      if (gigData.otherExpenseReceipts && gigData.otherExpenseReceipts.length > 0) {
+        console.log('📸 Uploading other expense receipts to storage...');
+        gigData.otherExpenseReceipts = await receiptStorage.uploadMultipleReceipts(userId, gigData.otherExpenseReceipts);
+      }
+      
+      const gig = await storage.createGig(gigData);
       await invalidateUserCaches(userId);
       res.json(gig);
     } catch (error) {
+      console.error('Create gig error:', error);
       res.status(500).json({ error: 'Failed to create gig' });
     }
   });
@@ -453,6 +468,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         if (updateData[key] === undefined) delete updateData[key];
       });
       
+      // Upload new receipt photos to Supabase storage if they exist
+      if (updateData.parkingReceipts && updateData.parkingReceipts.length > 0) {
+        console.log('📸 Updating parking receipts in storage...');
+        updateData.parkingReceipts = await receiptStorage.uploadMultipleReceipts(userId, updateData.parkingReceipts);
+      }
+      
+      if (updateData.otherExpenseReceipts && updateData.otherExpenseReceipts.length > 0) {
+        console.log('📸 Updating other expense receipts in storage...');
+        updateData.otherExpenseReceipts = await receiptStorage.uploadMultipleReceipts(userId, updateData.otherExpenseReceipts);
+      }
+      
       const updatedGig = await storage.updateGig(gigId, updateData);
       
       if (!updatedGig) {
@@ -462,6 +488,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       await invalidateUserCaches(userId);
       res.json(updatedGig);
     } catch (error) {
+      console.error('Update gig error:', error);
       res.status(500).json({ error: 'Failed to update gig' });
     }
   });
@@ -1285,6 +1312,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ message: 'Cache cleared successfully' });
     } catch (error) {
       res.status(500).json({ error: 'Failed to clear cache' });
+    }
+  });
+
+  // Test receipt storage endpoint (development)
+  app.post('/api/test-receipt-storage', requireAuth, async (req: any, res: Response) => {
+    try {
+      const userId = getUserId(req);
+      const { receiptData } = req.body;
+      
+      if (!receiptData) {
+        return res.status(400).json({ error: 'Receipt data required' });
+      }
+      
+      // Test single receipt upload
+      const result = await receiptStorage.uploadReceipt(userId, receiptData, 'test_receipt.jpg');
+      const isSupabaseUrl = result.startsWith('https://');
+      
+      res.json({
+        success: true,
+        url: result,
+        storageType: isSupabaseUrl ? 'Supabase Storage' : 'Database Fallback',
+        configured: receiptStorage.isConfigured()
+      });
+    } catch (error) {
+      console.error('Receipt storage test error:', error);
+      res.status(500).json({ error: 'Receipt storage test failed', details: (error as Error).message });
     }
   });
 
