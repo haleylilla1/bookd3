@@ -663,6 +663,64 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Period goal endpoints (for monthly/yearly goal management)
+  app.get('/api/goals/period', apiLimiter, requireAuth, async (req: any, res: Response) => {
+    try {
+      const { period, date } = req.query;
+      const userId = getUserId(req);
+      
+      if (!period || !date) {
+        return res.status(400).json({ error: 'Period and date are required' });
+      }
+      
+      const dateObj = new Date(date);
+      const month = dateObj.getMonth() + 1; // JavaScript months are 0-indexed
+      const year = dateObj.getFullYear();
+      
+      if (period === 'monthly') {
+        const goal = await storage.getMonthlyGoal(userId, month, year);
+        res.json(goal || null);
+      } else if (period === 'annual') {
+        const goal = await storage.getYearlyGoal(userId, year);
+        res.json(goal || null);
+      } else {
+        res.status(400).json({ error: 'Invalid period. Must be monthly or annual' });
+      }
+    } catch (error) {
+      console.error('Error fetching period goal:', error);
+      res.status(500).json({ error: 'Failed to fetch goal' });
+    }
+  });
+
+  app.post('/api/goals/period/:period/:date', apiLimiter, requireAuth, async (req: any, res: Response) => {
+    try {
+      const { period, date } = req.params;
+      const { goalAmount } = req.body;
+      const userId = getUserId(req);
+      
+      if (!goalAmount) {
+        return res.status(400).json({ error: 'Goal amount is required' });
+      }
+      
+      const dateObj = new Date(date);
+      const month = dateObj.getMonth() + 1; // JavaScript months are 0-indexed
+      const year = dateObj.getFullYear();
+      
+      if (period === 'monthly') {
+        const goal = await storage.setMonthlyGoal(userId, month, year, goalAmount);
+        res.json(goal);
+      } else if (period === 'annual') {
+        const goal = await storage.setYearlyGoal(userId, year, goalAmount);
+        res.json(goal);
+      } else {
+        res.status(400).json({ error: 'Invalid period. Must be monthly or annual' });
+      }
+    } catch (error) {
+      console.error('Error updating period goal:', error);
+      res.status(500).json({ error: 'Failed to update goal. Please try again' });
+    }
+  });
+
   // Distance calculation endpoint - resource intensive (Google Maps API calls)
   app.post('/api/calculate-distance', resourceIntensiveLimiter, requireAuth, async (req: any, res: Response) => {
     try {
