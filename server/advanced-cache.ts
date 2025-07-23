@@ -191,13 +191,13 @@ class AdvancedCache {
         await this.client.connect();
         console.log('🚀 Advanced Redis cache connected');
       } else {
-        console.log('🚀 Advanced memory cache with priority queue and intelligent features');
-        this.startAdvancedFeatures();
+        console.log('🚀 PHASE 4: Advanced memory cache with consolidated features');
+        this.startConsolidatedFeatures();
       }
     } catch (error) {
-      console.log('🚀 Advanced memory cache fallback with all optimization features');
+      console.log('🚀 PHASE 4: Advanced memory cache fallback with consolidated optimization features');
       this.client = null;
-      this.startAdvancedFeatures();
+      this.startConsolidatedFeatures();
     }
   }
 
