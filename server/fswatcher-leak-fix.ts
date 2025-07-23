@@ -20,7 +20,32 @@ export class FSWatcherLeakFix {
   private originalWatch: typeof import('fs').watch;
   private originalWatchFile: typeof import('fs').watchFile;
   private cleanupInterval?: NodeJS.Timeout;
-  private maxWatchers = 10; // Reasonable limit for production
+  private maxWatchers = 5; // Reduced for Phase 2 optimization
+  
+  // PHASE 2: Smart exclusion patterns
+  private shouldExcludeFromWatching(path: string): boolean {
+    const excludePatterns = [
+      /node_modules/,
+      /\.git/,
+      /dist/,
+      /build/,
+      /data-backups/,
+      /server-backup/,
+      /attached_assets/,
+      /\.cache/,
+      /\.next/,
+      /\.log$/,
+      /\.md$/,
+      /\.txt$/,
+      /\.pdf$/,
+      /\.jpg$/,
+      /\.jpeg$/,
+      /\.png$/,
+      /\.zip$/
+    ];
+    
+    return excludePatterns.some(pattern => pattern.test(path));
+  }
 
   constructor() {
     this.originalWatch = fs.watch;
@@ -36,12 +61,26 @@ export class FSWatcherLeakFix {
     fs.watch = (filename: any, options: any, listener?: any) => {
       const stack = this.captureStack();
       const source = this.extractSource(stack);
+      const path = filename?.toString() || 'unknown';
+      
+      // PHASE 2: Skip watching excluded paths
+      if (this.shouldExcludeFromWatching(path)) {
+        console.log(`🚫 WATCHER EXCLUDED: ${source} - ${path}`);
+        // Return minimal mock watcher for excluded paths
+        return {
+          close: () => {},
+          on: () => {},
+          off: () => {},
+          removeListener: () => {},
+          removeAllListeners: () => {}
+        } as any;
+      }
       
       const watcher = this.originalWatch.call(fs, filename, options, listener);
       
       if (this.watchers.size >= this.maxWatchers) {
         console.log(`🚨 FSWATCHER LIMIT: Reached ${this.maxWatchers} watchers, cleaning oldest`);
-        this.cleanupOldestWatchers(5);
+        this.cleanupOldestWatchers(Math.ceil(this.maxWatchers / 2));
       }
       
       this.watchers.set(watcher, {
@@ -126,10 +165,10 @@ export class FSWatcherLeakFix {
   }
 
   private startWatcherCleanup(): void {
-    // Cleanup every 5 minutes
+    // PHASE 2: More frequent cleanup for better memory management
     this.cleanupInterval = setInterval(() => {
       this.performWatcherAudit();
-    }, 5 * 60 * 1000);
+    }, 2 * 60 * 1000); // Every 2 minutes instead of 5
   }
 
   private performWatcherAudit(): void {
