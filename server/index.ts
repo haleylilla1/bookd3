@@ -25,6 +25,9 @@ async function start() {
   handleUnhandledRejections();
   handleUncaughtExceptions();
   
+  // PHASE 3: Apply monitoring consolidation first
+  await import('./monitoring-consolidation');
+  
   // Initialize advanced cache
   advancedCache.init().catch(console.error);
   
@@ -53,21 +56,15 @@ async function start() {
     const { backupSystem } = await import('./backup-system');
     backupSystem.startBackupScheduler();
     
-    // Start monitoring systems with delays to reduce startup load
+    // PHASE 3: Start unified monitoring system (replaces 4+ separate systems)
     setTimeout(async () => {
-      const { monitoringSystem } = await import('./monitoring-system');
-      monitoringSystem.startMetricsCollection();
+      const { unifiedMonitoring } = await import('./unified-monitoring');
+      unifiedMonitoring.start();
+      console.log('✅ PHASE 3: Unified monitoring system started (consolidated 4+ systems)');
     }, 30000); // Start after 30 seconds
     
-    setTimeout(async () => {
-      const { infrastructureManager } = await import('./infrastructure-manager');
-      infrastructureManager.startHealthMonitoring();
-    }, 60000); // Start after 1 minute
-    
-    setTimeout(async () => {
-      const { alertingSystem } = await import('./alerting-system');
-      alertingSystem.startAlertMonitoring();
-    }, 90000); // Start after 1.5 minutes
+    // PHASE 3: Skip separate infrastructure and alerting systems (now unified)
+    console.log('🎯 PHASE 3: Skipping separate infrastructure/alerting systems (consolidated into unified monitoring)');
     
   } catch (error) {
     console.error('Failed to start infrastructure systems:', error);
