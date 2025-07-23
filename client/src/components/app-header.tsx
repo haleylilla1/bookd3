@@ -11,7 +11,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
-import { useAuth } from "@/hooks/useSupabaseProxyAuth";
+import { useAuth } from "@/lib/replit-auth";
 import { 
   User, 
   Settings, 
@@ -29,7 +29,7 @@ interface AppHeaderProps {
 }
 
 export default function AppHeader({ currentScreen, onScreenChange }: AppHeaderProps) {
-  const { user, signOutMutation } = useAuth();
+  const { user, logout, isLoggingOut } = useAuth();
   const [, setLocation] = useLocation();
 
   if (!user) return null;
@@ -40,7 +40,15 @@ export default function AppHeader({ currentScreen, onScreenChange }: AppHeaderPr
   };
 
   const getSubscriptionBadge = () => {
-    // No subscription tiers in Supabase proxy auth yet
+    if (user.subscriptionTier === 'premium') {
+      return (
+        <Badge className="bg-blue-600 hover:bg-blue-700">
+          <Crown className="w-3 h-3 mr-1" />
+          Premium
+        </Badge>
+      );
+    }
+    // Removed trial badge - no subscription tiers for now
     return null;
   };
 
@@ -89,7 +97,7 @@ export default function AppHeader({ currentScreen, onScreenChange }: AppHeaderPr
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="relative h-10 w-10 rounded-full">
                 <Avatar className="h-10 w-10">
-                  <AvatarImage src={undefined} alt={user.name || user.email} />
+                  <AvatarImage src={user.profileImageUrl || undefined} alt={user.name || user.email} />
                   <AvatarFallback className="bg-blue-100 text-blue-700">
                     {getInitials(user.name || user.email)}
                   </AvatarFallback>
@@ -126,9 +134,9 @@ export default function AppHeader({ currentScreen, onScreenChange }: AppHeaderPr
               
               <DropdownMenuSeparator />
               
-              <DropdownMenuItem onClick={() => signOutMutation.mutate()} disabled={signOutMutation.isPending}>
+              <DropdownMenuItem onClick={() => logout()} disabled={isLoggingOut}>
                 <LogOut className="mr-2 h-4 w-4" />
-                <span>{signOutMutation.isPending ? 'Signing out...' : 'Sign out'}</span>
+                <span>{isLoggingOut ? 'Signing out...' : 'Sign out'}</span>
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
