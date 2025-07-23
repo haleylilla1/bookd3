@@ -397,19 +397,57 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/gigs', apiLimiter, requireAuth, async (req: any, res: Response) => {
     try {
       const userId = getUserId(req);
+      const lightweight = req.query.lightweight === 'true';
       
-      // Check cache first (2-minute TTL for gig data)  
+      // Calculate cache entry size BEFORE caching to prevent memory issues
       const { cache } = await import('./simple-cache');
-      const cacheKey = `gigs:${userId}`;
+      const cacheKey = `gigs:${userId}:${lightweight}`;
       let gigs = await cache.get(cacheKey);
       
       if (!gigs) {
         gigs = await storage.getGigsByUser(userId);
-        await cache.set(cacheKey, gigs, 120); // 2-minute cache
+        
+        // Simple field mapping - use camelCase or fallback to snake_case
+        const mapField = (obj: any, camelCase: string, snake_case: string) => obj[camelCase] || obj[snake_case];
+        gigs = gigs.map((gig: any) => ({
+          ...gig,
+          expectedPay: mapField(gig, 'expectedPay', 'expected_pay'),
+          actualPay: mapField(gig, 'actualPay', 'actual_pay'),
+          eventName: mapField(gig, 'eventName', 'event_name'),
+          clientName: mapField(gig, 'clientName', 'client_name'),
+          gigType: mapField(gig, 'gigType', 'gig_type'),
+          parkingExpense: mapField(gig, 'parkingExpense', 'parking_expense'),
+          otherExpenses: mapField(gig, 'otherExpenses', 'other_expenses'),
+          parkingReceipts: mapField(gig, 'parkingReceipts', 'parking_receipts'),
+          otherExpenseReceipts: mapField(gig, 'otherExpenseReceipts', 'other_expense_receipts')
+        }));
+        
+        // Check size before caching - prevent 5MB cache entries
+        const dataSize = JSON.stringify(gigs).length;
+        console.log(`📊 Gig data size for user ${userId}: ${Math.round(dataSize/1024)}KB`);
+        
+        if (dataSize > 100000) { // 100KB limit
+          console.log(`🚫 Gig data too large (${Math.round(dataSize/1024)}KB) - not caching to prevent memory issues`);
+          
+          // For oversized data, return lightweight version without receipt images
+          if (lightweight) {
+            gigs = gigs.map((gig: any) => ({
+              ...gig,
+              parking_receipts: gig.parking_receipts?.length ? ['[receipts available]'] : null,
+              other_expense_receipts: gig.other_expense_receipts?.length ? ['[receipts available]'] : null,
+              notes: gig.notes?.length > 500 ? gig.notes.substring(0, 500) + '...' : gig.notes,
+              duties: gig.duties?.length > 500 ? gig.duties.substring(0, 500) + '...' : gig.duties
+            }));
+          }
+        } else {
+          // Safe to cache - under size limit
+          await cache.set(cacheKey, gigs, 120);
+        }
       }
       
       res.json(gigs);
     } catch (error) {
+      console.error('❌ Failed to fetch gigs:', error);
       res.status(500).json({ error: 'Failed to fetch gigs' });
     }
   });
@@ -547,7 +585,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       if (!goals) {
         goals = await storage.getGoalsByUser(userId);
-        cache.set(cacheKey, goals, 300); // 5-minute cache
+        await cache.set(cacheKey, goals, 300); // 5-minute cache
       }
       
       res.json(goals);
@@ -631,6 +669,67 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(goal);
     } catch (error) {
       res.status(500).json({ error: 'Failed to create yearly goal' });
+    }
+  });
+
+  // Period-specific goal fetch endpoint (for dashboard)
+  app.get('/api/goals/period', apiLimiter, requireAuth, async (req: any, res: Response) => {
+    try {
+      const { period, date: dateString } = req.query as { period: string; date: string };
+      const userId = getUserId(req);
+      
+      // Parse the date to extract year and month
+      const date = new Date(dateString);
+      const year = date.getFullYear();
+      const month = date.getMonth() + 1;
+      
+      if (period === 'monthly') {
+        // Fetch monthly goal
+        const goal = await storage.getMonthlyGoal(userId, month, year);
+        if (goal) {
+          res.json(goal);
+        } else {
+          res.status(404).json({ error: 'No goal found for this period' });
+        }
+      } else {
+        // Fetch yearly goal
+        const goal = await storage.getYearlyGoal(userId, year);
+        if (goal) {
+          res.json(goal);
+        } else {
+          res.status(404).json({ error: 'No goal found for this period' });
+        }
+      }
+    } catch (error) {
+      console.error('Goal fetch error:', error);
+      res.status(500).json({ error: 'Failed to fetch goal' });
+    }
+  });
+
+  // Period-specific goal update endpoint (for dashboard)
+  app.post('/api/goals/period/:period/:date', apiLimiter, requireAuth, async (req: any, res: Response) => {
+    try {
+      const { period, date: dateString } = req.params;
+      const { goalAmount } = req.body;
+      const userId = getUserId(req);
+      
+      // Parse the date to extract year and month
+      const date = new Date(dateString);
+      const year = date.getFullYear();
+      const month = date.getMonth() + 1;
+      
+      if (period === 'monthly') {
+        // Use setMonthlyGoal which handles both creation and updating
+        const goal = await storage.setMonthlyGoal(userId, month, year, goalAmount.toString());
+        res.json(goal);
+      } else {
+        // Use setYearlyGoal which handles both creation and updating
+        const goal = await storage.setYearlyGoal(userId, year, goalAmount.toString());
+        res.json(goal);
+      }
+    } catch (error) {
+      console.error('Goal update error:', error);
+      res.status(500).json({ error: 'Failed to update goal' });
     }
   });
 
@@ -1088,7 +1187,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Custom gig types endpoint
-  app.get('/api/gig-types', apiLimiter, requireAuth, async (req: any, res) => {
+  app.get('/api/gig-types', apiLimiter, requireAuth, async (req: any, res: Response) => {
     try {
       const user = await storage.getUser(getUserId(req));
       res.json(user?.customGigTypes || []);
@@ -1177,7 +1276,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           simple: {
             entries: simpleCacheStats.cacheSize || 0,
             maxEntries: simpleCacheStats.maxEntries || 1000,
-            utilizationPercent: parseFloat((((simpleCacheStats.cacheSize || 0) / (simpleCacheStats.maxEntries || 1000)) * 100).toFixed(1)),
+            utilizationPercent: parseFloat((((simpleCacheStats.cacheSize || 0) / Math.max(1, (simpleCacheStats.maxEntries || 1000))) * 100).toFixed(1)),
             memoryUsageMB: simpleCacheStats.memoryUsageMB || 0
           },
           performance: {

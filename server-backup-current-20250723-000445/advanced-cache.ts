@@ -465,7 +465,7 @@ class AdvancedCache {
     const candidates: Array<{key: string, entry: CacheEntry, score: number}> = [];
     const now = Date.now();
     
-    for (const [key, entry] of this.fallbackCache.entries()) {
+    for (const [key, entry] of Array.from(this.fallbackCache.entries())) {
       // Aggressive scoring for memory leak cleanup
       const ageHours = (now - entry.lastAccessed) / (60 * 60 * 1000);
       const sizeKB = entry.size / 1024;
@@ -595,7 +595,7 @@ class AdvancedCache {
     const evictionCandidates: Array<{key: string, entry: CacheEntry, score: number}> = [];
     const now = Date.now();
     
-    for (const [key, entry] of this.fallbackCache.entries()) {
+    for (const [key, entry] of Array.from(this.fallbackCache.entries())) {
       // Calculate eviction score (higher = more likely to evict)
       const ageScore = (now - entry.lastAccessed) / (24 * 60 * 60 * 1000); // Days since access
       const accessScore = 1 / Math.max(entry.accessCount, 1); // Inverse of access count
@@ -630,7 +630,7 @@ class AdvancedCache {
     const candidates: Array<{key: string, entry: CacheEntry, score: number}> = [];
     const now = Date.now();
     
-    for (const [key, entry] of this.fallbackCache.entries()) {
+    for (const [key, entry] of Array.from(this.fallbackCache.entries())) {
       let score = 0;
       
       // Heavily prioritize expired entries
@@ -860,7 +860,7 @@ class AdvancedCache {
         }
       }
     } catch (error) {
-      console.error(`❌ Cache set error for ${key}:`, error.message);
+      console.error(`❌ Cache set error for ${key}:`, (error as Error).message);
     }
   }
 
@@ -899,7 +899,7 @@ class AdvancedCache {
               const decompressedString = decompressed.toString('utf8');
               return JSON.parse(decompressedString);
             } catch (decompressionError) {
-              console.error(`❌ Decompression failed for ${key}:`, decompressionError.message);
+              console.error(`❌ Decompression failed for ${key}:`, (decompressionError as Error).message);
               // Remove corrupted entry
               this.fallbackCache.delete(key);
               this.expirationQueue.remove(key);
@@ -1013,7 +1013,7 @@ class AdvancedCache {
     
     try {
       // 1. First remove all expired entries
-      await this.performTTLCleanup();
+      await this.scheduledExpiredCleanup();
       
       // 2. If we still need to reduce more, remove LRU entries
       const remainingToRemove = targetReduction - (initialSize - this.fallbackCache.size);
@@ -1050,7 +1050,7 @@ class AdvancedCache {
       console.log(`✅ Emergency cleanup completed: ${actualReduction} entries removed in ${duration}ms (${initialSize} → ${finalSize})`);
       
     } catch (error) {
-      console.error('❌ Emergency cleanup failed:', error.message);
+      console.error('❌ Emergency cleanup failed:', (error as Error).message);
     }
   }
 

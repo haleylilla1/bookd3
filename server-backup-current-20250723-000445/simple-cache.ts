@@ -125,7 +125,7 @@ class SimpleCache {
         }
       } else {
         // Memory fallback
-        for (const key of this.fallbackCache.keys()) {
+        for (const key of Array.from(this.fallbackCache.keys())) {
           if (key.includes(pattern)) {
             this.fallbackCache.delete(key);
           }
@@ -189,7 +189,7 @@ class SimpleCache {
       const expiredKeys: string[] = [];
       
       // Collect expired keys first to avoid iteration during deletion
-      for (const [key, entry] of this.fallbackCache.entries()) {
+      for (const [key, entry] of Array.from(this.fallbackCache.entries())) {
         try {
           if (now > entry.expires) {
             expiredKeys.push(key);
@@ -247,7 +247,7 @@ class SimpleCache {
   // Get memory usage in MB
   private getMemoryUsageMB(): number {
     let totalSize = 0;
-    for (const entry of this.fallbackCache.values()) {
+    for (const entry of Array.from(this.fallbackCache.values())) {
       totalSize += entry.size || 1024; // Default size if missing
     }
     return totalSize / (1024 * 1024);

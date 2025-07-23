@@ -35,8 +35,8 @@ export interface User {
   id: number;
   email: string;
   name: string;
-  emailVerified: boolean;
-  isActive: boolean;
+  emailVerified: boolean | null;
+  isActive: boolean | null;
   lastLoginAt: Date | null;
 }
 
@@ -335,7 +335,7 @@ export function getUserId(req: AuthenticatedRequest): number {
 }
 
 // Authentication middleware - ONE WAY TO DO THINGS
-export async function requireAuth(req: any, res: Response, next: NextFunction): Promise<void> {
+export async function requireAuth(req: any, res: Response, next: NextFunction): Promise<any> {
   try {
     const sessionId = req.cookies?.sessionId;
     
@@ -355,7 +355,7 @@ export async function requireAuth(req: any, res: Response, next: NextFunction): 
     next();
   } catch (error) {
     console.error('Authentication error:', error);
-    res.status(500).json({ error: 'Authentication system error' });
+    return res.status(500).json({ error: 'Authentication system error' });
   }
 }
 
@@ -422,7 +422,7 @@ export function setupAuthRoutes(app: Express): void {
       console.error('Registration error:', error);
       
       // Handle duplicate email constraint violation
-      if (error.message?.includes('duplicate') || error.message?.includes('unique')) {
+      if ((error as any)?.message?.includes('duplicate') || (error as any)?.message?.includes('unique')) {
         return res.status(400).json({ error: 'An account with this email already exists' });
       }
       

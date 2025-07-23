@@ -296,7 +296,7 @@ export class SessionOptimizer {
       const now = Date.now();
       let cleanedCount = 0;
       
-      for (const [key, value] of this.sessionCache.entries()) {
+      for (const [key, value] of Array.from(this.sessionCache.entries())) {
         if (now - value.timestamp > this.SESSION_TTL) {
           this.sessionCache.delete(key);
           cleanedCount++;
