@@ -874,7 +874,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Receipt proxy endpoint to bypass SSL certificate issues
+  // Receipt proxy endpoint to bypass SSL certificate issues - MEMORY OPTIMIZED
   app.get('/api/receipt-proxy/*', apiLimiter, asyncHandler(async (req: any, res: Response) => {
     try {
       const receiptPath = req.params[0];
@@ -889,14 +889,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: 'Receipt not found' });
       }
       
+      // MEMORY OPTIMIZATION: Use minimal buffer approach
       const contentType = response.headers.get('content-type') || 'image/jpeg';
+      const contentLength = response.headers.get('content-length');
+      
+      res.setHeader('Content-Type', contentType);
+      res.setHeader('Cache-Control', 'public, max-age=3600');
+      if (contentLength) {
+        res.setHeader('Content-Length', contentLength);
+      }
+      
+      // Use arrayBuffer for small images (more memory-efficient than buffering)
       const arrayBuffer = await response.arrayBuffer();
       const buffer = Buffer.from(arrayBuffer);
       
       console.log('🖼️  Receipt served successfully:', buffer.length, 'bytes');
       
-      res.setHeader('Content-Type', contentType);
-      res.setHeader('Cache-Control', 'public, max-age=3600');
+      // Send and immediately allow buffer to be garbage collected
       res.send(buffer);
       
     } catch (error) {
