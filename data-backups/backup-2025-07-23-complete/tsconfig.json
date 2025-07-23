@@ -1,0 +1,51 @@
+{
+  "include": ["client/src/**/*", "shared/**/*", "server/**/*"],
+  "exclude": [
+    "node_modules", 
+    "build", 
+    "dist", 
+    "**/*.test.ts",
+    "data-backups/**/*",
+    "server-backup*/**/*",
+    "attached_assets/**/*",
+    "*.md",
+    "*.txt",
+    "*.log"
+  ],
+  "compilerOptions": {
+    "incremental": true,
+    "tsBuildInfoFile": "./node_modules/typescript/tsbuildinfo",
+    "noEmit": true,
+    "module": "ESNext",
+    "strict": true,
+    "lib": ["esnext", "dom", "dom.iterable"],
+    "jsx": "preserve",
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "allowImportingTsExtensions": true,
+    "moduleResolution": "bundler",
+    "baseUrl": ".",
+    "types": ["node", "vite/client"],
+    "paths": {
+      "@/*": ["./client/src/*"],
+      "@shared/*": ["./shared/*"]
+    },
+    "maxNodeModuleJsDepth": 0,
+    "assumeChangesOnlyAffectDirectDependencies": true,
+    "disableSourceOfProjectReferenceRedirect": true,
+    "disableSolutionSearching": true
+  },
+  "ts-node": {
+    "transpileOnly": true,
+    "compilerOptions": {
+      "module": "CommonJS"
+    }
+  },
+  "watchOptions": {
+    "watchFile": "useFsEvents",
+    "watchDirectory": "useFsEvents",
+    "fallbackPolling": "dynamicPriority",
+    "synchronousWatchDirectory": true,
+    "excludeDirectories": ["**/node_modules", "**/.*", "**/data-backups", "**/server-backup*"]
+  }
+}
