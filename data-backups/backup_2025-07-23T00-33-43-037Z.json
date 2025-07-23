@@ -1,5 +1,5 @@
 {
-  "timestamp": "2025-07-23T00:18:22.278Z",
+  "timestamp": "2025-07-23T00:33:43.287Z",
   "version": "1.0.0",
   "data": {
     "users": [
@@ -2315,8 +2315,10 @@
         "taxPercentage": 23,
         "mileage": 69,
         "notes": null,
-        "parkingExpense": null,
-        "parkingReceipts": [],
+        "parkingExpense": "10.00",
+        "parkingReceipts": [
+          "https://gwywiuigckemgngpmbxf.supabase.co/storage/v1/object/public/receipts/receipts/14/1753230455977_receipt_1.jpg"
+        ],
         "parkingReimbursed": false,
         "otherExpenses": null,
         "otherExpenseReceipts": [],
