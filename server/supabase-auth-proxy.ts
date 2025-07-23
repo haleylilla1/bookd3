@@ -68,34 +68,9 @@ export async function signUpProxy(req: Request, res: Response) {
 export async function signInProxy(req: Request, res: Response) {
   try {
     const { email, password } = req.body;
-    
-    // Import security functions
-    const { 
-      validateAuthInput, 
-      checkAccountLockout, 
-      recordFailedAttempt, 
-      clearFailedAttempts,
-      logSecurityEvent
-    } = await import('./auth-security-hardening');
 
-    // 1. INPUT VALIDATION
-    const validation = validateAuthInput(email, password);
-    if (!validation.valid) {
-      logSecurityEvent(req, 'failed_login', `Invalid input: ${validation.errors.join(', ')}`, 'low', email);
-      return res.status(400).json({ 
-        error: { message: validation.errors.join(', ') } 
-      });
-    }
-
-    // 2. ACCOUNT LOCKOUT CHECK
-    const lockoutStatus = checkAccountLockout(email, req.ip || 'unknown');
-    if (lockoutStatus.locked) {
-      logSecurityEvent(req, 'failed_login', 'Account locked - login attempt blocked', 'medium', email);
-      return res.status(429).json({ 
-        error: { 
-          message: `Account temporarily locked. Try again in ${Math.ceil(lockoutStatus.remainingTime! / 60)} minutes.` 
-        } 
-      });
+    if (!email || !password) {
+      return res.status(400).json({ error: { message: 'Email and password are required' } });
     }
 
     // Sign in with Supabase
@@ -105,24 +80,18 @@ export async function signInProxy(req: Request, res: Response) {
     });
 
     if (error) {
-      console.error('Supabase signin error:', error);
-      recordFailedAttempt(email, req.ip || 'unknown', req);
+      console.error(`❌ Failed login attempt: ${email} from ${req.ip} - ${error.message}`);
       return res.status(401).json({ error: { message: 'Invalid email or password' } });
     }
 
     if (data.user && data.session) {
-      console.log('✅ User signed in successfully:', data.user.email);
-      
-      // Clear failed attempts on successful login
-      clearFailedAttempts(email, req.ip || 'unknown');
-      logSecurityEvent(req, 'successful_login', 'User authenticated successfully', 'low', email);
+      console.log(`✅ Successful login: ${data.user.email} from ${req.ip}`);
       
       // Store session data if session is available
       if (req.session) {
         req.session.supabaseUserId = data.user.id;
         req.session.supabaseAccessToken = data.session.access_token;
         req.session.supabaseEmail = data.user.email;
-        req.session.lastActivity = Date.now();
         
         // Save session before responding
         req.session.save((err) => {
