@@ -17,8 +17,6 @@ import { count } from "drizzle-orm";
 import { getDatabaseUserIdFromSession } from "./user-id-mapping";
 import { globalErrorHandler, asyncHandler, safeDbOperation, validateUserId, validateNumericId } from "./error-handler";
 import { logError } from "./logger";
-import { bulletproofAuth, cleanupUserSession } from './auth-middleware-hardened';
-import { authRateLimit, getSecurityMetrics } from './auth-security-hardening';
 
 // Create logger fallback for missing logger references
 const logger = {
@@ -34,6 +32,7 @@ const logger = {
   }
 };
 import rateLimit from "express-rate-limit";
+import helmet from "helmet";
 import { nodeJSMemoryProfiler } from "./nodejs-memory-profiler";
 import { memoryLeakFixer } from "./memory-leak-fixes";
 import { timerLeakDetector } from "./timer-leak-detector";
@@ -112,17 +111,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // REPLIT AUTH: Zero-configuration authentication system
   
-  // Set trust proxy for rate limiting
+  // SIMPLE SECURITY - Basic security headers and trust proxy
   app.set('trust proxy', true);
+  app.use(helmet()); // Simple, comprehensive security headers
   
   // Force HTTPS redirect in production
   if (process.env.NODE_ENV === 'production') {
     app.use((req, res, next) => {
-      res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
-      res.setHeader('X-Content-Type-Options', 'nosniff');
-      res.setHeader('X-Frame-Options', 'DENY');
-      res.setHeader('X-XSS-Protection', '1; mode=block');
-
       if (req.header('x-forwarded-proto') !== 'https') {
         res.redirect(301, `https://${req.header('host')}${req.url}`);
       } else {
@@ -139,19 +134,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     await invalidateDashboardCache(userId);
   }
   
-  // Rate limiting for authentication endpoints - more permissive for better UX
+  // SIMPLE RATE LIMITING - Just protect auth endpoints
   const authLimiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 20, // Increased limit to prevent legitimate users from being blocked
-    message: 'Too many authentication attempts, please try again later.',
+    max: 10, // 10 attempts per 15 minutes - reasonable for auth
+    message: { error: { message: 'Too many authentication attempts, please try again later.' } },
     standardHeaders: true,
     legacyHeaders: false,
-    skip: (req) => process.env.NODE_ENV === 'development' || !process.env.NODE_ENV, // Disable in development or when NODE_ENV undefined
-    keyGenerator: (req) => {
-      // Use a combination of IP and email to allow multiple users from same IP
-      const email = req.body?.email || 'unknown';
-      return `${req.ip}-${email}`;
-    }
+    skip: (req) => process.env.NODE_ENV === 'development'
   });
 
   const passwordResetLimiter = rateLimit({
@@ -194,28 +184,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     skip: (req) => false, // Always apply rate limiting but with generous limits
   });
 
-  // Setup bulletproof auth routes using consolidated auth.ts
-  // Supabase Authentication Proxy Endpoints (memory-optimized)
-  app.post('/api/auth/signup', authRateLimit, signUpProxy);
-  app.post('/api/auth/signin', authRateLimit, signInProxy);
+  // Simple, reliable Supabase Authentication Proxy Endpoints
+  app.post('/api/auth/signup', authLimiter, signUpProxy);
+  app.post('/api/auth/signin', authLimiter, signInProxy);
   app.post('/api/auth/signout', signOutProxy);
   app.get('/api/auth/user', getCurrentUserProxy);
   app.post('/api/auth/reset-password', passwordResetLimiter, resetPasswordProxy);
-
-  // SECURITY MONITORING ENDPOINTS
-  app.get('/api/security/metrics', bulletproofAuth, (req, res) => {
-    try {
-      const metrics = getSecurityMetrics();
-      res.json({
-        success: true,
-        data: metrics,
-        timestamp: new Date().toISOString()
-      });
-    } catch (error: any) {
-      console.error('Security metrics error:', error);
-      res.status(500).json({ error: { message: 'Failed to retrieve security metrics' } });
-    }
-  });
 
   // Import user mapping system
   const { getDatabaseUserIdFromSupabase } = await import('./user-id-mapping');
