@@ -28,6 +28,9 @@ async function start() {
   // PHASE 3: Apply monitoring consolidation first
   await import('./monitoring-consolidation');
   
+  // PHASE 4: Initialize memory pressure reduction
+  await import('./memory-pressure-reducer');
+  
   // Initialize advanced cache
   advancedCache.init().catch(console.error);
   
@@ -62,6 +65,13 @@ async function start() {
       unifiedMonitoring.start();
       console.log('✅ PHASE 3: Unified monitoring system started (consolidated 4+ systems)');
     }, 30000); // Start after 30 seconds
+
+    // PHASE 4: Final memory optimization and cleanup
+    setTimeout(async () => {
+      const { phase4Optimizer } = await import('./phase4-final-optimization');
+      await phase4Optimizer.executePhase4();
+      console.log('✅ PHASE 4: Final memory optimization completed');
+    }, 45000); // Start after 45 seconds
     
     // PHASE 3: Skip separate infrastructure and alerting systems (now unified)
     console.log('🎯 PHASE 3: Skipping separate infrastructure/alerting systems (consolidated into unified monitoring)');
