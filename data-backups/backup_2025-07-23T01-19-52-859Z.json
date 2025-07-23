@@ -1,5 +1,5 @@
 {
-  "timestamp": "2025-07-23T01:03:00.592Z",
+  "timestamp": "2025-07-23T01:19:53.108Z",
   "version": "1.0.0",
   "data": {
     "users": [
@@ -48,7 +48,7 @@
         "trialEndDate": "2025-07-23T21:11:16.317Z",
         "subscriptionStatus": "trial",
         "subscriptionTier": "trial",
-        "lastLoginAt": "2025-07-23T00:13:09.342Z",
+        "lastLoginAt": "2025-07-23T01:11:47.277Z",
         "createdAt": "2025-06-23T21:11:16.352Z",
         "updatedAt": "2025-06-23T21:11:16.352Z"
       },
@@ -1150,7 +1150,10 @@
         "phone": null,
         "title": "Gig Worker",
         "defaultTaxPercentage": 23,
-        "customGigTypes": [],
+        "customGigTypes": [
+          "photographer",
+          "bartender"
+        ],
         "homeAddress": null,
         "businessName": null,
         "businessAddress": null,
@@ -1190,6 +1193,34 @@
       }
     ],
     "gigs": [
+      {
+        "id": 132,
+        "userId": 42,
+        "gigType": "photographer",
+        "eventName": "wedding",
+        "clientName": "Brand Besties",
+        "date": "2025-07-23",
+        "expectedPay": "0.00",
+        "actualPay": "0.00",
+        "tips": "0.00",
+        "paymentMethod": "Cash",
+        "status": "upcoming",
+        "duties": null,
+        "taxPercentage": 23,
+        "mileage": 0,
+        "notes": null,
+        "parkingExpense": "0.00",
+        "parkingReceipts": [],
+        "parkingReimbursed": false,
+        "otherExpenses": "0.00",
+        "otherExpenseReceipts": [],
+        "otherExpensesReimbursed": false,
+        "gigAddress": null,
+        "distanceMiles": null,
+        "travelTimeMinutes": null,
+        "includeInResume": true,
+        "createdAt": "2025-07-23T01:13:23.866Z"
+      },
       {
         "id": 27,
         "userId": 5,
@@ -2707,6 +2738,15 @@
         "goalAmount": "2000.00",
         "createdAt": "2025-07-22T22:19:38.461Z",
         "updatedAt": "2025-07-22T22:19:38.461Z"
+      },
+      {
+        "id": 8,
+        "userId": 42,
+        "month": 7,
+        "year": 2025,
+        "goalAmount": "5000.00",
+        "createdAt": "2025-07-23T01:16:20.740Z",
+        "updatedAt": "2025-07-23T01:16:20.740Z"
       }
     ],
     "yearlyGoals": [
@@ -2717,12 +2757,20 @@
         "goalAmount": "60000.00",
         "createdAt": "2025-07-21T16:16:55.676Z",
         "updatedAt": "2025-07-21T16:16:55.676Z"
+      },
+      {
+        "id": 3,
+        "userId": 42,
+        "year": 2025,
+        "goalAmount": "60000.00",
+        "createdAt": "2025-07-23T01:16:55.668Z",
+        "updatedAt": "2025-07-23T01:16:55.668Z"
       }
     ]
   },
   "stats": {
     "userCount": 26,
-    "gigCount": 51,
+    "gigCount": 52,
     "expenseCount": 0,
     "goalCount": 3
   }
