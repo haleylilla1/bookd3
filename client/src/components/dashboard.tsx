@@ -35,7 +35,7 @@ export default function Dashboard() {
   const queryClient = useQueryClient();
 
   const { data: user, isLoading: userLoading, error: userError } = useQuery<User>({
-    queryKey: ["/api/auth/user"],
+    queryKey: ["/api/user"],
     retry: 1,
   });
 
@@ -69,20 +69,8 @@ export default function Dashboard() {
   // Fetch gigs for calculations (lightweight version for dashboard performance)
   const { data: gigs = [], isLoading: gigsLoading, error: gigsError } = useQuery<Gig[]>({
     queryKey: ["/api/gigs", { lightweight: true }],
-    queryFn: async () => {
-      const response = await fetch('/api/gigs?lightweight=true', {
-        credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-      }
-      return response.json();
-    },
+    queryFn: () => fetch('/api/gigs?lightweight=true').then(res => res.json()),
     retry: 1,
-    enabled: !!user, // Only fetch gigs when user is authenticated
   });
 
 
