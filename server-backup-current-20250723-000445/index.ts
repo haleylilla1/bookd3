@@ -81,7 +81,7 @@ async function start() {
     serveStatic(app);
   }
 
-  server.listen(parseInt(port.toString()), "0.0.0.0", () => {
+  server.listen(port, "0.0.0.0", () => {
     // Server started successfully
   });
 }
