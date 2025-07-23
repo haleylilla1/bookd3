@@ -882,7 +882,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log('🖼️  Proxying receipt:', supabaseUrl);
       
-      const fetch = (await import('node-fetch')).default;
       const response = await fetch(supabaseUrl);
       
       if (!response.ok) {
@@ -891,7 +890,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       const contentType = response.headers.get('content-type') || 'image/jpeg';
-      const buffer = await response.buffer();
+      const arrayBuffer = await response.arrayBuffer();
+      const buffer = Buffer.from(arrayBuffer);
       
       console.log('🖼️  Receipt served successfully:', buffer.length, 'bytes');
       
