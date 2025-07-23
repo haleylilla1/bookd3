@@ -1092,11 +1092,54 @@ function GigEditForm({ gig, onSave, onCancel, isLoading }: GigEditFormProps) {
 
       <div>
         <label className="block text-sm font-medium mb-1">Gig Type</label>
-        <Input
-          value={formData.gigType}
-          onChange={(e) => setFormData({ ...formData, gigType: e.target.value })}
-          placeholder="Brand Ambassador"
-        />
+        <Select 
+          value={formData.gigType} 
+          onValueChange={(value) => setFormData({ ...formData, gigType: value })}
+        >
+          <SelectTrigger 
+            className="min-h-[48px] text-base bg-white border-2 border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+            style={{
+              fontSize: '16px',
+              minHeight: '48px',
+              touchAction: 'manipulation',
+              WebkitAppearance: 'none'
+            }}
+          >
+            <SelectValue placeholder="Select gig type..." />
+          </SelectTrigger>
+          <SelectContent 
+            className="max-h-[300px] overflow-y-auto z-50"
+            position="popper"
+            sideOffset={4}
+          >
+            {user?.customGigTypes && user.customGigTypes.length > 0 ? (
+              <>
+                {user.customGigTypes.map((gigType) => (
+                  <SelectItem 
+                    key={gigType} 
+                    value={gigType}
+                    className="min-h-[44px] text-base cursor-pointer hover:bg-gray-100 focus:bg-gray-100"
+                    style={{ fontSize: '16px', minHeight: '44px' }}
+                  >
+                    {gigType}
+                  </SelectItem>
+                ))}
+                <SelectItem 
+                  value="other"
+                  className="min-h-[44px] text-base cursor-pointer hover:bg-gray-100 focus:bg-gray-100"
+                  style={{ fontSize: '16px', minHeight: '44px' }}
+                >
+                  Other
+                </SelectItem>
+              </>
+            ) : (
+              <div className="p-4 text-center text-gray-500">
+                <p className="text-sm">No gig types added yet.</p>
+                <p className="text-xs mt-1">Go to Profile → Add Type to create your custom gig types.</p>
+              </div>
+            )}
+          </SelectContent>
+        </Select>
       </div>
 
       <div className="grid grid-cols-2 gap-3">
