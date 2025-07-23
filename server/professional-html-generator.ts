@@ -368,23 +368,22 @@ export async function generateProfessionalHTML(options: ReportOptions): Promise<
                             <!-- Receipt Photos -->
                             ${receipt.receipts.length > 0 ? `
                                 <div style="margin-top: 15px;">
-                                    <h4 style="font-size: 14px; color: #666; margin-bottom: 10px;">Receipt Photos:</h4>
-                                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px;">
+                                    <h4 style="font-size: 14px; color: #666; margin-bottom: 10px;">Receipt Photos (${receipt.receipts.length}):</h4>
+                                    <div style="display: flex; flex-wrap: wrap; gap: 12px;">
                                         ${receipt.receipts.map((receiptImg, index) => `
-                                            <div style="border: 2px solid #ddd; border-radius: 8px; overflow: hidden; background-color: #fff; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-                                                <!-- Debug: Show the URL -->
-                                                <div style="padding: 8px; font-size: 10px; background: #e3f2fd; word-break: break-all; color: #1976d2;">
-                                                    URL: ${receiptImg}
-                                                </div>
-                                                <img src="${receiptImg}" alt="Receipt ${index + 1}" crossorigin="anonymous" 
-                                                     style="width: 100%; height: 250px; object-fit: contain; display: block; background-color: #f8f9fa;" 
-                                                     onload="console.log('Image loaded:', this.src)" 
-                                                     onerror="console.error('Image failed to load:', this.src); this.style.display='none'; this.nextElementSibling.innerHTML='<span style=\"color:red; padding: 20px; display: block;\">❌ Image failed to load</span>'" />
-                                                <div style="padding: 12px; text-align: center; font-size: 14px; font-weight: 500; color: #333; background-color: #f8f9fa; border-top: 1px solid #ddd;">
-                                                    Receipt Photo ${index + 1}
-                                                </div>
-                                            </div>
+                                            <a href="${receiptImg}" target="_blank" rel="noopener noreferrer" 
+                                               style="display: inline-flex; align-items: center; padding: 12px 16px; background: linear-gradient(135deg, #4f46e5, #7c3aed); color: white; text-decoration: none; border-radius: 8px; font-weight: 500; box-shadow: 0 2px 4px rgba(79, 70, 229, 0.3); transition: all 0.2s ease;">
+                                                <svg style="width: 16px; height: 16px; margin-right: 8px; fill: currentColor;" viewBox="0 0 24 24">
+                                                    <path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z" />
+                                                </svg>
+                                                📸 Receipt ${index + 1}
+                                            </a>
                                         `).join('')}
+                                    </div>
+                                    <div style="margin-top: 10px; padding: 12px; background-color: #f0f9ff; border-radius: 6px; border-left: 4px solid #3b82f6;">
+                                        <p style="margin: 0; font-size: 12px; color: #1e40af;">
+                                            <strong>💡 Tip:</strong> Click any receipt link above to view or download the full-size receipt photo. All photos are securely stored in cloud storage.
+                                        </p>
                                     </div>
                                 </div>
                             ` : `
