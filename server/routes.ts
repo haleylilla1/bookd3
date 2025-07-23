@@ -874,6 +874,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Receipt proxy endpoint to bypass SSL certificate issues
+  app.get('/api/receipt-proxy/*', apiLimiter, asyncHandler(async (req: any, res: Response) => {
+    try {
+      const receiptPath = req.params[0];
+      const supabaseUrl = `https://gwywiuigckemgngpmbxf.supabase.co/storage/v1/object/public/receipts/${receiptPath}`;
+      
+      console.log('🖼️  Proxying receipt:', supabaseUrl);
+      
+      const fetch = (await import('node-fetch')).default;
+      const response = await fetch(supabaseUrl);
+      
+      if (!response.ok) {
+        console.error('🖼️  Receipt fetch failed:', response.status, response.statusText);
+        return res.status(404).json({ error: 'Receipt not found' });
+      }
+      
+      const contentType = response.headers.get('content-type') || 'image/jpeg';
+      const buffer = await response.buffer();
+      
+      console.log('🖼️  Receipt served successfully:', buffer.length, 'bytes');
+      
+      res.setHeader('Content-Type', contentType);
+      res.setHeader('Cache-Control', 'public, max-age=3600');
+      res.send(buffer);
+      
+    } catch (error) {
+      console.error('🖼️  Receipt proxy error:', error);
+      res.status(500).json({ error: 'Failed to load receipt' });
+    }
+  }));
+
   // SIMPLE HTML REPORT GENERATION - NO OVER-ENGINEERING
   app.get('/api/reports/pdf', resourceIntensiveLimiter, requireAuth, async (req: any, res) => {
     const userId = getUserId(req);

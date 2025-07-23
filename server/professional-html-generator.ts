@@ -1,4 +1,20 @@
 import { storage } from './storage';
+
+// Helper function to convert Supabase URLs to proxy URLs to bypass SSL issues
+function convertToProxyUrl(originalUrl: string): string {
+  if (!originalUrl || !originalUrl.includes('supabase.co')) {
+    return originalUrl;
+  }
+  
+  // Extract the path after 'receipts/' in the Supabase URL
+  const match = originalUrl.match(/\/storage\/v1\/object\/public\/receipts\/(.+)$/);
+  if (match) {
+    const receiptPath = match[1];
+    return `/api/receipt-proxy/${receiptPath}`;
+  }
+  
+  return originalUrl;
+}
 import type { User, Gig, Expense } from '@shared/schema';
 
 interface ReportOptions {
@@ -371,7 +387,7 @@ export async function generateProfessionalHTML(options: ReportOptions): Promise<
                                     <h4 style="font-size: 14px; color: #666; margin-bottom: 10px;">Receipt Photos (${receipt.receipts.length}):</h4>
                                     <div style="display: flex; flex-wrap: wrap; gap: 12px;">
                                         ${receipt.receipts.map((receiptImg, index) => `
-                                            <a href="${receiptImg}" target="_blank" rel="noopener noreferrer" 
+                                            <a href="${convertToProxyUrl(receiptImg)}" target="_blank" rel="noopener noreferrer" 
                                                style="display: inline-flex; align-items: center; padding: 12px 16px; background: linear-gradient(135deg, #4f46e5, #7c3aed); color: white; text-decoration: none; border-radius: 8px; font-weight: 500; box-shadow: 0 2px 4px rgba(79, 70, 229, 0.3); transition: all 0.2s ease;">
                                                 <svg style="width: 16px; height: 16px; margin-right: 8px; fill: currentColor;" viewBox="0 0 24 24">
                                                     <path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z" />
