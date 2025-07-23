@@ -53,29 +53,16 @@ export default function CalendarView() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const { data: user } = useQuery({
-    queryKey: ["/api/auth/user"],
-    staleTime: 10 * 60 * 1000, // Cache for 10 minutes
-    retry: 1,
-  });
-
   const { data: gigs = [], isLoading } = useQuery<Gig[]>({
     queryKey: ["/api/gigs"],
     staleTime: 5 * 60 * 1000, // Cache for 5 minutes
     retry: 2,
-    queryFn: async () => {
-      const response = await fetch('/api/gigs', {
-        credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-      }
-      return response.json();
-    },
-    enabled: !!user, // Only fetch gigs when user is authenticated
+  });
+
+  const { data: user } = useQuery({
+    queryKey: ["/api/user"],
+    staleTime: 10 * 60 * 1000, // Cache for 10 minutes
+    retry: 1,
   });
 
   // Mutation to automatically update gig statuses
