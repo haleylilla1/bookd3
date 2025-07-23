@@ -33,16 +33,47 @@ class ReceiptStorageService {
     }
     
     try {
-      // Convert base64 to buffer
-      const base64Data = receiptData.replace(/^data:image\/[a-z]+;base64,/, '');
+      // Check if this is already a URL (from previous uploads)
+      if (receiptData.startsWith('http')) {
+        console.log('📸 Receipt is already a cloud URL, returning as-is');
+        return receiptData;
+      }
+      
+      // Convert base64 to buffer with proper validation
+      let base64Data = receiptData;
+      
+      // Handle data URL format
+      if (receiptData.startsWith('data:')) {
+        const matches = receiptData.match(/^data:image\/([a-zA-Z]+);base64,(.+)$/);
+        if (!matches) {
+          console.error('📸 Invalid data URL format');
+          return receiptData;
+        }
+        base64Data = matches[2];
+      }
+      
+      // Validate base64 format
+      if (!/^[A-Za-z0-9+/]+=*$/.test(base64Data)) {
+        console.error('📸 Invalid base64 format');
+        return receiptData;
+      }
+      
       const buffer = Buffer.from(base64Data, 'base64');
       
-      // Generate unique filename
+      // Validate buffer size (should be reasonable for an image)
+      if (buffer.length < 100) {
+        console.error('📸 Buffer too small, likely corrupted data:', buffer.length);
+        return receiptData;
+      }
+      
+      console.log('📸 Converting base64 to buffer:', buffer.length, 'bytes');
+      
+      // Generate unique filename with proper extension
       const timestamp = Date.now();
       const sanitizedFilename = filename.replace(/[^a-zA-Z0-9.-]/g, '_');
       const storagePath = `receipts/${userId}/${timestamp}_${sanitizedFilename}`;
       
-      // Upload to Supabase storage
+      // Upload to Supabase storage with proper content type detection
       const { data, error } = await this.supabase.storage
         .from('receipts')
         .upload(storagePath, buffer, {
