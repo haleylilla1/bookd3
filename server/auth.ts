@@ -35,8 +35,8 @@ export interface User {
   id: number;
   email: string;
   name: string;
-  emailVerified: boolean;
-  isActive: boolean;
+  emailVerified: boolean | null;
+  isActive: boolean | null;
   lastLoginAt: Date | null;
 }
 
@@ -421,8 +421,8 @@ export function setupAuthRoutes(app: Express): void {
     } catch (error) {
       console.error('Registration error:', error);
       
-      // Handle duplicate email constraint violation
-      if (error.message?.includes('duplicate') || error.message?.includes('unique')) {
+      // Handle duplicate email constraint violation  
+      if ((error as Error).message?.includes('duplicate') || (error as Error).message?.includes('unique')) {
         return res.status(400).json({ error: 'An account with this email already exists' });
       }
       
