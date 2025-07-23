@@ -201,6 +201,19 @@ class AdvancedCache {
     }
   }
 
+  // PHASE 3: Consolidated advanced features (reduces from 4 timers to 1)
+  private startConsolidatedFeatures(): void {
+    // Single consolidated interval instead of 4 separate ones
+    setInterval(() => {
+      this.performAdvancedCleanup();
+      this.performCacheWarming();
+      this.cleanupAccessPatterns();
+      this.checkMemoryPressure();
+    }, 5 * 60 * 1000); // Every 5 minutes
+    
+    console.log('📊 Dynamic TTL cleanup started (5 min interval)');
+  }
+  
   private startAdvancedFeatures(): void {
     this.startDynamicCleanup();
     this.startCacheWarming();
