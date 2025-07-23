@@ -26,7 +26,7 @@ interface ReportData {
 
 interface ReceiptData {
   date: string;
-  type: 'parking' | 'other';
+  type: 'parking' | 'other' | 'combined';
   amount: number;
   description: string;
   gigName: string;
@@ -234,7 +234,10 @@ export async function generateProfessionalHTML(options: ReportOptions): Promise<
                           const actualPay = parseFloat(gig.actualPay || '0');
                           const tips = parseFloat(gig.tips || '0');
                           const total = actualPay + tips;
-                          const dateStr = gig.date.includes(' - ') ? gig.date : new Date(gig.date).toLocaleDateString();
+                          // Handle date ranges for multi-day gigs - fix timezone issues
+                          const dateStr = gig.date.includes(' - ') 
+                            ? gig.date.split(' - ').map(d => new Date(d + 'T00:00:00').toLocaleDateString()).join(' - ')
+                            : new Date(gig.date + 'T00:00:00').toLocaleDateString();
                           const source = gig.clientName || 'Direct Client';
                           const type = gig.gigType || 'Service';
                           
@@ -274,7 +277,10 @@ export async function generateProfessionalHTML(options: ReportOptions): Promise<
                     <tbody>
                         ${data.gigs.filter(g => (parseInt(String(g.mileage || 0)) || 0) > 0).map(gig => {
                           const miles = parseInt(String(gig.mileage || 0)) || 0;
-                          const dateStr = gig.date.includes(' - ') ? gig.date : new Date(gig.date).toLocaleDateString();
+                          // Handle date ranges for multi-day gigs - fix timezone issues
+                          const dateStr = gig.date.includes(' - ') 
+                            ? gig.date.split(' - ').map(d => new Date(d + 'T00:00:00').toLocaleDateString()).join(' - ')
+                            : new Date(gig.date + 'T00:00:00').toLocaleDateString();
                           const purpose = `${gig.eventName || 'Event'} (${gig.clientName || 'Client'})`;
                           const value = (miles * MILEAGE_RATE);
                           
@@ -354,10 +360,11 @@ export async function generateProfessionalHTML(options: ReportOptions): Promise<
                                     <h3 style="margin: 0 0 5px 0; font-size: 18px; color: #333;">${receipt.gigName}</h3>
                                     <p style="margin: 0; color: #666; font-size: 14px;">Client: ${receipt.clientName}</p>
                                     <p style="margin: 5px 0 0 0; color: #666; font-size: 14px;">Date: ${new Date(receipt.date).toLocaleDateString()}</p>
+                                    <p style="margin: 5px 0 0 0; color: #444; font-size: 14px; font-style: italic;">${receipt.description}</p>
                                 </div>
                                 <div style="text-align: right;">
                                     <div style="font-size: 20px; font-weight: bold; color: #198754;">$${receipt.amount.toFixed(2)}</div>
-                                    <div style="font-size: 12px; text-transform: uppercase; color: #666; margin-top: 5px;">${receipt.type === 'parking' ? 'Parking' : 'Other'} Expense</div>
+                                    <div style="font-size: 12px; text-transform: uppercase; color: #666; margin-top: 5px;">Business Expense</div>
                                     ${receipt.reimbursed ? 
                                         '<div style="background-color: #d1ecf1; color: #0c5460; padding: 3px 8px; border-radius: 12px; font-size: 11px; margin-top: 5px; display: inline-block;">✓ REIMBURSED</div>' : 
                                         '<div style="background-color: #fff3cd; color: #856404; padding: 3px 8px; border-radius: 12px; font-size: 11px; margin-top: 5px; display: inline-block;">TAX DEDUCTIBLE</div>'
@@ -635,32 +642,53 @@ async function prepareReportData(options: ReportOptions): Promise<ReportData> {
   const taxPercentage = user.defaultTaxPercentage || 23;
   const afterTaxIncome = netIncome - estimatedTaxes;
 
-  // Prepare receipts data with photos and reimbursement status
+  // SIMPLIFIED RECEIPT PROCESSING: Show separate entries for parking and other expenses when they have data
   const receipts: ReceiptData[] = [];
   
   completedGigs.forEach(gig => {
-    if (parseFloat(gig.parkingExpense || '0') > 0) {
+    // Get expense amounts
+    const parkingAmount = parseFloat(gig.parkingExpense || '0');
+    const otherAmount = parseFloat(gig.otherExpenses || '0');
+    
+    // Get receipt photos - try both database and interface field names
+    const parkingReceipts = Array.isArray((gig as any).parking_receipts) 
+      ? (gig as any).parking_receipts 
+      : Array.isArray((gig as any).parkingReceipts) 
+        ? (gig as any).parkingReceipts 
+        : [];
+    const otherReceipts = Array.isArray((gig as any).other_expense_receipts) 
+      ? (gig as any).other_expense_receipts 
+      : Array.isArray((gig as any).otherExpenseReceipts) 
+        ? (gig as any).otherExpenseReceipts 
+        : [];
+    
+    // Create SEPARATE entries for parking and other expenses to avoid confusion
+    
+    // Parking expenses (if has amount OR receipts)
+    if (parkingAmount > 0 || parkingReceipts.length > 0) {
       receipts.push({
         date: gig.date,
         type: 'parking' as const,
-        amount: parseFloat(gig.parkingExpense || '0'),
-        description: 'Parking expense',
+        amount: parkingAmount,
+        description: 'Parking expenses',
         gigName: gig.eventName || 'Unnamed Event',
         clientName: gig.clientName || 'Direct Client',
-        reimbursed: Boolean((gig as any).parkingReimbursed),
-        receipts: Array.isArray((gig as any).parkingReceipts) ? (gig as any).parkingReceipts : []
+        reimbursed: Boolean((gig as any).parking_reimbursed || (gig as any).parkingReimbursed),
+        receipts: parkingReceipts
       });
     }
-    if (parseFloat(gig.otherExpenses || '0') > 0) {
+    
+    // Other expenses (if has amount OR receipts)
+    if (otherAmount > 0 || otherReceipts.length > 0) {
       receipts.push({
         date: gig.date,
         type: 'other' as const,
-        amount: parseFloat(gig.otherExpenses || '0'),
-        description: 'Other business expense',
+        amount: otherAmount,
+        description: 'Other business expenses',
         gigName: gig.eventName || 'Unnamed Event',
         clientName: gig.clientName || 'Direct Client',
-        reimbursed: Boolean((gig as any).otherExpensesReimbursed),
-        receipts: Array.isArray((gig as any).otherExpenseReceipts) ? (gig as any).otherExpenseReceipts : []
+        reimbursed: Boolean((gig as any).other_expenses_reimbursed || (gig as any).otherExpensesReimbursed),
+        receipts: otherReceipts
       });
     }
   });
