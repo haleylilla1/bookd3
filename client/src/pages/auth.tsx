@@ -110,13 +110,13 @@ export default function AuthPage() {
         body: JSON.stringify(payload),
       });
 
-      console.log(`${isLogin ? 'Login' : 'Registration'} response:`, response.status);
-      console.log('Response headers:', response.headers.get('content-type'));
+      console.log(`🔍 ${isLogin ? 'Login' : 'Registration'} response:`, response.status);
+      console.log('🔍 Response headers:', response.headers.get('content-type'));
       
       // Debug: log first few characters of response to identify HTML vs JSON
       const responseClone = response.clone();
       const responseText = await responseClone.text();
-      console.log('Response preview:', responseText.substring(0, 100));
+      console.log('🔍 Response preview:', responseText.substring(0, 200));
 
       if (response.ok) {
         let result;
@@ -165,9 +165,12 @@ export default function AuthPage() {
           error = { message: `Authentication failed: ${response.status} ${response.statusText}` };
         }
         
+        const errorMessage = error.error || error.message || "An unexpected error occurred";
+        console.error("Displaying error to user:", errorMessage);
+        
         toast({
           title: isLogin ? "Login Failed" : "Registration Failed",
-          description: error.error || error.message || "Please try again.",
+          description: errorMessage,
           variant: "destructive",
         });
       }
@@ -228,8 +231,8 @@ export default function AuthPage() {
             </CardTitle>
             <CardDescription className="text-center">
               {isLogin 
-                ? "Sign in to your Giggy account" 
-                : "Start tracking your gigs with Giggy"
+                ? "Sign in to your Bookd account" 
+                : "Start tracking your gigs with Bookd"
               }
             </CardDescription>
           </CardHeader>
