@@ -209,6 +209,14 @@ export default function ReceiptUpload({
                     className="w-full h-full object-cover rounded"
                     loading="lazy"
                     decoding="async"
+                    onError={(e) => {
+                      console.log('Image load error:', receipt);
+                      const target = e.target as HTMLImageElement;
+                      target.style.display = 'none';
+                    }}
+                    onLoad={() => {
+                      console.log('Image loaded successfully:', receipt);
+                    }}
                   />
                   <div className="absolute inset-0 bg-black bg-opacity-0 hover:bg-opacity-20 transition-all rounded flex items-center justify-center opacity-0 hover:opacity-100">
                     <Button
