@@ -71,6 +71,18 @@ export interface IStorage {
   createGig(gig: InsertGig): Promise<Gig>;
   updateGig(id: number, gig: Partial<InsertGig>): Promise<Gig | undefined>;
   deleteGig(id: number): Promise<boolean>;
+  
+  // Multi-day gig support
+  updateMultiDayGigs(multiDayGroupId: string, updateData: Partial<InsertGig>): Promise<Gig[]>;
+  deleteMultiDayGigs(multiDayGroupId: string): Promise<boolean>;
+  
+  // Dashboard data
+  getLightweightDashboardData(userId: number): Promise<any>;
+  getDashboardData(userId: number): Promise<any>;
+  
+  // Goals by period
+  getMonthlyGoalsByUser(userId: number, date: string): Promise<MonthlyGoal[]>;
+  getYearlyGoalsByUser(userId: number, date: string): Promise<YearlyGoal[]>;
 
   // Goals
   getGoal(id: number): Promise<Goal | undefined>;
@@ -425,6 +437,141 @@ export class DatabaseStorage implements IStorage {
     }
     
     return (result.rowCount || 0) > 0;
+  }
+
+  // Multi-day gig support methods
+  async updateMultiDayGigs(multiDayGroupId: string, updateData: Partial<InsertGig>): Promise<Gig[]> {
+    try {
+      const updatedGigs = await db
+        .update(gigs)
+        .set(updateData)
+        .where(eq(gigs.multiDayGroupId, multiDayGroupId))
+        .returning();
+      
+      // Invalidate cache for affected user
+      if (updatedGigs.length > 0) {
+        const userId = updatedGigs[0].userId;
+        await Promise.all([
+          cache.invalidate(`gigs:${userId}`),
+          cache.invalidate(`dashboard:${userId}`)
+        ]);
+      }
+      
+      return updatedGigs;
+    } catch (error) {
+      console.error('Error updating multi-day gigs:', error);
+      throw error;
+    }
+  }
+
+  async deleteMultiDayGigs(multiDayGroupId: string): Promise<boolean> {
+    try {
+      // Get one gig to know which user's cache to invalidate
+      const [sampleGig] = await db.select().from(gigs).where(eq(gigs.multiDayGroupId, multiDayGroupId)).limit(1);
+      
+      const result = await db.delete(gigs).where(eq(gigs.multiDayGroupId, multiDayGroupId));
+      
+      // Invalidate cache for affected user
+      if (sampleGig) {
+        await Promise.all([
+          cache.invalidate(`gigs:${sampleGig.userId}`),
+          cache.invalidate(`dashboard:${sampleGig.userId}`)
+        ]);
+      }
+      
+      return (result.rowCount || 0) > 0;
+    } catch (error) {
+      console.error('Error deleting multi-day gigs:', error);
+      throw error;
+    }
+  }
+
+  // Dashboard data methods
+  async getLightweightDashboardData(userId: number): Promise<any> {
+    try {
+      const cacheKey = `dashboard-light:${userId}`;
+      const cached = await cache.get(cacheKey);
+      if (cached) return cached;
+
+      // Simple lightweight data - just basic stats
+      const gigCount = await db.select({ count: count() }).from(gigs).where(eq(gigs.userId, userId));
+      const totalEarnings = await db.select({ total: sql<number>`COALESCE(SUM(CAST(actual_pay as DECIMAL)), 0)` })
+        .from(gigs)
+        .where(and(eq(gigs.userId, userId), eq(gigs.status, 'completed')));
+
+      const lightData = {
+        totalGigs: gigCount[0]?.count || 0,
+        totalEarnings: totalEarnings[0]?.total || 0,
+        timestamp: new Date().toISOString()
+      };
+
+      await cache.set(cacheKey, lightData, 300); // 5 minutes
+      return lightData;
+    } catch (error) {
+      console.error('Error fetching lightweight dashboard data:', error);
+      return { totalGigs: 0, totalEarnings: 0, timestamp: new Date().toISOString() };
+    }
+  }
+
+  async getDashboardData(userId: number): Promise<any> {
+    try {
+      const cacheKey = `dashboard:${userId}`;
+      const cached = await cache.get(cacheKey);
+      if (cached) return cached;
+
+      // Full dashboard data
+      const userGigs = await this.getGigsByUser(userId);
+      const monthlyGoal = await this.getMonthlyGoal(userId, new Date().getMonth() + 1, new Date().getFullYear());
+      const yearlyGoal = await this.getYearlyGoal(userId, new Date().getFullYear());
+
+      const dashboardData = {
+        gigs: userGigs,
+        monthlyGoal,
+        yearlyGoal,
+        timestamp: new Date().toISOString()
+      };
+
+      await cache.set(cacheKey, dashboardData, 300); // 5 minutes
+      return dashboardData;
+    } catch (error) {
+      console.error('Error fetching dashboard data:', error);
+      return { gigs: [], monthlyGoal: null, yearlyGoal: null, timestamp: new Date().toISOString() };
+    }
+  }
+
+  // Goals by period methods
+  async getMonthlyGoalsByUser(userId: number, date: string): Promise<MonthlyGoal[]> {
+    try {
+      const dateObj = new Date(date);
+      const month = dateObj.getMonth() + 1;
+      const year = dateObj.getFullYear();
+      
+      return await db.select().from(monthlyGoals)
+        .where(and(
+          eq(monthlyGoals.userId, userId),
+          eq(monthlyGoals.month, month),
+          eq(monthlyGoals.year, year)
+        ));
+    } catch (error) {
+      console.error('Error fetching monthly goals:', error);
+      return [];
+    }
+  }
+
+  async getYearlyGoalsByUser(userId: number, date: string): Promise<YearlyGoal[]> {
+    try {
+      const dateObj = new Date(date);
+      const year = dateObj.getFullYear();
+      
+      return await db.select().from(yearlyGoals)
+        .where(and(
+          eq(yearlyGoals.userId, userId),
+          eq(yearlyGoals.year, year)
+        ));
+    } catch (error) {
+      console.error('Error fetching yearly goals:', error);
+      return [];
+    }
   }
 
   async getGoal(id: number): Promise<Goal | undefined> {
