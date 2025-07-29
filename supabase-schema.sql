@@ -133,7 +133,10 @@ USING (bucket_id = 'reports');
 
 -- Cleanup function to remove expired cached reports
 CREATE OR REPLACE FUNCTION cleanup_expired_reports()
-RETURNS INTEGER AS $$
+RETURNS INTEGER 
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
 DECLARE
   deleted_count INTEGER;
 BEGIN
@@ -172,7 +175,10 @@ $$ LANGUAGE plpgsql;
 
 -- Performance monitoring function
 CREATE OR REPLACE FUNCTION update_daily_performance_metrics()
-RETURNS VOID AS $$
+RETURNS VOID 
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
 DECLARE
   metric_date DATE := CURRENT_DATE;
   total_reqs INTEGER;
@@ -217,12 +223,46 @@ $$ LANGUAGE plpgsql;
 -- Create initial metrics for today
 SELECT update_daily_performance_metrics();
 
+-- Secure function to handle new user registration (commonly needed for Supabase Auth)
+CREATE OR REPLACE FUNCTION handle_new_user()
+RETURNS TRIGGER
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
+BEGIN
+  -- Create a user profile when a new user signs up via Supabase Auth
+  INSERT INTO user_profiles (
+    auth_user_id,
+    email,
+    name,
+    created_at,
+    updated_at
+  ) VALUES (
+    NEW.id,
+    NEW.email,
+    COALESCE(NEW.raw_user_meta_data->>'name', split_part(NEW.email, '@', 1)),
+    NOW(),
+    NOW()
+  );
+  
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Create trigger to automatically create user profiles on new user signup
+-- Note: This trigger should be applied to auth.users table in Supabase dashboard
+-- DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
+-- CREATE TRIGGER on_auth_user_created
+--   AFTER INSERT ON auth.users
+--   FOR EACH ROW EXECUTE FUNCTION handle_new_user();
+
 -- Grant necessary permissions
 GRANT ALL ON cached_reports TO authenticated, anon, service_role;
 GRANT ALL ON report_generation_log TO authenticated, anon, service_role;
 GRANT ALL ON report_performance_metrics TO authenticated, anon, service_role;
 GRANT EXECUTE ON FUNCTION cleanup_expired_reports() TO service_role;
 GRANT EXECUTE ON FUNCTION update_daily_performance_metrics() TO service_role;
+GRANT EXECUTE ON FUNCTION handle_new_user() TO service_role;
 
 -- Enable realtime for admin monitoring (optional)
 -- ALTER publication supabase_realtime ADD TABLE report_performance_metrics;
@@ -232,3 +272,4 @@ COMMENT ON TABLE report_generation_log IS 'Audit trail for all report generation
 COMMENT ON TABLE report_performance_metrics IS 'Daily performance metrics for monitoring report generation system health';
 COMMENT ON FUNCTION cleanup_expired_reports() IS 'Removes expired cached reports and logs cleanup activity';
 COMMENT ON FUNCTION update_daily_performance_metrics() IS 'Calculates and stores daily performance metrics from generation logs';
+COMMENT ON FUNCTION handle_new_user() IS 'Securely creates user profiles when new users sign up via Supabase Auth - includes search_path protection against SQL injection';
