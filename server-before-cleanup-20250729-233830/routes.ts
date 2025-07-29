@@ -32,6 +32,11 @@ const logger = {
   }
 };
 import rateLimit from "express-rate-limit";
+import { nodeJSMemoryProfiler } from "./nodejs-memory-profiler";
+import { memoryLeakFixer } from "./memory-leak-fixes";
+import { timerLeakDetector } from "./timer-leak-detector";
+import { monitoringSystemCleanup } from "./monitoring-system-cleanup";
+import { fsWatcherLeakFix } from "./fswatcher-leak-fix";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Setup authentication routes first
@@ -217,9 +222,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // System monitoring endpoints
   app.get('/api/system-status', requireAuth, asyncHandler(async (req: any, res: Response) => {
     try {
-      // Monitoring systems removed during cleanup
-      const metrics = { status: 'simplified', message: 'Complex monitoring removed for reliability' };
-      const health = { status: 'operational', message: 'Infrastructure monitoring simplified' };
+      const { monitoringSystem } = await import('./monitoring-system');
+      const { infrastructureManager } = await import('./infrastructure-manager');
+      
+      const [metrics, health] = await Promise.all([
+        monitoringSystem.getCurrentStatus(),
+        infrastructureManager.getInfrastructureHealth()
+      ]);
       
       res.json({
         metrics,
@@ -234,8 +243,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get('/api/health-report', requireAuth, asyncHandler(async (req: any, res: Response) => {
     try {
-      // Infrastructure manager removed during cleanup
-      const report = 'System Status: Operational\nMonitoring: Simplified for reliability\nCore functionality: Working';
+      const { infrastructureManager } = await import('./infrastructure-manager');
+      const report = await infrastructureManager.generateStatusReport();
       
       res.setHeader('Content-Type', 'text/plain');
       res.send(report);
@@ -247,9 +256,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get('/api/metrics-history', requireAuth, asyncHandler(async (req: any, res: Response) => {
     try {
-      // Monitoring system removed during cleanup
+      const { monitoringSystem } = await import('./monitoring-system');
       const hours = parseInt(req.query.hours as string) || 24;
-      const history = { simplified: true, message: 'Complex metrics history removed for reliability' };
+      const history = monitoringSystem.getMetricsHistory(hours);
       
       res.json({
         history,
@@ -265,9 +274,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Cache monitoring endpoint with detailed stats and health warnings
   app.get('/api/cache-stats', apiLimiter, requireAuth, asyncHandler(async (req: any, res: Response) => {
     try {
-      // Advanced cache removed - using simple cache
-      const stats = cache.getStats();
-      const health = cache.getCacheHealth();
+      const { advancedCache } = await import('./advanced-cache');
+      const stats = advancedCache.getStats();
+      const health = advancedCache.getCacheHealth();
       
       res.json({
         ...stats,
@@ -293,10 +302,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get('/api/alerts', requireAuth, asyncHandler(async (req: any, res: Response) => {
     try {
-      // Alerting system removed during cleanup
+      const { alertingSystem } = await import('./alerting-system');
       const activeOnly = req.query.active === 'true';
-      const alerts = [];
-      const summary = { total: 0, active: 0, resolved: 0, message: 'Alerting system simplified' };
+      const alerts = activeOnly ? alertingSystem.getActiveAlerts() : alertingSystem.getAllAlerts();
+      const summary = alertingSystem.getAlertSummary();
       
       res.json({
         alerts,
@@ -311,8 +320,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get('/api/alerts-report', requireAuth, asyncHandler(async (req: any, res: Response) => {
     try {
-      // Alerting system removed during cleanup
-      const report = 'Alert Report: System simplified - no active alerts';
+      const { alertingSystem } = await import('./alerting-system');
+      const report = alertingSystem.generateAlertReport();
       
       res.setHeader('Content-Type', 'text/plain');
       res.send(report);
@@ -324,9 +333,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/alerts/:id/resolve', requireAuth, asyncHandler(async (req: any, res: Response) => {
     try {
-      // Alerting system removed during cleanup
+      const { alertingSystem } = await import('./alerting-system');
       const alertId = req.params.id;
-      const resolved = true; // Simplified - no alerting system
+      const resolved = alertingSystem.resolveAlert(alertId);
       
       if (resolved) {
         res.json({ success: true, message: 'Alert resolved' });
@@ -1026,11 +1035,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(200);
       
       // MEMORY OPTIMIZED: Use streaming utility to minimize memory footprint
-      // Memory management removed
-      // MemoryManager removed - streamLargeContent(res, htmlContent);
+      const { MemoryManager } = await import('./memory-management');
+      MemoryManager.streamLargeContent(res, htmlContent);
       
       // MEMORY CLEANUP: Force garbage collection after large content
-      // MemoryManager removed - forceGarbageCollection();
+      MemoryManager.forceGarbageCollection();
       console.log('🧠 MEMORY: PDF route cleaned up with memory management');
 
     } catch (error) {
@@ -1119,11 +1128,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(200);
       
       // MEMORY OPTIMIZED: Use streaming utility to minimize memory footprint
-      // Memory management removed
-      // MemoryManager removed - streamLargeContent(res, htmlContent);
+      const { MemoryManager } = await import('./memory-management');
+      MemoryManager.streamLargeContent(res, htmlContent);
       
       // MEMORY CLEANUP: Force garbage collection after large content
-      // MemoryManager removed - forceGarbageCollection();
+      MemoryManager.forceGarbageCollection();
       console.log('🧠 MEMORY: HTML route cleaned up with memory management');
 
     } catch (error) {
@@ -1218,14 +1227,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Cache statistics and health reporting endpoint
   app.get('/api/cache/stats', apiLimiter, requireAuth, asyncHandler(async (req: any, res) => {
     try {
-      // Advanced cache removed - using simple cache
+      const { advancedCache } = await import('./advanced-cache');
       const { cache: simpleCache } = await import('./simple-cache');
-      // Infrastructure manager removed
+      const infrastructureManager = await import('./infrastructure-manager');
       
       // Get comprehensive cache statistics
-      const advancedStats = cache.getStats();
+      const advancedStats = advancedCache.getStats();
       const simpleCacheStats = simpleCache.getStats();
-      const cacheHealth = cache.getCacheHealth();
+      const cacheHealth = advancedCache.getCacheHealth();
       
       // Get memory monitoring data
       const memoryStats = process.memoryUsage();
@@ -1350,9 +1359,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Cache health check endpoint (lightweight version)
   app.get('/api/cache/health', apiLimiter, requireAuth, asyncHandler(async (req: any, res: Response) => {
     try {
-      // Advanced cache removed - using simple cache
-      const health = cache.getCacheHealth();
-      const stats = cache.getStats();
+      const { advancedCache } = await import('./advanced-cache');
+      const health = advancedCache.getCacheHealth();
+      const stats = advancedCache.getStats();
       
       res.json({
         status: health,
