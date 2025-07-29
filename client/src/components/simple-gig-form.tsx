@@ -297,22 +297,26 @@ export default function SimpleGigForm({ onClose }: SimpleGigFormProps) {
         const gigData: InsertGig = {
           userId: user.id,
           date: gigDate,
+          startDate: data.startDate,
+          endDate: data.endDate || data.startDate,
+          isMultiDay: gigDates.length > 1,
+          multiDayGroupId: gigDates.length > 1 ? crypto.randomUUID() : null,
         gigType: data.gigType,
         eventName: data.eventName,
         clientName: data.clientName,
-        expectedPay: data.expectedPay ? parseFloat(data.expectedPay) || 0 : 0,
-        actualPay: data.actualPay ? parseFloat(data.actualPay) || 0 : 0,
-        tips: data.tips ? parseFloat(data.tips) || 0 : 0,
+        expectedPay: data.expectedPay ? (parseFloat(data.expectedPay) || 0).toString() : "0",
+        actualPay: data.actualPay ? (parseFloat(data.actualPay) || 0).toString() : "0", 
+        tips: data.tips ? (parseFloat(data.tips) || 0).toString() : "0",
         paymentMethod: data.paymentMethod,
         status: data.status,
         duties: data.duties || null,
         taxPercentage: data.taxPercentage,
         mileage: data.mileage || 0,
         notes: data.notes || null,
-        parkingExpense: data.parkingExpense ? parseFloat(data.parkingExpense) || 0 : 0,
+        parkingExpense: data.parkingExpense ? (parseFloat(data.parkingExpense) || 0).toString() : "0",
         parkingReceipts: data.parkingReceipts || [],
         parkingReimbursed: data.parkingReimbursed || false,
-        otherExpenses: data.otherExpenses ? parseFloat(data.otherExpenses) || 0 : 0,
+        otherExpenses: data.otherExpenses ? (parseFloat(data.otherExpenses) || 0).toString() : "0",
         otherExpenseReceipts: data.otherExpenseReceipts || [],
         otherExpensesReimbursed: data.otherExpensesReimbursed || false,
         };
@@ -403,7 +407,7 @@ export default function SimpleGigForm({ onClose }: SimpleGigFormProps) {
                           return user?.customGigTypes && user.customGigTypes.length > 0;
                         })() ? (
                           <>
-                            {user.customGigTypes.map((gigType) => (
+                            {user.customGigTypes!.map((gigType) => (
                               <SelectItem 
                                 key={gigType} 
                                 value={gigType}
@@ -805,10 +809,10 @@ export default function SimpleGigForm({ onClose }: SimpleGigFormProps) {
                   </div>
                 </div>
 
-                {form.watch("mileage") > 0 && (
+                {form.watch("mileage") && form.watch("mileage")! > 0 && (
                   <div className="bg-green-50 p-3 rounded-lg">
                     <div className="text-sm text-green-800">
-                      <strong>Tax Deduction:</strong> ${(form.watch("mileage") * 0.655).toFixed(2)} 
+                      <strong>Tax Deduction:</strong> ${((form.watch("mileage") || 0) * 0.655).toFixed(2)} 
                       <span className="text-green-600 ml-2">(at $0.655 per mile)</span>
                     </div>
                   </div>
