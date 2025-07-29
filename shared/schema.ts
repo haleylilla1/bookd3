@@ -123,6 +123,8 @@ export const gigs = pgTable("gigs", {
   eventName: text("event_name").notNull().default("Event"),
   clientName: text("client_name").notNull(),
   date: date("date").notNull(),
+  startDate: date("start_date").notNull(), // For multi-day support
+  endDate: date("end_date"), // For multi-day support  
   expectedPay: decimal("expected_pay", { precision: 10, scale: 2 }),
   actualPay: decimal("actual_pay", { precision: 10, scale: 2 }),
   tips: decimal("tips", { precision: 10, scale: 2 }),
@@ -142,6 +144,9 @@ export const gigs = pgTable("gigs", {
   distanceMiles: decimal("distance_miles", { precision: 8, scale: 2 }),
   travelTimeMinutes: integer("travel_time_minutes"),
   includeInResume: boolean("include_in_resume").default(true),
+  // Multi-day gig support
+  isMultiDay: boolean("is_multi_day").default(false),
+  multiDayGroupId: text("multi_day_group_id"), // Groups multi-day gig entries together
   createdAt: timestamp("created_at").defaultNow(),
 });
 
