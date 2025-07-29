@@ -43,7 +43,7 @@ import {
 import bcrypt from "bcryptjs";
 import { db } from "./db";
 import { eq, and, gte, lte, desc, count, sql, inArray } from "drizzle-orm";
-import { cache } from "./simple-cache";
+import { advancedCache } from "./advanced-cache";
 
 export interface IStorage {
   // User operations
@@ -154,12 +154,12 @@ export class DatabaseStorage implements IStorage {
   async getUser(id: number): Promise<User | undefined> {
     // Check cache first (5 minute TTL for user data)
     const cacheKey = `user:${id}`;
-    const cached = await cache.get(cacheKey);
+    const cached = await advancedCache.get(cacheKey);
     if (cached) return cached;
 
     const [user] = await db.select().from(users).where(eq(users.id, id));
     if (user) {
-      await cache.set(cacheKey, user, 300); // 5 minutes
+      await advancedCache.set(cacheKey, user, 300); // 5 minutes
     }
     return user || undefined;
   }
@@ -200,10 +200,10 @@ export class DatabaseStorage implements IStorage {
     // Comprehensive cache invalidation for user data
     if (user) {
       await Promise.all([
-        cache.invalidate(`user:${id}`),
-        cache.invalidate(`dashboard:${id}`),
-        cache.invalidate(`gigs:${id}`),
-        cache.invalidate(`goals:${id}`)
+        advancedCache.invalidate(`user:${id}`),
+        advancedCache.invalidate(`dashboard:${id}`),
+        advancedCache.invalidate(`gigs:${id}`),
+        advancedCache.invalidate(`goals:${id}`)
       ]);
     }
     
@@ -334,14 +334,14 @@ export class DatabaseStorage implements IStorage {
   async getGigsByUser(userId: number): Promise<Gig[]> {
     // Use proper Drizzle query with caching
     const cacheKey = `gigs:${userId}`;
-    const cached = await cache.get(cacheKey);
+    const cached = await advancedCache.get(cacheKey);
     if (cached) return cached;
 
     const userGigs = await db.select().from(gigs)
       .where(eq(gigs.userId, userId))
       .orderBy(desc(gigs.date));
     
-    await cache.set(cacheKey, userGigs, 120); // 2 minutes
+    await advancedCache.set(cacheKey, userGigs, 120); // 2 minutes
     return userGigs;
   }
 
@@ -365,7 +365,7 @@ export class DatabaseStorage implements IStorage {
         .returning();
       
       // Invalidate cache for this user
-      await cache.invalidate(`gigs:${insertGig.userId}`);
+      await advancedCache.invalidate(`gigs:${insertGig.userId}`);
       
       return gig;
     } catch (error) {
@@ -397,8 +397,8 @@ export class DatabaseStorage implements IStorage {
       // Invalidate cache for affected user
       if (gig) {
         await Promise.all([
-          cache.invalidate(`gigs:${gig.userId}`),
-          cache.invalidate(`dashboard:${gig.userId}`)
+          advancedCache.invalidate(`gigs:${gig.userId}`),
+          advancedCache.invalidate(`dashboard:${gig.userId}`)
         ]);
       }
       
@@ -419,8 +419,8 @@ export class DatabaseStorage implements IStorage {
     // Invalidate cache for affected user
     if (gig) {
       await Promise.all([
-        cache.invalidate(`gigs:${gig.userId}`),
-        cache.invalidate(`dashboard:${gig.userId}`)
+        advancedCache.invalidate(`gigs:${gig.userId}`),
+        advancedCache.invalidate(`dashboard:${gig.userId}`)
       ]);
     }
     
@@ -515,14 +515,14 @@ export class DatabaseStorage implements IStorage {
   async getMonthlyGoal(userId: number, month: number, year: number): Promise<MonthlyGoal | undefined> {
     // Check cache first (10 minute TTL for goal data)
     const cacheKey = `goal:monthly:${userId}:${month}:${year}`;
-    const cached = await cache.get(cacheKey);
+    const cached = await advancedCache.get(cacheKey);
     if (cached) return cached;
 
     const [goal] = await db.select().from(monthlyGoals)
       .where(and(eq(monthlyGoals.userId, userId), eq(monthlyGoals.month, month), eq(monthlyGoals.year, year)));
     
     if (goal) {
-      await cache.set(cacheKey, goal, 600); // 10 minutes
+      await advancedCache.set(cacheKey, goal, 600); // 10 minutes
     }
     return goal || undefined;
   }
@@ -538,8 +538,8 @@ export class DatabaseStorage implements IStorage {
       
       // Invalidate dashboard cache since goals affect dashboard display
       if (updated) {
-        await cache.invalidate(`dashboard:${updated.userId}`);
-        await cache.invalidate(`goals:${updated.userId}`);
+        await advancedCache.invalidate(`dashboard:${updated.userId}`);
+        await advancedCache.invalidate(`goals:${updated.userId}`);
       }
       
       return updated;
@@ -577,14 +577,14 @@ export class DatabaseStorage implements IStorage {
   async getYearlyGoal(userId: number, year: number): Promise<YearlyGoal | undefined> {
     // Check cache first (10 minute TTL for goal data)
     const cacheKey = `goal:yearly:${userId}:${year}`;
-    const cached = await cache.get(cacheKey);
+    const cached = await advancedCache.get(cacheKey);
     if (cached) return cached;
 
     const [goal] = await db.select().from(yearlyGoals)
       .where(and(eq(yearlyGoals.userId, userId), eq(yearlyGoals.year, year)));
     
     if (goal) {
-      await cache.set(cacheKey, goal, 600); // 10 minutes
+      await advancedCache.set(cacheKey, goal, 600); // 10 minutes
     }
     return goal || undefined;
   }
@@ -600,8 +600,8 @@ export class DatabaseStorage implements IStorage {
       
       // Invalidate dashboard cache since goals affect dashboard display
       if (updated) {
-        await cache.invalidate(`dashboard:${updated.userId}`);
-        await cache.invalidate(`goals:${updated.userId}`);
+        await advancedCache.invalidate(`dashboard:${updated.userId}`);
+        await advancedCache.invalidate(`goals:${updated.userId}`);
       }
       
       return updated;
@@ -686,8 +686,8 @@ export class DatabaseStorage implements IStorage {
     // Invalidate user-specific caches since expenses affect dashboard calculations
     if (expense) {
       await Promise.all([
-        cache.invalidate(`dashboard:${expense.userId}`),
-        cache.invalidate(`expenses:${expense.userId}`)
+        advancedCache.invalidate(`dashboard:${expense.userId}`),
+        advancedCache.invalidate(`expenses:${expense.userId}`)
       ]);
     }
     
@@ -704,8 +704,8 @@ export class DatabaseStorage implements IStorage {
     // Invalidate user-specific caches since expenses affect dashboard calculations
     if (expense && result.rowCount !== null && result.rowCount > 0) {
       await Promise.all([
-        cache.invalidate(`expenses:${expense.userId}`),
-        cache.invalidate(`dashboard:${expense.userId}`)
+        advancedCache.invalidate(`expenses:${expense.userId}`),
+        advancedCache.invalidate(`dashboard:${expense.userId}`)
       ]);
     }
     

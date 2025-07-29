@@ -10,7 +10,6 @@ import { registerRoutes } from "./routes";
 import { validateSystemOnStartup } from "./startup-validation";
 import { setupVite, serveStatic } from "./vite";
 import { handleUnhandledRejections, handleUncaughtExceptions } from "./error-handler";
-import { advancedCache } from "./advanced-cache";
 
 const app = express();
 const port = process.env.PORT || 5000;
@@ -25,62 +24,10 @@ async function start() {
   handleUnhandledRejections();
   handleUncaughtExceptions();
   
-  // PHASE 3: Apply monitoring consolidation first
-  await import('./monitoring-consolidation');
+  console.log('✅ Server startup: Core systems initialized');
   
-  // PHASE 4: Initialize memory pressure reduction
-  await import('./memory-pressure-reducer');
-  
-  // Initialize advanced cache
-  advancedCache.init().catch(console.error);
-  
-  // PHASE 2: Initialize Vite optimization before watchers  
-  const { viteOptimization } = await import('./vite-optimization');
-  viteOptimization.applyRuntimeOptimizations();
-  viteOptimization.monitorWatchingEfficiency();
-  
-  // Initialize FSWatcher leak fix (must be after Vite optimization)
-  const { fsWatcherLeakFix } = await import('./fswatcher-leak-fix');
-  console.log('👁️  FSWatcher leak fix active - tracking file watcher creation/cleanup');
-  
-  // Initialize timer leak detection 
-  const { timerLeakDetector } = await import('./timer-leak-detector');
-  console.log('🔍 Timer leak detection active - tracking all timer creation/cleanup');
-  
-  // Initialize memory leak fixes
-  const { memoryLeakFixer } = await import('./memory-leak-fixes');
-  memoryLeakFixer.setupDatabaseConnectionPooling();
-  memoryLeakFixer.setupEventListenerCleanup();
-  memoryLeakFixer.setupAggressiveGarbageCollection();
-  memoryLeakFixer.setupProcessCleanup();
-  
-  // Start infrastructure systems (simplified and staggered)
   try {
-    const { backupSystem } = await import('./backup-system');
-    backupSystem.startBackupScheduler();
-    
-    // PHASE 3: Start unified monitoring system (replaces 4+ separate systems)
-    setTimeout(async () => {
-      const { unifiedMonitoring } = await import('./unified-monitoring');
-      unifiedMonitoring.start();
-      console.log('✅ PHASE 3: Unified monitoring system started (consolidated 4+ systems)');
-    }, 30000); // Start after 30 seconds
-
-    // PHASE 4: Final memory optimization and cleanup
-    setTimeout(async () => {
-      const { phase4Optimizer } = await import('./phase4-final-optimization');
-      await phase4Optimizer.executePhase4();
-      console.log('✅ PHASE 4: Final memory optimization completed');
-    }, 45000); // Start after 45 seconds
-    
-    // PHASE 3: Skip separate infrastructure and alerting systems (now unified)
-    console.log('🎯 PHASE 3: Skipping separate infrastructure/alerting systems (consolidated into unified monitoring)');
-    
-  } catch (error) {
-    console.error('Failed to start infrastructure systems:', error);
-  }
-  
-  const server = await registerRoutes(app);
+    const server = await registerRoutes(app);
   
   // Run startup validation after routes are registered
   validateSystemOnStartup().catch(error => {
@@ -93,9 +40,13 @@ async function start() {
     serveStatic(app);
   }
 
-  server.listen(parseInt(port.toString()), "0.0.0.0", () => {
-    // Server started successfully
-  });
+    server.listen(parseInt(port.toString()), "0.0.0.0", () => {
+      console.log(`🚀 Server running on port ${port}`);
+    });
+  } catch (error) {
+    console.error('Server startup failed:', error);
+    process.exit(1);
+  }
 }
 
 start().catch(() => process.exit(1));
