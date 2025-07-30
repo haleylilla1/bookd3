@@ -12,7 +12,7 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import type { Gig } from "@shared/schema";
 import { AutoSaveIndicator, useOnlineStatus } from "./auto-save-indicator";
-import { RecoveryDialog } from "./recovery-dialog";
+
 import { useFormAutoSave, submitFormWithRetry } from "@/lib/auto-save";
 
 export default function GigLog() {
@@ -357,7 +357,7 @@ function GigEditForm({ gig, onSave, onCancel, isLoading }: GigEditFormProps) {
     try {
       await submitFormWithRetry(
         formData,
-        async (data) => {
+        async (data: any) => {
           onSave(data);
           return { success: true };
         },
@@ -482,22 +482,18 @@ function GigEditForm({ gig, onSave, onCancel, isLoading }: GigEditFormProps) {
         </div>
       </div>
       
-      {/* Recovery Dialog */}
-      <RecoveryDialog
-        isOpen={showRecoveryDialog}
-        onClose={() => setShowRecoveryDialog(false)}
-        onRestore={(data) => {
-          setFormData(data);
-          setShowRecoveryDialog(false);
-        }}
-        onDiscard={() => {
-          clearSave();
-          setShowRecoveryDialog(false);
-        }}
-        recoveryData={recoveryData}
-        timestamp={recoveryData?.timestamp || Date.now()}
-        formType="gig"
-      />
+      {/* Simple recovery notification */}
+      {showRecoveryDialog && (
+        <div className="fixed bottom-4 right-4 bg-blue-500 text-white p-4 rounded-lg shadow-lg">
+          <p>Unsaved changes detected</p>
+          <button 
+            onClick={() => setShowRecoveryDialog(false)}
+            className="mt-2 px-3 py-1 bg-white text-blue-500 rounded"
+          >
+            Dismiss
+          </button>
+        </div>
+      )}
     </form>
   );
 }
