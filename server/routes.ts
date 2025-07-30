@@ -116,36 +116,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = getUserId(req);
       const gigData = { ...req.body, userId };
       
-      // Handle multi-day gigs  
-      const startDate = new Date(req.body.startDate || req.body.date);
-      const endDate = new Date(req.body.endDate || req.body.startDate || req.body.date);
-      
-      if (startDate.getTime() !== endDate.getTime()) {
-        // Multi-day gig: create separate entries for each day
-        const gigs = [];
-        const currentDate = new Date(startDate);
-        
-        while (currentDate <= endDate) {
-          const dayGigData = {
-            ...gigData,
-            startDate: currentDate.toISOString().split('T')[0],
-            endDate: currentDate.toISOString().split('T')[0],
-            isMultiDay: true,
-            multiDayGroupId: `${userId}-${startDate.getTime()}-${Math.random().toString(36).substr(2, 9)}`
-          };
-          
-          const gig = await storage.createGig(dayGigData);
-          gigs.push(gig);
-          
-          currentDate.setDate(currentDate.getDate() + 1);
-        }
-        
-        res.status(201).json(gigs);
-      } else {
-        // Single day gig
-        const gig = await storage.createGig(gigData);
-        res.status(201).json(gig);
-      }
+      // Create single gig entry (multi-day gigs are ONE database entry with date range)
+      const gig = await storage.createGig(gigData);
+      res.status(201).json(gig);
     } catch (error) {
       res.status(500).json({ error: 'Failed to create gig' });
     }
