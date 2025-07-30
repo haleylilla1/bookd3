@@ -44,7 +44,8 @@ class SimpleMileageService {
       const data = await response.json();
       
       if (data.status === 'OK' && data.rows[0]?.elements[0]?.status === 'OK') {
-        const distance = this.parseDistance(data.rows[0].elements[0].distance.text);
+        const element = data.rows[0].elements[0];
+        const distance = this.parseDistance(element.distance.text);
         
         // Cache for 24 hours
         this.cache.set(cacheKey, {
@@ -54,7 +55,12 @@ class SimpleMileageService {
 
         return { distance, success: true };
       } else {
-        throw new Error('No route found');
+        // Log the specific error for debugging
+        console.log('Google Maps API error:', data.status, data.error_message);
+        if (data.rows[0]?.elements[0]?.status) {
+          console.log('Element status:', data.rows[0].elements[0].status);
+        }
+        throw new Error(`Google Maps API error: ${data.status}`);
       }
     } catch (error) {
       // Fallback to estimation
@@ -64,17 +70,38 @@ class SimpleMileageService {
   }
 
   private estimateDistance(origin: string, destination: string): number {
-    // Very simple estimation based on string similarity
-    const originWords = origin.toLowerCase().split(/[\s,]+/);
-    const destWords = destination.toLowerCase().split(/[\s,]+/);
+    // Enhanced estimation using address pattern matching
+    const originLower = origin.toLowerCase();
+    const destLower = destination.toLowerCase();
     
-    const commonWords = originWords.filter(word => destWords.includes(word));
-    const similarity = commonWords.length / Math.max(originWords.length, destWords.length);
+    // Extract city/state patterns
+    const extractLocation = (address: string) => {
+      const parts = address.split(',').map(p => p.trim());
+      return {
+        city: parts.length > 1 ? parts[parts.length - 2] : parts[0],
+        state: parts.length > 2 ? parts[parts.length - 1] : '',
+        full: address
+      };
+    };
     
-    // Less similar = farther apart
-    if (similarity > 0.7) return 5;   // Same area
-    if (similarity > 0.4) return 15;  // Same city/region
-    return 30; // Different areas
+    const originLoc = extractLocation(originLower);
+    const destLoc = extractLocation(destLower);
+    
+    // Same exact address
+    if (originLower === destLower) return 0;
+    
+    // Same city
+    if (originLoc.city === destLoc.city) {
+      return Math.random() * 10 + 2; // 2-12 miles within city
+    }
+    
+    // Same state, different city
+    if (originLoc.state === destLoc.state && originLoc.state) {
+      return Math.random() * 80 + 20; // 20-100 miles within state
+    }
+    
+    // Different states
+    return Math.random() * 300 + 50; // 50-350 miles interstate
   }
 
   private parseDistance(distanceText: string): number {
