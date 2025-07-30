@@ -306,34 +306,31 @@ export default function SimpleGigForm({ onClose }: SimpleGigFormProps) {
 
     try {
       // Save new client to preferred clients if it's not already there
-      if (data.clientName && 
-          user.workPreferences?.preferredClients && 
-          !user.workPreferences.preferredClients.includes(data.clientName)) {
-        try {
-          await apiRequest('POST', '/api/user/add-preferred-client', {
-            clientName: data.clientName
-          });
-          // Update local cache
-          queryClient.invalidateQueries({ queryKey: ["/api/user"] });
-        } catch (error) {
-          console.log("Note: Could not save client to preferences, but gig will still be created");
+      if (data.clientName && user?.workPreferences?.preferredClients) {
+        const preferredClients = user.workPreferences.preferredClients as string[];
+        if (!preferredClients.includes(data.clientName)) {
+          try {
+            await apiRequest('POST', '/api/user/add-preferred-client', {
+              clientName: data.clientName
+            });
+            // Update local cache
+            queryClient.invalidateQueries({ queryKey: ["/api/user"] });
+          } catch (error) {
+            console.log("Note: Could not save client to preferences, but gig will still be created");
+          }
         }
       }
 
-      // Multi-day gig creation: Create entry for each day with shared group ID
-      const gigDates = generateDateRange(data.startDate, data.endDate);
-      const isMultiDay = gigDates.length > 1;
-      const groupId = isMultiDay ? crypto.randomUUID() : null;
+      // Create SINGLE gig entry with date range (calendar will show dots on each day)
+      const isMultiDay = data.endDate && data.endDate !== data.startDate;
       
-      // Create gig entry for each day (for calendar display)
-      for (const gigDate of gigDates) {
-        const gigData: InsertGig = {
-          userId: user.id,
-          date: gigDate, // Each day gets its own entry
-          startDate: data.startDate,
-          endDate: data.endDate || data.startDate,
-          isMultiDay: isMultiDay,
-          multiDayGroupId: groupId,
+      const gigData: InsertGig = {
+        userId: user.id,
+        date: data.startDate, // Primary date (start date)
+        startDate: data.startDate,
+        endDate: data.endDate || data.startDate,
+        isMultiDay: !!isMultiDay,
+        multiDayGroupId: isMultiDay ? crypto.randomUUID() : null,
         gigType: data.gigType,
         eventName: data.eventName,
         clientName: data.clientName,
@@ -352,11 +349,10 @@ export default function SimpleGigForm({ onClose }: SimpleGigFormProps) {
         otherExpenses: data.otherExpenses ? (parseFloat(data.otherExpenses) || 0).toString() : "0",
         otherExpenseReceipts: data.otherExpenseReceipts || [],
         otherExpensesReimbursed: data.otherExpensesReimbursed || false,
-        };
+      };
 
-        // Create gig entry for this date
-        await createGigMutation.mutateAsync(gigData);
-      }
+      // Create single gig entry
+      await createGigMutation.mutateAsync(gigData);
     } catch (error) {
       console.error("Submit error:", error);
     } finally {
@@ -507,15 +503,13 @@ export default function SimpleGigForm({ onClose }: SimpleGigFormProps) {
                                 field.onChange(clientName);
                                 
                                 // Save new client to user profile
-                                const currentClients = user?.workPreferences?.preferredClients || [];
-                                if (!currentClients.includes(clientName)) {
-                                  const updatedPreferences = {
-                                    ...user?.workPreferences,
-                                    preferredClients: [...currentClients, clientName]
-                                  };
-                                  updateUserMutation.mutate({
-                                    workPreferences: updatedPreferences,
+                                try {
+                                  await apiRequest('POST', '/api/user/add-preferred-client', {
+                                    clientName: clientName
                                   });
+                                  queryClient.invalidateQueries({ queryKey: ["/api/user"] });
+                                } catch (error) {
+                                  console.log("Could not save client to preferences");
                                 }
                                 
                                 setShowNewClientInput(false);
@@ -537,15 +531,13 @@ export default function SimpleGigForm({ onClose }: SimpleGigFormProps) {
                                   field.onChange(clientName);
                                   
                                   // Save new client to user profile
-                                  const currentClients = user?.workPreferences?.preferredClients || [];
-                                  if (!currentClients.includes(clientName)) {
-                                    const updatedPreferences = {
-                                      ...user?.workPreferences,
-                                      preferredClients: [...currentClients, clientName]
-                                    };
-                                    updateUserMutation.mutate({
-                                      workPreferences: updatedPreferences,
+                                  try {
+                                    await apiRequest('POST', '/api/user/add-preferred-client', {
+                                      clientName: clientName
                                     });
+                                    queryClient.invalidateQueries({ queryKey: ["/api/user"] });
+                                  } catch (error) {
+                                    console.log("Could not save client to preferences");
                                   }
                                   
                                   setShowNewClientInput(false);
@@ -584,7 +576,7 @@ export default function SimpleGigForm({ onClose }: SimpleGigFormProps) {
                             <SelectValue placeholder="Select client or add new one" />
                           </SelectTrigger>
                           <SelectContent>
-                            {user?.workPreferences?.preferredClients?.map((client) => (
+                            {(user?.workPreferences?.preferredClients as string[] || []).map((client: string) => (
                               <SelectItem 
                                 key={client} 
                                 value={client}
@@ -644,7 +636,7 @@ export default function SimpleGigForm({ onClose }: SimpleGigFormProps) {
                   </span>
                 </div>
                 <p className="text-blue-700 text-sm mt-1">
-                  This will show calendar dots on each day ({multiDayInfo.dayCount} days total). Payment and expenses are for the entire duration.
+                  This will create one gig spanning {multiDayInfo.dayCount} days. Calendar will show dots on each day in the range.
                 </p>
               </div>
             )}
@@ -1118,7 +1110,7 @@ export default function SimpleGigForm({ onClose }: SimpleGigFormProps) {
                 {isSubmitting ? (
                   <>
                     <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Creating gig{multiDayInfo.isMultiDay ? 's' : ''}...
+                    Creating gig...
                   </>
                 ) : (
                   multiDayInfo.isMultiDay 
