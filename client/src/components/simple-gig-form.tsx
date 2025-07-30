@@ -258,9 +258,11 @@ export default function SimpleGigForm({ onClose }: SimpleGigFormProps) {
   // SIMPLE GIG CREATION MUTATION - No complex retry logic
   const createGigMutation = useMutation({
     mutationFn: async (gigData: InsertGig) => {
+      console.log("🚀 Creating gig with data:", gigData);
       return await apiRequest("POST", "/api/gigs", gigData);
     },
     onSuccess: () => {
+      console.log("✅ Gig created successfully");
       queryClient.invalidateQueries({ queryKey: ["/api/gigs"] });
       queryClient.invalidateQueries({ queryKey: ["/api/dashboard"] });
       toast({
@@ -270,7 +272,12 @@ export default function SimpleGigForm({ onClose }: SimpleGigFormProps) {
       onClose();
     },
     onError: (error) => {
-      console.error("Gig creation error:", error);
+      console.error("🚨 GIG CREATION ERROR:", error);
+      console.error("🚨 ERROR DETAILS:", {
+        message: error?.message,
+        stack: error?.stack,
+        name: error?.name
+      });
       toast({
         title: "Error",
         description: "Failed to create gig. Please try again.",
@@ -281,7 +288,10 @@ export default function SimpleGigForm({ onClose }: SimpleGigFormProps) {
 
   // SIMPLE SUBMIT HANDLER - Clear, reliable logic
   const onSubmit = async (data: GigFormData) => {
+    console.log("🔄 Form submission started with data:", data);
+    
     if (!user?.id) {
+      console.error("🚨 NO USER ID:", user);
       toast({
         title: "Authentication Error",
         description: "Please log in to create gigs",
@@ -291,6 +301,7 @@ export default function SimpleGigForm({ onClose }: SimpleGigFormProps) {
     }
 
     setIsSubmitting(true);
+    console.log("📝 Starting gig creation for user:", user.id);
 
     try {
       // Multi-day gig creation logic - same as edit form
@@ -328,7 +339,17 @@ export default function SimpleGigForm({ onClose }: SimpleGigFormProps) {
         await createGigMutation.mutateAsync(gigData);
       }
     } catch (error) {
-      console.error("Submit error:", error);
+      console.error("🚨 SUBMIT ERROR:", error);
+      console.error("🚨 ERROR DETAILS:", {
+        message: error?.message,
+        stack: error?.stack,
+        name: error?.name
+      });
+      toast({
+        title: "Error",
+        description: "Failed to create gig. Please try again.",
+        variant: "destructive"
+      });
     } finally {
       setIsSubmitting(false);
     }
