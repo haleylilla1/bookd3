@@ -24,6 +24,10 @@ async function start() {
   handleUnhandledRejections();
   handleUncaughtExceptions();
   
+  // Initialize memory-efficient cache system
+  const { memoryEfficientCache } = await import("./memory-efficient-cache");
+  await memoryEfficientCache.init();
+  
   console.log('✅ Server startup: Core systems initialized');
   
   try {
