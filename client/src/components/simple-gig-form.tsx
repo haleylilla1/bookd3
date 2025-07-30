@@ -336,7 +336,9 @@ export default function SimpleGigForm({ onClose }: SimpleGigFormProps) {
         otherExpensesReimbursed: data.otherExpensesReimbursed || false,
         };
 
+        console.log("📤 About to create gig:", gigData);
         await createGigMutation.mutateAsync(gigData);
+        console.log("✅ Gig creation completed");
       }
     } catch (error) {
       console.error("🚨 SUBMIT ERROR:", error);
