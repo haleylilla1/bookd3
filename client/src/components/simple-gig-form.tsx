@@ -324,12 +324,7 @@ export default function SimpleGigForm({ onClose }: SimpleGigFormProps) {
       // Create SINGLE gig entry with date range (calendar will show dots on each day)
       const isMultiDay = data.endDate && data.endDate !== data.startDate;
       
-      // Debug the expectedPay transformation
-      console.log('💰 Expected Pay Debug:', {
-        original: data.expectedPay,
-        parsed: parseFloat(data.expectedPay || "0"),
-        final: data.expectedPay ? (parseFloat(data.expectedPay) || 0).toString() : "0"
-      });
+
 
       const gigData: InsertGig = {
         userId: user.id,
