@@ -245,19 +245,22 @@ export default function CalendarView() {
         // Calculate days difference - must be positive (forward in time) and <= 7 days
         const dayDiff = (nextDate.getTime() - lastGigDate.getTime()) / (1000 * 60 * 60 * 24);
         
-        // Only group if: same details, within 7 days, consecutive dates AND both have multi_day_group_id
-        // This ensures only gigs created as a single multi-day event get grouped together
+        // Smart grouping logic:
+        // 1. If both have same multi_day_group_id - definitely group
+        // 2. If same name/client/type and consecutive days (≤2 days apart) - likely multi-day gig
+        // 3. But if they're >7 days apart - definitely separate gigs
         const bothHaveGroupId = currentGig.multiDayGroupId && nextGig.multiDayGroupId && 
                                currentGig.multiDayGroupId === nextGig.multiDayGroupId;
+        const consecutiveDays = dayDiff > 0 && dayDiff <= 2; // Truly consecutive (next day or day after)
+        const tooFarApart = dayDiff > 7; // Definitely separate gigs
         
         if (nextGig.eventName === currentGig.eventName &&
             nextGig.clientName === currentGig.clientName &&
             nextGig.gigType === currentGig.gigType &&
-            dayDiff > 0 && dayDiff <= 7 &&
-            bothHaveGroupId) {
+            (bothHaveGroupId || (consecutiveDays && !tooFarApart))) {
           similarGigs.push(nextGig);
           processed.add(nextGig.id);
-        } else if (dayDiff > 7) {
+        } else if (tooFarApart) {
           // Stop looking if we've exceeded the 7-day window
           break;
         }
