@@ -851,6 +851,28 @@ export default function CalendarView() {
                         >
                           <Edit2 className="h-4 w-4" />
                         </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => {
+                            // Find the grouped gig to handle multi-day gigs properly
+                            const groupedGig = filteredGigs.find(g => 
+                              g.id === gig.id || (g.gigIds && g.gigIds.includes(gig.id))
+                            );
+                            
+                            if (groupedGig?.isMultiDay && groupedGig.gigIds) {
+                              // Delete all gigs in the multi-day series
+                              groupedGig.gigIds.forEach(id => deleteGigMutation.mutate(id));
+                            } else {
+                              deleteGigMutation.mutate(gig.id);
+                            }
+                            setShowDayGigs(false);
+                          }}
+                          disabled={deleteGigMutation.isPending}
+                          className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
                       </div>
                     </div>
                     
