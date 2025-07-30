@@ -345,6 +345,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Address autocomplete endpoint using Google Places API
+  app.get('/api/address-autocomplete', requireAuth, async (req: any, res: Response) => {
+    try {
+      const { input } = req.query;
+      
+      if (!input || typeof input !== 'string' || input.length < 2) {
+        return res.json({ suggestions: [] });
+      }
+
+      const apiKey = process.env.GOOGLE_MAPS_API_KEY;
+      if (!apiKey) {
+        return res.json({ suggestions: [] });
+      }
+
+      const response = await fetch(
+        `https://maps.googleapis.com/maps/api/place/autocomplete/json?input=${encodeURIComponent(input)}&key=${apiKey}&types=address`
+      );
+
+      if (!response.ok) {
+        return res.json({ suggestions: [] });
+      }
+
+      const data = await response.json();
+      
+      if (data.status === 'OK' && data.predictions) {
+        const suggestions = data.predictions.slice(0, 5).map((prediction: any) => ({
+          description: prediction.description,
+          placeId: prediction.place_id,
+          mainText: prediction.structured_formatting?.main_text || prediction.description,
+          secondaryText: prediction.structured_formatting?.secondary_text || ''
+        }));
+        
+        res.json({ suggestions });
+      } else {
+        res.json({ suggestions: [] });
+      }
+    } catch (error) {
+      res.json({ suggestions: [] });
+    }
+  });
+
   // Distance calculation endpoint - simplified from over-engineered mileage service
   app.post('/api/calculate-distance', requireAuth, async (req: any, res: Response) => {
     try {
