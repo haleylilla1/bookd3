@@ -324,6 +324,13 @@ export default function SimpleGigForm({ onClose }: SimpleGigFormProps) {
       // Create SINGLE gig entry with date range (calendar will show dots on each day)
       const isMultiDay = data.endDate && data.endDate !== data.startDate;
       
+      // Debug the expectedPay transformation
+      console.log('💰 Expected Pay Debug:', {
+        original: data.expectedPay,
+        parsed: parseFloat(data.expectedPay || "0"),
+        final: data.expectedPay ? (parseFloat(data.expectedPay) || 0).toString() : "0"
+      });
+
       const gigData: InsertGig = {
         userId: user.id,
         date: data.startDate, // Primary date (start date)
@@ -334,9 +341,9 @@ export default function SimpleGigForm({ onClose }: SimpleGigFormProps) {
         gigType: data.gigType,
         eventName: data.eventName,
         clientName: data.clientName,
-        expectedPay: data.expectedPay ? (parseFloat(data.expectedPay) || 0).toString() : "0",
-        actualPay: data.actualPay ? (parseFloat(data.actualPay) || 0).toString() : "0", 
-        tips: data.tips ? (parseFloat(data.tips) || 0).toString() : "0",
+        expectedPay: data.expectedPay || "0",
+        actualPay: data.actualPay || "0", 
+        tips: data.tips || "0",
         paymentMethod: data.paymentMethod,
         status: data.status,
         duties: data.duties || null,
