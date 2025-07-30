@@ -7,7 +7,7 @@ if (!process.env.NODE_ENV) {
 import express from "express";
 import cookieParser from "cookie-parser";
 import { registerRoutes } from "./routes";
-import { validateSystemOnStartup } from "./startup-validation";
+// Removed over-engineered startup validation system
 import { setupVite, serveStatic } from "./vite";
 import { handleUnhandledRejections, handleUncaughtExceptions } from "./error-handler";
 
@@ -24,19 +24,16 @@ async function start() {
   handleUnhandledRejections();
   handleUncaughtExceptions();
   
-  // Initialize memory-efficient cache system
-  const { memoryEfficientCache } = await import("./memory-efficient-cache");
-  await memoryEfficientCache.init();
+  // Initialize ultra-simple cache system
+  const { ultraSimpleCache } = await import("./ultra-simple-cache");
+  ultraSimpleCache.init();
   
   console.log('✅ Server startup: Core systems initialized');
   
   try {
     const server = await registerRoutes(app);
   
-  // Run startup validation after routes are registered
-  validateSystemOnStartup().catch(error => {
-    console.error('[STARTUP] Validation failed:', error);
-  });
+  // Simple startup - no over-engineered validation systems
   
   if (process.env.NODE_ENV === "development") {
     await setupVite(app, server);
