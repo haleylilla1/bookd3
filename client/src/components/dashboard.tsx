@@ -84,7 +84,7 @@ export default function Dashboard() {
   }, [gigs.length]); // Only run when gigs are initially loaded
 
   // Fetch period-specific goal
-  const { data: currentGoal, refetch: refetchGoal } = useQuery<{ goalAmount: string; id: number }>({
+  const { data: currentGoal, refetch: refetchGoal } = useQuery<{ goalAmount: string; id: number } | null>({
     queryKey: ["/api/goals/period", selectedPeriod, currentDate.toISOString()],
     queryFn: async () => {
       const response = await fetch(`/api/goals/period?period=${selectedPeriod}&date=${currentDate.toISOString()}`, {
@@ -94,25 +94,38 @@ export default function Dashboard() {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
       const data = await response.json();
-      return data;
+      console.log('🎯 Goal query response:', { 
+        period: selectedPeriod, 
+        date: currentDate.toISOString(), 
+        response: data,
+        hasGoals: Array.isArray(data) ? data.length : 'not array'
+      });
+      
+      // Backend returns an array, get the first goal if exists
+      if (Array.isArray(data) && data.length > 0) {
+        return data[0];
+      }
+      return null;
     },
     retry: 1,
   });
 
   const updateGoalMutation = useMutation({
-    mutationFn: async (goalData: { goalAmount: string }) => {
+    mutationFn: async (goalData: { amount: string }) => {
       const response = await apiRequest("POST", `/api/goals/period/${selectedPeriod}/${currentDate.toISOString()}`, goalData);
-      return response.json();
+      return response;
     },
     onSuccess: () => {
-      refetchGoal();
+      // Invalidate cache to force refetch
+      queryClient.invalidateQueries({ queryKey: ["/api/goals/period", selectedPeriod, currentDate.toISOString()] });
       toast({
         title: "Success",
         description: "Goal updated successfully!",
       });
       setEditingGoal(null);
     },
-    onError: () => {
+    onError: (error) => {
+      console.error('Goal update error:', error);
       toast({
         title: "Error",
         description: "Failed to update goal. Please try again.",
@@ -193,7 +206,12 @@ export default function Dashboard() {
         } as Gig & { isMultiDay?: boolean; startDate?: string; endDate?: string });
       } else {
         // Single day gig
-        grouped.push(currentGig);
+        grouped.push({
+          ...currentGig,
+          isMultiDay: false,
+          startDate: currentGig.date,
+          endDate: currentGig.date
+        } as Gig & { isMultiDay?: boolean; startDate?: string; endDate?: string });
       }
     }
     
@@ -313,7 +331,7 @@ export default function Dashboard() {
 
   const handleSaveGoal = () => {
     if (!goalAmount.trim()) return;
-    updateGoalMutation.mutate({ goalAmount: goalAmount.trim() });
+    updateGoalMutation.mutate({ amount: goalAmount.trim() });
   };
 
 
