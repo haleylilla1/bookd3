@@ -179,6 +179,10 @@ export default function SimpleGigForm({ onClose }: SimpleGigFormProps) {
   const [isCalculatingMileage, setIsCalculatingMileage] = useState(false);
   const [mileageError, setMileageError] = useState<string | null>(null);
 
+  // State for client management
+  const [showNewClientInput, setShowNewClientInput] = useState(false);
+  const [newClientName, setNewClientName] = useState("");
+
   // MULTI-DAY GIG DETECTION - Simple and clear for users
   const multiDayInfo = useMemo(() => {
     if (!startDate) return { isMultiDay: false, dayCount: 1, dateRange: [] };
@@ -289,6 +293,21 @@ export default function SimpleGigForm({ onClose }: SimpleGigFormProps) {
     setIsSubmitting(true);
 
     try {
+      // Save new client to preferred clients if it's not already there
+      if (data.clientName && 
+          user.workPreferences?.preferredClients && 
+          !user.workPreferences.preferredClients.includes(data.clientName)) {
+        try {
+          await apiRequest('POST', '/api/user/add-preferred-client', {
+            clientName: data.clientName
+          });
+          // Update local cache
+          queryClient.invalidateQueries({ queryKey: ["/api/user"] });
+        } catch (error) {
+          console.log("Note: Could not save client to preferences, but gig will still be created");
+        }
+      }
+
       // Multi-day gig creation logic - same as edit form
       const gigDates = generateDateRange(data.startDate, data.endDate);
       
@@ -460,9 +479,101 @@ export default function SimpleGigForm({ onClose }: SimpleGigFormProps) {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Client Name *</FormLabel>
-                    <FormControl>
-                      <Input placeholder="ABC Company" {...field} />
-                    </FormControl>
+                    {showNewClientInput ? (
+                      <div className="space-y-2">
+                        <Input 
+                          placeholder="Enter new client name"
+                          value={newClientName}
+                          onChange={(e) => setNewClientName(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' && newClientName.trim()) {
+                              field.onChange(newClientName.trim());
+                              setShowNewClientInput(false);
+                              setNewClientName("");
+                            } else if (e.key === 'Escape') {
+                              setShowNewClientInput(false);
+                              setNewClientName("");
+                            }
+                          }}
+                          autoFocus
+                        />
+                        <div className="flex gap-2">
+                          <Button 
+                            type="button" 
+                            size="sm" 
+                            onClick={() => {
+                              if (newClientName.trim()) {
+                                field.onChange(newClientName.trim());
+                                setShowNewClientInput(false);
+                                setNewClientName("");
+                              }
+                            }}
+                            disabled={!newClientName.trim()}
+                          >
+                            Add Client
+                          </Button>
+                          <Button 
+                            type="button" 
+                            variant="outline" 
+                            size="sm" 
+                            onClick={() => {
+                              setShowNewClientInput(false);
+                              setNewClientName("");
+                            }}
+                          >
+                            Cancel
+                          </Button>
+                        </div>
+                      </div>
+                    ) : (
+                      <Select 
+                        onValueChange={(value) => {
+                          if (value === "__new_client__") {
+                            setShowNewClientInput(true);
+                          } else {
+                            field.onChange(value);
+                          }
+                        }} 
+                        value={field.value}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select client or add new one" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {(() => {
+                            console.log("🔍 SimpleGigForm - PreferredClients:", user?.workPreferences?.preferredClients);
+                            return user?.workPreferences?.preferredClients && user.workPreferences.preferredClients.length > 0;
+                          })() ? (
+                            <>
+                              {user.workPreferences!.preferredClients!.map((client) => (
+                                <SelectItem 
+                                  key={client} 
+                                  value={client}
+                                  className="cursor-pointer"
+                                >
+                                  {client}
+                                </SelectItem>
+                              ))}
+                              <SelectItem value="__new_client__" className="font-medium text-blue-600">
+                                + Add New Client
+                              </SelectItem>
+                            </>
+                          ) : (
+                            <>
+                              <div className="p-4 text-center text-gray-500">
+                                <p className="text-sm">No clients added yet.</p>
+                                <p className="text-xs mt-1">Click below to add your first client.</p>
+                              </div>
+                              <SelectItem value="__new_client__" className="font-medium text-blue-600">
+                                + Add New Client
+                              </SelectItem>
+                            </>
+                          )}
+                        </SelectContent>
+                      </Select>
+                    )}
                     <FormMessage />
                   </FormItem>
                 )}

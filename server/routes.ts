@@ -60,6 +60,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Add client to preferred clients list
+  app.post('/api/user/add-preferred-client', apiLimiter, requireAuth, async (req: any, res: Response) => {
+    try {
+      const userId = getUserId(req);
+      const { clientName } = req.body;
+      
+      if (!clientName || typeof clientName !== 'string') {
+        return res.status(400).json({ error: 'Client name is required' });
+      }
+
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ error: 'User not found' });
+      }
+
+      const currentPreferred = user.workPreferences?.preferredClients || [];
+      if (!currentPreferred.includes(clientName.trim())) {
+        const updatedPreferences = {
+          ...user.workPreferences,
+          preferredClients: [...currentPreferred, clientName.trim()]
+        };
+        
+        await storage.updateUser(userId, { 
+          workPreferences: updatedPreferences 
+        });
+      }
+
+      res.json({ success: true });
+    } catch (error) {
+      console.error('Error adding preferred client:', error);
+      res.status(500).json({ error: 'Failed to add preferred client' });
+    }
+  });
+
   // Gig routes
   app.get('/api/gigs', apiLimiter, requireAuth, async (req: any, res: Response) => {
     try {
