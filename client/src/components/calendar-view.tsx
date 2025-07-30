@@ -176,14 +176,29 @@ export default function CalendarView() {
     return gigMap;
   }, [gigs]);
 
-  // Get gigs for a specific date with consistent date formatting
+  // Get gigs for a specific date - includes multi-day gigs that span this date
   const getGigsForDate = (date: Date) => {
-    // Use consistent UTC date formatting to match gig.date format
     const year = date.getFullYear();
     const month = String(date.getMonth() + 1).padStart(2, '0');
     const day = String(date.getDate()).padStart(2, '0');
     const dateString = `${year}-${month}-${day}`;
-    return gigsByDate.get(dateString) || [];
+    
+    // Get gigs that start on this date
+    const directGigs = gigsByDate.get(dateString) || [];
+    
+    // Also find multi-day gigs that span over this date
+    const spanningGigs = gigs.filter(gig => {
+      if (!gig.isMultiDay || !gig.startDate || !gig.endDate) return false;
+      
+      const gigStart = new Date(gig.startDate + 'T00:00:00');
+      const gigEnd = new Date(gig.endDate + 'T00:00:00');
+      const checkDate = new Date(dateString + 'T00:00:00');
+      
+      // Check if this date falls within the multi-day range
+      return checkDate >= gigStart && checkDate <= gigEnd && gig.date !== dateString;
+    });
+    
+    return [...directGigs, ...spanningGigs];
   };
 
   // Handle day click
