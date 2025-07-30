@@ -201,10 +201,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { period, date } = req.params;
       
       if (period === 'monthly') {
-        const goal = await storage.setMonthlyGoal(userId, date, req.body.amount);
+        const goal = await storage.setMonthlyGoal(userId, date, req.body.amount, req.body.period || 'monthly');
         res.json(goal);
       } else if (period === 'yearly') {
-        const goal = await storage.setYearlyGoal(userId, date, req.body.amount);
+        const goal = await storage.setYearlyGoal(userId, date, req.body.amount, req.body.period || 'yearly');
         res.json(goal);
       } else {
         res.status(400).json({ error: 'Invalid period' });
@@ -225,7 +225,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         userId,
         month: parseInt(month as string),
         year: parseInt(year as string),
-        type: type as string
+        type: type as string,
+        period: type as string
       };
       
       const htmlContent = await generateProfessionalHTML(reportRequest);
@@ -249,7 +250,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         userId,
         month: parseInt(month as string),
         year: parseInt(year as string),
-        type: type as string
+        type: type as string,
+        period: type as string
       };
       
       const htmlContent = await generateProfessionalHTML(reportRequest);
@@ -295,7 +297,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       let updatedCount = 0;
       for (const gig of gigs) {
-        const gigDate = new Date(gig.startDate);
+        const gigDate = new Date(gig.date);
         gigDate.setHours(0, 0, 0, 0);
         
         if (gig.status === 'upcoming' && gigDate < today) {

@@ -30,6 +30,7 @@ const getGigStatusColor = (status: string) => {
     case "completed":
       return "bg-green-500";
     case "pending_payment":
+    case "pending payment":
     case "pending":
     case "applied":
       return "bg-orange-500";
@@ -68,7 +69,7 @@ export default function CalendarView() {
   // Mutation to automatically update gig statuses
   const updateGigStatusesMutation = useMutation({
     mutationFn: async () => {
-      const response = await apiRequest("POST", "/api/gigs/update-statuses", {});
+      const response = await fetch("/api/gigs/update-statuses");
       return response.json();
     },
     onSuccess: (data) => {
@@ -263,7 +264,7 @@ export default function CalendarView() {
         };
         grouped.push(multiDayGig);
       } else {
-        grouped.push(currentGig);
+        grouped.push(currentGig as Gig & { isMultiDay?: boolean; startDate?: string; endDate?: string; gigIds?: number[] });
       }
     }
     
@@ -275,6 +276,7 @@ export default function CalendarView() {
       case "completed":
         return "bg-green-100 text-green-800";
       case "pending_payment":
+      case "pending payment":
         return "bg-orange-100 text-orange-800";
       case "upcoming":
         return "bg-blue-100 text-blue-800";
@@ -288,6 +290,7 @@ export default function CalendarView() {
       case "completed":
         return "Completed";
       case "pending_payment":
+      case "pending payment":
         return "Pending Payment";
       case "upcoming":
         return "Upcoming";
@@ -338,7 +341,7 @@ export default function CalendarView() {
       const newDates = generateDateRange(startDate, endDate);
       for (const date of newDates) {
         const gigData = {
-          userId: user?.id,
+          userId: (user as any)?.id,
           date,
           ...updatePayload,
           paymentMethod: editingGig!.paymentMethod || "Cash",
@@ -396,7 +399,7 @@ export default function CalendarView() {
       console.error("Error updating multi-day gigs:", error);
       toast({
         title: "Update failed",
-        description: `Failed to update gig: ${error.message}. Please try again.`,
+        description: `Failed to update gig: ${(error as Error).message}. Please try again.`,
         variant: "destructive",
       });
     }
@@ -950,7 +953,7 @@ function GigEditForm({ gig, onSave, onCancel, isLoading }: GigEditFormProps) {
     tips: gig.tips || "",
     status: gig.status,
     duties: gig.duties || "",
-    taxPercentage: (gig.taxPercentage !== null && gig.taxPercentage !== undefined) ? gig.taxPercentage : (user?.defaultTaxPercentage || 23),
+    taxPercentage: (gig.taxPercentage !== null && gig.taxPercentage !== undefined) ? gig.taxPercentage : ((user as any)?.defaultTaxPercentage || 23),
     mileage: gig.mileage || 0,
     startingAddress: (user as any)?.homeAddress || "",
     endingAddress: "",
@@ -1112,9 +1115,9 @@ function GigEditForm({ gig, onSave, onCancel, isLoading }: GigEditFormProps) {
             position="popper"
             sideOffset={4}
           >
-            {user?.customGigTypes && user.customGigTypes.length > 0 ? (
+            {(user as any)?.customGigTypes && (user as any).customGigTypes.length > 0 ? (
               <>
-                {user.customGigTypes.map((gigType) => (
+                {(user as any).customGigTypes.map((gigType: string) => (
                   <SelectItem 
                     key={gigType} 
                     value={gigType}
