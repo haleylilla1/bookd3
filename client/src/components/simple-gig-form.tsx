@@ -294,7 +294,7 @@ export default function SimpleGigForm({ onClose }: SimpleGigFormProps) {
 
     try {
       // Save new client to preferred clients if it's not already there
-      const existingClients = user.workPreferences?.preferredClients || [];
+      const existingClients = (user.workPreferences?.preferredClients as string[]) || [];
       if (data.clientName && !existingClients.includes(data.clientName)) {
         try {
           await apiRequest('POST', '/api/user/add-preferred-client', {
@@ -540,7 +540,7 @@ export default function SimpleGigForm({ onClose }: SimpleGigFormProps) {
                             <SelectValue placeholder="Select client or add new one" />
                           </SelectTrigger>
                           <SelectContent>
-                            {user?.workPreferences?.preferredClients?.map((client) => (
+                            {(user?.workPreferences?.preferredClients as string[] || []).map((client: string) => (
                               <SelectItem 
                                 key={client} 
                                 value={client}
