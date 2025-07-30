@@ -258,11 +258,9 @@ export default function SimpleGigForm({ onClose }: SimpleGigFormProps) {
   // SIMPLE GIG CREATION MUTATION - No complex retry logic
   const createGigMutation = useMutation({
     mutationFn: async (gigData: InsertGig) => {
-      console.log("🚀 Creating gig with data:", gigData);
       return await apiRequest("POST", "/api/gigs", gigData);
     },
     onSuccess: () => {
-      console.log("✅ Gig created successfully");
       queryClient.invalidateQueries({ queryKey: ["/api/gigs"] });
       queryClient.invalidateQueries({ queryKey: ["/api/dashboard"] });
       toast({
@@ -272,12 +270,7 @@ export default function SimpleGigForm({ onClose }: SimpleGigFormProps) {
       onClose();
     },
     onError: (error) => {
-      console.error("🚨 GIG CREATION ERROR:", error);
-      console.error("🚨 ERROR DETAILS:", {
-        message: error?.message,
-        stack: error?.stack,
-        name: error?.name
-      });
+      console.error("Gig creation error:", error);
       toast({
         title: "Error",
         description: "Failed to create gig. Please try again.",
@@ -288,10 +281,7 @@ export default function SimpleGigForm({ onClose }: SimpleGigFormProps) {
 
   // SIMPLE SUBMIT HANDLER - Clear, reliable logic
   const onSubmit = async (data: GigFormData) => {
-    console.log("🔄 Form submission started with data:", data);
-    
     if (!user?.id) {
-      console.error("🚨 NO USER ID:", user);
       toast({
         title: "Authentication Error",
         description: "Please log in to create gigs",
@@ -301,9 +291,23 @@ export default function SimpleGigForm({ onClose }: SimpleGigFormProps) {
     }
 
     setIsSubmitting(true);
-    console.log("📝 Starting gig creation for user:", user.id);
 
     try {
+      // Save new client to preferred clients if it's not already there
+      if (data.clientName && 
+          user.workPreferences?.preferredClients && 
+          !user.workPreferences.preferredClients.includes(data.clientName)) {
+        try {
+          await apiRequest('POST', '/api/user/add-preferred-client', {
+            clientName: data.clientName
+          });
+          // Update local cache
+          queryClient.invalidateQueries({ queryKey: ["/api/user"] });
+        } catch (error) {
+          console.log("Note: Could not save client to preferences, but gig will still be created");
+        }
+      }
+
       // Multi-day gig creation logic - same as edit form
       const gigDates = generateDateRange(data.startDate, data.endDate);
       
@@ -336,22 +340,10 @@ export default function SimpleGigForm({ onClose }: SimpleGigFormProps) {
         otherExpensesReimbursed: data.otherExpensesReimbursed || false,
         };
 
-        console.log("📤 About to create gig:", gigData);
         await createGigMutation.mutateAsync(gigData);
-        console.log("✅ Gig creation completed");
       }
     } catch (error) {
-      console.error("🚨 SUBMIT ERROR:", error);
-      console.error("🚨 ERROR DETAILS:", {
-        message: error?.message,
-        stack: error?.stack,
-        name: error?.name
-      });
-      toast({
-        title: "Error",
-        description: "Failed to create gig. Please try again.",
-        variant: "destructive"
-      });
+      console.error("Submit error:", error);
     } finally {
       setIsSubmitting(false);
     }
@@ -512,7 +504,6 @@ export default function SimpleGigForm({ onClose }: SimpleGigFormProps) {
                               size="sm" 
                               onClick={() => {
                                 if (newClientName.trim()) {
-                                  // Just save to form - we'll save to preferences when the gig is created
                                   field.onChange(newClientName.trim());
                                   setShowNewClientInput(false);
                                   setNewClientName("");
@@ -550,7 +541,7 @@ export default function SimpleGigForm({ onClose }: SimpleGigFormProps) {
                             <SelectValue placeholder="Select client or add new one" />
                           </SelectTrigger>
                           <SelectContent>
-                            {(user?.workPreferences?.preferredClients as string[] || []).map((client: string) => (
+                            {user?.workPreferences?.preferredClients?.map((client) => (
                               <SelectItem 
                                 key={client} 
                                 value={client}
