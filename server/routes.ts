@@ -64,10 +64,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: 'User not found' });
       }
 
-      const currentPreferred = user.workPreferences?.preferredClients || [];
+      const workPreferences = user.workPreferences || {};
+      const currentPreferred = workPreferences.preferredClients || [];
       if (!currentPreferred.includes(clientName.trim())) {
         const updatedPreferences = {
-          ...user.workPreferences,
+          ...workPreferences,
           preferredClients: [...currentPreferred, clientName.trim()]
         };
         
@@ -224,10 +225,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { period, date } = req.params;
       
       if (period === 'monthly') {
-        const goal = await storage.setMonthlyGoal(userId, date, req.body.amount, req.body.period || 'monthly');
+        const goal = await storage.setMonthlyGoal(userId, date, req.body.amount);
         res.json(goal);
       } else if (period === 'yearly') {
-        const goal = await storage.setYearlyGoal(userId, date, req.body.amount, req.body.period || 'yearly');
+        const goal = await storage.setYearlyGoal(userId, date, req.body.amount);
         res.json(goal);
       } else {
         res.status(400).json({ error: 'Invalid period' });
@@ -249,7 +250,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         month: parseInt(month as string),
         year: parseInt(year as string),
         type: type as string,
-        period: type as string
+        period: (type === 'annual' ? 'annual' : 'monthly') as 'monthly' | 'annual'
       };
       
       const htmlContent = await generateProfessionalHTML(reportRequest);
@@ -274,7 +275,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         month: parseInt(month as string),
         year: parseInt(year as string),
         type: type as string,
-        period: type as string
+        period: (type === 'annual' ? 'annual' : 'monthly') as 'monthly' | 'annual'
       };
       
       const htmlContent = await generateProfessionalHTML(reportRequest);
