@@ -1258,8 +1258,19 @@ function GigEditForm({ gig, onSave, onCancel, isLoading }: GigEditFormProps) {
           <Input
             type="number"
             min="0"
-            value={formData.mileage}
-            onChange={(e) => setFormData({ ...formData, mileage: parseInt(e.target.value) || 0 })}
+            value={formData.mileage === 0 ? '' : formData.mileage}
+            onChange={(e) => {
+              const value = e.target.value;
+              // Allow empty string and valid numbers
+              if (value === '') {
+                setFormData({ ...formData, mileage: 0 });
+              } else {
+                const parsed = parseInt(value);
+                if (!isNaN(parsed) && parsed >= 0) {
+                  setFormData({ ...formData, mileage: parsed });
+                }
+              }
+            }}
             placeholder="45"
           />
         </div>
