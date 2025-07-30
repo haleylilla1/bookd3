@@ -48,6 +48,9 @@ Bookd is a mobile-first gig worker companion app with comprehensive financial tr
 - GITHUB BACKUP COMPLETED: Full project successfully backed up to https://github.com/haleylilla1/bookd3.git (6,096 files, 29.7MB) ensuring all work is safely stored in cloud version control
 
 ## Recent Changes  
+- 2025-07-30: ✅ **SMART MULTI-DAY GIG GROUPING FIXED** - Calendar now correctly distinguishes between true multi-day gigs (consecutive days) and separate gigs with same name, preventing false grouping of individually created gigs
+- 2025-07-30: ✅ **CALENDAR DELETE FUNCTIONALITY ADDED** - Users can now delete gigs directly from calendar view with trash button next to edit button, supports both single gigs and multi-day series deletion
+- 2025-07-30: ✅ **STATUS FILTER SEARCH COMPLETELY FIXED** - "Pending payment" status now properly appears in calendar filter dropdown, handles both underscore and space formats automatically
 - 2025-07-29: 🎉 **PHASE 2 ROUTES CONSOLIDATION SUCCESS** - routes.ts reduced from 1,707 lines to 345 lines (80% reduction), eliminated all over-engineered "BULLETPROOF" code while maintaining functionality
 - 2025-07-29: ✅ **MULTI-DAY GIG FUNCTIONALITY IMPLEMENTED** - Database schema updated with isMultiDay/multiDayGroupId fields, storage methods added, 123 existing gigs migrated successfully
 - 2025-07-29: ✅ **ALL LSP ERRORS RESOLVED** - Clean TypeScript compilation, server running healthy with user authentication operational
