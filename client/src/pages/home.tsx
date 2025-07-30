@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import CalendarView from "@/components/calendar-view";
-import BasicGigForm from "@/components/basic-gig-form";
+import GigForm from "@/components/gig-form";
 import Dashboard from "@/components/dashboard";
 import Profile from "@/components/profile";
 import BottomNavigation from "@/components/bottom-navigation";
@@ -32,7 +32,7 @@ export default function Home() {
       case "profile":
         return <Profile />;
       case "gig-form":
-        return <BasicGigForm onClose={() => setCurrentScreen("calendar")} />;
+        return <GigForm onClose={() => setCurrentScreen("calendar")} />;
       case "settings":
         return <Profile />; // Use Profile component for settings for now
       default:
