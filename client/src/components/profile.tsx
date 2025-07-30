@@ -21,6 +21,8 @@ export default function Profile() {
   const [editedBusinessEmail, setEditedBusinessEmail] = useState("");
   const [newGigType, setNewGigType] = useState("");
   const [isAddingGigType, setIsAddingGigType] = useState(false);
+  const [newClientName, setNewClientName] = useState("");
+  const [isAddingClient, setIsAddingClient] = useState(false);
   
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -60,6 +62,8 @@ export default function Profile() {
       setIsEditing(false);
       setNewGigType("");
       setIsAddingGigType(false);
+      setNewClientName("");
+      setIsAddingClient(false);
     },
     onError: (error) => {
       toast({
@@ -136,6 +140,51 @@ export default function Profile() {
     const currentTypes = user?.customGigTypes || [];
     updateUserMutation.mutate({
       customGigTypes: currentTypes.filter(type => type !== gigTypeToRemove),
+    });
+  };
+
+  const handleAddClient = () => {
+    if (!newClientName.trim()) {
+      toast({
+        title: "Missing Client Name",
+        description: "Please enter a client name.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    const currentClients = user?.workPreferences?.preferredClients || [];
+    const trimmedClient = newClientName.trim();
+    
+    if (currentClients.includes(trimmedClient)) {
+      toast({
+        title: "Duplicate Client",
+        description: "This client already exists.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Add new client to user's preferred list
+    const updatedPreferences = {
+      ...user?.workPreferences,
+      preferredClients: [...currentClients, trimmedClient]
+    };
+    
+    updateUserMutation.mutate({
+      workPreferences: updatedPreferences,
+    });
+  };
+
+  const handleRemoveClient = (clientToRemove: string) => {
+    const currentClients = user?.workPreferences?.preferredClients || [];
+    const updatedPreferences = {
+      ...user?.workPreferences,
+      preferredClients: currentClients.filter(client => client !== clientToRemove)
+    };
+    
+    updateUserMutation.mutate({
+      workPreferences: updatedPreferences,
     });
   };
 
@@ -447,6 +496,116 @@ export default function Profile() {
               <Button onClick={() => setIsAddingGigType(true)}>
                 <Plus className="w-4 h-4 mr-2" />
                 Add Your First Gig Type
+              </Button>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Preferred Clients Management */}
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+          <div>
+            <CardTitle className="text-lg">Preferred Clients</CardTitle>
+            <p className="text-sm text-gray-600 mt-1">
+              Manage your frequently used clients for faster gig entry.
+            </p>
+          </div>
+          <Dialog open={isAddingClient} onOpenChange={setIsAddingClient}>
+            <DialogTrigger asChild>
+              <Button variant="outline" size="sm">
+                <Plus className="w-4 h-4 mr-2" />
+                Add Client
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-md">
+              <DialogHeader>
+                <DialogTitle>Add New Client</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4 pt-4">
+                <div className="space-y-2">
+                  <Label htmlFor="clientName">Client Name</Label>
+                  <Input
+                    id="clientName"
+                    value={newClientName}
+                    onChange={(e) => setNewClientName(e.target.value)}
+                    placeholder="Enter client name"
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        handleAddClient();
+                      }
+                    }}
+                    disabled={updateUserMutation.isPending}
+                    style={{
+                      width: '100%',
+                      height: '48px',
+                      fontSize: '16px',
+                      padding: '12px 16px',
+                      border: '2px solid #d1d5db',
+                      borderRadius: '6px',
+                      backgroundColor: '#ffffff',
+                      color: '#000000',
+                      outline: 'none',
+                      boxSizing: 'border-box'
+                    }}
+                  />
+                </div>
+                <div className="flex gap-2">
+                  <Button 
+                    onClick={handleAddClient} 
+                    disabled={!newClientName.trim() || updateUserMutation.isPending}
+                    className="flex-1"
+                  >
+                    {updateUserMutation.isPending ? "Adding..." : "Add Client"}
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    onClick={() => {
+                      setIsAddingClient(false);
+                      setNewClientName("");
+                    }}
+                    disabled={updateUserMutation.isPending}
+                    className="flex-1"
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
+        </CardHeader>
+        <CardContent>
+          {user.workPreferences?.preferredClients && user.workPreferences.preferredClients.length > 0 ? (
+            <div className="space-y-2">
+              {user.workPreferences.preferredClients.map((client, index) => (
+                <div
+                  key={index}
+                  className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
+                >
+                  <span className="font-medium text-gray-900">{client}</span>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleRemoveClient(client)}
+                    className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                  >
+                    <X className="w-4 h-4" />
+                  </Button>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-8 text-gray-500">
+              <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Plus className="w-6 h-6 text-gray-400" />
+              </div>
+              <h4 className="text-lg font-semibold text-gray-900 mb-2">No Clients Added</h4>
+              <p className="text-gray-600 mb-4">
+                Add your regular clients for faster selection when creating gigs.
+              </p>
+              <Button onClick={() => setIsAddingClient(true)}>
+                <Plus className="w-4 h-4 mr-2" />
+                Add Your First Client
               </Button>
             </div>
           )}
