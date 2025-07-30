@@ -541,35 +541,18 @@ export default function SimpleGigForm({ onClose }: SimpleGigFormProps) {
                             <SelectValue placeholder="Select client or add new one" />
                           </SelectTrigger>
                           <SelectContent>
-                            {(() => {
-                              console.log("🔍 SimpleGigForm - PreferredClients:", user?.workPreferences?.preferredClients);
-                              return user?.workPreferences?.preferredClients && user.workPreferences.preferredClients.length > 0;
-                            })() ? (
-                              <>
-                                {user.workPreferences!.preferredClients!.map((client) => (
-                                  <SelectItem 
-                                    key={client} 
-                                    value={client}
-                                    className="cursor-pointer"
-                                  >
-                                    {client}
-                                  </SelectItem>
-                                ))}
-                                <SelectItem value="__new_client__" className="font-medium text-blue-600">
-                                  + Add New Client
-                                </SelectItem>
-                              </>
-                            ) : (
-                              <>
-                                <div className="p-4 text-center text-gray-500">
-                                  <p className="text-sm">No clients added yet.</p>
-                                  <p className="text-xs mt-1">Click below to add your first client.</p>
-                                </div>
-                                <SelectItem value="__new_client__" className="font-medium text-blue-600">
-                                  + Add New Client
-                                </SelectItem>
-                              </>
-                            )}
+                            {user?.workPreferences?.preferredClients?.map((client) => (
+                              <SelectItem 
+                                key={client} 
+                                value={client}
+                                className="cursor-pointer"
+                              >
+                                {client}
+                              </SelectItem>
+                            ))}
+                            <SelectItem value="__new_client__" className="font-medium text-blue-600">
+                              + Add New Client
+                            </SelectItem>
                           </SelectContent>
                         </Select>
                       )}
