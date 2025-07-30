@@ -65,7 +65,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const workPreferences = user.workPreferences || {};
-      const currentPreferred = (workPreferences.preferredClients as string[]) || [];
+      const currentPreferred = (workPreferences as any)?.preferredClients || [];
       if (!currentPreferred.includes(clientName.trim())) {
         const updatedPreferences = {
           ...workPreferences,
