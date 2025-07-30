@@ -18,16 +18,11 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import type { InsertGig, User } from "@shared/schema";
 import { calculateDistance } from "@/lib/distance";
-import { logMobileError, validateMobileEnvironment } from "@/utils/mobile-debug";
+
 import ReceiptUpload from "@/components/receipt-upload";
 import { AutoSaveIndicator, useOnlineStatus } from "./auto-save-indicator";
-import { RecoveryDialog } from "./recovery-dialog";
-import { EnhancedRecoveryDialog } from "./enhanced-recovery-dialog";
-import { MobileAutoSaveIndicator, useMobileAutoSaveStatus, MobileRecoveryNotification } from "./mobile-auto-save-indicator";
+import { MobileAutoSaveIndicator, useMobileAutoSaveStatus } from "./mobile-auto-save-indicator";
 import { useFormAutoSave, submitFormWithRetry, getAutoSavedData, hasRecoverableData } from "@/lib/auto-save";
-import { useRecoverySystem, useMobileRecovery } from "@/hooks/use-recovery-system";
-import { useBulletproofMobileAutoSave } from "@/lib/bulletproof-mobile-autosave";
-import { BulletproofMobileIndicator, useAutoSaveStatus } from "@/components/bulletproof-mobile-indicator";
 import { AddressAutocomplete } from "@/components/address-autocomplete";
 
 // ULTRA-SIMPLIFIED SCHEMA - Only validate truly required fields
@@ -344,19 +339,14 @@ export default function GigForm({ onClose }: GigFormProps) {
 
 
   const handleCalculateMileage = async () => {
-    // Enhanced mobile environment validation
-    const envCheck = validateMobileEnvironment();
-    if (!envCheck.valid) {
-      console.log('Mobile environment issues detected:', envCheck.issues);
-      
-      if (envCheck.issues.some(issue => issue.includes('offline'))) {
-        toast({
-          title: "No Internet Connection",
-          description: "Please check your internet connection and try again.",
-          variant: "destructive",
-        });
-        return;
-      }
+    // Check for internet connection
+    if (!navigator.onLine) {
+      toast({
+        title: "No Internet Connection",
+        description: "Please check your internet connection and try again.",
+        variant: "destructive",
+      });
+      return;
     }
 
     // Validate inputs
@@ -419,8 +409,8 @@ export default function GigForm({ onClose }: GigFormProps) {
     } catch (error) {
       console.error("Mileage calculation error:", error);
       
-      // Log detailed mobile debug info
-      logMobileError('Mileage Calculation', error);
+      // Log error details
+      console.error('Mileage Calculation Error:', error);
       
       // Enhanced mobile error messages
       let errorMessage = "Failed to calculate mileage. Please check your addresses and try again.";

@@ -5,8 +5,7 @@ import { Toaster } from '@/components/ui/toaster';
 import { AuthProvider } from '@/lib/replit-auth';
 import HomePage from '@/pages/home';
 import NotFound from '@/pages/not-found';
-import { RecoverySystemProvider } from '@/components/recovery-system-provider';
-import { GlobalRecoveryIndicator } from '@/components/global-recovery-indicator';
+
 
 function AppRouter() {
   return (
@@ -22,11 +21,8 @@ function AppRouter() {
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <RecoverySystemProvider>
-        <AppRouter />
-        <GlobalRecoveryIndicator />
-        <Toaster />
-      </RecoverySystemProvider>
+      <AppRouter />
+      <Toaster />
     </QueryClientProvider>
   );
 }

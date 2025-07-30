@@ -1,6 +1,4 @@
-import { createClient } from 'redis';
-
-// Memory-limited cache interface for enhanced entry tracking
+// Simple memory cache - no Redis dependency for minimal bloat
 interface CacheEntry {
   data: any;
   expires: number;
@@ -16,10 +14,9 @@ interface CacheStats {
   warnings: string[];
 }
 
-// Simple Redis cache for 1000 concurrent users with strict memory limits
+// Simple memory cache for small scale deployment
 class SimpleCache {
-  private client: any = null;
-  private fallbackCache = new Map<string, CacheEntry>();
+  private cache = new Map<string, CacheEntry>();
   private readonly maxEntries = 1000;
   private readonly maxMemoryMB = 50;
   private readonly cleanupIntervalMs = 5 * 60 * 1000; // 5 minutes, configurable
@@ -33,46 +30,22 @@ class SimpleCache {
   private cleanupCount = 0;
   
   async init() {
-    try {
-      // Use Redis if available, fallback to memory cache
-      if (process.env.REDIS_URL) {
-        this.client = createClient({ url: process.env.REDIS_URL });
-        await this.client.connect();
-        console.log('Redis cache connected');
-      } else {
-        console.log('No Redis URL - using memory cache fallback');
-        // Clear any existing memory cache on restart
-        this.fallbackCache.clear();
-        // Start automatic TTL cleanup for memory cache
-        this.startAutomaticCleanup();
-      }
-    } catch (error) {
-      console.log('Redis connection failed - using memory cache fallback');
-      this.client = null;
-      this.fallbackCache.clear();
-      // Start automatic TTL cleanup for memory cache
-      this.startAutomaticCleanup();
-    }
+    console.log('Simple memory cache initialized');
+    this.cache.clear();
+    this.startAutomaticCleanup();
   }
 
   async get(key: string): Promise<any | null> {
     try {
-      if (this.client) {
-        const data = await this.client.get(key);
-        this.client ? this.hits++ : this.misses++;
-        return data ? JSON.parse(data) : null;
-      } else {
-        // Memory fallback with tracking
-        const entry = this.fallbackCache.get(key);
-        if (entry && entry.expires > Date.now()) {
-          entry.lastAccessed = Date.now(); // Update for LRU
-          this.hits++;
-          return entry.data;
-        }
-        this.fallbackCache.delete(key);
-        this.misses++;
-        return null;
+      const entry = this.cache.get(key);
+      if (entry && entry.expires > Date.now()) {
+        entry.lastAccessed = Date.now();
+        this.hits++;
+        return entry.data;
       }
+      this.cache.delete(key);
+      this.misses++;
+      return null;
     } catch (error) {
       this.misses++;
       return null;
@@ -87,29 +60,19 @@ class SimpleCache {
         return;
       }
       
-      if (this.client) {
-        await this.client.setEx(key, ttlSeconds, JSON.stringify(data));
-      } else {
-        // Memory fallback with strict limits and TTL enforcement
-        const size = this.estimateSize(data);
-        
-        // Immediate cleanup of expired entries before adding new ones
-        this.immediateExpiredCleanup();
-        
-        // Check limits after cleanup
-        await this.enforceMemoryLimits();
-        
-        this.fallbackCache.set(key, {
-          data,
-          expires: Date.now() + (ttlSeconds * 1000),
-          lastAccessed: Date.now(),
-          size
-        });
-        
-        // Force cleanup if we exceed limits after adding
-        if (this.fallbackCache.size > this.maxEntries || this.getMemoryUsageMB() > this.maxMemoryMB) {
-          await this.forceEviction();
-        }
+      const size = this.estimateSize(data);
+      this.immediateExpiredCleanup();
+      await this.enforceMemoryLimits();
+      
+      this.cache.set(key, {
+        data,
+        expires: Date.now() + (ttlSeconds * 1000),
+        lastAccessed: Date.now(),
+        size
+      });
+      
+      if (this.cache.size > this.maxEntries || this.getMemoryUsageMB() > this.maxMemoryMB) {
+        await this.forceEviction();
       }
     } catch (error) {
       // Fail silently - cache is not critical
@@ -118,17 +81,9 @@ class SimpleCache {
 
   async invalidate(pattern: string): Promise<void> {
     try {
-      if (this.client) {
-        const keys = await this.client.keys(`*${pattern}*`);
-        if (keys.length > 0) {
-          await this.client.del(keys);
-        }
-      } else {
-        // Memory fallback
-        for (const key of this.fallbackCache.keys()) {
-          if (key.includes(pattern)) {
-            this.fallbackCache.delete(key);
-          }
+      for (const key of this.cache.keys()) {
+        if (key.includes(pattern)) {
+          this.cache.delete(key);
         }
       }
     } catch (error) {
@@ -138,17 +93,13 @@ class SimpleCache {
 
   async clearAll(): Promise<void> {
     try {
-      if (this.client) {
-        await this.client.flushAll();
-      } else {
-        this.fallbackCache.clear();
-        this.hits = 0;
-        this.misses = 0;
-        this.evictions = 0;
-        this.expiredEntriesRemoved = 0;
-        this.cleanupDurationTotal = 0;
-        this.cleanupCount = 0;
-      }
+      this.cache.clear();
+      this.hits = 0;
+      this.misses = 0;
+      this.evictions = 0;
+      this.expiredEntriesRemoved = 0;
+      this.cleanupDurationTotal = 0;
+      this.cleanupCount = 0;
     } catch (error) {
       // Fail silently
     }
@@ -176,50 +127,44 @@ class SimpleCache {
     }
   }
 
-  // Shared cleanup logic with performance monitoring and error handling
+  // Cleanup expired entries with performance monitoring
   private performExpiredCleanup(isScheduled = false): number {
-    if (this.client) return 0; // Only for memory cache
-    
     const startTime = Date.now();
-    const beforeSize = this.fallbackCache.size;
+    const beforeSize = this.cache.size;
     let removedCount = 0;
     
     try {
       const now = Date.now();
       const expiredKeys: string[] = [];
       
-      // Collect expired keys first to avoid iteration during deletion
-      for (const [key, entry] of this.fallbackCache.entries()) {
+      for (const [key, entry] of this.cache.entries()) {
         try {
           if (now > entry.expires) {
             expiredKeys.push(key);
           }
         } catch (error) {
-          // Handle corrupted cache entry
           expiredKeys.push(key);
           console.warn(`⚠️ Corrupted cache entry removed: ${key}`);
         }
       }
       
-      // Remove expired entries
       for (const key of expiredKeys) {
-        this.fallbackCache.delete(key);
+        this.cache.delete(key);
         removedCount++;
       }
       
-      // Update statistics
       if (removedCount > 0) {
         this.expiredEntriesRemoved += removedCount;
         const duration = Date.now() - startTime;
         this.cleanupDurationTotal += duration;
         this.cleanupCount++;
         
-        const cleanupType = isScheduled ? '🕐 Scheduled' : '⏰ Immediate';
-        console.log(`${cleanupType} TTL cleanup: removed ${removedCount} expired entries in ${duration}ms (${beforeSize} → ${this.fallbackCache.size})`);
+        const cleanupType = isScheduled ? 'Scheduled' : 'Immediate';
+        console.log(`${cleanupType} cleanup: removed ${removedCount} expired entries in ${duration}ms (${beforeSize} → ${this.cache.size})`);
       }
       
     } catch (error) {
-      console.error('❌ TTL cleanup failed:', error);
+      console.error('Cache cleanup failed:', error);
     }
     
     return removedCount;
@@ -247,49 +192,41 @@ class SimpleCache {
   // Get memory usage in MB
   private getMemoryUsageMB(): number {
     let totalSize = 0;
-    for (const entry of this.fallbackCache.values()) {
-      totalSize += entry.size || 1024; // Default size if missing
+    for (const entry of this.cache.values()) {
+      totalSize += entry.size || 1024;
     }
     return totalSize / (1024 * 1024);
   }
 
-  // Memory limit enforcement (separate from TTL cleanup)
+  // Memory limit enforcement
   private async enforceMemoryLimits(): Promise<void> {
-    if (this.client) return; // Only for memory cache
-    
     const now = Date.now();
-    
-    // Only run memory limit checks every 30 seconds (TTL cleanup is separate)
     if (now - this.lastCleanup < 30000) return;
     
     this.lastCleanup = now;
-    
-    // Check if we're approaching memory limits
     const memoryUsage = this.getMemoryUsageMB();
-    const entryCount = this.fallbackCache.size;
+    const entryCount = this.cache.size;
     
     if (entryCount > this.maxEntries * 0.9 || memoryUsage > this.maxMemoryMB * 0.9) {
-      console.log(`⚠️ Cache approaching limits: ${entryCount}/${this.maxEntries} entries, ${memoryUsage.toFixed(1)}/${this.maxMemoryMB}MB`);
+      console.log(`Cache approaching limits: ${entryCount}/${this.maxEntries} entries, ${memoryUsage.toFixed(1)}/${this.maxMemoryMB}MB`);
     }
   }
 
   // Force eviction when limits exceeded - uses LRU eviction
   private async forceEviction(): Promise<void> {
-    const targetSize = Math.floor(this.maxEntries * 0.8); // Clean to 80% capacity
+    const targetSize = Math.floor(this.maxEntries * 0.8);
+    if (this.cache.size <= targetSize) return;
     
-    if (this.fallbackCache.size <= targetSize) return;
-    
-    // Sort by last accessed time (LRU)
-    const entries = Array.from(this.fallbackCache.entries())
+    const entries = Array.from(this.cache.entries())
       .sort(([,a], [,b]) => (a.lastAccessed || 0) - (b.lastAccessed || 0));
     
-    const toRemove = this.fallbackCache.size - targetSize;
+    const toRemove = this.cache.size - targetSize;
     for (let i = 0; i < toRemove && i < entries.length; i++) {
-      this.fallbackCache.delete(entries[i][0]);
+      this.cache.delete(entries[i][0]);
       this.evictions++;
     }
     
-    console.log(`⚠️ Cache eviction: removed ${toRemove} LRU entries (limit: ${this.maxEntries})`);
+    console.log(`Cache eviction: removed ${toRemove} LRU entries (limit: ${this.maxEntries})`);
   }
 
   private cleanup(): void {
@@ -298,23 +235,13 @@ class SimpleCache {
   }
 
   getStats() {
-    if (this.client) {
-      return {
-        type: 'redis',
-        connected: true,
-        cacheSize: 'unknown',
-        timestamp: new Date().toISOString()
-      };
-    }
-
-    // Memory cache detailed stats
     const memoryUsage = this.getMemoryUsageMB();
     const totalRequests = this.hits + this.misses;
     const hitRate = totalRequests > 0 ? (this.hits / totalRequests) * 100 : 0;
     
     const warnings: string[] = [];
-    if (this.fallbackCache.size > this.maxEntries * 0.9) {
-      warnings.push(`High cache usage: ${this.fallbackCache.size}/${this.maxEntries} entries`);
+    if (this.cache.size > this.maxEntries * 0.9) {
+      warnings.push(`High cache usage: ${this.cache.size}/${this.maxEntries} entries`);
     }
     if (memoryUsage > this.maxMemoryMB * 0.9) {
       warnings.push(`High memory usage: ${memoryUsage.toFixed(1)}/${this.maxMemoryMB}MB`);
@@ -326,7 +253,7 @@ class SimpleCache {
     return {
       type: 'memory',
       connected: false,
-      cacheSize: this.fallbackCache.size,
+      cacheSize: this.cache.size,
       maxEntries: this.maxEntries,
       memoryUsageMB: parseFloat(memoryUsage.toFixed(2)),
       maxMemoryMB: this.maxMemoryMB,
@@ -346,10 +273,8 @@ class SimpleCache {
 
   // Get cache health status for monitoring
   getCacheHealth(): 'healthy' | 'warning' | 'critical' {
-    if (this.client) return 'healthy'; // Redis handles its own limits
-    
     const memoryUsage = this.getMemoryUsageMB();
-    const usagePercent = this.fallbackCache.size / this.maxEntries;
+    const usagePercent = this.cache.size / this.maxEntries;
     const memoryPercent = memoryUsage / this.maxMemoryMB;
     
     if (usagePercent > 0.95 || memoryPercent > 0.95 || this.evictions > 500) {
@@ -364,10 +289,7 @@ class SimpleCache {
   // Cleanup method for graceful shutdown
   destroy(): void {
     this.stopAutomaticCleanup();
-    if (this.client) {
-      this.client.disconnect();
-    }
-    this.fallbackCache.clear();
+    this.cache.clear();
   }
 }
 
