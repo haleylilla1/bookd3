@@ -65,7 +65,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const workPreferences = user.workPreferences || {};
-      const currentPreferred = workPreferences.preferredClients || [];
+      const currentPreferred = (workPreferences.preferredClients as string[]) || [];
       if (!currentPreferred.includes(clientName.trim())) {
         const updatedPreferences = {
           ...workPreferences,
@@ -196,17 +196,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = getUserId(req);
       const { period, date } = req.params;
+      const { amount } = req.body;
       
       if (period === 'monthly') {
-        const goal = await storage.setMonthlyGoal(userId, date, req.body.amount);
+        const dateObj = new Date(date);
+        const month = dateObj.getMonth() + 1;
+        const year = dateObj.getFullYear();
+        const goal = await storage.setMonthlyGoal(userId, month, year, amount);
         res.json(goal);
       } else if (period === 'yearly') {
-        const goal = await storage.setYearlyGoal(userId, date, req.body.amount);
+        const dateObj = new Date(date);
+        const year = dateObj.getFullYear();
+        const goal = await storage.setYearlyGoal(userId, year, amount);
         res.json(goal);
       } else {
         res.status(400).json({ error: 'Invalid period' });
       }
     } catch (error) {
+      console.error('Goal update error:', error);
       res.status(500).json({ error: 'Failed to set goal' });
     }
   });
