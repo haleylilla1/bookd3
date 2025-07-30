@@ -479,101 +479,101 @@ export default function SimpleGigForm({ onClose }: SimpleGigFormProps) {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Client Name *</FormLabel>
-                    {showNewClientInput ? (
-                      <div className="space-y-2">
-                        <Input 
-                          placeholder="Enter new client name"
-                          value={newClientName}
-                          onChange={(e) => setNewClientName(e.target.value)}
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter' && newClientName.trim()) {
-                              field.onChange(newClientName.trim());
-                              setShowNewClientInput(false);
-                              setNewClientName("");
-                            } else if (e.key === 'Escape') {
-                              setShowNewClientInput(false);
-                              setNewClientName("");
-                            }
-                          }}
-                          autoFocus
-                        />
-                        <div className="flex gap-2">
-                          <Button 
-                            type="button" 
-                            size="sm" 
-                            onClick={() => {
-                              if (newClientName.trim()) {
+                    <FormControl>
+                      {showNewClientInput ? (
+                        <div className="space-y-2">
+                          <Input 
+                            placeholder="Enter new client name"
+                            value={newClientName}
+                            onChange={(e) => setNewClientName(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter' && newClientName.trim()) {
                                 field.onChange(newClientName.trim());
+                                setShowNewClientInput(false);
+                                setNewClientName("");
+                              } else if (e.key === 'Escape') {
                                 setShowNewClientInput(false);
                                 setNewClientName("");
                               }
                             }}
-                            disabled={!newClientName.trim()}
-                          >
-                            Add Client
-                          </Button>
-                          <Button 
-                            type="button" 
-                            variant="outline" 
-                            size="sm" 
-                            onClick={() => {
-                              setShowNewClientInput(false);
-                              setNewClientName("");
-                            }}
-                          >
-                            Cancel
-                          </Button>
+                            autoFocus
+                          />
+                          <div className="flex gap-2">
+                            <Button 
+                              type="button" 
+                              size="sm" 
+                              onClick={() => {
+                                if (newClientName.trim()) {
+                                  field.onChange(newClientName.trim());
+                                  setShowNewClientInput(false);
+                                  setNewClientName("");
+                                }
+                              }}
+                              disabled={!newClientName.trim()}
+                            >
+                              Add Client
+                            </Button>
+                            <Button 
+                              type="button" 
+                              variant="outline" 
+                              size="sm" 
+                              onClick={() => {
+                                setShowNewClientInput(false);
+                                setNewClientName("");
+                              }}
+                            >
+                              Cancel
+                            </Button>
+                          </div>
                         </div>
-                      </div>
-                    ) : (
-                      <Select 
-                        onValueChange={(value) => {
-                          if (value === "__new_client__") {
-                            setShowNewClientInput(true);
-                          } else {
-                            field.onChange(value);
-                          }
-                        }} 
-                        value={field.value}
-                      >
-                        <FormControl>
+                      ) : (
+                        <Select 
+                          onValueChange={(value) => {
+                            if (value === "__new_client__") {
+                              setShowNewClientInput(true);
+                            } else {
+                              field.onChange(value);
+                            }
+                          }} 
+                          value={field.value}
+                        >
                           <SelectTrigger>
                             <SelectValue placeholder="Select client or add new one" />
                           </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {(() => {
-                            console.log("🔍 SimpleGigForm - PreferredClients:", user?.workPreferences?.preferredClients);
-                            return user?.workPreferences?.preferredClients && user.workPreferences.preferredClients.length > 0;
-                          })() ? (
-                            <>
-                              {user.workPreferences!.preferredClients!.map((client) => (
-                                <SelectItem 
-                                  key={client} 
-                                  value={client}
-                                  className="cursor-pointer"
-                                >
-                                  {client}
+                          <SelectContent>
+                            {(() => {
+                              console.log("🔍 SimpleGigForm - PreferredClients:", user?.workPreferences?.preferredClients);
+                              return user?.workPreferences?.preferredClients && user.workPreferences.preferredClients.length > 0;
+                            })() ? (
+                              <>
+                                {user.workPreferences!.preferredClients!.map((client) => (
+                                  <SelectItem 
+                                    key={client} 
+                                    value={client}
+                                    className="cursor-pointer"
+                                  >
+                                    {client}
+                                  </SelectItem>
+                                ))}
+                                <SelectItem value="__new_client__" className="font-medium text-blue-600">
+                                  + Add New Client
                                 </SelectItem>
-                              ))}
-                              <SelectItem value="__new_client__" className="font-medium text-blue-600">
-                                + Add New Client
-                              </SelectItem>
-                            </>
-                          ) : (
-                            <>
-                              <div className="p-4 text-center text-gray-500">
-                                <p className="text-sm">No clients added yet.</p>
-                                <p className="text-xs mt-1">Click below to add your first client.</p>
-                              </div>
-                              <SelectItem value="__new_client__" className="font-medium text-blue-600">
-                                + Add New Client
-                              </SelectItem>
-                            </>
-                          )}
-                        </SelectContent>
-                      </Select>
-                    )}
+                              </>
+                            ) : (
+                              <>
+                                <div className="p-4 text-center text-gray-500">
+                                  <p className="text-sm">No clients added yet.</p>
+                                  <p className="text-xs mt-1">Click below to add your first client.</p>
+                                </div>
+                                <SelectItem value="__new_client__" className="font-medium text-blue-600">
+                                  + Add New Client
+                                </SelectItem>
+                              </>
+                            )}
+                          </SelectContent>
+                        </Select>
+                      )}
+                    </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
