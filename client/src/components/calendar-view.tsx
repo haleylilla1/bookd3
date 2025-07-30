@@ -761,16 +761,10 @@ export default function CalendarView() {
                     <div className="flex items-center gap-4 text-sm">
                       <div className="flex items-center gap-1">
                         <DollarSign className="w-4 h-4 text-green-600" />
-                        {/* For upcoming gigs, show only expected pay */}
-                        {gig.status === 'upcoming' 
-                          ? gig.expectedPay 
-                            ? `${formatCurrency(parseFloat(gig.expectedPay))} (expected)`
-                            : "No pay set"
-                          : gig.actualPay 
-                            ? formatCurrency(parseFloat(gig.actualPay))
-                            : gig.expectedPay 
-                              ? `${formatCurrency(parseFloat(gig.expectedPay))} (expected)`
-                              : "No pay set"
+                        {/* Always show expected pay in calendar view */}
+                        {gig.expectedPay 
+                          ? formatCurrency(parseFloat(gig.expectedPay))
+                          : "No pay set"
                         }
                       </div>
                     </div>
