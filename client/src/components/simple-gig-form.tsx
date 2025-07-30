@@ -320,16 +320,20 @@ export default function SimpleGigForm({ onClose }: SimpleGigFormProps) {
         }
       }
 
-      // Create SINGLE gig entry (even for multi-day events)
-      const isMultiDay = data.endDate && data.endDate !== data.startDate;
+      // Multi-day gig creation: Create entry for each day with shared group ID
+      const gigDates = generateDateRange(data.startDate, data.endDate);
+      const isMultiDay = gigDates.length > 1;
+      const groupId = isMultiDay ? crypto.randomUUID() : null;
       
-      const gigData: InsertGig = {
-        userId: user.id,
-        date: data.startDate, // Use start date as primary date
-        startDate: data.startDate,
-        endDate: data.endDate || data.startDate,
-        isMultiDay: !!isMultiDay,
-        multiDayGroupId: isMultiDay ? crypto.randomUUID() : null,
+      // Create gig entry for each day (for calendar display)
+      for (const gigDate of gigDates) {
+        const gigData: InsertGig = {
+          userId: user.id,
+          date: gigDate, // Each day gets its own entry
+          startDate: data.startDate,
+          endDate: data.endDate || data.startDate,
+          isMultiDay: isMultiDay,
+          multiDayGroupId: groupId,
         gigType: data.gigType,
         eventName: data.eventName,
         clientName: data.clientName,
@@ -348,10 +352,11 @@ export default function SimpleGigForm({ onClose }: SimpleGigFormProps) {
         otherExpenses: data.otherExpenses ? (parseFloat(data.otherExpenses) || 0).toString() : "0",
         otherExpenseReceipts: data.otherExpenseReceipts || [],
         otherExpensesReimbursed: data.otherExpensesReimbursed || false,
-      };
+        };
 
-      // Create single gig entry
-      await createGigMutation.mutateAsync(gigData);
+        // Create gig entry for this date
+        await createGigMutation.mutateAsync(gigData);
+      }
     } catch (error) {
       console.error("Submit error:", error);
     } finally {
@@ -639,7 +644,7 @@ export default function SimpleGigForm({ onClose }: SimpleGigFormProps) {
                   </span>
                 </div>
                 <p className="text-blue-700 text-sm mt-1">
-                  This will create one gig entry spanning {multiDayInfo.dayCount} days. Payment and expenses are for the entire duration.
+                  This will show calendar dots on each day ({multiDayInfo.dayCount} days total). Payment and expenses are for the entire duration.
                 </p>
               </div>
             )}
@@ -1113,7 +1118,7 @@ export default function SimpleGigForm({ onClose }: SimpleGigFormProps) {
                 {isSubmitting ? (
                   <>
                     <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Creating gig...
+                    Creating gig{multiDayInfo.isMultiDay ? 's' : ''}...
                   </>
                 ) : (
                   multiDayInfo.isMultiDay 
