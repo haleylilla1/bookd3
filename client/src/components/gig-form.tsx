@@ -20,14 +20,7 @@ import type { InsertGig, User } from "@shared/schema";
 import { calculateDistance } from "@/lib/distance";
 import { logMobileError, validateMobileEnvironment } from "@/utils/mobile-debug";
 import ReceiptUpload from "@/components/receipt-upload";
-import { AutoSaveIndicator, useOnlineStatus } from "./auto-save-indicator";
-import { RecoveryDialog } from "./recovery-dialog";
-import { EnhancedRecoveryDialog } from "./enhanced-recovery-dialog";
-import { MobileAutoSaveIndicator, useMobileAutoSaveStatus, MobileRecoveryNotification } from "./mobile-auto-save-indicator";
-import { useFormAutoSave, submitFormWithRetry, getAutoSavedData, hasRecoverableData } from "@/lib/auto-save";
-import { useRecoverySystem, useMobileRecovery } from "@/hooks/use-recovery-system";
-import { useBulletproofMobileAutoSave } from "@/lib/bulletproof-mobile-autosave";
-import { BulletproofMobileIndicator, useAutoSaveStatus } from "@/components/bulletproof-mobile-indicator";
+// Auto-save and recovery imports removed per user request
 import { AddressAutocomplete } from "@/components/address-autocomplete";
 
 // ULTRA-SIMPLIFIED SCHEMA - Only validate truly required fields
@@ -127,20 +120,12 @@ export default function GigForm({ onClose }: GigFormProps) {
   const [trackExpenses, setTrackExpenses] = useState(false);
   const [trackMileage, setTrackMileage] = useState(false);
   const [isCalculatingDistance, setIsCalculatingDistance] = useState(false);
-  const [autoSaveLastSaved, setAutoSaveLastSaved] = useState<Date | null>(null);
-  const [showRecoveryDialog, setShowRecoveryDialog] = useState(false);
-  const [recoveryData, setRecoveryData] = useState<any>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [showMobileRecovery, setShowMobileRecovery] = useState(false);
-  const [useEnhancedRecovery, setUseEnhancedRecovery] = useState(false);
 
 
 
-  // Mobile indicator for better UX
-  const { status, updateStatus } = useAutoSaveStatus();
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const isOnline = useOnlineStatus();
 
   const { data: user, isLoading: userLoading, error: userError } = useQuery<User>({
     queryKey: ["/api/user"],
@@ -256,35 +241,9 @@ export default function GigForm({ onClose }: GigFormProps) {
     defaultValues,
   });
 
-  // BULLETPROOF MOBILE AUTO-SAVE SYSTEM - Now positioned after form is defined
-  const bulletproofAutoSave = useBulletproofMobileAutoSave({
-    key: 'gig-form',
-    data: form.watch(),
-    enabled: true,
-    onSave: (data) => {
-      setAutoSaveLastSaved(new Date());
-    },
-    onError: (error) => {
-      console.error('Bulletproof auto-save error:', error);
-      toast({
-        title: "Auto-save Warning",
-        description: "Having trouble saving form data. Please save manually.",
-        variant: "destructive"
-      });
-    }
-  });
+  // Auto-save system removed per user request
 
-  // Watch all form data for bulletproof auto-save
-  const formData = form.watch();
-  
-  // Legacy recovery check for existing saved data
-  const checkForRecovery = () => {
-    const recoveredData = bulletproofAutoSave.recoverData();
-    if (recoveredData) {
-      return { hasData: true, data: recoveredData };
-    }
-    return { hasData: false, data: null };
-  };
+  // Form data watching removed per user request
 
   // Enhanced recovery detection on mount (removed - now handled by bulletproof system)
 
@@ -300,16 +259,7 @@ export default function GigForm({ onClose }: GigFormProps) {
     }
   }, [user, userLoading, form]);
 
-  // Recovery handling on mount
-  useEffect(() => {
-    if (user && !userLoading) {
-      const recoveredData = bulletproofAutoSave.recoverData();
-      if (recoveredData) {
-        setRecoveryData(recoveredData);
-        setShowRecoveryDialog(true);
-      }
-    }
-  }, [user, userLoading, bulletproofAutoSave]);
+  // Recovery handling disabled - user doesn't want recovery notifications
 
   // Bulletproof gig creation - never shows errors to users
   const createGigMutation = useMutation({
@@ -505,8 +455,7 @@ export default function GigForm({ onClose }: GigFormProps) {
         await createGigMutation.mutateAsync(gigData);
       }
       
-      // Clear auto-saved data on success
-      bulletproofAutoSave.clearSavedData();
+      // Form submission successful
       
       // Show success message
       if (gigDates.length > 1) {
@@ -598,22 +547,7 @@ export default function GigForm({ onClose }: GigFormProps) {
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-3">
               <h2 className="text-xl font-semibold text-gray-900">Add New Gig</h2>
-              {/* Mobile-optimized auto-save indicator */}
-              <div className="hidden md:block">
-                <AutoSaveIndicator 
-                  isSaving={isSubmitting}
-                  lastSaved={autoSaveLastSaved}
-                  isOnline={isOnline}
-                />
-              </div>
-              <div className="md:hidden">
-                <MobileAutoSaveIndicator
-                  isSaving={isSubmitting}
-                  lastSaved={autoSaveLastSaved}
-                  hasUnsavedChanges={!autoSaveLastSaved}
-                  storageMethod="localStorage"
-                />
-              </div>
+
             </div>
             <Button variant="ghost" size="sm" onClick={onClose}>
               <X className="w-5 h-5" />
@@ -1288,51 +1222,9 @@ export default function GigForm({ onClose }: GigFormProps) {
         </CardContent>
       </Card>
       
-      {/* Bulletproof Mobile Auto-Save Indicator */}
-      <BulletproofMobileIndicator />
 
-      {/* Recovery Dialog */}
-      {showRecoveryDialog && recoveryData && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full">
-            <h3 className="font-semibold text-lg mb-4">Restore Unsaved Form Data?</h3>
-            <p className="text-gray-600 mb-4">
-              We found unsaved form data from a previous session. Would you like to restore it?
-            </p>
-            <div className="flex gap-3">
-              <Button 
-                onClick={() => {
-                  Object.keys(recoveryData).forEach(key => {
-                    if (form.setValue && typeof form.setValue === 'function') {
-                      form.setValue(key as any, recoveryData[key]);
-                    }
-                  });
-                  setShowRecoveryDialog(false);
-                  setRecoveryData(null);
-                  toast({
-                    title: "Data Restored",
-                    description: "Your form data has been restored."
-                  });
-                }}
-                className="flex-1"
-              >
-                Restore Data
-              </Button>
-              <Button 
-                variant="outline" 
-                onClick={() => {
-                  bulletproofAutoSave.clearSavedData();
-                  setShowRecoveryDialog(false);
-                  setRecoveryData(null);
-                }}
-                className="flex-1"
-              >
-                Discard
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
+
+
 
 
     </div>
