@@ -51,7 +51,7 @@ export default function Dashboard() {
   // Mutation to automatically update gig statuses
   const updateGigStatusesMutation = useMutation({
     mutationFn: async () => {
-      const response = await apiRequest("POST", "/api/gigs/update-statuses", {});
+      const response = await fetch("/api/gigs/update-statuses");
       return response.json();
     },
     onSuccess: (data) => {
@@ -173,9 +173,9 @@ export default function Dashboard() {
         const nextDate = parseGigDate(nextGig.date);
         const dayDiff = (nextDate.getTime() - lastGigDate.getTime()) / (1000 * 60 * 60 * 24);
         
-        if ((nextGig.eventName || nextGig.event_name) === (currentGig.eventName || currentGig.event_name) &&
-            (nextGig.clientName || nextGig.client_name) === (currentGig.clientName || currentGig.client_name) &&
-            (nextGig.gigType || nextGig.gig_type) === (currentGig.gigType || currentGig.gig_type) &&
+        if (nextGig.eventName === currentGig.eventName &&
+            nextGig.clientName === currentGig.clientName &&
+            nextGig.gigType === currentGig.gigType &&
             dayDiff > 0 && dayDiff <= 7) {
           similarGigs.push(nextGig);
           processed.add(nextGig.id);
@@ -190,7 +190,7 @@ export default function Dashboard() {
           isMultiDay: true,
           startDate: similarGigs[0].date,
           endDate: similarGigs[similarGigs.length - 1].date
-        });
+        } as Gig & { isMultiDay?: boolean; startDate?: string; endDate?: string });
       } else {
         // Single day gig
         grouped.push(currentGig);
