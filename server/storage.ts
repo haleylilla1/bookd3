@@ -43,7 +43,7 @@ import {
 import bcrypt from "bcryptjs";
 import { db } from "./db";
 import { eq, and, gte, lte, desc, count, sql, inArray } from "drizzle-orm";
-import { memoryEfficientCache } from "./memory-efficient-cache";
+import { ultraSimpleCache } from "./ultra-simple-cache";
 
 export interface IStorage {
   // User operations
@@ -166,12 +166,12 @@ export class DatabaseStorage implements IStorage {
   async getUser(id: number): Promise<User | undefined> {
     // Check cache first (5 minute TTL for user data)
     const cacheKey = `user:${id}`;
-    const cached = await memoryEfficientCache.get(cacheKey);
+    const cached = await ultraSimpleCache.get(cacheKey);
     if (cached) return cached;
 
     const [user] = await db.select().from(users).where(eq(users.id, id));
     if (user) {
-      await memoryEfficientCache.set(cacheKey, user, 300); // 5 minutes
+      await ultraSimpleCache.set(cacheKey, user, 300); // 5 minutes
     }
     return user || undefined;
   }
@@ -212,10 +212,10 @@ export class DatabaseStorage implements IStorage {
     // Comprehensive cache invalidation for user data
     if (user) {
       await Promise.all([
-        memoryEfficientCache.invalidate(`user:${id}`),
-        memoryEfficientCache.invalidate(`dashboard:${id}`),
-        memoryEfficientCache.invalidate(`gigs:${id}`),
-        memoryEfficientCache.invalidate(`goals:${id}`)
+        ultraSimpleCache.invalidate(`user:${id}`),
+        ultraSimpleCache.invalidate(`dashboard:${id}`),
+        ultraSimpleCache.invalidate(`gigs:${id}`),
+        ultraSimpleCache.invalidate(`goals:${id}`)
       ]);
     }
     
@@ -346,14 +346,14 @@ export class DatabaseStorage implements IStorage {
   async getGigsByUser(userId: number): Promise<Gig[]> {
     // Use proper Drizzle query with caching
     const cacheKey = `gigs:${userId}`;
-    const cached = await memoryEfficientCache.get(cacheKey);
+    const cached = await ultraSimpleCache.get(cacheKey);
     if (cached) return cached;
 
     const userGigs = await db.select().from(gigs)
       .where(eq(gigs.userId, userId))
       .orderBy(desc(gigs.date));
     
-    await memoryEfficientCache.set(cacheKey, userGigs, 120); // 2 minutes
+    await ultraSimpleCache.set(cacheKey, userGigs, 120); // 2 minutes
     return userGigs;
   }
 
@@ -377,7 +377,7 @@ export class DatabaseStorage implements IStorage {
         .returning();
       
       // Invalidate cache for this user
-      await memoryEfficientCache.invalidate(`gigs:${insertGig.userId}`);
+      await ultraSimpleCache.invalidate(`gigs:${insertGig.userId}`);
       
       return gig;
     } catch (error) {
@@ -409,8 +409,8 @@ export class DatabaseStorage implements IStorage {
       // Invalidate cache for affected user
       if (gig) {
         await Promise.all([
-          memoryEfficientCache.invalidate(`gigs:${gig.userId}`),
-          memoryEfficientCache.invalidate(`dashboard:${gig.userId}`)
+          ultraSimpleCache.invalidate(`gigs:${gig.userId}`),
+          ultraSimpleCache.invalidate(`dashboard:${gig.userId}`)
         ]);
       }
       
@@ -431,8 +431,8 @@ export class DatabaseStorage implements IStorage {
     // Invalidate cache for affected user
     if (gig) {
       await Promise.all([
-        memoryEfficientCache.invalidate(`gigs:${gig.userId}`),
-        memoryEfficientCache.invalidate(`dashboard:${gig.userId}`)
+        ultraSimpleCache.invalidate(`gigs:${gig.userId}`),
+        ultraSimpleCache.invalidate(`dashboard:${gig.userId}`)
       ]);
     }
     
@@ -452,8 +452,8 @@ export class DatabaseStorage implements IStorage {
       if (updatedGigs.length > 0) {
         const userId = updatedGigs[0].userId;
         await Promise.all([
-          memoryEfficientCache.invalidate(`gigs:${userId}`),
-          memoryEfficientCache.invalidate(`dashboard:${userId}`)
+          ultraSimpleCache.invalidate(`gigs:${userId}`),
+          ultraSimpleCache.invalidate(`dashboard:${userId}`)
         ]);
       }
       
@@ -474,8 +474,8 @@ export class DatabaseStorage implements IStorage {
       // Invalidate cache for affected user
       if (sampleGig) {
         await Promise.all([
-          memoryEfficientCache.invalidate(`gigs:${sampleGig.userId}`),
-          memoryEfficientCache.invalidate(`dashboard:${sampleGig.userId}`)
+          ultraSimpleCache.invalidate(`gigs:${sampleGig.userId}`),
+          ultraSimpleCache.invalidate(`dashboard:${sampleGig.userId}`)
         ]);
       }
       
@@ -490,7 +490,7 @@ export class DatabaseStorage implements IStorage {
   async getLightweightDashboardData(userId: number): Promise<any> {
     try {
       const cacheKey = `dashboard-light:${userId}`;
-      const cached = await memoryEfficientCache.get(cacheKey);
+      const cached = await ultraSimpleCache.get(cacheKey);
       if (cached) return cached;
 
       // Simple lightweight data - just basic stats
@@ -505,7 +505,7 @@ export class DatabaseStorage implements IStorage {
         timestamp: new Date().toISOString()
       };
 
-      await memoryEfficientCache.set(cacheKey, lightData, 300); // 5 minutes
+      await ultraSimpleCache.set(cacheKey, lightData, 300); // 5 minutes
       return lightData;
     } catch (error) {
       console.error('Error fetching lightweight dashboard data:', error);
@@ -516,7 +516,7 @@ export class DatabaseStorage implements IStorage {
   async getDashboardData(userId: number): Promise<any> {
     try {
       const cacheKey = `dashboard:${userId}`;
-      const cached = await memoryEfficientCache.get(cacheKey);
+      const cached = await ultraSimpleCache.get(cacheKey);
       if (cached) return cached;
 
       // Full dashboard data
@@ -531,7 +531,7 @@ export class DatabaseStorage implements IStorage {
         timestamp: new Date().toISOString()
       };
 
-      await memoryEfficientCache.set(cacheKey, dashboardData, 300); // 5 minutes
+      await ultraSimpleCache.set(cacheKey, dashboardData, 300); // 5 minutes
       return dashboardData;
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
@@ -662,14 +662,14 @@ export class DatabaseStorage implements IStorage {
   async getMonthlyGoal(userId: number, month: number, year: number): Promise<MonthlyGoal | undefined> {
     // Check cache first (10 minute TTL for goal data)
     const cacheKey = `goal:monthly:${userId}:${month}:${year}`;
-    const cached = await memoryEfficientCache.get(cacheKey);
+    const cached = await ultraSimpleCache.get(cacheKey);
     if (cached) return cached;
 
     const [goal] = await db.select().from(monthlyGoals)
       .where(and(eq(monthlyGoals.userId, userId), eq(monthlyGoals.month, month), eq(monthlyGoals.year, year)));
     
     if (goal) {
-      await memoryEfficientCache.set(cacheKey, goal, 600); // 10 minutes
+      await ultraSimpleCache.set(cacheKey, goal, 600); // 10 minutes
     }
     return goal || undefined;
   }
@@ -685,8 +685,8 @@ export class DatabaseStorage implements IStorage {
       
       // Invalidate dashboard cache since goals affect dashboard display
       if (updated) {
-        await memoryEfficientCache.invalidate(`dashboard:${updated.userId}`);
-        await memoryEfficientCache.invalidate(`goals:${updated.userId}`);
+        await ultraSimpleCache.invalidate(`dashboard:${updated.userId}`);
+        await ultraSimpleCache.invalidate(`goals:${updated.userId}`);
       }
       
       return updated;
@@ -724,14 +724,14 @@ export class DatabaseStorage implements IStorage {
   async getYearlyGoal(userId: number, year: number): Promise<YearlyGoal | undefined> {
     // Check cache first (10 minute TTL for goal data)
     const cacheKey = `goal:yearly:${userId}:${year}`;
-    const cached = await memoryEfficientCache.get(cacheKey);
+    const cached = await ultraSimpleCache.get(cacheKey);
     if (cached) return cached;
 
     const [goal] = await db.select().from(yearlyGoals)
       .where(and(eq(yearlyGoals.userId, userId), eq(yearlyGoals.year, year)));
     
     if (goal) {
-      await memoryEfficientCache.set(cacheKey, goal, 600); // 10 minutes
+      await ultraSimpleCache.set(cacheKey, goal, 600); // 10 minutes
     }
     return goal || undefined;
   }
@@ -747,8 +747,8 @@ export class DatabaseStorage implements IStorage {
       
       // Invalidate dashboard cache since goals affect dashboard display
       if (updated) {
-        await memoryEfficientCache.invalidate(`dashboard:${updated.userId}`);
-        await memoryEfficientCache.invalidate(`goals:${updated.userId}`);
+        await ultraSimpleCache.invalidate(`dashboard:${updated.userId}`);
+        await ultraSimpleCache.invalidate(`goals:${updated.userId}`);
       }
       
       return updated;
@@ -833,8 +833,8 @@ export class DatabaseStorage implements IStorage {
     // Invalidate user-specific caches since expenses affect dashboard calculations
     if (expense) {
       await Promise.all([
-        memoryEfficientCache.invalidate(`dashboard:${expense.userId}`),
-        memoryEfficientCache.invalidate(`expenses:${expense.userId}`)
+        ultraSimpleCache.invalidate(`dashboard:${expense.userId}`),
+        ultraSimpleCache.invalidate(`expenses:${expense.userId}`)
       ]);
     }
     
@@ -851,8 +851,8 @@ export class DatabaseStorage implements IStorage {
     // Invalidate user-specific caches since expenses affect dashboard calculations
     if (expense && result.rowCount !== null && result.rowCount > 0) {
       await Promise.all([
-        memoryEfficientCache.invalidate(`expenses:${expense.userId}`),
-        memoryEfficientCache.invalidate(`dashboard:${expense.userId}`)
+        ultraSimpleCache.invalidate(`expenses:${expense.userId}`),
+        ultraSimpleCache.invalidate(`dashboard:${expense.userId}`)
       ]);
     }
     

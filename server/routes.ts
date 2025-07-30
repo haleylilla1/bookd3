@@ -345,6 +345,52 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Distance calculation endpoint - simplified from over-engineered mileage service
+  app.post('/api/calculate-distance', requireAuth, async (req: any, res: Response) => {
+    try {
+      const { startAddress, endAddress, roundTrip } = req.body;
+      
+      if (!startAddress || !endAddress) {
+        return res.status(400).json({ 
+          error: 'Start and end addresses are required',
+          status: 'error'
+        });
+      }
+
+      const { simpleMileageService } = await import('./simple-mileage');
+      const result = await simpleMileageService.calculateDistance(startAddress, endAddress);
+      
+      if (result.success) {
+        let distanceMiles = result.distance;
+        if (roundTrip) {
+          distanceMiles *= 2;
+        }
+        
+        res.json({
+          status: 'success',
+          distanceMiles,
+          travelTimeMinutes: Math.round(distanceMiles * 2.5), // Simple estimate
+          fromCache: false,
+          roundTrip
+        });
+      } else {
+        res.status(400).json({
+          status: 'error',
+          error: result.error || 'Failed to calculate distance',
+          distanceMiles: 0,
+          travelTimeMinutes: 0
+        });
+      }
+    } catch (error) {
+      res.status(500).json({
+        status: 'error',
+        error: 'Distance calculation service error',
+        distanceMiles: 0,
+        travelTimeMinutes: 0
+      });
+    }
+  });
+
   // Simple database health check
   app.get('/api/db-health', requireAuth, async (req: any, res: Response) => {
     try {
