@@ -112,7 +112,8 @@ class SimpleMileageService {
   // Clean expired cache entries
   cleanup() {
     const now = Date.now();
-    for (const [key, value] of this.cache.entries()) {
+    const entries = Array.from(this.cache.entries());
+    for (const [key, value] of entries) {
       if (value.expires <= now) {
         this.cache.delete(key);
       }
