@@ -51,6 +51,7 @@ Bookd is a mobile-first gig worker companion app with comprehensive financial tr
 - GITHUB BACKUP COMPLETED: Full project successfully backed up to https://github.com/haleylilla1/bookd3.git (6,096 files, 29.7MB) ensuring all work is safely stored in cloud version control
 
 ## Recent Changes  
+- 2025-07-30: 🔧 **MOBILE TAX PERCENTAGE INPUT FIXED** - Fixed issue where users couldn't fully clear tax percentage field on mobile - now supports complete deletion and re-entry of any value (0% to 50%)
 - 2025-07-30: ⚡ **OVER-ENGINEERED LEGACY CODE ELIMINATED** - Massive simplification completed: removed 3 complex cache systems, 4 monitoring systems, deleted 1452-line mileage service, eliminated "BULLETPROOF" systems causing memory crashes
 - 2025-07-30: ✅ **CACHE CONSOLIDATION SUCCESS** - Replaced memory-efficient-cache.ts, simple-cache.ts, and supabase-optimizer.ts with single 60-line ultra-simple-cache.ts following "NEVER BUILD OVER-ENGINEERED GARBAGE" principle  
 - 2025-07-30: ✅ **MILEAGE SERVICE SIMPLIFIED** - Replaced 1452-line over-engineered mileage system with 75-line simple-mileage.ts, eliminated geographic clustering, historical patterns, queue management, and complex monitoring
