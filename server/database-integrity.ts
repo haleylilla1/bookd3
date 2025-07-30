@@ -1,6 +1,5 @@
 import { db } from './db';
 import { logger } from './logger';
-import { backupSystem } from './backup-system';
 import { users, gigs, expenses } from '@shared/schema';
 import { eq, count, sql } from 'drizzle-orm';
 
@@ -77,10 +76,10 @@ export class SimpleIntegrityChecker {
         lastChecked: new Date().toISOString()
       };
     } catch (error) {
-      logger.error('Database health check failed', { error: error.message });
+      logger.error('Database health check failed', { error: (error as Error).message });
       return {
         healthy: false,
-        message: `Health check failed: ${error.message}`,
+        message: `Health check failed: ${(error as Error).message}`,
         userCount: 0,
         gigCount: 0,
         expenseCount: 0,
@@ -94,11 +93,7 @@ export class SimpleIntegrityChecker {
    */
   async fixOrphanedRecords(): Promise<{ fixed: boolean; message: string }> {
     try {
-      // Create backup before fixing
-      const backupResult = await backupSystem.createEmergencyBackup('Fix orphaned records');
-      if (!backupResult.success) {
-        return { fixed: false, message: 'Failed to create backup before fixing' };
-      }
+      logger.info('Starting orphaned records cleanup');
 
       // Remove orphaned gigs
       const deletedGigs = await db
@@ -129,29 +124,25 @@ export class SimpleIntegrityChecker {
           : 'No orphaned records found'
       };
     } catch (error) {
-      logger.error('Failed to fix orphaned records', { error: error.message });
-      return { fixed: false, message: `Fix failed: ${error.message}` };
+      logger.error('Failed to fix orphaned records', { error: (error as Error).message });
+      return { fixed: false, message: `Fix failed: ${(error as Error).message}` };
     }
   }
 
   /**
-   * Quick backup before critical operations
+   * Execute operation with proper error handling
    */
   async safeOperation(operation: () => Promise<void>, reason: string): Promise<{ success: boolean; message: string }> {
     try {
-      // Create backup first
-      const backupResult = await backupSystem.createEmergencyBackup(reason);
-      if (!backupResult.success) {
-        return { success: false, message: 'Failed to create safety backup' };
-      }
-
+      logger.info('Starting safe operation', { reason });
+      
       // Run the operation
       await operation();
 
       return { success: true, message: 'Operation completed successfully' };
     } catch (error) {
-      logger.error('Safe operation failed', { error: error.message, reason });
-      return { success: false, message: `Operation failed: ${error.message}` };
+      logger.error('Safe operation failed', { error: (error as Error).message, reason });
+      return { success: false, message: `Operation failed: ${(error as Error).message}` };
     }
   }
 
