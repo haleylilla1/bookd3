@@ -183,20 +183,6 @@ export default function SimpleGigForm({ onClose }: SimpleGigFormProps) {
   const [showNewClientInput, setShowNewClientInput] = useState(false);
   const [newClientName, setNewClientName] = useState("");
 
-  // Mutation to save new clients to user's preferred list
-  const saveClientMutation = useMutation({
-    mutationFn: async (clientName: string) => {
-      const response = await apiRequest("POST", "/api/user/add-preferred-client", { 
-        clientName: clientName.trim()
-      });
-      return response.json();
-    },
-    onSuccess: () => {
-      // Invalidate user query to refresh the dropdown
-      queryClient.invalidateQueries({ queryKey: ["/api/user"] });
-    }
-  });
-
   // MULTI-DAY GIG DETECTION - Simple and clear for users
   const multiDayInfo = useMemo(() => {
     if (!startDate) return { isMultiDay: false, dayCount: 1, dateRange: [] };
@@ -308,14 +294,12 @@ export default function SimpleGigForm({ onClose }: SimpleGigFormProps) {
 
     try {
       // Save new client to preferred clients if it's not already there
-      if (data.clientName && 
-          user.workPreferences?.preferredClients && 
-          !user.workPreferences.preferredClients.includes(data.clientName)) {
+      const existingClients = user.workPreferences?.preferredClients || [];
+      if (data.clientName && !existingClients.includes(data.clientName)) {
         try {
           await apiRequest('POST', '/api/user/add-preferred-client', {
             clientName: data.clientName
           });
-          // Update local cache
           queryClient.invalidateQueries({ queryKey: ["/api/user"] });
         } catch (error) {
           console.log("Note: Could not save client to preferences, but gig will still be created");
@@ -516,18 +500,10 @@ export default function SimpleGigForm({ onClose }: SimpleGigFormProps) {
                             <Button 
                               type="button" 
                               size="sm" 
-                              onClick={async () => {
+                              onClick={() => {
                                 if (newClientName.trim()) {
-                                  // Save client to form and switch back to dropdown
+                                  // Just save to form - we'll save to preferences when the gig is created
                                   field.onChange(newClientName.trim());
-                                  
-                                  // Save to user's preferred clients list (async, non-blocking)
-                                  try {
-                                    await saveClientMutation.mutateAsync(newClientName.trim());
-                                  } catch (error) {
-                                    console.log("Note: Could not save client to preferences");
-                                  }
-                                  
                                   setShowNewClientInput(false);
                                   setNewClientName("");
                                 }
