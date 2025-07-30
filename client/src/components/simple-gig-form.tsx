@@ -293,19 +293,6 @@ export default function SimpleGigForm({ onClose }: SimpleGigFormProps) {
     setIsSubmitting(true);
 
     try {
-      // Save new client to preferred clients if it's not already there
-      const existingClients = (user.workPreferences?.preferredClients as string[]) || [];
-      if (data.clientName && !existingClients.includes(data.clientName)) {
-        try {
-          await apiRequest('POST', '/api/user/add-preferred-client', {
-            clientName: data.clientName
-          });
-          queryClient.invalidateQueries({ queryKey: ["/api/user"] });
-        } catch (error) {
-          console.log("Note: Could not save client to preferences, but gig will still be created");
-        }
-      }
-
       // Multi-day gig creation logic - same as edit form
       const gigDates = generateDateRange(data.startDate, data.endDate);
       
