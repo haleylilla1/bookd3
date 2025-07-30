@@ -124,6 +124,18 @@ export default function SimpleGigForm({ onClose }: SimpleGigFormProps) {
     }
   }, [isError, userError, toast]);
 
+  // Mutation to update user profile with new client
+  const updateUserMutation = useMutation({
+    mutationFn: async (userData: Partial<User>) => {
+      const response = await apiRequest("PUT", "/api/user", userData);
+      return response.json();
+    },
+    onSuccess: async () => {
+      // Refresh user data to get updated preferred clients
+      queryClient.invalidateQueries({ queryKey: ["/api/user"] });
+    },
+  });
+
   // Enhanced form setup with mileage and expense tracking
   const form = useForm<GigFormData>({
     resolver: zodResolver(gigFormSchema),
@@ -486,9 +498,23 @@ export default function SimpleGigForm({ onClose }: SimpleGigFormProps) {
                             placeholder="Enter new client name"
                             value={newClientName}
                             onChange={(e) => setNewClientName(e.target.value)}
-                            onKeyDown={(e) => {
+                            onKeyDown={async (e) => {
                               if (e.key === 'Enter' && newClientName.trim()) {
-                                field.onChange(newClientName.trim());
+                                const clientName = newClientName.trim();
+                                field.onChange(clientName);
+                                
+                                // Save new client to user profile
+                                const currentClients = user?.workPreferences?.preferredClients || [];
+                                if (!currentClients.includes(clientName)) {
+                                  const updatedPreferences = {
+                                    ...user?.workPreferences,
+                                    preferredClients: [...currentClients, clientName]
+                                  };
+                                  updateUserMutation.mutate({
+                                    workPreferences: updatedPreferences,
+                                  });
+                                }
+                                
                                 setShowNewClientInput(false);
                                 setNewClientName("");
                               } else if (e.key === 'Escape') {
@@ -502,9 +528,23 @@ export default function SimpleGigForm({ onClose }: SimpleGigFormProps) {
                             <Button 
                               type="button" 
                               size="sm" 
-                              onClick={() => {
+                              onClick={async () => {
                                 if (newClientName.trim()) {
-                                  field.onChange(newClientName.trim());
+                                  const clientName = newClientName.trim();
+                                  field.onChange(clientName);
+                                  
+                                  // Save new client to user profile
+                                  const currentClients = user?.workPreferences?.preferredClients || [];
+                                  if (!currentClients.includes(clientName)) {
+                                    const updatedPreferences = {
+                                      ...user?.workPreferences,
+                                      preferredClients: [...currentClients, clientName]
+                                    };
+                                    updateUserMutation.mutate({
+                                      workPreferences: updatedPreferences,
+                                    });
+                                  }
+                                  
                                   setShowNewClientInput(false);
                                   setNewClientName("");
                                 }
