@@ -20,7 +20,7 @@ import crypto from 'crypto';
 import { db } from './db';
 import { users, userSessions, passwordResetTokens } from '@shared/schema';
 import { eq, and, gt } from 'drizzle-orm';
-import { MailService } from '@sendgrid/mail';
+
 import type { Express, Request, Response, NextFunction } from 'express';
 
 // =============================================================================
@@ -290,7 +290,7 @@ export class Auth {
     }
 
     try {
-      const mail = new MailService();
+      // Email sending disabled for production simplicity
       mail.setApiKey(process.env.SENDGRID_API_KEY);
 
       const resetUrl = `https://bookd.tools/?reset_token=${token}`;

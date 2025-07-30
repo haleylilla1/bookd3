@@ -5,7 +5,7 @@ import { requireAuth } from "./auth";
 import { db } from "./db";
 import { users, gigs } from "@shared/schema";
 import { count } from "drizzle-orm";
-import rateLimit from "express-rate-limit";
+
 
 // Helper function to get user ID from request
 function getUserId(req: any): number {
@@ -15,18 +15,7 @@ function getUserId(req: any): number {
   return req.userId;
 }
 
-// Simple rate limiting
-const apiLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // limit each IP to 100 requests per windowMs
-  message: 'Rate limit exceeded'
-});
-
-const heavyApiLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes  
-  max: 50, // limit each IP to 50 requests per windowMs
-  message: 'Rate limit exceeded'
-});
+// Simple rate limiting removed for production simplicity
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Setup authentication routes
@@ -41,7 +30,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // User routes
-  app.get('/api/user', apiLimiter, requireAuth, async (req: any, res: Response) => {
+  app.get('/api/user', requireAuth, async (req: any, res: Response) => {
     try {
       const user = await storage.getUser(getUserId(req));
       res.json(user);
@@ -50,7 +39,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put('/api/user', apiLimiter, requireAuth, async (req: any, res: Response) => {
+  app.put('/api/user', requireAuth, async (req: any, res: Response) => {
     try {
       const userId = getUserId(req);
       const updatedUser = await storage.updateUser(userId, req.body);
@@ -61,7 +50,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Add client to preferred clients list
-  app.post('/api/user/add-preferred-client', apiLimiter, requireAuth, async (req: any, res: Response) => {
+  app.post('/api/user/add-preferred-client', requireAuth, async (req: any, res: Response) => {
     try {
       const userId = getUserId(req);
       const { clientName } = req.body;
@@ -95,7 +84,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Gig routes
-  app.get('/api/gigs', apiLimiter, requireAuth, async (req: any, res: Response) => {
+  app.get('/api/gigs', requireAuth, async (req: any, res: Response) => {
     try {
       const gigs = await storage.getGigsByUser(getUserId(req));
       res.json(gigs);
@@ -104,7 +93,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get('/api/dashboard/optimized', apiLimiter, requireAuth, async (req: any, res: Response) => {
+  app.get('/api/dashboard/optimized', requireAuth, async (req: any, res: Response) => {
     try {
       const userId = getUserId(req);
       const lightweight = req.query.lightweight === 'true';
@@ -121,7 +110,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/gigs', heavyApiLimiter, requireAuth, async (req: any, res) => {
+  app.post('/api/gigs', requireAuth, async (req: any, res) => {
     try {
       const userId = getUserId(req);
       const gigData = { ...req.body, userId };
@@ -161,7 +150,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put('/api/gigs/:id', heavyApiLimiter, requireAuth, async (req: any, res) => {
+  app.put('/api/gigs/:id', requireAuth, async (req: any, res) => {
     try {
       const userId = getUserId(req);
       const gigId = parseInt(req.params.id);
@@ -181,7 +170,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete('/api/gigs/:id', heavyApiLimiter, requireAuth, async (req: any, res) => {
+  app.delete('/api/gigs/:id', requireAuth, async (req: any, res) => {
     try {
       const userId = getUserId(req);
       const gigId = parseInt(req.params.id);
@@ -201,7 +190,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Goals routes
-  app.get('/api/goals', apiLimiter, requireAuth, async (req: any, res) => {
+  app.get('/api/goals', requireAuth, async (req: any, res) => {
     try {
       const goals = await storage.getGoalsByUser(getUserId(req));
       res.json(goals);
@@ -210,7 +199,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get('/api/goals/period', apiLimiter, requireAuth, async (req: any, res) => {
+  app.get('/api/goals/period', requireAuth, async (req: any, res) => {
     try {
       const userId = getUserId(req);
       const { period, date } = req.query;
@@ -229,7 +218,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/goals/period/:period/:date', heavyApiLimiter, requireAuth, async (req: any, res) => {
+  app.post('/api/goals/period/:period/:date', requireAuth, async (req: any, res) => {
     try {
       const userId = getUserId(req);
       const { period, date } = req.params;
@@ -249,7 +238,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Reports routes
-  app.get('/api/reports/html', heavyApiLimiter, requireAuth, async (req: any, res) => {
+  app.get('/api/reports/html', requireAuth, async (req: any, res) => {
     try {
       const userId = getUserId(req);
       const { month, year, type = 'monthly' } = req.query;
@@ -274,7 +263,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // PDF route (same as HTML for simplicity)
-  app.get('/api/reports/pdf', heavyApiLimiter, requireAuth, async (req: any, res) => {
+  app.get('/api/reports/pdf', requireAuth, async (req: any, res) => {
     try {
       const userId = getUserId(req);
       const { month, year, type = 'monthly' } = req.query;
@@ -322,7 +311,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Auto-update gig statuses
-  app.get('/api/gigs/update-statuses', apiLimiter, requireAuth, async (req: any, res) => {
+  app.get('/api/gigs/update-statuses', requireAuth, async (req: any, res) => {
     try {
       const userId = getUserId(req);
       const gigs = await storage.getGigsByUser(userId);
@@ -347,7 +336,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Custom gig types
-  app.get('/api/gig-types', apiLimiter, requireAuth, async (req: any, res) => {
+  app.get('/api/gig-types', requireAuth, async (req: any, res) => {
     try {
       const user = await storage.getUser(getUserId(req));
       res.json(user?.customGigTypes || []);
@@ -357,7 +346,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Simple database health check
-  app.get('/api/db-health', apiLimiter, requireAuth, async (req: any, res: Response) => {
+  app.get('/api/db-health', requireAuth, async (req: any, res: Response) => {
     try {
       const userCount = await db.select({ count: count() }).from(users);
       const gigCount = await db.select({ count: count() }).from(gigs);
