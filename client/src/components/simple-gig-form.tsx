@@ -317,13 +317,6 @@ export default function SimpleGigForm({ onClose }: SimpleGigFormProps) {
             queryClient.invalidateQueries({ queryKey: ["/api/user"] });
           } catch (error) {
             console.log("Note: Could not save client to preferences, but gig will still be created");
-      
-      // DEBUG: Log expected pay value transformation
-      console.log("💰 Expected Pay Debug:", {
-        inputValue: data.expectedPay,
-        parsedFloat: parseFloat(data.expectedPay || "0"),
-        finalString: (parseFloat(data.expectedPay || "0") || 0).toString()
-      });
           }
         }
       }
