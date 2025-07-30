@@ -435,8 +435,19 @@ function GigEditForm({ gig, onSave, onCancel, isLoading }: GigEditFormProps) {
             step="0.1"
             min="0"
             max="50"
-            value={formData.taxPercentage}
-            onChange={(e) => setFormData({ ...formData, taxPercentage: parseFloat(e.target.value) || 0 })}
+            value={formData.taxPercentage === 0 ? '' : formData.taxPercentage}
+            onChange={(e) => {
+              const value = e.target.value;
+              // Allow empty string and valid numbers
+              if (value === '') {
+                setFormData({ ...formData, taxPercentage: 0 });
+              } else {
+                const parsed = parseFloat(value);
+                if (!isNaN(parsed)) {
+                  setFormData({ ...formData, taxPercentage: parsed });
+                }
+              }
+            }}
             placeholder="23.0"
           />
         </div>

@@ -702,8 +702,18 @@ export default function SimpleGigForm({ onClose }: SimpleGigFormProps) {
                     <Input 
                       type="number" 
                       placeholder="23" 
-                      value={field.value}
-                      onChange={(e) => field.onChange(parseInt(e.target.value) || 23)}
+                      value={field.value === 0 ? '' : field.value}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        if (value === '') {
+                          field.onChange(0);
+                        } else {
+                          const parsed = parseFloat(value);
+                          if (!isNaN(parsed)) {
+                            field.onChange(parsed);
+                          }
+                        }
+                      }}
                     />
                   </FormControl>
                   <FormMessage />
