@@ -209,7 +209,12 @@ export default function CalendarView() {
     if (!gigs || !Array.isArray(gigs)) return [];
     
     const filtered = gigs.filter(gig => {
-      if (filterStatus !== "all" && gig.status !== filterStatus) return false;
+      // Handle both "pending payment" and "pending_payment" status formats
+      if (filterStatus !== "all") {
+        const normalizedGigStatus = gig.status.replace('_', ' ');
+        const normalizedFilterStatus = filterStatus.replace('_', ' ');
+        if (normalizedGigStatus !== normalizedFilterStatus) return false;
+      }
       if (searchQuery && 
           !gig.eventName.toLowerCase().includes(searchQuery.toLowerCase()) &&
           !gig.clientName.toLowerCase().includes(searchQuery.toLowerCase())) return false;
@@ -683,7 +688,7 @@ export default function CalendarView() {
             <SelectItem value="all">All Status</SelectItem>
             <SelectItem value="upcoming">Upcoming</SelectItem>
             <SelectItem value="completed">Completed</SelectItem>
-            <SelectItem value="pending_payment">Pending Payment</SelectItem>
+            <SelectItem value="pending payment">Pending Payment</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -1276,7 +1281,7 @@ function GigEditForm({ gig, onSave, onCancel, isLoading }: GigEditFormProps) {
           <SelectContent>
             <SelectItem value="upcoming">Upcoming</SelectItem>
             <SelectItem value="completed">Completed</SelectItem>
-            <SelectItem value="pending_payment">Pending Payment</SelectItem>
+            <SelectItem value="pending payment">Pending Payment</SelectItem>
           </SelectContent>
         </Select>
       </div>
