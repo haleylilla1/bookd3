@@ -134,23 +134,7 @@ export default function GigForm({ onClose }: GigFormProps) {
   const [showMobileRecovery, setShowMobileRecovery] = useState(false);
   const [useEnhancedRecovery, setUseEnhancedRecovery] = useState(false);
 
-  // BULLETPROOF MOBILE AUTO-SAVE SYSTEM
-  const bulletproofAutoSave = useBulletproofMobileAutoSave({
-    key: 'gig-form',
-    data: form.watch(),
-    enabled: true,
-    onSave: (data) => {
-      setAutoSaveLastSaved(new Date());
-    },
-    onError: (error) => {
-      console.error('Bulletproof auto-save error:', error);
-      toast({
-        title: "Auto-save Warning",
-        description: "Having trouble saving form data. Please save manually.",
-        variant: "destructive"
-      });
-    }
-  });
+
 
   // Mobile indicator for better UX
   const { status, updateStatus } = useAutoSaveStatus();
@@ -270,6 +254,24 @@ export default function GigForm({ onClose }: GigFormProps) {
   const form = useForm<GigFormData>({
     resolver: zodResolver(gigFormSchema),
     defaultValues,
+  });
+
+  // BULLETPROOF MOBILE AUTO-SAVE SYSTEM - Now positioned after form is defined
+  const bulletproofAutoSave = useBulletproofMobileAutoSave({
+    key: 'gig-form',
+    data: form.watch(),
+    enabled: true,
+    onSave: (data) => {
+      setAutoSaveLastSaved(new Date());
+    },
+    onError: (error) => {
+      console.error('Bulletproof auto-save error:', error);
+      toast({
+        title: "Auto-save Warning",
+        description: "Having trouble saving form data. Please save manually.",
+        variant: "destructive"
+      });
+    }
   });
 
   // Watch all form data for bulletproof auto-save
@@ -404,7 +406,7 @@ export default function GigForm({ onClose }: GigFormProps) {
       const roundedDistance = Math.min(9999, result.distanceMiles); // Cap at 9999 miles
       
       if (roundedDistance > 0) {
-        form.setValue('mileage', roundedDistance);
+        form.setValue('mileage', roundedDistance.toString());
         
         if (result.status === 'success') {
           toast({
@@ -476,69 +478,49 @@ export default function GigForm({ onClose }: GigFormProps) {
     try {
       const gigDates = generateDateRange(safeData.startDate, safeData.endDate);
       
-      // Use retry mechanism for each gig creation
-      await submitFormWithRetry(
-        safeData,
-        async (submitData) => {
-          for (const gigDate of gigDates) {
-            const gigData: InsertGig = {
-              userId: user.id,
-              date: gigDate,
-              gigType: submitData.gigType,
-              eventName: submitData.eventName,
-              clientName: submitData.clientName,
-              expectedPay: parseNumeric(submitData.expectedPay),
-              actualPay: parseNumeric(submitData.actualPay),
-              tips: parseNumeric(submitData.tips),
-              paymentMethod: submitData.paymentMethod || "Cash",
-              status: submitData.status || "upcoming",
-              duties: submitData.duties || null,
-              taxPercentage: Math.min(50, Math.max(0, submitData.taxPercentage || 23)),
-              mileage: submitData.calculatedMileage ? Math.max(0, parseInt(submitData.calculatedMileage) || 0) : 0,
-              notes: submitData.notes || null,
-              parkingExpense: parseNumeric(submitData.parkingExpense),
-              parkingReceipts: Array.isArray(submitData.parkingReceipts) ? submitData.parkingReceipts : [],
-              otherExpenses: parseNumeric(submitData.otherExpenses),
-              otherExpenseReceipts: Array.isArray(submitData.otherExpenseReceipts) ? submitData.otherExpenseReceipts : [],
-            };
-            
-            await createGigMutation.mutateAsync(gigData);
-          }
-          return { success: true, count: gigDates.length };
-        },
-        {
-          autoSaveKey: 'gig-form',
-          onSuccess: (result) => {
-            clearSave(); // Clear auto-saved data on success
-            if (result.count > 1) {
-              toast({
-                title: "Success",
-                description: `Created ${result.count} gigs`,
-              });
-            } else {
-              toast({
-                title: "Success",
-                description: "Gig saved successfully!",
-              });
-            }
-            onClose();
-          },
-          onError: (error) => {
-            console.error("Form submission error:", error);
-            toast({
-              title: "Network Error",
-              description: "Trying to save again...",
-              variant: "destructive",
-            });
-          },
-          onRetry: (attempt) => {
-            toast({
-              title: "Retrying",
-              description: `Attempt ${attempt} of 3...`,
-            });
-          }
-        }
-      );
+      // Create gigs for each date
+      for (const gigDate of gigDates) {
+        const gigData: InsertGig = {
+          userId: user.id,
+          date: gigDate,
+          startDate: gigDate,
+          gigType: safeData.gigType,
+          eventName: safeData.eventName,
+          clientName: safeData.clientName,
+          expectedPay: parseNumeric(safeData.expectedPay),
+          actualPay: parseNumeric(safeData.actualPay),
+          tips: parseNumeric(safeData.tips),
+          paymentMethod: safeData.paymentMethod || "Cash",
+          status: safeData.status || "upcoming",
+          duties: safeData.duties || null,
+          taxPercentage: Math.min(50, Math.max(0, safeData.taxPercentage || 23)),
+          mileage: safeData.calculatedMileage ? Math.max(0, parseInt(safeData.calculatedMileage) || 0) : 0,
+          notes: safeData.notes || null,
+          parkingExpense: parseNumeric(safeData.parkingExpense),
+          parkingReceipts: Array.isArray(safeData.parkingReceipts) ? safeData.parkingReceipts : [],
+          otherExpenses: parseNumeric(safeData.otherExpenses),
+          otherExpenseReceipts: Array.isArray(safeData.otherExpenseReceipts) ? safeData.otherExpenseReceipts : [],
+        };
+        
+        await createGigMutation.mutateAsync(gigData);
+      }
+      
+      // Clear auto-saved data on success
+      bulletproofAutoSave.clearSavedData();
+      
+      // Show success message
+      if (gigDates.length > 1) {
+        toast({
+          title: "Success",
+          description: `Created ${gigDates.length} gigs`,
+        });
+      } else {
+        toast({
+          title: "Success",
+          description: "Gig saved successfully!",
+        });
+      }
+      onClose();
       
     } catch (error) {
       // Final fallback - never show errors
@@ -627,9 +609,9 @@ export default function GigForm({ onClose }: GigFormProps) {
               <div className="md:hidden">
                 <MobileAutoSaveIndicator
                   isSaving={isSubmitting}
-                  lastSaved={mobileAutoSaveStatus.lastSaved}
+                  lastSaved={autoSaveLastSaved}
                   hasUnsavedChanges={!autoSaveLastSaved}
-                  storageMethod={mobileAutoSaveStatus.storageMethod}
+                  storageMethod="localStorage"
                 />
               </div>
             </div>
@@ -684,7 +666,7 @@ export default function GigForm({ onClose }: GigFormProps) {
                           return user?.customGigTypes && user.customGigTypes.length > 0;
                         })() ? (
                           <>
-                            {user.customGigTypes.map((gigType) => (
+                            {user.customGigTypes!.map((gigType) => (
                               <SelectItem 
                                 key={gigType} 
                                 value={gigType}
@@ -1307,13 +1289,7 @@ export default function GigForm({ onClose }: GigFormProps) {
       </Card>
       
       {/* Bulletproof Mobile Auto-Save Indicator */}
-      {showIndicator && (
-        <BulletproofMobileIndicator 
-          saveStatus={bulletproofAutoSave.saveStatus}
-          lastSaved={bulletproofAutoSave.lastSaved}
-          showDetails={true}
-        />
-      )}
+      <BulletproofMobileIndicator />
 
       {/* Recovery Dialog */}
       {showRecoveryDialog && recoveryData && (
