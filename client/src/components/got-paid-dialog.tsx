@@ -23,6 +23,7 @@ interface OtherExpense {
 
 export interface GotPaidData {
   totalReceived: number;
+  mileage: number;
   parkingSpent: number;
   parkingReimbursed: number;
   otherExpenses: OtherExpense[];
