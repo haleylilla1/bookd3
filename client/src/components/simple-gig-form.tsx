@@ -28,7 +28,10 @@ const gigFormSchema = z.object({
   notes: z.string().optional(),
   // Simple estimates for planning (no complex tracking)
   estimatedMileage: z.string().optional(),
-  estimatedExpenses: z.string().optional(),
+  estimatedExpenses: z.array(z.object({
+    name: z.string(),
+    amount: z.number()
+  })).default([]),
 });
 
 type GigFormData = z.infer<typeof gigFormSchema>;
