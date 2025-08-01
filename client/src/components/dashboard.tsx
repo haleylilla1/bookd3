@@ -686,7 +686,7 @@ export default function Dashboard() {
       </div>
 
       {/* Tax-Smart Summary */}
-      {periodStats.totalReceived > 0 && (
+      {(periodStats.totalReceived || 0) > 0 && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
           {/* Total Received */}
           <Card>
@@ -695,7 +695,7 @@ export default function Dashboard() {
                 <div>
                   <p className="text-sm font-medium text-gray-600">Total Received</p>
                   <p className="text-2xl font-bold text-blue-600">
-                    ${periodStats.totalReceived.toFixed(2)}
+                    ${(periodStats.totalReceived || 0).toFixed(2)}
                   </p>
                   <p className="text-xs text-gray-500 mt-1">
                     Including reimbursements
@@ -713,7 +713,7 @@ export default function Dashboard() {
                 <div>
                   <p className="text-sm font-medium text-gray-600">Business Deductions</p>
                   <p className="text-2xl font-bold text-purple-600">
-                    ${periodStats.businessDeductions.toFixed(2)}
+                    ${(periodStats.businessDeductions || 0).toFixed(2)}
                   </p>
                   <p className="text-xs text-gray-500 mt-1">
                     Unreimbursed expenses
