@@ -36,8 +36,35 @@ Bookd is a mobile-first gig worker companion app designed for comprehensive fina
 - **Mobile UI**: Mobile-only approach with a single responsive design optimized for mobile devices and small screens, eliminating desktop-specific styling.
 
 ## Future Development Plans
-- **"GOT PAID" WORKFLOW**: Streamlined payment processing with single-click "Got Paid" button → total amount input → reimbursement breakdown → auto-calculation of taxable vs non-taxable income
-- **TAX-COMPLIANT REPORTING**: Ensure all reports and tax estimates exclude reimbursements from taxable income calculations (reimbursements = non-taxable, actual pay minus reimbursements = taxable income)
+
+### **"GOT PAID" TAX-SMART WORKFLOW PLAN**
+**PHASE 1: Database Schema (No UI Changes)**
+- Add fields: `total_received`, `reimbursed_parking`, `reimbursed_other`, `unreimbursed_parking`, `unreimbursed_other`
+- Keep existing fields unchanged for backward compatibility
+- Migration: populate new fields from existing data
+
+**PHASE 2: "Got Paid" Dialog**
+- Single button on gig cards: "Got Paid"
+- Multi-step wizard:
+  1. "Total amount received?" → `total_received`
+  2. "Parking expense?" → Amount spent vs Amount reimbursed
+  3. "Other expenses?" → Amount spent vs Amount reimbursed
+  4. Auto-calculate: `actual_pay` = `total_received` - `reimbursed_parking` - `reimbursed_other`
+  5. Auto-calculate: Business deductions = unreimbursed amounts
+
+**PHASE 3: Dashboard Integration**
+- **Income Section**: Show taxable income only (excludes reimbursements)
+- **Deductions Section**: Show unreimbursed business expenses
+- **Total Received**: Show gross payments for cash flow tracking
+- **Tax Estimate**: Calculate on net income after deductions
+
+**PHASE 4: Report Updates**
+- **Income Reports**: Separate taxable income vs reimbursements
+- **Expense Reports**: Track deductible unreimbursed expenses
+- **Tax Summary**: IRS-compliant calculations with proper categorization
+
+**BACKWARD COMPATIBILITY**: Keep existing "Add Gig" form unchanged - new workflow is additive only
+
 - **PHOTO UPLOAD SIMPLIFICATION**: Consider removing receipt photo uploads in favor of simple text descriptions to eliminate scaling issues and improve mobile UX
 
 ## External Dependencies
