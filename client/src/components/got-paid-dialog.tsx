@@ -314,18 +314,19 @@ export default function GotPaidDialog({ gig, isOpen, onClose, onSave }: GotPaidD
                   <label className="block text-sm font-medium mb-1">Tax percentage</label>
                   <div className="flex items-center gap-2">
                     <Input
-                      type="number"
+                      type="text"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
                       min="0"
                       max="50"
-                      step="1"
-                      value={formData.taxPercentage.toString()}
+                      value={formData.taxPercentage === 0 ? "" : formData.taxPercentage.toString()}
                       onChange={(e) => {
                         const value = e.target.value;
                         if (value === "") {
                           setFormData({ ...formData, taxPercentage: 0 });
-                        } else {
+                        } else if (/^\d+$/.test(value)) {
                           const numValue = parseInt(value);
-                          if (!isNaN(numValue)) {
+                          if (numValue >= 0 && numValue <= 50) {
                             setFormData({ ...formData, taxPercentage: numValue });
                           }
                         }
