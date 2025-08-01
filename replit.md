@@ -35,6 +35,11 @@ Bookd is a mobile-first gig worker companion app designed for comprehensive fina
 - **Security**: Enterprise-grade security with comprehensive audit logging, memory-efficient form state management, sequential database operations to prevent race conditions, and comprehensive input sanitization. Implements timeout and retry logic for external API calls and maximum limits to prevent resource exhaustion.
 - **Mobile UI**: Mobile-only approach with a single responsive design optimized for mobile devices and small screens, eliminating desktop-specific styling.
 
+## Future Development Plans
+- **"GOT PAID" WORKFLOW**: Streamlined payment processing with single-click "Got Paid" button → total amount input → reimbursement breakdown → auto-calculation of taxable vs non-taxable income
+- **TAX-COMPLIANT REPORTING**: Ensure all reports and tax estimates exclude reimbursements from taxable income calculations (reimbursements = non-taxable, actual pay minus reimbursements = taxable income)
+- **PHOTO UPLOAD SIMPLIFICATION**: Consider removing receipt photo uploads in favor of simple text descriptions to eliminate scaling issues and improve mobile UX
+
 ## External Dependencies
 - **SendGrid**: For email integration, specifically password reset functionality.
 - **Google Maps API (Places API, Distance Matrix API)**: For address autocomplete and mileage calculation. Includes user quota management.
