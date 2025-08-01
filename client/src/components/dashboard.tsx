@@ -238,12 +238,32 @@ export default function Dashboard() {
     const completedGroupedGigs = groupedGigs.filter(gig => gig.status === "completed");
     const upcomingGroupedGigs = groupedGigs.filter(gig => gig.status !== "completed");
     
-    // Calculate earnings from grouped gigs (no double-counting)
-    // Use actualPay if available, otherwise fall back to expectedPay for completed gigs
-    const actualEarnings = completedGroupedGigs.reduce((sum, gig) => {
-      const payAmount = gig.actualPay ? safeParseFloat(gig.actualPay) : safeParseFloat(gig.expectedPay);
-      return sum + payAmount + safeParseFloat(gig.tips);
-    }, 0);
+    // Tax-smart earnings calculation
+    let actualEarnings = 0;
+    let totalReceived = 0;
+    let businessDeductions = 0;
+    
+    completedGroupedGigs.forEach(gig => {
+      const tips = safeParseFloat(gig.tips);
+      
+      if (gig.totalReceived && parseFloat(gig.totalReceived) > 0) {
+        // New "Got Paid" workflow - use tax-smart calculation
+        const received = safeParseFloat(gig.totalReceived);
+        const reimbursedParking = safeParseFloat(gig.reimbursedParking);
+        const reimbursedOther = safeParseFloat(gig.reimbursedOther);
+        const unreimbursedParking = safeParseFloat(gig.unreimbursedParking);
+        const unreimbursedOther = safeParseFloat(gig.unreimbursedOther);
+        
+        totalReceived += received + tips;
+        businessDeductions += unreimbursedParking + unreimbursedOther;
+        actualEarnings += (received - reimbursedParking - reimbursedOther) + tips; // Taxable income
+      } else {
+        // Legacy calculation
+        const payAmount = gig.actualPay ? safeParseFloat(gig.actualPay) : safeParseFloat(gig.expectedPay);
+        totalReceived += payAmount + tips;
+        actualEarnings += payAmount + tips;
+      }
+    });
     
     const totalTips = completedGroupedGigs.reduce((sum, gig) => {
       return sum + safeParseFloat(gig.tips);
@@ -270,23 +290,40 @@ export default function Dashboard() {
     // Use user's default tax rate (23%), but allow per-gig overrides (including 0% for under-the-table)
     const userTaxRate = user?.defaultTaxPercentage || 23;
     
-    // Calculate tax estimate using simplified tax calculator
+    // Tax-smart tax calculation (only on taxable income)
     const estimatedTax = completedGroupedGigs.reduce((sum, gig) => {
-      const payAmount = gig.actualPay ? safeParseFloat(gig.actualPay) : safeParseFloat(gig.expectedPay);
-      const income = payAmount + safeParseFloat(gig.tips);
+      let taxableIncome = 0;
+      
+      if (gig.totalReceived && parseFloat(gig.totalReceived) > 0) {
+        // New calculation: total received minus reimbursements
+        const received = safeParseFloat(gig.totalReceived);
+        const reimbursedParking = safeParseFloat(gig.reimbursedParking);
+        const reimbursedOther = safeParseFloat(gig.reimbursedOther);
+        taxableIncome = received - reimbursedParking - reimbursedOther;
+      } else {
+        // Legacy calculation
+        taxableIncome = gig.actualPay ? safeParseFloat(gig.actualPay) : safeParseFloat(gig.expectedPay);
+      }
+      
+      // Add tips (always taxable)
+      taxableIncome += safeParseFloat(gig.tips);
+      
       const gigTaxRate = (gig.taxPercentage !== null && gig.taxPercentage !== undefined) ? gig.taxPercentage : userTaxRate;
-      return sum + (income * gigTaxRate / 100);
+      return sum + (taxableIncome * gigTaxRate / 100);
     }, 0);
 
     return {
-      actualEarnings: Math.round(actualEarnings * 100) / 100,
+      actualEarnings: Math.round(actualEarnings * 100) / 100, // Taxable income
       projectedEarnings: Math.round(projectedEarnings * 100) / 100,
       totalTips: Math.round(totalTips * 100) / 100,
       totalExpenses: Math.round(totalExpenses * 100) / 100,
       estimatedTax: Math.round(estimatedTax * 100) / 100,
       completedGigs: completedGroupedGigs.length,
       upcomingGigs: upcomingGroupedGigs.length,
-      totalGigs: groupedGigs.length
+      totalGigs: groupedGigs.length,
+      // New tax-smart fields
+      totalReceived: Math.round(totalReceived * 100) / 100,
+      businessDeductions: Math.round(businessDeductions * 100) / 100
     };
   }, [currentPeriodGigs, user]);
 
@@ -613,12 +650,12 @@ export default function Dashboard() {
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Actual Earnings</p>
+                <p className="text-sm font-medium text-gray-600">Taxable Income</p>
                 <p className="text-2xl font-bold text-green-600">
                   ${periodStats.actualEarnings.toFixed(2)}
                 </p>
                 <p className="text-xs text-gray-500 mt-1">
-                  From {periodStats.completedGigs} completed gigs
+                  After reimbursements • {periodStats.completedGigs} completed gigs
                 </p>
               </div>
               <DollarSign className="w-8 h-8 text-green-500" />
@@ -647,6 +684,47 @@ export default function Dashboard() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Tax-Smart Summary */}
+      {periodStats.totalReceived > 0 && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+          {/* Total Received */}
+          <Card>
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-gray-600">Total Received</p>
+                  <p className="text-2xl font-bold text-blue-600">
+                    ${periodStats.totalReceived.toFixed(2)}
+                  </p>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Including reimbursements
+                  </p>
+                </div>
+                <Receipt className="w-8 h-8 text-blue-500" />
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Business Deductions */}
+          <Card>
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-gray-600">Business Deductions</p>
+                  <p className="text-2xl font-bold text-purple-600">
+                    ${periodStats.businessDeductions.toFixed(2)}
+                  </p>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Unreimbursed expenses
+                  </p>
+                </div>
+                <Calculator className="w-8 h-8 text-purple-500" />
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
 
       {/* Additional Stats Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">

@@ -14,10 +14,9 @@ import { apiRequest } from "@/lib/queryClient";
 import type { Gig } from "@shared/schema";
 import { formatMonth, addMonths } from "@/lib/dateUtils";
 import ReceiptUpload from "@/components/receipt-upload";
-import { AutoSaveIndicator, useOnlineStatus } from "./auto-save-indicator";
 
-import { useFormAutoSave, submitFormWithRetry } from "@/lib/auto-save";
 import { AddressAutocomplete } from "./address-autocomplete";
+import GotPaidDialog, { type GotPaidData } from "./got-paid-dialog";
 
 // Utility function to parse dates consistently across timezones (same as dashboard)
 const parseGigDate = (dateString: string): Date => {
@@ -49,6 +48,8 @@ export default function CalendarView() {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [showDayGigs, setShowDayGigs] = useState(false);
+  const [gotPaidGig, setGotPaidGig] = useState<Gig | null>(null);
+  const [showGotPaidDialog, setShowGotPaidDialog] = useState(false);
   const hasUpdatedStatusesRef = useRef(false);
 
   const { toast } = useToast();
@@ -292,7 +293,13 @@ export default function CalendarView() {
         };
         grouped.push(multiDayGig);
       } else {
-        grouped.push(currentGig as Gig & { isMultiDay?: boolean; startDate?: string; endDate?: string; gigIds?: number[] });
+        grouped.push({
+          ...currentGig,
+          isMultiDay: currentGig.isMultiDay || false,
+          startDate: currentGig.startDate || undefined,
+          endDate: currentGig.endDate || undefined,
+          gigIds: undefined
+        });
       }
     }
     
@@ -330,6 +337,40 @@ export default function CalendarView() {
   const handleEditGig = (gig: Gig & { isMultiDay?: boolean; startDate?: string; endDate?: string; gigIds?: number[] }) => {
     setEditingGig(gig);
   };
+
+  // Handle "Got Paid" workflow
+  const handleGotPaid = (gig: Gig) => {
+    setGotPaidGig(gig);
+    setShowGotPaidDialog(true);
+  };
+
+  // Mutation for "Got Paid" workflow
+  const gotPaidMutation = useMutation({
+    mutationFn: async ({ gigId, data }: { gigId: number; data: GotPaidData }) => {
+      const response = await apiRequest("POST", `/api/gigs/${gigId}/got-paid`, data);
+      if (!response.ok) {
+        throw new Error("Failed to process payment");
+      }
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/gigs"] });
+      toast({
+        title: "Payment processed",
+        description: "Tax-smart calculations have been saved.",
+      });
+      setShowGotPaidDialog(false);
+      setGotPaidGig(null);
+    },
+    onError: (error) => {
+      console.error("Got paid error:", error);
+      toast({
+        title: "Error processing payment",
+        description: "Please try again or contact support.",
+        variant: "destructive",
+      });
+    },
+  });
 
   // Helper function to generate date range (reused from gig-form)
   const generateDateRange = (startDate: string, endDate?: string): string[] => {
@@ -777,6 +818,17 @@ export default function CalendarView() {
                   </div>
 
                   <div className="flex items-center gap-2 ml-4">
+                    {gig.status !== 'completed' && (
+                      <Button
+                        variant="default"
+                        size="sm"
+                        onClick={() => handleGotPaid(gig)}
+                        className="bg-green-600 hover:bg-green-700 text-white"
+                      >
+                        <DollarSign className="w-4 h-4 mr-1" />
+                        Got Paid
+                      </Button>
+                    )}
                     <Button
                       variant="ghost"
                       size="sm"
@@ -971,6 +1023,24 @@ export default function CalendarView() {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Got Paid Dialog */}
+      {gotPaidGig && (
+        <GotPaidDialog
+          gig={gotPaidGig}
+          isOpen={showGotPaidDialog}
+          onClose={() => {
+            setShowGotPaidDialog(false);
+            setGotPaidGig(null);
+          }}
+          onSave={async (data) => {
+            return gotPaidMutation.mutateAsync({ 
+              gigId: gotPaidGig.id, 
+              data 
+            });
+          }}
+        />
+      )}
     </div>
   );
 }
