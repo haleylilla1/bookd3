@@ -17,6 +17,7 @@ Bookd is a mobile-first gig worker companion app designed for comprehensive fina
 - THIRD-PARTY SERVICES: Open to using external services like Supabase, Redis, Cloudinary for production scaling
 - PAYMENT INTEGRATION: Considering Stripe payments with either Replit Auth (MVP) or Supabase (scale phase)
 - RECEIPT UPLOAD SIMPLIFICATION: Only camera and upload buttons needed - remove file chooser option for cleaner mobile experience
+- TAX PHILOSOPHY: Gig workers should pay appropriate taxes on their income during the year, then get money back through deductions at tax time. Tax estimates calculated on full taxable income, business deductions tracked separately for filing.
 
 ## System Architecture
 - **Frontend**: React with TypeScript, optimized for mobile-first experience.
