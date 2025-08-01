@@ -11,14 +11,14 @@ import { formatCurrency, formatDate } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import type { Gig } from "@shared/schema";
-import { AutoSaveIndicator, useOnlineStatus } from "./auto-save-indicator";
-
-import { useFormAutoSave, submitFormWithRetry } from "@/lib/auto-save";
+import GotPaidDialog, { type GotPaidData } from "./got-paid-dialog";
 
 export default function GigLog() {
   const [editingGig, setEditingGig] = useState<Gig | null>(null);
   const [filterStatus, setFilterStatus] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
+  const [gotPaidGig, setGotPaidGig] = useState<Gig | null>(null);
+  const [showGotPaidDialog, setShowGotPaidDialog] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -109,6 +109,40 @@ export default function GigLog() {
   const handleEditGig = (gig: Gig) => {
     setEditingGig(gig);
   };
+
+  // Handle "Got Paid" workflow
+  const handleGotPaid = (gig: Gig) => {
+    setGotPaidGig(gig);
+    setShowGotPaidDialog(true);
+  };
+
+  // Mutation for "Got Paid" workflow
+  const gotPaidMutation = useMutation({
+    mutationFn: async ({ gigId, data }: { gigId: number; data: GotPaidData }) => {
+      const response = await apiRequest("POST", `/api/gigs/${gigId}/got-paid`, data);
+      if (!response.ok) {
+        throw new Error("Failed to process payment");
+      }
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/gigs"] });
+      toast({
+        title: "Payment processed",
+        description: "Tax-smart calculations have been saved.",
+      });
+      setShowGotPaidDialog(false);
+      setGotPaidGig(null);
+    },
+    onError: (error: any) => {
+      console.error("Got paid error:", error);
+      toast({
+        title: "Error processing payment",
+        description: "Please try again or contact support.",
+        variant: "destructive",
+      });
+    },
+  });
 
   const handleSaveEdit = (updatedData: Partial<Gig>) => {
     if (!editingGig) return;
@@ -248,6 +282,17 @@ export default function GigLog() {
                   </div>
 
                   <div className="flex items-center gap-2 ml-4">
+                    {gig.status !== 'completed' && (
+                      <Button
+                        variant="default"
+                        size="sm"
+                        onClick={() => handleGotPaid(gig)}
+                        className="bg-green-600 hover:bg-green-700 text-white"
+                      >
+                        <DollarSign className="w-4 h-4 mr-1" />
+                        Got Paid
+                      </Button>
+                    )}
                     <Button
                       variant="ghost"
                       size="sm"
@@ -287,6 +332,20 @@ export default function GigLog() {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Got Paid Dialog */}
+      {gotPaidGig && (
+        <GotPaidDialog
+          isOpen={showGotPaidDialog}
+          onClose={() => {
+            setShowGotPaidDialog(false);
+            setGotPaidGig(null);
+          }}
+          gig={gotPaidGig}
+          onSubmit={(data) => gotPaidMutation.mutate({ gigId: gotPaidGig.id, data })}
+          isLoading={gotPaidMutation.isPending}
+        />
+      )}
     </div>
   );
 }
@@ -300,10 +359,6 @@ interface GigEditFormProps {
 
 function GigEditForm({ gig, onSave, onCancel, isLoading }: GigEditFormProps) {
   const { data: user } = useQuery({ queryKey: ["/api/user"] });
-  const [autoSaveLastSaved, setAutoSaveLastSaved] = useState<Date | null>(null);
-  const [showRecoveryDialog, setShowRecoveryDialog] = useState(false);
-  const [recoveryData, setRecoveryData] = useState<any>(null);
-  const isOnline = useOnlineStatus();
   
   const [formData, setFormData] = useState({
     clientName: gig.clientName,
@@ -318,22 +373,6 @@ function GigEditForm({ gig, onSave, onCancel, isLoading }: GigEditFormProps) {
     taxPercentage: (gig.taxPercentage !== null && gig.taxPercentage !== undefined) ? gig.taxPercentage : 23,
   });
 
-  // Auto-save functionality
-  const { saveNow, clearSave, restoreData } = useFormAutoSave(
-    `gig-edit-${gig.id}`,
-    formData,
-    true
-  );
-
-  // Check for recovery data on mount
-  useEffect(() => {
-    const recovered = restoreData();
-    if (recovered) {
-      setRecoveryData(recovered);
-      setShowRecoveryDialog(true);
-    }
-  }, [restoreData]);
-
   // Update tax percentage when user data loads
   useEffect(() => {
     if (user && (gig.taxPercentage === null || gig.taxPercentage === undefined)) {
@@ -344,36 +383,9 @@ function GigEditForm({ gig, onSave, onCancel, isLoading }: GigEditFormProps) {
     }
   }, [user, gig.taxPercentage]);
 
-  // Auto-save indicator update
-  useEffect(() => {
-    if (formData && Object.keys(formData).length > 0) {
-      setAutoSaveLastSaved(new Date());
-    }
-  }, [formData]);
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    try {
-      await submitFormWithRetry(
-        formData,
-        async (data: any) => {
-          onSave(data);
-          return { success: true };
-        },
-        {
-          autoSaveKey: `gig-edit-${gig.id}`,
-          onSuccess: () => {
-            clearSave();
-          },
-          onError: (error) => {
-            console.error("Form submission error:", error);
-          }
-        }
-      );
-    } catch (error) {
-      console.error("Form submission failed:", error);
-    }
+    onSave(formData);
   };
 
   return (

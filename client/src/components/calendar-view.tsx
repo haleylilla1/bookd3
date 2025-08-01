@@ -900,6 +900,20 @@ export default function CalendarView() {
                         >
                           {gig.status}
                         </Badge>
+                        {gig.status !== 'completed' && (
+                          <Button
+                            size="sm"
+                            variant="default"
+                            onClick={() => {
+                              handleGotPaid(gig);
+                              setShowDayGigs(false);
+                            }}
+                            className="bg-green-600 hover:bg-green-700 text-white h-8 px-3"
+                          >
+                            <DollarSign className="h-3 w-3 mr-1" />
+                            Got Paid
+                          </Button>
+                        )}
                         <Button
                           size="sm"
                           variant="outline"
