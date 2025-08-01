@@ -318,9 +318,17 @@ export default function GotPaidDialog({ gig, isOpen, onClose, onSave }: GotPaidD
                       min="0"
                       max="50"
                       step="1"
-                      value={formData.taxPercentage}
-                      onChange={(e) => setFormData({ ...formData, taxPercentage: parseInt(e.target.value) || 0 })}
+                      value={formData.taxPercentage === 0 ? "" : formData.taxPercentage}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        if (value === "") {
+                          setFormData({ ...formData, taxPercentage: 0 });
+                        } else {
+                          setFormData({ ...formData, taxPercentage: parseInt(value) || 0 });
+                        }
+                      }}
                       className="w-20"
+                      placeholder="0"
                     />
                     <span className="text-sm text-gray-500">%</span>
                   </div>
