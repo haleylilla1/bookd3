@@ -13,7 +13,7 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import type { Gig } from "@shared/schema";
 import { formatMonth, addMonths } from "@/lib/dateUtils";
-import ReceiptUpload from "@/components/receipt-upload";
+
 
 import { AddressAutocomplete } from "./address-autocomplete";
 import GotPaidDialog, { type GotPaidData } from "./got-paid-dialog";
@@ -514,11 +514,11 @@ export default function CalendarView() {
     }
     
     // Handle receipts and reimbursement tracking
-    if (updatedData.parkingReceipts) {
-      updatePayload.parkingReceipts = Array.isArray(updatedData.parkingReceipts) ? updatedData.parkingReceipts : [];
+    if (updatedData.parkingDescription !== undefined) {
+      updatePayload.parkingDescription = updatedData.parkingDescription;
     }
-    if (updatedData.otherExpenseReceipts) {
-      updatePayload.otherExpenseReceipts = Array.isArray(updatedData.otherExpenseReceipts) ? updatedData.otherExpenseReceipts : [];
+    if (updatedData.otherExpenseDescription !== undefined) {
+      updatePayload.otherExpenseDescription = updatedData.otherExpenseDescription;
     }
     
     // Add reimbursement tracking fields
@@ -1089,10 +1089,10 @@ function GigEditForm({ gig, onSave, onCancel, isLoading }: GigEditFormProps) {
     includeRoundtrip: true,
     calculatedMileage: "",
     parkingExpense: gig.parkingExpense || "",
-    parkingReceipts: (gig as any).parkingReceipts || [],
+    parkingDescription: gig.parkingDescription || "",
     parkingReimbursed: (gig as any).parkingReimbursed || false,
     otherExpenses: gig.otherExpenses || "",
-    otherExpenseReceipts: (gig as any).otherExpenseReceipts || [],
+    otherExpenseDescription: gig.otherExpenseDescription || "",
     otherExpensesReimbursed: (gig as any).otherExpensesReimbursed || false,
   });
 
@@ -1471,12 +1471,14 @@ function GigEditForm({ gig, onSave, onCancel, isLoading }: GigEditFormProps) {
               </label>
             </div>
           </div>
-          <ReceiptUpload
-            label="Upload Receipt Photos"
-            receipts={formData.parkingReceipts}
-            onReceiptsChange={(receipts) => setFormData({ ...formData, parkingReceipts: receipts })}
-            maxFiles={3}
-          />
+          <div>
+            <label className="block text-xs font-medium mb-1">Parking Details (optional)</label>
+            <Input
+              placeholder="e.g., meter parking, garage level 2"
+              value={formData.parkingDescription}
+              onChange={(e) => setFormData({ ...formData, parkingDescription: e.target.value })}
+            />
+          </div>
         </div>
 
         {/* Other Expenses Section */}
@@ -1503,12 +1505,14 @@ function GigEditForm({ gig, onSave, onCancel, isLoading }: GigEditFormProps) {
               </label>
             </div>
           </div>
-          <ReceiptUpload
-            label="Upload Receipt Photos"
-            receipts={formData.otherExpenseReceipts}
-            onReceiptsChange={(receipts) => setFormData({ ...formData, otherExpenseReceipts: receipts })}
-            maxFiles={3}
-          />
+          <div>
+            <label className="block text-xs font-medium mb-1">Expense Details (optional)</label>
+            <Input
+              placeholder="e.g., supplies, tools, materials"
+              value={formData.otherExpenseDescription}
+              onChange={(e) => setFormData({ ...formData, otherExpenseDescription: e.target.value })}
+            />
+          </div>
         </div>
       </div>
 

@@ -19,7 +19,7 @@ import { apiRequest } from "@/lib/queryClient";
 import type { InsertGig, User } from "@shared/schema";
 import { calculateDistance } from "@/lib/distance";
 
-import ReceiptUpload from "@/components/receipt-upload";
+
 import { AutoSaveIndicator, useOnlineStatus } from "./auto-save-indicator";
 import { MobileAutoSaveIndicator, useMobileAutoSaveStatus } from "./mobile-auto-save-indicator";
 import { useFormAutoSave, submitFormWithRetry, getAutoSavedData, hasRecoverableData } from "@/lib/auto-save";
@@ -47,10 +47,10 @@ const gigFormSchema = z.object({
   notes: z.string().optional(),
   status: z.enum(["upcoming", "completed", "pending_payment"]).default("upcoming"),
   parkingExpense: z.string().optional(),
-  parkingReceipts: z.array(z.string()).default([]),
+  parkingDescription: z.string().optional(),
   parkingReimbursed: z.boolean().default(false),
   otherExpenses: z.string().optional(),
-  otherExpenseReceipts: z.array(z.string()).default([]),
+  otherExpenseDescription: z.string().optional(),
   otherExpensesReimbursed: z.boolean().default(false),
 });
 
@@ -255,10 +255,10 @@ export default function GigForm({ onClose }: GigFormProps) {
     notes: "",
     status: "upcoming" as const,
     parkingExpense: "",
-    parkingReceipts: [],
+    parkingDescription: "",
     parkingReimbursed: false,
     otherExpenses: "",
-    otherExpenseReceipts: [],
+    otherExpenseDescription: "",
     otherExpensesReimbursed: false,
   }), [user?.defaultTaxPercentage, user?.homeAddress]);
 
@@ -487,9 +487,11 @@ export default function GigForm({ onClose }: GigFormProps) {
               mileage: submitData.calculatedMileage ? Math.max(0, parseInt(submitData.calculatedMileage) || 0) : 0,
               notes: submitData.notes || null,
               parkingExpense: parseNumeric(submitData.parkingExpense),
-              parkingReceipts: Array.isArray(submitData.parkingReceipts) ? submitData.parkingReceipts : [],
+              parkingDescription: submitData.parkingDescription || null,
+              parkingReimbursed: submitData.parkingReimbursed,
               otherExpenses: parseNumeric(submitData.otherExpenses),
-              otherExpenseReceipts: Array.isArray(submitData.otherExpenseReceipts) ? submitData.otherExpenseReceipts : [],
+              otherExpenseDescription: submitData.otherExpenseDescription || null,
+              otherExpensesReimbursed: submitData.otherExpensesReimbursed,
             };
             
             await createGigMutation.mutateAsync(gigData);
@@ -1020,10 +1022,22 @@ export default function GigForm({ onClose }: GigFormProps) {
                           )}
                         />
                       </div>
-                      <ReceiptUpload
-                        label="Upload Receipt Photos"
-                        receipts={form.getValues("parkingReceipts")}
-                        onReceiptsChange={(receipts) => form.setValue("parkingReceipts", receipts)}
+                      <FormField
+                        control={form.control}
+                        name="parkingDescription"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Parking Details (optional)</FormLabel>
+                            <FormControl>
+                              <Input 
+                                placeholder="e.g., meter parking, garage level 2"
+                                {...field} 
+                              />
+                            </FormControl>
+                            <p className="text-xs text-gray-500">Brief description of parking situation</p>
+                            <FormMessage />
+                          </FormItem>
+                        )}
                       />
                     </div>
 
@@ -1061,10 +1075,22 @@ export default function GigForm({ onClose }: GigFormProps) {
                           )}
                         />
                       </div>
-                      <ReceiptUpload
-                        label="Upload Receipt Photos"
-                        receipts={form.getValues("otherExpenseReceipts")}
-                        onReceiptsChange={(receipts) => form.setValue("otherExpenseReceipts", receipts)}
+                      <FormField
+                        control={form.control}
+                        name="otherExpenseDescription"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Expense Details (optional)</FormLabel>
+                            <FormControl>
+                              <Input 
+                                placeholder="e.g., supplies, tools, materials"
+                                {...field} 
+                              />
+                            </FormControl>
+                            <p className="text-xs text-gray-500">Brief description of other expenses</p>
+                            <FormMessage />
+                          </FormItem>
+                        )}
                       />
                     </div>
                   </div>

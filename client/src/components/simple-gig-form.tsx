@@ -28,10 +28,7 @@ const gigFormSchema = z.object({
   notes: z.string().optional(),
   // Simple estimates for planning (no complex tracking)
   estimatedMileage: z.string().optional(),
-  estimatedExpenses: z.array(z.object({
-    name: z.string(),
-    amount: z.number()
-  })).default([]),
+  estimatedExpenses: z.string().optional(),
 });
 
 type GigFormData = z.infer<typeof gigFormSchema>;
@@ -265,10 +262,10 @@ export default function SimpleGigForm({ onClose }: SimpleGigFormProps) {
         notes: data.notes || null,
         // Default values for fields handled by "Got Paid"
         parkingExpense: "0",
-        parkingReceipts: [],
+        parkingDescription: null,
         parkingReimbursed: false,
         otherExpenses: "0",
-        otherExpenseReceipts: [],
+        otherExpenseDescription: null,
         otherExpensesReimbursed: false,
         // New "Got Paid" fields with defaults
         totalReceived: "0",
@@ -634,10 +631,11 @@ export default function SimpleGigForm({ onClose }: SimpleGigFormProps) {
                 name="estimatedExpenses"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Estimated Expenses</FormLabel>
+                    <FormLabel>Estimated Expenses (optional)</FormLabel>
                     <FormControl>
-                      <Input type="number" placeholder="15" {...field} />
+                      <Input placeholder="e.g., parking, supplies - $25" {...field} />
                     </FormControl>
+                    <p className="text-xs text-gray-500">Brief description for planning (detailed tracking in "Got Paid")</p>
                     <FormMessage />
                   </FormItem>
                 )}

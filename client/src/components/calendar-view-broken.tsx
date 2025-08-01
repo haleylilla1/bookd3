@@ -13,7 +13,7 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import type { Gig } from "@shared/schema";
 import { formatMonth, addMonths } from "@/lib/dateUtils";
-import ReceiptUpload from "@/components/receipt-upload";
+
 
 // Utility function to parse dates consistently across timezones (same as dashboard)
 const parseGigDate = (dateString: string): Date => {
