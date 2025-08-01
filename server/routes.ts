@@ -176,10 +176,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         totalReceived,
         parkingSpent,
         parkingReimbursed,
-        otherSpent,
+        otherExpenses, // Now an array of {name, amount}
         otherReimbursed,
         paymentMethod
       } = req.body;
+
+      // Calculate total other expenses
+      const totalOtherSpent = Array.isArray(otherExpenses) 
+        ? otherExpenses.reduce((sum, expense) => sum + (expense.amount || 0), 0)
+        : 0;
 
       // Validate gig ownership
       const gig = await storage.getGig(gigId);
@@ -190,7 +195,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Calculate tax-smart values
       const taxableIncome = totalReceived - parkingReimbursed - otherReimbursed;
       const unreimbursedParking = Math.max(0, parkingSpent - parkingReimbursed);
-      const unreimbursedOther = Math.max(0, otherSpent - otherReimbursed);
+      const unreimbursedOther = Math.max(0, totalOtherSpent - otherReimbursed);
 
       // Update gig with payment data
       const updateData = {
@@ -205,7 +210,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         paymentMethod: paymentMethod || null,
         // Update existing expense fields for backward compatibility
         parkingExpense: parkingSpent.toString(),
-        otherExpenses: otherSpent.toString(),
+        otherExpenses: totalOtherSpent.toString(),
         parkingReimbursed: parkingReimbursed > 0,
         otherExpensesReimbursed: otherReimbursed > 0
       };

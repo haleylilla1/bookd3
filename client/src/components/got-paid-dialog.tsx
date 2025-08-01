@@ -5,7 +5,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { DollarSign, Calculator, Receipt, CheckCircle, ArrowRight, ArrowLeft } from "lucide-react";
+import { DollarSign, Calculator, Receipt, CheckCircle, ArrowRight, ArrowLeft, Plus, X } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
 import type { Gig } from "@shared/schema";
 
@@ -16,11 +16,16 @@ interface GotPaidDialogProps {
   onSave: (data: GotPaidData) => Promise<void>;
 }
 
+interface OtherExpense {
+  name: string;
+  amount: number;
+}
+
 export interface GotPaidData {
   totalReceived: number;
   parkingSpent: number;
   parkingReimbursed: number;
-  otherSpent: number;
+  otherExpenses: OtherExpense[];
   otherReimbursed: number;
   paymentMethod?: string;
 }
@@ -32,15 +37,16 @@ export default function GotPaidDialog({ gig, isOpen, onClose, onSave }: GotPaidD
     totalReceived: parseFloat(gig.expectedPay || "0"),
     parkingSpent: parseFloat(gig.parkingExpense || "0"),
     parkingReimbursed: gig.parkingReimbursed ? parseFloat(gig.parkingExpense || "0") : 0,
-    otherSpent: parseFloat(gig.otherExpenses || "0"),
+    otherExpenses: parseFloat(gig.otherExpenses || "0") > 0 ? [{ name: "Other expenses", amount: parseFloat(gig.otherExpenses || "0") }] : [],
     otherReimbursed: gig.otherExpensesReimbursed ? parseFloat(gig.otherExpenses || "0") : 0,
     paymentMethod: gig.paymentMethod || "",
   });
 
   // Tax-smart calculations
+  const totalOtherSpent = formData.otherExpenses.reduce((sum, expense) => sum + expense.amount, 0);
   const calculations = {
     taxableIncome: formData.totalReceived - formData.parkingReimbursed - formData.otherReimbursed,
-    businessDeductions: (formData.parkingSpent - formData.parkingReimbursed) + (formData.otherSpent - formData.otherReimbursed),
+    businessDeductions: (formData.parkingSpent - formData.parkingReimbursed) + (totalOtherSpent - formData.otherReimbursed),
     get netTaxableIncome() {
       return this.taxableIncome - this.businessDeductions;
     }
@@ -174,33 +180,96 @@ export default function GotPaidDialog({ gig, isOpen, onClose, onSave }: GotPaidD
                   <Receipt className="w-5 h-5" />
                   Other Expenses
                 </CardTitle>
+                <p className="text-sm text-gray-600">Add any other expenses (materials, food, supplies, etc.)</p>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium mb-1">Amount you spent on other expenses</label>
-                  <Input
-                    type="number"
-                    step="0.01"
-                    value={formData.otherSpent}
-                    onChange={(e) => setFormData({ ...formData, otherSpent: parseFloat(e.target.value) || 0 })}
-                    placeholder="0.00"
-                  />
-                  <p className="text-xs text-gray-500 mt-1">Materials, food, supplies, etc.</p>
+                {/* Expense List */}
+                <div className="space-y-3">
+                  {formData.otherExpenses.map((expense, index) => (
+                    <div key={index} className="flex items-center gap-2 p-3 bg-gray-50 rounded-lg">
+                      <Input
+                        placeholder="Expense name (e.g., supplies)"
+                        value={expense.name}
+                        onChange={(e) => {
+                          const newExpenses = [...formData.otherExpenses];
+                          newExpenses[index].name = e.target.value;
+                          setFormData({ ...formData, otherExpenses: newExpenses });
+                        }}
+                        className="flex-1"
+                      />
+                      <div className="flex items-center gap-1">
+                        <span className="text-sm text-gray-500">$</span>
+                        <Input
+                          type="number"
+                          step="0.01"
+                          placeholder="0.00"
+                          value={expense.amount || ""}
+                          onChange={(e) => {
+                            const newExpenses = [...formData.otherExpenses];
+                            newExpenses[index].amount = parseFloat(e.target.value) || 0;
+                            setFormData({ ...formData, otherExpenses: newExpenses });
+                          }}
+                          className="w-24"
+                        />
+                      </div>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          const newExpenses = formData.otherExpenses.filter((_, i) => i !== index);
+                          setFormData({ ...formData, otherExpenses: newExpenses });
+                        }}
+                        className="text-red-500 hover:text-red-700"
+                      >
+                        <X className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  ))}
                 </div>
-                <div>
-                  <label className="block text-sm font-medium mb-1">Amount reimbursed by client</label>
-                  <Input
-                    type="number"
-                    step="0.01"
-                    value={formData.otherReimbursed}
-                    onChange={(e) => setFormData({ ...formData, otherReimbursed: parseFloat(e.target.value) || 0 })}
-                    placeholder="0.00"
-                  />
-                </div>
-                {formData.otherSpent - formData.otherReimbursed > 0 && (
-                  <Badge variant="secondary" className="bg-blue-50 text-blue-700">
-                    Business deduction: {formatCurrency(formData.otherSpent - formData.otherReimbursed)}
-                  </Badge>
+
+                {/* Add New Expense Button */}
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    setFormData({
+                      ...formData,
+                      otherExpenses: [...formData.otherExpenses, { name: "", amount: 0 }]
+                    });
+                  }}
+                  className="w-full flex items-center gap-2"
+                >
+                  <Plus className="w-4 h-4" />
+                  Add Expense
+                </Button>
+
+                {/* Total Spent */}
+                {formData.otherExpenses.length > 0 && (
+                  <div className="pt-3 border-t">
+                    <div className="flex justify-between items-center mb-3">
+                      <span className="font-medium">Total other expenses:</span>
+                      <span className="font-bold">{formatCurrency(totalOtherSpent)}</span>
+                    </div>
+                    
+                    {/* Reimbursement Question */}
+                    <div>
+                      <label className="block text-sm font-medium mb-1">Amount reimbursed by client</label>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        value={formData.otherReimbursed}
+                        onChange={(e) => setFormData({ ...formData, otherReimbursed: parseFloat(e.target.value) || 0 })}
+                        placeholder="0.00"
+                      />
+                    </div>
+
+                    {totalOtherSpent - formData.otherReimbursed > 0 && (
+                      <Badge variant="secondary" className="bg-blue-50 text-blue-700 mt-2">
+                        Business deduction: {formatCurrency(totalOtherSpent - formData.otherReimbursed)}
+                      </Badge>
+                    )}
+                  </div>
                 )}
               </CardContent>
             </Card>
