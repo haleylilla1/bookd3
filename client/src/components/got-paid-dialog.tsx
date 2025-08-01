@@ -5,8 +5,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { DollarSign, Calculator, Receipt, CheckCircle, ArrowRight, ArrowLeft, Plus, X } from "lucide-react";
+import { DollarSign, Calculator, Receipt, CheckCircle, ArrowRight, ArrowLeft, Plus, X, Navigation, MapPin, Loader2 } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
+import { AddressAutocomplete } from "@/components/address-autocomplete";
+import { apiRequest } from "@/lib/queryClient";
 import type { Gig } from "@shared/schema";
 
 interface GotPaidDialogProps {
@@ -36,6 +38,14 @@ export default function GotPaidDialog({ gig, isOpen, onClose, onSave }: GotPaidD
   const [step, setStep] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
   const [user, setUser] = useState<any>(null);
+  
+  // Mileage calculation state
+  const [startingAddress, setStartingAddress] = useState("");
+  const [endingAddress, setEndingAddress] = useState("");
+  const [isRoundTrip, setIsRoundTrip] = useState(false);
+  const [isPerDay, setIsPerDay] = useState(false);
+  const [isCalculatingMileage, setIsCalculatingMileage] = useState(false);
+  const [mileageError, setMileageError] = useState<string | null>(null);
 
   // Fetch user data for default tax percentage
   React.useEffect(() => {
@@ -49,6 +59,7 @@ export default function GotPaidDialog({ gig, isOpen, onClose, onSave }: GotPaidD
 
   const [formData, setFormData] = useState<GotPaidData>({
     totalReceived: parseFloat(gig.expectedPay || "0"),
+    mileage: gig.mileage || 0,
     parkingSpent: parseFloat(gig.parkingExpense || "0"),
     parkingReimbursed: gig.parkingReimbursed ? parseFloat(gig.parkingExpense || "0") : 0,
     otherExpenses: parseFloat(gig.otherExpenses || "0") > 0 ? [{ name: "Other expenses", amount: parseFloat(gig.otherExpenses || "0") }] : [],
@@ -57,18 +68,72 @@ export default function GotPaidDialog({ gig, isOpen, onClose, onSave }: GotPaidD
     taxPercentage: gig.taxPercentage || 25,
   });
 
-  // Update tax percentage when user data loads
+  // Update tax percentage and addresses when user data loads
   React.useEffect(() => {
     if (user?.defaultTaxPercentage && !gig.taxPercentage) {
       setFormData(prev => ({ ...prev, taxPercentage: user.defaultTaxPercentage }));
     }
+    if (user?.homeAddress) {
+      setStartingAddress(user.homeAddress);
+    }
   }, [user, gig.taxPercentage]);
 
-  // Tax-smart calculations
+  // Calculate mileage using Google Maps API
+  const calculateMileage = async () => {
+    if (!startingAddress || !endingAddress) return;
+
+    setIsCalculatingMileage(true);
+    setMileageError(null);
+
+    try {
+      const response = await apiRequest('POST', '/api/calculate-distance', {
+        startAddress: startingAddress,
+        endAddress: endingAddress,
+        roundTrip: isRoundTrip
+      });
+
+      const data = await response.json();
+      
+      if (data.status === 'success' && data.distanceMiles) {
+        let miles = Math.ceil(data.distanceMiles); // Round up for tax purposes
+        
+        // Multiply by number of days if per-day calculation
+        if (isPerDay && gig.isMultiDay) {
+          const dayCount = calculateDayCount();
+          miles = miles * dayCount;
+        }
+        
+        setFormData(prev => ({ ...prev, mileage: miles }));
+        setMileageError(null);
+      } else {
+        setMileageError(data.error || "Unable to calculate distance");
+      }
+    } catch (error) {
+      setMileageError("Failed to calculate mileage. Please enter manually.");
+    } finally {
+      setIsCalculatingMileage(false);
+    }
+  };
+
+  // Calculate number of days for multi-day gigs
+  const calculateDayCount = () => {
+    if (!gig.isMultiDay || !gig.startDate || !gig.endDate) return 1;
+    
+    const start = new Date(gig.startDate + 'T00:00:00');
+    const end = new Date(gig.endDate + 'T00:00:00');
+    const diffTime = Math.abs(end.getTime() - start.getTime());
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1; // +1 to include both start and end dates
+    
+    return Math.max(1, diffDays);
+  };
+
+  // Tax-smart calculations with mileage deduction
   const totalOtherSpent = formData.otherExpenses.reduce((sum, expense) => sum + expense.amount, 0);
+  const mileageDeduction = formData.mileage * 0.655; // 2024 IRS standard mileage rate
   const calculations = {
     taxableIncome: formData.totalReceived - formData.parkingReimbursed - formData.otherReimbursed,
-    businessDeductions: (formData.parkingSpent - formData.parkingReimbursed) + (totalOtherSpent - formData.otherReimbursed),
+    businessDeductions: (formData.parkingSpent - formData.parkingReimbursed) + (totalOtherSpent - formData.otherReimbursed) + mileageDeduction,
+    mileageDeduction,
     get netTaxableIncome() {
       return this.taxableIncome - this.businessDeductions;
     }
@@ -92,10 +157,10 @@ export default function GotPaidDialog({ gig, isOpen, onClose, onSave }: GotPaidD
 
   const stepTitles = [
     "Total Payment",
-    "Parking Expenses", 
+    "Mileage Tracking", 
+    "Parking Expenses",
     "Other Expenses",
-    "Tax Rate",
-    "Payment Method",
+    "Tax Rate & Payment",
     "Review & Confirm"
   ];
 
@@ -108,13 +173,13 @@ export default function GotPaidDialog({ gig, isOpen, onClose, onSave }: GotPaidD
             Got Paid: {gig.eventName}
           </DialogTitle>
           <DialogDescription>
-            Step {step} of 5: {stepTitles[step - 1]}
+            Step {step} of 6: {stepTitles[step - 1]}
           </DialogDescription>
         </DialogHeader>
 
         {/* Progress indicator */}
         <div className="flex gap-2 mb-6">
-          {Array.from({ length: 5 }).map((_, i) => (
+          {Array.from({ length: 6 }).map((_, i) => (
             <div
               key={i}
               className={`flex-1 h-2 rounded ${
@@ -153,8 +218,123 @@ export default function GotPaidDialog({ gig, isOpen, onClose, onSave }: GotPaidD
           </div>
         )}
 
-        {/* Step 2: Parking Expenses */}
+        {/* Step 2: Mileage Tracking */}
         {step === 2 && (
+          <div className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <Navigation className="w-5 h-5" />
+                  Mileage Tracking
+                </CardTitle>
+                <p className="text-sm text-gray-600">
+                  Calculate miles driven for tax deductions ({formatCurrency(formData.mileage * 0.655)} at $0.655/mile)
+                </p>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {/* Address inputs */}
+                <div className="grid grid-cols-1 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Starting address</label>
+                    <AddressAutocomplete
+                      label=""
+                      value={startingAddress}
+                      onChange={setStartingAddress}
+                      placeholder="Enter starting address"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Destination address</label>
+                    <AddressAutocomplete
+                      label=""
+                      value={endingAddress}
+                      onChange={setEndingAddress}
+                      placeholder="Enter gig location"
+                    />
+                  </div>
+                </div>
+
+                {/* Trip options */}
+                <div className="space-y-3">
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      id="roundTrip"
+                      checked={isRoundTrip}
+                      onChange={(e) => setIsRoundTrip(e.target.checked)}
+                      className="rounded"
+                    />
+                    <label htmlFor="roundTrip" className="text-sm">Round trip (doubles the distance)</label>
+                  </div>
+                  
+                  {gig.isMultiDay && (
+                    <div className="flex items-center space-x-2">
+                      <input
+                        type="checkbox"
+                        id="perDay"
+                        checked={isPerDay}
+                        onChange={(e) => setIsPerDay(e.target.checked)}
+                        className="rounded"
+                      />
+                      <label htmlFor="perDay" className="text-sm">
+                        Calculate per day (×{calculateDayCount()} days = {gig.isMultiDay ? calculateDayCount() : 1} total trips)
+                      </label>
+                    </div>
+                  )}
+                </div>
+
+                {/* Calculate button */}
+                <Button
+                  type="button"
+                  onClick={calculateMileage}
+                  disabled={!startingAddress || !endingAddress || isCalculatingMileage}
+                  className="w-full"
+                >
+                  {isCalculatingMileage ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Calculating...
+                    </>
+                  ) : (
+                    <>
+                      <Calculator className="w-4 h-4 mr-2" />
+                      Calculate Mileage
+                    </>
+                  )}
+                </Button>
+
+                {/* Error display */}
+                {mileageError && (
+                  <div className="text-red-600 text-sm bg-red-50 p-3 rounded">
+                    {mileageError}
+                  </div>
+                )}
+
+                {/* Manual mileage input */}
+                <div>
+                  <label className="block text-sm font-medium mb-1">Total miles (or enter manually)</label>
+                  <Input
+                    type="number"
+                    value={formData.mileage}
+                    onChange={(e) => setFormData({ ...formData, mileage: parseFloat(e.target.value) || 0 })}
+                    placeholder="0"
+                  />
+                </div>
+
+                {/* Deduction preview */}
+                {formData.mileage > 0 && (
+                  <Badge variant="secondary" className="bg-green-50 text-green-700">
+                    <Calculator className="w-3 h-3 mr-1" />
+                    Tax deduction: {formatCurrency(formData.mileage * 0.655)} ({formData.mileage} miles × $0.655)
+                  </Badge>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
+        {/* Step 3: Parking Expenses */}
+        {step === 3 && (
           <div className="space-y-4">
             <Card>
               <CardHeader>
@@ -194,8 +374,8 @@ export default function GotPaidDialog({ gig, isOpen, onClose, onSave }: GotPaidD
           </div>
         )}
 
-        {/* Step 3: Other Expenses */}
-        {step === 3 && (
+        {/* Step 4: Other Expenses */}
+        {step === 4 && (
           <div className="space-y-4">
             <Card>
               <CardHeader>
@@ -299,8 +479,8 @@ export default function GotPaidDialog({ gig, isOpen, onClose, onSave }: GotPaidD
           </div>
         )}
 
-        {/* Step 4: Tax Rate */}
-        {step === 4 && (
+        {/* Step 5: Tax Rate & Payment Method */}
+        {step === 5 && (
           <div className="space-y-4">
             <Card>
               <CardHeader>
@@ -346,39 +526,28 @@ export default function GotPaidDialog({ gig, isOpen, onClose, onSave }: GotPaidD
                     {formatCurrency(calculations.netTaxableIncome * (formData.taxPercentage / 100))}
                   </div>
                 </div>
-              </CardContent>
-            </Card>
-          </div>
-        )}
 
-        {/* Step 5: Payment Method */}
-        {step === 5 && (
-          <div className="space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">How did you get paid?</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <Select
-                  value={formData.paymentMethod}
-                  onValueChange={(value) => setFormData({ ...formData, paymentMethod: value })}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select payment method (optional)" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="cash">Cash</SelectItem>
-                    <SelectItem value="check">Check</SelectItem>
-                    <SelectItem value="direct_deposit">Direct Deposit</SelectItem>
-                    <SelectItem value="venmo">Venmo</SelectItem>
-                    <SelectItem value="paypal">PayPal</SelectItem>
-                    <SelectItem value="zelle">Zelle</SelectItem>
-                    <SelectItem value="other">Other</SelectItem>
-                  </SelectContent>
-                </Select>
-                <p className="text-sm text-gray-500 mt-2">
-                  This helps track payment methods for your records.
-                </p>
+                {/* Payment Method */}
+                <div className="pt-4 border-t">
+                  <label className="block text-sm font-medium mb-2">How did you get paid? (optional)</label>
+                  <Select
+                    value={formData.paymentMethod}
+                    onValueChange={(value) => setFormData({ ...formData, paymentMethod: value })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select payment method" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="cash">Cash</SelectItem>
+                      <SelectItem value="check">Check</SelectItem>
+                      <SelectItem value="direct_deposit">Direct Deposit</SelectItem>
+                      <SelectItem value="venmo">Venmo</SelectItem>
+                      <SelectItem value="paypal">PayPal</SelectItem>
+                      <SelectItem value="zelle">Zelle</SelectItem>
+                      <SelectItem value="other">Other</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </CardContent>
             </Card>
           </div>
@@ -412,6 +581,17 @@ export default function GotPaidDialog({ gig, isOpen, onClose, onSave }: GotPaidD
                     <div className="col-span-2">
                       <span className="text-gray-600">Business Deductions:</span>
                       <div className="font-semibold text-blue-600">{formatCurrency(calculations.businessDeductions)}</div>
+                      <div className="text-xs text-gray-500 mt-1 space-y-1">
+                        {formData.mileage > 0 && (
+                          <div>• Mileage: {formData.mileage} miles × $0.655 = {formatCurrency(calculations.mileageDeduction)}</div>
+                        )}
+                        {formData.parkingSpent - formData.parkingReimbursed > 0 && (
+                          <div>• Parking: {formatCurrency(formData.parkingSpent - formData.parkingReimbursed)}</div>
+                        )}
+                        {totalOtherSpent - formData.otherReimbursed > 0 && (
+                          <div>• Other expenses: {formatCurrency(totalOtherSpent - formData.otherReimbursed)}</div>
+                        )}
+                      </div>
                     </div>
                   )}
                 </div>
