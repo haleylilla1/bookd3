@@ -317,9 +317,7 @@ export default function GotPaidDialog({ gig, isOpen, onClose, onSave }: GotPaidD
                       type="text"
                       inputMode="numeric"
                       pattern="[0-9]*"
-                      min="0"
-                      max="50"
-                      value={formData.taxPercentage === 0 ? "" : formData.taxPercentage.toString()}
+                      value={formData.taxPercentage.toString()}
                       onChange={(e) => {
                         const value = e.target.value;
                         if (value === "") {
@@ -331,8 +329,9 @@ export default function GotPaidDialog({ gig, isOpen, onClose, onSave }: GotPaidD
                           }
                         }
                       }}
+                      onFocus={(e) => e.target.select()}
                       className="w-20"
-                      placeholder="0"
+                      placeholder="Enter %"
                     />
                     <span className="text-sm text-gray-500">%</span>
                   </div>
