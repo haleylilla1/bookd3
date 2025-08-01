@@ -127,16 +127,13 @@ export default function GotPaidDialog({ gig, isOpen, onClose, onSave }: GotPaidD
     return Math.max(1, diffDays);
   };
 
-  // Tax-smart calculations with mileage deduction
+  // Simplified tax calculations - separate taxable income from business deductions
   const totalOtherSpent = formData.otherExpenses.reduce((sum, expense) => sum + expense.amount, 0);
   const mileageDeduction = formData.mileage * 0.655; // 2024 IRS standard mileage rate
   const calculations = {
     taxableIncome: formData.totalReceived - formData.parkingReimbursed - formData.otherReimbursed,
     businessDeductions: (formData.parkingSpent - formData.parkingReimbursed) + (totalOtherSpent - formData.otherReimbursed) + mileageDeduction,
-    mileageDeduction,
-    get netTaxableIncome() {
-      return this.taxableIncome - this.businessDeductions;
-    }
+    mileageDeduction
   };
 
   const handleSave = async () => {
@@ -525,7 +522,10 @@ export default function GotPaidDialog({ gig, isOpen, onClose, onSave }: GotPaidD
                 <div className="p-3 bg-blue-50 rounded-lg">
                   <div className="text-sm text-gray-600">Estimated tax amount:</div>
                   <div className="font-bold text-blue-700">
-                    {formatCurrency(calculations.netTaxableIncome * (formData.taxPercentage / 100))}
+                    {formatCurrency(calculations.taxableIncome * (formData.taxPercentage / 100))}
+                  </div>
+                  <div className="text-xs text-gray-500 mt-1">
+                    Based on taxable income only (deductions tracked separately)
                   </div>
                 </div>
 
@@ -565,7 +565,8 @@ export default function GotPaidDialog({ gig, isOpen, onClose, onSave }: GotPaidD
                   Tax Summary
                 </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-3">
+              <CardContent className="space-y-4">
+                {/* Income Summary */}
                 <div className="grid grid-cols-2 gap-4 text-sm">
                   <div>
                     <span className="text-gray-600">Total Received:</span>
@@ -579,30 +580,35 @@ export default function GotPaidDialog({ gig, isOpen, onClose, onSave }: GotPaidD
                     <span className="text-gray-600">Taxable Income:</span>
                     <div className="text-lg font-bold text-green-600">{formatCurrency(calculations.taxableIncome)}</div>
                   </div>
-                  {calculations.businessDeductions > 0 && (
-                    <div className="col-span-2">
-                      <span className="text-gray-600">Business Deductions:</span>
-                      <div className="font-semibold text-blue-600">{formatCurrency(calculations.businessDeductions)}</div>
-                      <div className="text-xs text-gray-500 mt-1 space-y-1">
-                        {formData.mileage > 0 && (
-                          <div>• Mileage: {formData.mileage} miles × $0.655 = {formatCurrency(calculations.mileageDeduction)}</div>
-                        )}
-                        {formData.parkingSpent - formData.parkingReimbursed > 0 && (
-                          <div>• Parking: {formatCurrency(formData.parkingSpent - formData.parkingReimbursed)}</div>
-                        )}
-                        {totalOtherSpent - formData.otherReimbursed > 0 && (
-                          <div>• Other expenses: {formatCurrency(totalOtherSpent - formData.otherReimbursed)}</div>
-                        )}
-                      </div>
-                    </div>
-                  )}
                 </div>
-                <div className="mt-4 p-3 bg-green-50 rounded-lg">
+
+                {/* Tax Estimate */}
+                <div className="p-3 bg-green-50 rounded-lg">
                   <div className="text-sm text-gray-600">Estimated tax ({formData.taxPercentage}%):</div>
                   <div className="text-lg font-bold text-green-700">
-                    {formatCurrency(calculations.netTaxableIncome * (formData.taxPercentage / 100))}
+                    {formatCurrency(calculations.taxableIncome * (formData.taxPercentage / 100))}
                   </div>
                 </div>
+
+                {/* Business Deductions (Informational) */}
+                {calculations.businessDeductions > 0 && (
+                  <div className="p-3 bg-blue-50 rounded-lg border-l-4 border-blue-400">
+                    <div className="text-sm font-medium text-blue-800 mb-2">Potential Business Deductions:</div>
+                    <div className="text-lg font-bold text-blue-700 mb-2">{formatCurrency(calculations.businessDeductions)}</div>
+                    <div className="text-xs text-blue-600 space-y-1">
+                      {formData.mileage > 0 && (
+                        <div>• Mileage: {formData.mileage} miles × $0.655 = {formatCurrency(calculations.mileageDeduction)}</div>
+                      )}
+                      {formData.parkingSpent - formData.parkingReimbursed > 0 && (
+                        <div>• Parking: {formatCurrency(formData.parkingSpent - formData.parkingReimbursed)}</div>
+                      )}
+                      {totalOtherSpent - formData.otherReimbursed > 0 && (
+                        <div>• Other expenses: {formatCurrency(totalOtherSpent - formData.otherReimbursed)}</div>
+                      )}
+                      <div className="text-xs text-blue-500 mt-2 italic">Track these for tax filing - not included in tax estimate above</div>
+                    </div>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </div>
