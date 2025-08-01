@@ -87,9 +87,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Gig routes
   app.get('/api/gigs', requireAuth, async (req: any, res: Response) => {
     try {
-      const gigs = await storage.getGigsByUser(getUserId(req));
+      const userId = getUserId(req);
+      console.log('🔍 Fetching gigs for user:', userId);
+      const gigs = await storage.getGigsByUser(userId);
+      console.log('✅ Gigs fetched successfully:', gigs?.length || 0);
       res.json(gigs);
     } catch (error) {
+      console.error('❌ Error fetching gigs:', error);
       res.status(500).json({ error: 'Failed to fetch gigs' });
     }
   });
