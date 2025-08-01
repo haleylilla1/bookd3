@@ -97,8 +97,8 @@ export default function GotPaidDialog({ gig, isOpen, onClose, onSave }: GotPaidD
       if (data.status === 'success' && data.distanceMiles) {
         let miles = Math.ceil(data.distanceMiles); // Round up for tax purposes
         
-        // Multiply by number of days if per-day calculation
-        if (isPerDay && gig.isMultiDay) {
+        // For multi-day gigs, multiply by number of days (already accounting for roundtrip)
+        if (gig.isMultiDay && isPerDay) {
           const dayCount = calculateDayCount();
           miles = miles * dayCount;
         }
@@ -229,6 +229,7 @@ export default function GotPaidDialog({ gig, isOpen, onClose, onSave }: GotPaidD
                 </CardTitle>
                 <p className="text-sm text-gray-600">
                   Calculate miles driven for tax deductions ({formatCurrency(formData.mileage * 0.655)} at $0.655/mile)
+                  {gig.isMultiDay && <span className="block mt-1 text-xs text-blue-600">Multi-day gig: Select "Calculate for each day" to multiply by {calculateDayCount()} days</span>}
                 </p>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -277,7 +278,8 @@ export default function GotPaidDialog({ gig, isOpen, onClose, onSave }: GotPaidD
                         className="rounded"
                       />
                       <label htmlFor="perDay" className="text-sm">
-                        Calculate per day (×{calculateDayCount()} days = {gig.isMultiDay ? calculateDayCount() : 1} total trips)
+                        Calculate for each day (×{calculateDayCount()} days)
+                        {isRoundTrip ? ` = ${calculateDayCount()} roundtrips total` : ` = ${calculateDayCount()} one-way trips total`}
                       </label>
                     </div>
                   )}
