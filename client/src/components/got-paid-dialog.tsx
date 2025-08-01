@@ -28,11 +28,24 @@ export interface GotPaidData {
   otherExpenses: OtherExpense[];
   otherReimbursed: number;
   paymentMethod?: string;
+  taxPercentage: number;
 }
 
 export default function GotPaidDialog({ gig, isOpen, onClose, onSave }: GotPaidDialogProps) {
   const [step, setStep] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
+  const [user, setUser] = useState<any>(null);
+
+  // Fetch user data for default tax percentage
+  React.useEffect(() => {
+    if (isOpen) {
+      fetch('/api/user')
+        .then(res => res.json())
+        .then(userData => setUser(userData))
+        .catch(err => console.error('Error fetching user:', err));
+    }
+  }, [isOpen]);
+
   const [formData, setFormData] = useState<GotPaidData>({
     totalReceived: parseFloat(gig.expectedPay || "0"),
     parkingSpent: parseFloat(gig.parkingExpense || "0"),
@@ -40,7 +53,15 @@ export default function GotPaidDialog({ gig, isOpen, onClose, onSave }: GotPaidD
     otherExpenses: parseFloat(gig.otherExpenses || "0") > 0 ? [{ name: "Other expenses", amount: parseFloat(gig.otherExpenses || "0") }] : [],
     otherReimbursed: gig.otherExpensesReimbursed ? parseFloat(gig.otherExpenses || "0") : 0,
     paymentMethod: gig.paymentMethod || "",
+    taxPercentage: gig.taxPercentage || 25,
   });
+
+  // Update tax percentage when user data loads
+  React.useEffect(() => {
+    if (user?.defaultTaxPercentage && !gig.taxPercentage) {
+      setFormData(prev => ({ ...prev, taxPercentage: user.defaultTaxPercentage }));
+    }
+  }, [user, gig.taxPercentage]);
 
   // Tax-smart calculations
   const totalOtherSpent = formData.otherExpenses.reduce((sum, expense) => sum + expense.amount, 0);
@@ -65,13 +86,14 @@ export default function GotPaidDialog({ gig, isOpen, onClose, onSave }: GotPaidD
     }
   };
 
-  const nextStep = () => setStep(prev => Math.min(prev + 1, 5));
+  const nextStep = () => setStep(prev => Math.min(prev + 1, 6));
   const prevStep = () => setStep(prev => Math.max(prev - 1, 1));
 
   const stepTitles = [
     "Total Payment",
     "Parking Expenses", 
     "Other Expenses",
+    "Tax Rate",
     "Payment Method",
     "Review & Confirm"
   ];
@@ -276,8 +298,49 @@ export default function GotPaidDialog({ gig, isOpen, onClose, onSave }: GotPaidD
           </div>
         )}
 
-        {/* Step 4: Payment Method */}
+        {/* Step 4: Tax Rate */}
         {step === 4 && (
+          <div className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <Calculator className="w-5 h-5" />
+                  Tax Rate
+                </CardTitle>
+                <p className="text-sm text-gray-600">Set your tax rate for this gig</p>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium mb-1">Tax percentage</label>
+                  <div className="flex items-center gap-2">
+                    <Input
+                      type="number"
+                      min="0"
+                      max="50"
+                      step="1"
+                      value={formData.taxPercentage}
+                      onChange={(e) => setFormData({ ...formData, taxPercentage: parseInt(e.target.value) || 0 })}
+                      className="w-20"
+                    />
+                    <span className="text-sm text-gray-500">%</span>
+                  </div>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Your default is {user?.defaultTaxPercentage || 25}%. You can adjust for this specific gig.
+                  </p>
+                </div>
+                <div className="p-3 bg-blue-50 rounded-lg">
+                  <div className="text-sm text-gray-600">Estimated tax amount:</div>
+                  <div className="font-bold text-blue-700">
+                    {formatCurrency(calculations.netTaxableIncome * (formData.taxPercentage / 100))}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
+        {/* Step 5: Payment Method */}
+        {step === 5 && (
           <div className="space-y-4">
             <Card>
               <CardHeader>
@@ -309,8 +372,8 @@ export default function GotPaidDialog({ gig, isOpen, onClose, onSave }: GotPaidD
           </div>
         )}
 
-        {/* Step 5: Summary & Confirmation */}
-        {step === 5 && (
+        {/* Step 6: Summary & Confirmation */}
+        {step === 6 && (
           <div className="space-y-4">
             <Card>
               <CardHeader>
@@ -341,9 +404,9 @@ export default function GotPaidDialog({ gig, isOpen, onClose, onSave }: GotPaidD
                   )}
                 </div>
                 <div className="mt-4 p-3 bg-green-50 rounded-lg">
-                  <div className="text-sm text-gray-600">Estimated tax (25%):</div>
+                  <div className="text-sm text-gray-600">Estimated tax ({formData.taxPercentage}%):</div>
                   <div className="text-lg font-bold text-green-700">
-                    {formatCurrency(calculations.netTaxableIncome * 0.25)}
+                    {formatCurrency(calculations.netTaxableIncome * (formData.taxPercentage / 100))}
                   </div>
                 </div>
               </CardContent>
@@ -363,7 +426,7 @@ export default function GotPaidDialog({ gig, isOpen, onClose, onSave }: GotPaidD
             Back
           </Button>
           
-          {step < 5 ? (
+          {step < 6 ? (
             <Button onClick={nextStep} className="flex items-center gap-2">
               Next
               <ArrowRight className="w-4 h-4" />
