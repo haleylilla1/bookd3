@@ -22,6 +22,7 @@ Bookd is a mobile-first gig worker companion app designed for comprehensive fina
 ## System Architecture
 - **Frontend**: React with TypeScript, optimized for mobile-first experience.
 - **Backend**: Express.js with Node.js and PostgreSQL.
+- **Simplified Expense Tracking**: Text-based descriptions replace complex photo upload system (removed August 2025 - 500+ lines eliminated).
 - **Memory Management**: Real-time Node.js memory tracking with warning/critical thresholds and intelligent emergency cleanup (e.g., 400MB warning/500MB critical). Features advanced garbage collection integration and memory pressure handling.
 - **Cache Optimization**: Data compression for large objects (>10KB), strict 100KB entry size limits, and automatic rejection of oversized entries. Implements intelligent gzip compression (70-85% savings) and an advanced cache system with a priority queue (O(log n) cleanup), dynamic interval adjustment, and intelligent cache warming. Supports automatic Redis/memory fallback.
 - **Database Performance**: Utilizes 9 critical database indexes for user queries, authentication, goals, and dashboard filters, yielding 20-30% performance improvement. Employs clean, straightforward database queries. Neon serverless handles connection pooling.
@@ -68,12 +69,12 @@ Bookd is a mobile-first gig worker companion app designed for comprehensive fina
 
 **BACKWARD COMPATIBILITY**: Keep existing "Add Gig" form unchanged - new workflow is additive only
 
-- **PHOTO UPLOAD SIMPLIFICATION**: Consider removing receipt photo uploads in favor of simple text descriptions to eliminate scaling issues and improve mobile UX
+- **PHOTO UPLOAD REMOVAL COMPLETED (August 2025)**: Removed entire receipt photo upload system (500+ lines of code). All expense tracking now uses simple text descriptions for better mobile UX, faster performance, and eliminates scaling issues. Database schema updated from receipt arrays to simple text fields.
 
 ## External Dependencies
 - **SendGrid**: For email integration, specifically password reset functionality.
 - **Google Maps API (Places API, Distance Matrix API)**: For address autocomplete and mileage calculation. Includes user quota management.
-- **Supabase**: Used for database, authentication, and object storage (e.g., receipt photos via Supabase Storage).
+- **Supabase**: Used for database, authentication, and object storage (photo upload system removed August 2025).
 - **Redis**: Considered for production scaling (caching).
 - **Cloudinary**: Considered for production scaling (media management).
 - **Stripe**: Considered for payment integration.
