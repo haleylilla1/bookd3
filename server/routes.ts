@@ -178,7 +178,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         parkingReimbursed,
         otherExpenses, // Now an array of {name, amount}
         otherReimbursed,
-        paymentMethod
+        paymentMethod,
+        taxPercentage
       } = req.body;
 
       // Calculate total other expenses
@@ -208,6 +209,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         unreimbursedOther: unreimbursedOther.toString(),
         gotPaidDate: new Date(),
         paymentMethod: paymentMethod || null,
+        taxPercentage: taxPercentage || 25,
         // Update existing expense fields for backward compatibility
         parkingExpense: parkingSpent.toString(),
         otherExpenses: totalOtherSpent.toString(),
