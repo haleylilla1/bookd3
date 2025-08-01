@@ -12,11 +12,9 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { insertGigSchema, type InsertGig, type User } from "@shared/schema";
 import { z } from "zod";
-import { X, Loader2, MapPin, Receipt, Calculator, Navigation } from "lucide-react";
-import ReceiptUpload from "@/components/receipt-upload";
-import { AddressAutocomplete } from "@/components/address-autocomplete";
+import { X, Loader2 } from "lucide-react";
 
-// Enhanced form schema with mileage, receipt support, and multi-day functionality
+// Simplified form schema for planning gigs (detailed tracking happens in "Got Paid")
 const gigFormSchema = z.object({
   gigType: z.string().min(1, "Gig type is required"),
   eventName: z.string().min(1, "Event name is required"),
@@ -24,27 +22,13 @@ const gigFormSchema = z.object({
   startDate: z.string().min(1, "Start date is required"),
   endDate: z.string().optional(),
   expectedPay: z.string().optional(),
-  actualPay: z.string().optional(),
-  tips: z.string().optional(),
   paymentMethod: z.string().default("Cash"),
   status: z.enum(["upcoming", "pending payment", "completed"]).default("upcoming"),
   duties: z.string().optional(),
-  taxPercentage: z.number().min(0).max(50).default(23),
   notes: z.string().optional(),
-  // Mileage tracking
-  trackMileage: z.boolean().default(false),
-  startingAddress: z.string().optional(),
-  endingAddress: z.string().optional(),
-  mileage: z.number().optional(),
-  isRoundTrip: z.boolean().default(false),
-  // Expense tracking with receipts
-  trackExpenses: z.boolean().default(false),
-  parkingExpense: z.string().optional(),
-  parkingReceipts: z.array(z.string()).default([]),
-  parkingReimbursed: z.boolean().default(false),
-  otherExpenses: z.string().optional(),
-  otherExpenseReceipts: z.array(z.string()).default([]),
-  otherExpensesReimbursed: z.boolean().default(false),
+  // Simple estimates for planning (no complex tracking)
+  estimatedMileage: z.string().optional(),
+  estimatedExpenses: z.string().optional(),
 });
 
 type GigFormData = z.infer<typeof gigFormSchema>;
@@ -136,7 +120,7 @@ export default function SimpleGigForm({ onClose }: SimpleGigFormProps) {
     },
   });
 
-  // Enhanced form setup with mileage and expense tracking
+  // Simplified form setup for planning gigs
   const form = useForm<GigFormData>({
     resolver: zodResolver(gigFormSchema),
     defaultValues: {
@@ -146,50 +130,26 @@ export default function SimpleGigForm({ onClose }: SimpleGigFormProps) {
       startDate: new Date().toISOString().split('T')[0],
       endDate: "",
       expectedPay: "",
-      actualPay: "",
-      tips: "",
       paymentMethod: "Cash",
       status: "upcoming" as const,
       duties: "",
-      taxPercentage: 23,
       notes: "",
-      trackMileage: false,
-      startingAddress: "",
-      endingAddress: "",
-      mileage: 0,
-      isRoundTrip: false,
-      trackExpenses: false,
-      parkingExpense: "",
-      parkingReceipts: [],
-      parkingReimbursed: false,
-      otherExpenses: "",
-      otherExpenseReceipts: [],
-      otherExpensesReimbursed: false,
+      estimatedMileage: "",
+      estimatedExpenses: "",
     }
   });
 
   // Update defaults when user loads
   useEffect(() => {
     if (user) {
-      form.setValue("taxPercentage", user.defaultTaxPercentage || 23);
-      if (user.homeAddress) {
-        form.setValue("startingAddress", user.homeAddress);
-      }
+      // No tax percentage in simplified form - handled in "Got Paid"
+      // No address tracking in simplified form - just estimates
     }
   }, [user, form]);
 
   // Watch form values for conditional rendering
-  const trackMileage = form.watch("trackMileage");
-  const trackExpenses = form.watch("trackExpenses");
-  const startingAddress = form.watch("startingAddress");
-  const endingAddress = form.watch("endingAddress");
-  const isRoundTrip = form.watch("isRoundTrip");
   const startDate = form.watch("startDate");
   const endDate = form.watch("endDate");
-
-  // State for mileage calculation
-  const [isCalculatingMileage, setIsCalculatingMileage] = useState(false);
-  const [mileageError, setMileageError] = useState<string | null>(null);
 
   // State for client management
   const [showNewClientInput, setShowNewClientInput] = useState(false);
@@ -220,52 +180,7 @@ export default function SimpleGigForm({ onClose }: SimpleGigFormProps) {
     };
   }, [startDate, endDate]);
 
-  // Only auto-calculate when round trip toggle changes (not when typing addresses)
-  useEffect(() => {
-    // Only auto-calculate if we have a complete previous calculation and round trip changes
-    const currentMileage = form.watch("mileage");
-    if (trackMileage && startingAddress && endingAddress && currentMileage && currentMileage > 0) {
-      calculateMileage();
-    }
-  }, [isRoundTrip]);
 
-  const calculateMileage = async () => {
-    if (!startingAddress || !endingAddress) return;
-
-    setIsCalculatingMileage(true);
-    setMileageError(null);
-
-    try {
-      const response = await apiRequest('POST', '/api/calculate-distance', {
-        startAddress: startingAddress,
-        endAddress: endingAddress,
-        roundTrip: isRoundTrip
-      });
-
-      console.log('🚗 Mileage calculation request:', {
-        startAddress: startingAddress,
-        endAddress: endingAddress,
-        roundTrip: isRoundTrip
-      });
-
-      const data = await response.json();
-      console.log('🚗 Mileage calculation response:', data);
-      
-      if (data.status === 'success' && data.distanceMiles) {
-        const miles = Math.ceil(data.distanceMiles); // Round up for tax purposes
-        form.setValue("mileage", miles);
-        
-        // Clear any previous errors
-        setMileageError(null);
-      } else {
-        setMileageError(data.error || "Unable to calculate distance");
-      }
-    } catch (error) {
-      setMileageError("Failed to calculate mileage. Please enter manually.");
-    } finally {
-      setIsCalculatingMileage(false);
-    }
-  };
 
   // SIMPLE GIG CREATION MUTATION - No complex retry logic
   const createGigMutation = useMutation({
@@ -337,20 +252,28 @@ export default function SimpleGigForm({ onClose }: SimpleGigFormProps) {
         eventName: data.eventName,
         clientName: data.clientName,
         expectedPay: data.expectedPay || "0",
-        actualPay: data.actualPay || "0", 
-        tips: data.tips || "0",
+        actualPay: "0", // Will be set via "Got Paid" workflow
+        tips: "0", // Will be set via "Got Paid" workflow
         paymentMethod: data.paymentMethod,
         status: data.status,
         duties: data.duties || null,
-        taxPercentage: data.taxPercentage,
-        mileage: data.mileage || 0,
+        taxPercentage: user.defaultTaxPercentage || 23, // Use user default
+        mileage: data.estimatedMileage ? parseFloat(data.estimatedMileage) || 0 : 0,
         notes: data.notes || null,
-        parkingExpense: data.parkingExpense ? (parseFloat(data.parkingExpense) || 0).toString() : "0",
-        parkingReceipts: data.parkingReceipts || [],
-        parkingReimbursed: data.parkingReimbursed || false,
-        otherExpenses: data.otherExpenses ? (parseFloat(data.otherExpenses) || 0).toString() : "0",
-        otherExpenseReceipts: data.otherExpenseReceipts || [],
-        otherExpensesReimbursed: data.otherExpensesReimbursed || false,
+        // Default values for fields handled by "Got Paid"
+        parkingExpense: "0",
+        parkingReceipts: [],
+        parkingReimbursed: false,
+        otherExpenses: "0",
+        otherExpenseReceipts: [],
+        otherExpensesReimbursed: false,
+        // New "Got Paid" fields with defaults
+        totalReceived: "0",
+        reimbursedParking: "0",
+        reimbursedOther: "0",
+        unreimbursedParking: "0",
+        unreimbursedOther: "0",
+        gotPaidDate: null,
       };
 
       // Create single gig entry
@@ -643,8 +566,8 @@ export default function SimpleGigForm({ onClose }: SimpleGigFormProps) {
               </div>
             )}
 
-            {/* Payment Info */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {/* Payment Planning */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <FormField
                 control={form.control}
                 name="expectedPay"
@@ -654,109 +577,6 @@ export default function SimpleGigForm({ onClose }: SimpleGigFormProps) {
                     <FormControl>
                       <Input type="number" placeholder="250" {...field} />
                     </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="actualPay"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Actual Pay</FormLabel>
-                    <FormControl>
-                      <Input type="number" placeholder="275" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="tips"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Tips</FormLabel>
-                    <FormControl>
-                      <Input type="number" placeholder="25" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-
-            {/* Tax Percentage */}
-            <FormField
-              control={form.control}
-              name="taxPercentage"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Tax Percentage (%)</FormLabel>
-                  <FormControl>
-                    <Input 
-                      type="number" 
-                      placeholder="23" 
-                      value={field.value === 0 ? '' : field.value}
-                      onChange={(e) => {
-                        const value = e.target.value;
-                        if (value === '') {
-                          field.onChange(0);
-                        } else {
-                          const parsed = parseFloat(value);
-                          if (!isNaN(parsed)) {
-                            field.onChange(parsed);
-                          }
-                        }
-                      }}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            {/* Duties */}
-            <FormField
-              control={form.control}
-              name="duties"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Key Duties</FormLabel>
-                  <FormControl>
-                    <Textarea 
-                      placeholder="Event setup, customer interaction, cleanup..."
-                      className="min-h-[60px]"
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            {/* Status and Method */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="status"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Status</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select status" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="upcoming">Upcoming</SelectItem>
-                        <SelectItem value="pending payment">Pending Payment</SelectItem>
-                        <SelectItem value="completed">Completed</SelectItem>
-                      </SelectContent>
-                    </Select>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -778,9 +598,10 @@ export default function SimpleGigForm({ onClose }: SimpleGigFormProps) {
                         <SelectItem value="Cash">Cash</SelectItem>
                         <SelectItem value="Check">Check</SelectItem>
                         <SelectItem value="Venmo">Venmo</SelectItem>
-                        <SelectItem value="Zelle">Zelle</SelectItem>
                         <SelectItem value="PayPal">PayPal</SelectItem>
-                        <SelectItem value="Direct Deposit">Direct Deposit</SelectItem>
+                        <SelectItem value="Zelle">Zelle</SelectItem>
+                        <SelectItem value="Bank Transfer">Bank Transfer</SelectItem>
+                        <SelectItem value="Other">Other</SelectItem>
                       </SelectContent>
                     </Select>
                     <FormMessage />
@@ -789,299 +610,90 @@ export default function SimpleGigForm({ onClose }: SimpleGigFormProps) {
               />
             </div>
 
-            {/* Mileage Tracking Toggle */}
+            {/* Simple Estimates for Planning */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="estimatedMileage"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Estimated Mileage</FormLabel>
+                    <FormControl>
+                      <Input type="number" placeholder="20" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="estimatedExpenses"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Estimated Expenses</FormLabel>
+                    <FormControl>
+                      <Input type="number" placeholder="15" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            {/* Duties */}
             <FormField
               control={form.control}
-              name="trackMileage"
+              name="duties"
               render={({ field }) => (
-                <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                <FormItem>
+                  <FormLabel>Key Duties</FormLabel>
                   <FormControl>
-                    <Checkbox
-                      checked={field.value}
-                      onCheckedChange={field.onChange}
+                    <Textarea 
+                      placeholder="Event setup, customer interaction, cleanup..."
+                      className="min-h-[60px]"
+                      {...field}
                     />
                   </FormControl>
-                  <div className="space-y-1 leading-none">
-                    <FormLabel className="flex items-center gap-2">
-                      <MapPin className="w-4 h-4" />
-                      Track Mileage
-                    </FormLabel>
-                  </div>
+                  <FormMessage />
                 </FormItem>
               )}
             />
 
-            {/* Mileage Fields */}
-            {trackMileage && (
-              <div className="space-y-4 p-4 border rounded-lg bg-gray-50">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <FormField
-                    control={form.control}
-                    name="startingAddress"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Starting Address</FormLabel>
-                        <FormControl>
-                          <AddressAutocomplete
-                            label=""
-                            value={field.value || ""}
-                            onChange={(address) => {
-                              field.onChange(address);
-                              setMileageError(null);
-                              // Auto-calculate when user selects a complete address from autocomplete
-                              if (address && endingAddress && address !== endingAddress) {
-                                setTimeout(() => calculateMileage(), 500);
-                              }
-                            }}
-                            placeholder="Enter starting address"
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="endingAddress"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Ending Address</FormLabel>
-                        <FormControl>
-                          <AddressAutocomplete
-                            label=""
-                            value={field.value || ""}
-                            onChange={(address) => {
-                              field.onChange(address);
-                              setMileageError(null);
-                              // Auto-calculate when user selects a complete address from autocomplete
-                              if (address && startingAddress && address !== startingAddress) {
-                                setTimeout(() => calculateMileage(), 500);
-                              }
-                            }}
-                            placeholder="Enter destination address"
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-
-                {/* Round Trip Toggle */}
-                <FormField
-                  control={form.control}
-                  name="isRoundTrip"
-                  render={({ field }) => (
-                    <FormItem className="flex flex-row items-start space-x-3 space-y-0">
-                      <FormControl>
-                        <Checkbox
-                          checked={field.value}
-                          onCheckedChange={field.onChange}
-                        />
-                      </FormControl>
-                      <div className="space-y-1 leading-none">
-                        <FormLabel className="flex items-center gap-2">
-                          <Navigation className="w-4 h-4" />
-                          Round Trip (doubles the distance)
-                        </FormLabel>
-                      </div>
-                    </FormItem>
-                  )}
-                />
-
-                {/* Mileage Calculation Status */}
-                {isCalculatingMileage && (
-                  <div className="flex items-center gap-2 text-blue-600">
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    <span className="text-sm">Calculating distance...</span>
-                  </div>
-                )}
-
-                {mileageError && (
-                  <div className="text-red-600 text-sm bg-red-50 p-3 rounded">
-                    {mileageError}
-                  </div>
-                )}
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <FormField
-                    control={form.control}
-                    name="mileage"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="flex items-center gap-2">
-                          <Calculator className="w-4 h-4" />
-                          Total Miles {isRoundTrip ? "(Round Trip)" : "(One Way)"}
-                        </FormLabel>
-                        <FormControl>
-                          <Input 
-                            type="number" 
-                            placeholder="0" 
-                            value={field.value === 0 ? '' : field.value || ""}
-                            onChange={(e) => {
-                              const value = e.target.value;
-                              if (value === '') {
-                                field.onChange(0);
-                              } else {
-                                const parsed = parseFloat(value);
-                                if (!isNaN(parsed) && parsed >= 0) {
-                                  field.onChange(parsed);
-                                }
-                              }
-                            }}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <div className="flex items-end">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={calculateMileage}
-                      disabled={!startingAddress || !endingAddress || isCalculatingMileage}
-                      className="w-full"
-                    >
-                      {isCalculatingMileage ? (
-                        <>
-                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                          Calculating {isRoundTrip ? 'Round Trip' : 'Distance'}...
-                        </>
-                      ) : (
-                        <>
-                          <Calculator className="w-4 h-4 mr-2" />
-                          Calculate {isRoundTrip ? 'Round Trip' : 'Distance'}
-                        </>
-                      )}
-                    </Button>
-                  </div>
-                </div>
-
-                {form.watch("mileage") && form.watch("mileage")! > 0 && (
-                  <div className="bg-green-50 p-3 rounded-lg">
-                    <div className="text-sm text-green-800">
-                      <strong>Tax Deduction:</strong> ${((form.watch("mileage") || 0) * 0.655).toFixed(2)} 
-                      <span className="text-green-600 ml-2">(at $0.655 per mile)</span>
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* Expense Tracking Toggle */}
+            {/* Status */}
             <FormField
               control={form.control}
-              name="trackExpenses"
+              name="status"
               render={({ field }) => (
-                <FormItem className="flex flex-row items-start space-x-3 space-y-0">
-                  <FormControl>
-                    <Checkbox
-                      checked={field.value}
-                      onCheckedChange={field.onChange}
-                    />
-                  </FormControl>
-                  <div className="space-y-1 leading-none">
-                    <FormLabel className="flex items-center gap-2">
-                      <Receipt className="w-4 h-4" />
-                      Track Expenses
-                    </FormLabel>
-                  </div>
+                <FormItem>
+                  <FormLabel>Status</FormLabel>
+                  <Select onValueChange={field.onChange} value={field.value}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select status" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="upcoming">Upcoming</SelectItem>
+                      <SelectItem value="pending payment">Pending Payment</SelectItem>
+                      <SelectItem value="completed">Completed</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
                 </FormItem>
               )}
             />
 
-            {/* Expense Fields */}
-            {trackExpenses && (
-              <div className="space-y-6">
-                {/* Parking Section */}
-                <div className="space-y-3 p-4 bg-blue-50 rounded-lg border">
-                  <h4 className="font-medium text-blue-900">Parking</h4>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <FormField
-                      control={form.control}
-                      name="parkingExpense"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Amount ($)</FormLabel>
-                          <FormControl>
-                            <Input type="number" placeholder="0.00" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control}
-                      name="parkingReimbursed"
-                      render={({ field }) => (
-                        <FormItem className="flex flex-row items-start space-x-3 space-y-0 pt-6">
-                          <FormControl>
-                            <Checkbox
-                              checked={field.value}
-                              onCheckedChange={field.onChange}
-                            />
-                          </FormControl>
-                          <div className="space-y-1 leading-none">
-                            <FormLabel>Reimbursed</FormLabel>
-                          </div>
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-                  <ReceiptUpload
-                    receipts={form.watch("parkingReceipts") || []}
-                    onReceiptsChange={(receipts) => form.setValue("parkingReceipts", receipts)}
-                    label="Upload Receipt Photos"
-                  />
-                </div>
-
-                {/* Other Expenses Section */}
-                <div className="space-y-3 p-4 bg-green-50 rounded-lg border">
-                  <h4 className="font-medium text-green-900">Other Expenses</h4>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <FormField
-                      control={form.control}
-                      name="otherExpenses"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Amount ($)</FormLabel>
-                          <FormControl>
-                            <Input type="number" placeholder="0.00" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control}
-                      name="otherExpensesReimbursed"
-                      render={({ field }) => (
-                        <FormItem className="flex flex-row items-start space-x-3 space-y-0 pt-6">
-                          <FormControl>
-                            <Checkbox
-                              checked={field.value}
-                              onCheckedChange={field.onChange}
-                            />
-                          </FormControl>
-                          <div className="space-y-1 leading-none">
-                            <FormLabel>Reimbursed</FormLabel>
-                          </div>
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-
-                  <ReceiptUpload
-                    receipts={form.watch("otherExpenseReceipts") || []}
-                    onReceiptsChange={(receipts) => form.setValue("otherExpenseReceipts", receipts)}
-                    label="Upload Receipt Photos"
-                  />
-                </div>
+            {/* Planning Note */}
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <div className="flex items-center gap-2 mb-2">
+                <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                <span className="text-blue-800 font-medium">Planning Tool</span>
               </div>
-            )}
+              <p className="text-blue-700 text-sm">
+                This form is for planning gigs. Use "Got Paid" on completed gigs for detailed payment tracking with tax-smart calculations.
+              </p>
+            </div>
 
             {/* Notes */}
             <FormField
