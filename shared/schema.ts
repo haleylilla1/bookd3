@@ -135,10 +135,10 @@ export const gigs = pgTable("gigs", {
   mileage: integer("mileage"),
   notes: text("notes"),
   parkingExpense: decimal("parking_expense", { precision: 10, scale: 2 }),
-  parkingReceipts: text("parking_receipts").array(),
+  parkingDescription: text("parking_description"),
   parkingReimbursed: boolean("parking_reimbursed").default(false),
   otherExpenses: decimal("other_expenses", { precision: 10, scale: 2 }),
-  otherExpenseReceipts: text("other_expense_receipts").array(),
+  otherExpenseDescription: text("other_expense_description"),
   otherExpensesReimbursed: boolean("other_expenses_reimbursed").default(false),
   
   // "Got Paid" tax-smart fields
