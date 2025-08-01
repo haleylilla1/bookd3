@@ -163,6 +163,57 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // "Got Paid" endpoint for tax-smart payment processing
+  app.post('/api/gigs/:id/got-paid', requireAuth, async (req: any, res) => {
+    try {
+      const userId = getUserId(req);
+      const gigId = parseInt(req.params.id);
+      const {
+        totalReceived,
+        parkingSpent,
+        parkingReimbursed,
+        otherSpent,
+        otherReimbursed,
+        paymentMethod
+      } = req.body;
+
+      // Validate gig ownership
+      const gig = await storage.getGig(gigId);
+      if (!gig || gig.userId !== userId) {
+        return res.status(404).json({ error: 'Gig not found' });
+      }
+
+      // Calculate tax-smart values
+      const taxableIncome = totalReceived - parkingReimbursed - otherReimbursed;
+      const unreimbursedParking = Math.max(0, parkingSpent - parkingReimbursed);
+      const unreimbursedOther = Math.max(0, otherSpent - otherReimbursed);
+
+      // Update gig with payment data
+      const updateData = {
+        status: 'completed',
+        actualPay: taxableIncome.toString(),
+        totalReceived: totalReceived.toString(),
+        reimbursedParking: parkingReimbursed.toString(),
+        reimbursedOther: otherReimbursed.toString(),
+        unreimbursedParking: unreimbursedParking.toString(),
+        unreimbursedOther: unreimbursedOther.toString(),
+        gotPaidDate: new Date(),
+        paymentMethod: paymentMethod || null,
+        // Update existing expense fields for backward compatibility
+        parkingExpense: parkingSpent.toString(),
+        otherExpenses: otherSpent.toString(),
+        parkingReimbursed: parkingReimbursed > 0,
+        otherExpensesReimbursed: otherReimbursed > 0
+      };
+
+      const updatedGig = await storage.updateGig(gigId, updateData);
+      res.json(updatedGig);
+    } catch (error) {
+      console.error('Error processing got paid:', error);
+      res.status(500).json({ error: 'Failed to process payment' });
+    }
+  });
+
   // Goals routes
   app.get('/api/goals', requireAuth, async (req: any, res) => {
     try {

@@ -140,6 +140,15 @@ export const gigs = pgTable("gigs", {
   otherExpenses: decimal("other_expenses", { precision: 10, scale: 2 }),
   otherExpenseReceipts: text("other_expense_receipts").array(),
   otherExpensesReimbursed: boolean("other_expenses_reimbursed").default(false),
+  
+  // "Got Paid" tax-smart fields
+  totalReceived: decimal("total_received", { precision: 10, scale: 2 }),
+  reimbursedParking: decimal("reimbursed_parking", { precision: 10, scale: 2 }),
+  reimbursedOther: decimal("reimbursed_other", { precision: 10, scale: 2 }),
+  unreimbursedParking: decimal("unreimbursed_parking", { precision: 10, scale: 2 }),
+  unreimbursedOther: decimal("unreimbursed_other", { precision: 10, scale: 2 }),
+  gotPaidDate: timestamp("got_paid_date"),
+  
   gigAddress: text("gig_address"),
   distanceMiles: decimal("distance_miles", { precision: 8, scale: 2 }),
   travelTimeMinutes: integer("travel_time_minutes"),
