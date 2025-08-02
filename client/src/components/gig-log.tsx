@@ -280,24 +280,24 @@ export default function GigLog() {
                   )}
 
                   {/* Action Buttons - Mobile Optimized Layout */}
-                  <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 pt-2">
+                  <div className="flex flex-col gap-2 pt-2">
                     {gig.status !== 'completed' && (
                       <Button
                         variant="default"
                         size="sm"
                         onClick={() => handleGotPaid(gig)}
-                        className="bg-green-600 hover:bg-green-700 text-white w-full sm:w-auto"
+                        className="bg-green-600 hover:bg-green-700 text-white w-full"
                       >
                         <DollarSign className="w-4 h-4 mr-1" />
                         Got Paid
                       </Button>
                     )}
-                    <div className="flex items-center gap-1">
+                    <div className="flex items-center justify-center gap-2">
                       <Button
                         variant="ghost"
                         size="sm"
                         onClick={() => handleEditGig(gig)}
-                        className="flex-1 sm:flex-none"
+                        className="flex items-center justify-center"
                       >
                         <Edit2 className="w-4 h-4" />
                       </Button>
@@ -306,7 +306,7 @@ export default function GigLog() {
                         size="sm"
                         onClick={() => deleteGigMutation.mutate(gig.id)}
                         disabled={deleteGigMutation.isPending}
-                        className="flex-1 sm:flex-none"
+                        className="flex items-center justify-center"
                       >
                         <Trash2 className="w-4 h-4 text-red-500" />
                       </Button>
