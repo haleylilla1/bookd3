@@ -685,30 +685,7 @@ export default function Dashboard() {
         </Card>
       </div>
 
-      {/* Tax-Smart Summary */}
-      {(periodStats.totalReceived || 0) > 0 && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-          {/* Total Received */}
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600">Total Received</p>
-                  <p className="text-2xl font-bold text-blue-600">
-                    ${(periodStats.totalReceived || 0).toFixed(2)}
-                  </p>
-                  <p className="text-xs text-gray-500 mt-1">
-                    Including reimbursements
-                  </p>
-                </div>
-                <Receipt className="w-8 h-8 text-blue-500" />
-              </div>
-            </CardContent>
-          </Card>
 
-
-        </div>
-      )}
 
       {/* Additional Stats Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
