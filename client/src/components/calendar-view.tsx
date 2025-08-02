@@ -817,40 +817,45 @@ export default function CalendarView() {
                     )}
                   </div>
 
-                  <div className="flex items-center gap-2 ml-4">
+                  {/* Action Buttons - Mobile Optimized Layout */}
+                  <div className="flex flex-col gap-2 pt-2">
                     {gig.status !== 'completed' && (
                       <Button
                         variant="default"
                         size="sm"
                         onClick={() => handleGotPaid(gig)}
-                        className="bg-green-600 hover:bg-green-700 text-white"
+                        className="bg-green-600 hover:bg-green-700 text-white w-full"
                       >
                         <DollarSign className="w-4 h-4 mr-1" />
                         Got Paid
                       </Button>
                     )}
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleEditGig(gig)}
-                    >
-                      <Edit2 className="w-4 h-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => {
-                        if (gig.isMultiDay && gig.gigIds) {
-                          // Delete all gigs in the multi-day series
-                          gig.gigIds.forEach(id => deleteGigMutation.mutate(id));
-                        } else {
-                          deleteGigMutation.mutate(gig.id);
-                        }
-                      }}
-                      disabled={deleteGigMutation.isPending}
-                    >
-                      <Trash2 className="w-4 h-4 text-red-500" />
-                    </Button>
+                    <div className="flex items-center justify-center gap-2">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleEditGig(gig)}
+                        className="flex items-center justify-center"
+                      >
+                        <Edit2 className="w-4 h-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          if (gig.isMultiDay && gig.gigIds) {
+                            // Delete all gigs in the multi-day series
+                            gig.gigIds.forEach(id => deleteGigMutation.mutate(id));
+                          } else {
+                            deleteGigMutation.mutate(gig.id);
+                          }
+                        }}
+                        disabled={deleteGigMutation.isPending}
+                        className="flex items-center justify-center"
+                      >
+                        <Trash2 className="w-4 h-4 text-red-500" />
+                      </Button>
+                    </div>
                   </div>
                 </div>
               </CardContent>
