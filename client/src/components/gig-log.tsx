@@ -239,75 +239,78 @@ export default function GigLog() {
           filteredGigs.map((gig) => (
             <Card key={gig.id} className="hover:shadow-md transition-shadow">
               <CardContent className="p-4">
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-3 mb-2">
-                      <h3 className="text-lg font-semibold text-gray-900">{gig.clientName}</h3>
-                      <Badge className={getStatusColor(gig.status)}>
-                        {getStatusLabel(gig.status)}
-                      </Badge>
+                <div className="space-y-3">
+                  <div className="flex items-center gap-3 mb-2">
+                    <h3 className="text-lg font-semibold text-gray-900">{gig.clientName}</h3>
+                    <Badge className={getStatusColor(gig.status)}>
+                      {getStatusLabel(gig.status)}
+                    </Badge>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-sm text-gray-600 mb-3">
+                    <div className="flex items-center gap-1">
+                      <Calendar className="w-4 h-4" />
+                      {formatDate(gig.date)}
                     </div>
-                    
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-sm text-gray-600 mb-3">
-                      <div className="flex items-center gap-1">
-                        <Calendar className="w-4 h-4" />
-                        {formatDate(gig.date)}
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <Clock className="w-4 h-4" />
-                        {gig.gigType.replace("-", " ").replace(/\b\w/g, l => l.toUpperCase())}
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <DollarSign className="w-4 h-4" />
-                        {(() => {
-                          const actualPay = gig.actualPay ? parseFloat(gig.actualPay) : 0;
-                          const expectedPay = gig.expectedPay ? parseFloat(gig.expectedPay) : 0;
-                          
-                          if (actualPay > 0) {
-                            return formatCurrency(actualPay);
-                          } else if (expectedPay > 0) {
-                            return `${formatCurrency(expectedPay)} (expected)`;
-                          } else {
-                            return "No pay set";
-                          }
-                        })()}
-                      </div>
+                    <div className="flex items-center gap-1">
+                      <Clock className="w-4 h-4" />
+                      {gig.gigType.replace("-", " ").replace(/\b\w/g, l => l.toUpperCase())}
                     </div>
-
-                    {gig.duties && (
-                      <p className="text-sm text-gray-700 bg-gray-50 p-2 rounded">
-                        {gig.duties}
-                      </p>
-                    )}
+                    <div className="flex items-center gap-1">
+                      <DollarSign className="w-4 h-4" />
+                      {(() => {
+                        const actualPay = gig.actualPay ? parseFloat(gig.actualPay) : 0;
+                        const expectedPay = gig.expectedPay ? parseFloat(gig.expectedPay) : 0;
+                        
+                        if (actualPay > 0) {
+                          return formatCurrency(actualPay);
+                        } else if (expectedPay > 0) {
+                          return `${formatCurrency(expectedPay)} (expected)`;
+                        } else {
+                          return "No pay set";
+                        }
+                      })()}
+                    </div>
                   </div>
 
-                  <div className="flex items-center gap-2 ml-4">
+                  {gig.duties && (
+                    <p className="text-sm text-gray-700 bg-gray-50 p-2 rounded">
+                      {gig.duties}
+                    </p>
+                  )}
+
+                  {/* Action Buttons - Mobile Optimized Layout */}
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 pt-2">
                     {gig.status !== 'completed' && (
                       <Button
                         variant="default"
                         size="sm"
                         onClick={() => handleGotPaid(gig)}
-                        className="bg-green-600 hover:bg-green-700 text-white"
+                        className="bg-green-600 hover:bg-green-700 text-white w-full sm:w-auto"
                       >
                         <DollarSign className="w-4 h-4 mr-1" />
                         Got Paid
                       </Button>
                     )}
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleEditGig(gig)}
-                    >
-                      <Edit2 className="w-4 h-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => deleteGigMutation.mutate(gig.id)}
-                      disabled={deleteGigMutation.isPending}
-                    >
-                      <Trash2 className="w-4 h-4 text-red-500" />
-                    </Button>
+                    <div className="flex items-center gap-1">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleEditGig(gig)}
+                        className="flex-1 sm:flex-none"
+                      >
+                        <Edit2 className="w-4 h-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => deleteGigMutation.mutate(gig.id)}
+                        disabled={deleteGigMutation.isPending}
+                        className="flex-1 sm:flex-none"
+                      >
+                        <Trash2 className="w-4 h-4 text-red-500" />
+                      </Button>
+                    </div>
                   </div>
                 </div>
               </CardContent>
