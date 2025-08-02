@@ -706,23 +706,7 @@ export default function Dashboard() {
             </CardContent>
           </Card>
 
-          {/* Business Deductions */}
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600">Business Deductions</p>
-                  <p className="text-2xl font-bold text-purple-600">
-                    ${(periodStats.businessDeductions || 0).toFixed(2)}
-                  </p>
-                  <p className="text-xs text-gray-500 mt-1">
-                    Unreimbursed expenses
-                  </p>
-                </div>
-                <Calculator className="w-8 h-8 text-purple-500" />
-              </div>
-            </CardContent>
-          </Card>
+
         </div>
       )}
 
