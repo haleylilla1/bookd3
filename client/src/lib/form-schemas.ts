@@ -41,6 +41,23 @@ export const gigFormSchema = z.object({
 
 export type GigFormData = z.infer<typeof gigFormSchema>;
 
+// Date utility functions for consistent date handling
+export const getTodayISO = (): string => {
+  return new Date().toISOString().split('T')[0];
+};
+
+export const formatDateForAPI = (dateStr: string): string => {
+  if (!dateStr) return getTodayISO();
+  
+  // Ensure YYYY-MM-DD format for API consistency
+  try {
+    const date = new Date(dateStr + 'T00:00:00');
+    return date.toISOString().split('T')[0];
+  } catch {
+    return getTodayISO();
+  }
+};
+
 // Common form field configurations for consistent UX
 export const FORM_FIELD_CONFIGS = {
   merchant: {
@@ -66,7 +83,7 @@ export const FORM_FIELD_CONFIGS = {
   },
   date: {
     label: "When did you make this purchase?",
-    placeholder: "",
+    placeholder: "Select date",
     type: "date" as const,
   },
 } as const;

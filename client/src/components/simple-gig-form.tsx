@@ -8,6 +8,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
+import { DateInput } from "@/components/ui/date-input";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { insertGigSchema, type InsertGig, type User } from "@shared/schema";
@@ -522,7 +523,11 @@ export default function SimpleGigForm({ onClose }: SimpleGigFormProps) {
                   <FormItem>
                     <FormLabel>Start Date *</FormLabel>
                     <FormControl>
-                      <Input type="date" {...field} />
+                      <DateInput
+                        value={field.value || ""}
+                        onChange={field.onChange}
+                        placeholder="Select start date"
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -536,7 +541,11 @@ export default function SimpleGigForm({ onClose }: SimpleGigFormProps) {
                   <FormItem>
                     <FormLabel>End Date (Optional)</FormLabel>
                     <FormControl>
-                      <Input type="date" {...field} />
+                      <DateInput
+                        value={field.value || ""}
+                        onChange={field.onChange}
+                        placeholder="Select end date (optional)"
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

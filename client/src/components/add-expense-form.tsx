@@ -9,7 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Briefcase, ArrowLeft } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { type Gig } from "@shared/schema";
-import { addExpenseSchema, type ExpenseFormData } from "@/lib/form-schemas";
+import { addExpenseSchema, type ExpenseFormData, getTodayISO } from "@/lib/form-schemas";
 import { AmountField, MerchantField, BusinessPurposeField, CategoryField, DateField } from "@/components/ui/form-field-wrapper";
 import { useFormErrorHandler } from "@/hooks/use-form-error-handler";
 
@@ -30,7 +30,7 @@ export default function AddExpenseForm({ onClose, linkedGigId }: AddExpenseFormP
   const form = useForm<ExpenseFormData>({
     resolver: zodResolver(addExpenseSchema),
     defaultValues: {
-      date: new Date().toISOString().split('T')[0],
+      date: getTodayISO(),
       amount: "",
       category: "",
       merchant: "",
