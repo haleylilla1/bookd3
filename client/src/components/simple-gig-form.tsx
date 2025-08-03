@@ -21,7 +21,7 @@ const gigFormSchema = z.object({
   clientName: z.string().min(1, "Client name is required"),
   startDate: z.string().min(1, "Start date is required"),
   endDate: z.string().optional(),
-  expectedPay: z.string().optional(),
+  expectedPay: z.string().min(1, "Expected pay is required"),
   status: z.enum(["upcoming", "pending payment", "completed"]).default("upcoming"),
   duties: z.string().optional(),
   notes: z.string().optional(),
@@ -244,7 +244,7 @@ export default function SimpleGigForm({ onClose }: SimpleGigFormProps) {
         gigType: data.gigType,
         eventName: data.eventName,
         clientName: data.clientName,
-        expectedPay: data.expectedPay || "0",
+        expectedPay: data.expectedPay,
         actualPay: "0", // Will be set via "Got Paid" workflow
         tips: "0", // Will be set via "Got Paid" workflow
         paymentMethod: "Cash", // Default payment method, will be set via "Got Paid"
@@ -566,7 +566,7 @@ export default function SimpleGigForm({ onClose }: SimpleGigFormProps) {
                 name="expectedPay"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Expected Pay</FormLabel>
+                    <FormLabel>Expected Pay *</FormLabel>
                     <FormControl>
                       <Input type="number" placeholder="250" {...field} />
                     </FormControl>
