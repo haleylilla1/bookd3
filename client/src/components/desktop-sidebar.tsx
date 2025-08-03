@@ -1,4 +1,4 @@
-import { Calendar, LayoutDashboard, User, FileText, Plus, LogOut } from "lucide-react";
+import { Calendar, LayoutDashboard, User, FileText, Plus, LogOut, Receipt } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Screen } from "@/pages/home";
 import { useAuth } from "@/hooks/useAuth";
@@ -36,14 +36,21 @@ export default function DesktopSidebar({ currentScreen, onScreenChange }: Deskto
         <p className="text-sm text-gray-500 mt-1">Work different</p>
       </div>
 
-      {/* Add Gig Button */}
-      <div className="p-4 border-b border-gray-200">
+      {/* Add Buttons */}
+      <div className="p-4 border-b border-gray-200 space-y-2">
         <Button
           onClick={() => onScreenChange("gig-form")}
           className="w-full bg-primary hover:bg-primary/90 text-white"
         >
           <Plus className="w-4 h-4 mr-2" />
           Add Gig
+        </Button>
+        <Button
+          onClick={() => onScreenChange("expense-form")}
+          className="w-full bg-green-600 hover:bg-green-700 text-white"
+        >
+          <Receipt className="w-4 h-4 mr-2" />
+          Add Expense
         </Button>
       </div>
 
