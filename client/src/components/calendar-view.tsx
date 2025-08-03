@@ -1486,39 +1486,7 @@ function GigEditForm({ gig, onSave, onCancel, isLoading }: GigEditFormProps) {
           </div>
         </div>
 
-        {/* Other Expenses Section */}
-        <div className="space-y-3 p-3 bg-green-50 rounded-lg border">
-          <h5 className="font-medium text-green-900 text-xs">Other Expenses</h5>
-          <div className="grid grid-cols-2 gap-2">
-            <div>
-              <label className="block text-xs font-medium mb-1">Amount ($)</label>
-              <Input
-                type="number"
-                placeholder="0.00"
-                value={formData.otherExpenses}
-                onChange={(e) => setFormData({ ...formData, otherExpenses: e.target.value })}
-              />
-            </div>
-            <div className="flex items-center pt-4">
-              <Checkbox
-                id="otherExpensesReimbursed"
-                checked={formData.otherExpensesReimbursed}
-                onCheckedChange={(checked) => setFormData({ ...formData, otherExpensesReimbursed: checked })}
-              />
-              <label htmlFor="otherExpensesReimbursed" className="text-xs ml-2">
-                Reimbursed
-              </label>
-            </div>
-          </div>
-          <div>
-            <label className="block text-xs font-medium mb-1">Expense Details (optional)</label>
-            <Input
-              placeholder="e.g., supplies, tools, materials"
-              value={formData.otherExpenseDescription}
-              onChange={(e) => setFormData({ ...formData, otherExpenseDescription: e.target.value })}
-            />
-          </div>
-        </div>
+
       </div>
 
       <div className="flex justify-end gap-2 pt-2">
