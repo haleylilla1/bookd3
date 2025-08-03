@@ -700,6 +700,31 @@ async function prepareReportData(options: ReportOptions): Promise<ReportData> {
   // Group multi-day gigs to prevent double counting
   const groupedGigs = groupMultiDayGigs(gigs);
   
+  // Add parking expenses from gigs to expenses array as "Work Travel" category
+  const parkingExpenses = groupedGigs
+    .filter(gig => parseFloat(gig.parkingExpense || '0') > 0)
+    .map(gig => ({
+      id: `gig-parking-${gig.id}`,
+      userId: gig.userId,
+      date: gig.date,
+      amount: parseFloat(gig.parkingExpense || '0'),
+      merchant: `Parking - ${gig.eventName || 'Gig'}`,
+      businessPurpose: `Parking expense for ${gig.eventName || 'gig'} with ${gig.clientName || 'client'}${
+        gig.parkingDescription ? ` (${gig.parkingDescription})` : ''
+      }${
+        (gig as any).parkingReimbursed ? ' - REIMBURSED' : ''
+      }`,
+      category: 'Work Travel',
+      createdAt: new Date(),
+      updatedAt: new Date()
+    }));
+  
+  // Combine standalone expenses with parking expenses from gigs
+  const allExpenses = [...expenses, ...parkingExpenses];
+  
+  // Group multi-day gigs to prevent double counting
+  const groupedGigs = groupMultiDayGigs(gigs);
+  
   // Filter completed gigs for income calculations
   const completedGigs = groupedGigs.filter(g => g.status === 'completed' || g.actualPay);
   
@@ -718,7 +743,7 @@ async function prepareReportData(options: ReportOptions): Promise<ReportData> {
   }, 0);
 
   // Add standalone business expenses by category
-  const standaloneExpenses = expenses.reduce((sum, expense) => {
+  const standaloneExpenses = allExpenses.reduce((sum, expense) => {
     return sum + parseFloat(expense.amount || '0');
   }, 0);
 
@@ -786,7 +811,7 @@ async function prepareReportData(options: ReportOptions): Promise<ReportData> {
   return {
     user,
     gigs: completedGigs,
-    expenses,
+    expenses: allExpenses,
     period: periodStr,
     totalIncome,
     totalExpenses,

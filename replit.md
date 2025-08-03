@@ -63,9 +63,9 @@ Bookd is a mobile-first gig worker companion app designed for comprehensive fina
 - **Total Received**: Show gross payments for cash flow tracking
 - **Tax Estimate**: Calculate on net income after deductions
 
-**PHASE 4: Report Updates**
+**PHASE 4: Report Updates** ✅ PARKING INTEGRATION COMPLETED (August 2025)
 - **Income Reports**: Separate taxable income vs reimbursements
-- **Expense Reports**: Track deductible unreimbursed expenses
+- **Expense Reports**: Parking expenses now automatically appear in "Work Travel" category with reimbursement status
 - **Tax Summary**: IRS-compliant calculations with proper categorization
 
 **BACKWARD COMPATIBILITY**: Keep existing "Add Gig" form unchanged - new workflow is additive only
