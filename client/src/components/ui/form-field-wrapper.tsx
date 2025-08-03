@@ -4,6 +4,7 @@ import { FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/comp
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { DateInput } from "@/components/ui/date-input";
 import { BUSINESS_EXPENSE_CATEGORIES } from "@shared/schema";
 import { CalendarIcon, DollarSign, Store, FileText, Briefcase } from "lucide-react";
 
@@ -67,6 +68,12 @@ export function FormFieldWrapper<T extends FieldValues>({
                   ))}
                 </SelectContent>
               </Select>
+            ) : type === "date" ? (
+              <DateInput
+                value={field.value || ""}
+                onChange={field.onChange}
+                placeholder={placeholder}
+              />
             ) : (
               <Input
                 {...field}
@@ -139,12 +146,12 @@ export function CategoryField<T extends FieldValues>({ control }: { control: Con
   );
 }
 
-export function DateField<T extends FieldValues>({ control }: { control: Control<T> }) {
+export function DateField<T extends FieldValues>({ control, label }: { control: Control<T>; label?: string }) {
   return (
     <FormFieldWrapper
       control={control}
       name={"date" as FieldPath<T>}
-      label="When did you make this purchase?"
+      label={label || "When did you make this purchase?"}
       type="date"
       icon={<CalendarIcon className="h-4 w-4" />}
     />

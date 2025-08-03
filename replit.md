@@ -78,6 +78,7 @@ Bookd is a mobile-first gig worker companion app designed for comprehensive fina
   - **Unified Error Handling**: Implemented `/client/src/hooks/use-form-error-handler.ts` for consistent error messaging and recovery flows across all forms
   - **Mobile Touch Optimization**: All forms now use `touch-manipulation` CSS, 12px height inputs, and base text sizing for better mobile UX
   - **Schema Improvements**: Made merchant field optional in database and forms, allowing $0.00 expenses for tax-deductible free items
+  - **Date Input Standardization**: Created cross-browser compatible `DateInput` component with automatic fallback for older browsers/devices, ensuring consistent date picker experience across all forms and platforms
 
 ## External Dependencies
 - **SendGrid**: For email integration, specifically password reset functionality.
