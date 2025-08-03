@@ -99,8 +99,8 @@ export default function AddExpenseForm({ onClose, linkedGigId }: AddExpenseFormP
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-      <Card className="w-full max-w-md max-h-[90vh] overflow-y-auto bg-white">
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-40">
+      <Card className="w-full max-w-md max-h-[90vh] overflow-y-auto bg-white relative z-50">
         <CardHeader className="flex flex-row items-center space-y-0 pb-4">
           <Button
             variant="ghost"
@@ -145,13 +145,21 @@ export default function AddExpenseForm({ onClose, linkedGigId }: AddExpenseFormP
                       {date ? format(date, "PPP") : "Pick a date"}
                     </Button>
                   </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0 z-[100]" align="start" side="bottom">
+                  <PopoverContent 
+                    className="w-auto p-0 z-[200] bg-white border shadow-xl rounded-md" 
+                    align="start" 
+                    side="bottom"
+                    sideOffset={8}
+                    avoidCollisions={true}
+                    style={{ position: 'fixed' }}
+                  >
                     <Calendar
                       mode="single"
                       selected={date}
                       onSelect={setDate}
                       disabled={(date) => date > new Date() || date < new Date("1900-01-01")}
                       initialFocus
+                      className="rounded-md border-0"
                     />
                   </PopoverContent>
                 </Popover>
