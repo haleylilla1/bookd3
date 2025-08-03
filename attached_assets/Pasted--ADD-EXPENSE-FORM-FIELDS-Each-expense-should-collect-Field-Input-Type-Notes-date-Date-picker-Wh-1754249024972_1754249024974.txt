@@ -1,0 +1,90 @@
+📋 ADD EXPENSE FORM FIELDS
+Each expense should collect:
+
+Field	Input Type	Notes
+date	Date picker	“When did you make this purchase?”
+amount	Currency input	“How much did it cost?”
+vendor	Text input	“Who’d you pay?” (e.g. Delta Airlines)
+description	Text area	“What was it for, business-wise?”
+category_ui	Dropdown	User-friendly category name (see below)
+irs_category	Hidden/derived	Maps to backend IRS category
+linked_gig_id	Optional dropdown	Auto-filled during Gig-Linked flow; optional in manual entry
+receipt_note	Optional textarea	Notes about receipt (not an image upload)
+is_reimbursed	Checkbox	"Did you get reimbursed for this?" (true/false)
+
+📂 EXPENSE CATEGORY OPTIONS
+Bookd Label (Frontend)	IRS Category (Backend)
+Promo & Marketing	Advertising
+Car or Mileage	Car and Truck Expenses
+Platform or Payment Fees	Commissions and Fees
+Hired Help (Assistants, DJs, etc.)	Contract Labor
+Big Gear or Equipment (Over $500)	Depreciation
+Business Insurance	Insurance (other than health)
+Pro Services (Accounting, Legal)	Legal and Professional Services
+Office & Admin Stuff	Office Expenses
+Rented Gear or Spaces	Rent or Lease
+Fixing or Cleaning Gear	Repairs and Maintenance
+Event Supplies	Supplies
+Travel (Out-of-Town Gigs)	Travel
+Work Meals	Meals
+Phone/Wi-Fi (Work Portion)	Utilities
+Other Work Stuff	Other Expenses
+
+📊 EXPENSES TAB (Dashboard)
+Create a new tab in the dashboard UI showing a clean list/table of all logged expenses.
+
+Table columns:
+
+Date
+
+Amount
+
+Category (frontend label)
+
+Vendor
+
+Description
+
+Gig (if applicable)
+
+Reimbursed? ✅/❌
+
+Filters/sorting:
+
+Filter by category
+
+Filter by gig
+
+Filter by reimbursed status
+
+Search bar (vendor or keyword)
+
+📈 INCOME REPORT GENERATOR
+All expense data should be included in the Income Report
+
+Should calculate:
+
+Total expenses
+
+Category breakdown
+
+Net income (total income – unreimbursed expenses)
+
+Optional toggle:
+“Include reimbursed expenses in totals?”
+
+🔐 BACKEND STRUCTURE (Example JSON)
+json
+Copy
+Edit
+{
+  "date": "2025-08-03",
+  "amount": 125.00,
+  "vendor": "Delta Airlines",
+  "description": "Flight to NYC for weekend shoot",
+  "category_ui": "Travel (Out-of-Town Gigs)",
+  "irs_category": "Travel",
+  "linked_gig_id": "gig_rosewood_wedding_812",
+  "receipt_note": "Emailed receipt to self",
+  "is_reimbursed": false
+}
