@@ -632,11 +632,18 @@ async function prepareReportData(options: ReportOptions): Promise<ReportData> {
     return sum + actualPay + tips;
   }, 0);
 
-  const totalExpenses = completedGigs.reduce((sum, gig) => {
+  // Calculate expenses from both gigs and dedicated expense entries
+  const gigExpenses = completedGigs.reduce((sum, gig) => {
     const parking = parseFloat(gig.parkingExpense || '0');
     const other = parseFloat(gig.otherExpenses || '0');
     return sum + parking + other;
   }, 0);
+
+  const trackingExpenses = expenses.reduce((sum, expense) => {
+    return sum + parseFloat(expense.amount || '0');
+  }, 0);
+
+  const totalExpenses = gigExpenses + trackingExpenses;
 
   const totalMileage = completedGigs.reduce((sum, gig) => {
     return sum + (parseInt(String(gig.mileage || 0)) || 0);
@@ -661,6 +668,20 @@ async function prepareReportData(options: ReportOptions): Promise<ReportData> {
 
   // Prepare receipts data with photos and reimbursement status
   const receipts: ReceiptData[] = [];
+  
+  // Add tracked expenses as "other" type receipts
+  expenses.forEach(expense => {
+    receipts.push({
+      date: expense.date,
+      type: 'other' as const,
+      amount: parseFloat(expense.amount),
+      description: `${expense.vendor ? expense.vendor + ': ' : ''}${expense.description}`,
+      gigName: expense.linkedGigId ? 'Linked Gig' : 'General Business',
+      clientName: expense.categoryUi || 'Business Expense',
+      reimbursed: Boolean(expense.isReimbursed),
+      receipts: expense.receiptNote ? [expense.receiptNote] : []
+    });
+  });
   
   completedGigs.forEach(gig => {
     if (parseFloat(gig.parkingExpense || '0') > 0) {

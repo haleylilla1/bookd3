@@ -12,7 +12,7 @@ export default function BottomNavigation({ currentScreen, onScreenChange }: Bott
   const navItems = [
     { id: "calendar" as const, label: "Calendar", icon: Calendar },
     { id: "dashboard" as const, label: "Dashboard", icon: PieChart },
-    { id: "expenses" as const, label: "Expenses", icon: Receipt },
+
     { id: "profile" as const, label: "Profile", icon: User },
   ];
 

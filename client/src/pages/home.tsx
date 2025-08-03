@@ -13,7 +13,7 @@ import { useAuth } from "@/lib/replit-auth";
 import { Button } from "@/components/ui/button";
 import { Plus, Bell, Briefcase, Receipt } from "lucide-react";
 
-export type Screen = "calendar" | "dashboard" | "expenses" | "profile" | "gig-form" | "expense-form" | "settings";
+export type Screen = "calendar" | "dashboard" | "profile" | "gig-form" | "expense-form" | "settings";
 
 export default function Home() {
   const [currentScreen, setCurrentScreen] = useState<Screen>("calendar");
@@ -32,8 +32,7 @@ export default function Home() {
         return <CalendarView />;
       case "dashboard":
         return <Dashboard />;
-      case "expenses":
-        return <ExpensesTab />;
+
       case "profile":
         return <Profile />;
       case "gig-form":
