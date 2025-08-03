@@ -99,7 +99,7 @@ export default function AddExpenseForm({ onClose, linkedGigId }: AddExpenseFormP
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-      <Card className="w-full max-w-md max-h-[90vh] overflow-y-auto">
+      <Card className="w-full max-w-md max-h-[90vh] overflow-y-auto bg-white">
         <CardHeader className="flex flex-row items-center space-y-0 pb-4">
           <Button
             variant="ghost"
@@ -122,9 +122,9 @@ export default function AddExpenseForm({ onClose, linkedGigId }: AddExpenseFormP
           </div>
         </CardHeader>
 
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-6 pb-6">
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
               {/* Date Picker */}
               <div className="space-y-2">
                 <Label htmlFor="date" className="flex items-center gap-2">
@@ -144,11 +144,12 @@ export default function AddExpenseForm({ onClose, linkedGigId }: AddExpenseFormP
                       {date ? format(date, "PPP") : "Pick a date"}
                     </Button>
                   </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
+                  <PopoverContent className="w-auto p-0 z-[100]" align="start" side="bottom">
                     <Calendar
                       mode="single"
                       selected={date}
                       onSelect={setDate}
+                      disabled={(date) => date > new Date() || date < new Date("1900-01-01")}
                       initialFocus
                     />
                   </PopoverContent>
