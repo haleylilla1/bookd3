@@ -22,11 +22,7 @@ export default function DesktopSidebar({ currentScreen, onScreenChange, onOpenEx
       icon: LayoutDashboard,
       label: "Dashboard",
     },
-    {
-      id: "expenses" as Screen,
-      icon: Receipt,
-      label: "Expenses",
-    },
+
     {
       id: "profile" as Screen,
       icon: User,
