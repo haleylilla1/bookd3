@@ -15,9 +15,7 @@ import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { insertExpenseSchema, type Gig, BUSINESS_EXPENSE_CATEGORIES } from "@shared/schema";
 import { cn } from "@/lib/utils";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Calendar } from "@/components/ui/calendar";
-import { format } from "date-fns";
+
 
 const addExpenseFormSchema = insertExpenseSchema.extend({
   amount: z.string().min(1, "Amount is required").refine(
@@ -35,7 +33,6 @@ interface AddExpenseFormProps {
 }
 
 export default function AddExpenseForm({ onClose, linkedGigId }: AddExpenseFormProps) {
-  const [date, setDate] = useState<Date>(new Date());
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -63,11 +60,7 @@ export default function AddExpenseForm({ onClose, linkedGigId }: AddExpenseFormP
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          ...data,
-          amount: data.amount,
-          date: format(date, "yyyy-MM-dd"),
-        }),
+        body: JSON.stringify(data),
       });
       
       if (!response.ok) {
@@ -127,43 +120,22 @@ export default function AddExpenseForm({ onClose, linkedGigId }: AddExpenseFormP
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
               {/* Date Picker */}
-              <div className="space-y-2">
-                <Label htmlFor="date" className="flex items-center gap-2">
-                  <CalendarIcon className="h-4 w-4" />
-                  When did you make this purchase?
-                </Label>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      className={cn(
-                        "w-full justify-start text-left font-normal",
-                        !date && "text-muted-foreground"
-                      )}
-                    >
-                      <CalendarIcon className="mr-2 h-4 w-4" />
-                      {date ? format(date, "PPP") : "Pick a date"}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent 
-                    className="w-auto p-0 z-[200] bg-white border shadow-xl rounded-md" 
-                    align="start" 
-                    side="bottom"
-                    sideOffset={8}
-                    avoidCollisions={true}
-                    style={{ position: 'fixed' }}
-                  >
-                    <Calendar
-                      mode="single"
-                      selected={date}
-                      onSelect={setDate}
-                      disabled={(date) => date > new Date() || date < new Date("1900-01-01")}
-                      initialFocus
-                      className="rounded-md border-0"
-                    />
-                  </PopoverContent>
-                </Popover>
-              </div>
+              <FormField
+                control={form.control}
+                name="date"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="flex items-center gap-2">
+                      <CalendarIcon className="h-4 w-4" />
+                      When did you make this purchase?
+                    </FormLabel>
+                    <FormControl>
+                      <Input type="date" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
               {/* Amount */}
               <FormField
@@ -285,7 +257,7 @@ export default function AddExpenseForm({ onClose, linkedGigId }: AddExpenseFormP
                           <SelectItem value="none">No gig selected</SelectItem>
                           {gigs.map((gig) => (
                             <SelectItem key={gig.id} value={gig.id.toString()}>
-                              {gig.eventName} - {gig.clientName} ({format(new Date(gig.date), "MMM d")})
+                              {gig.eventName} - {gig.clientName} ({new Date(gig.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })})
                             </SelectItem>
                           ))}
                         </SelectContent>
