@@ -128,31 +128,7 @@
   margin: 0;
 }
 
-.rdp-months {
-  flex-direction: column;
-}
 
-.rdp-month {
-  margin: 0;
-}
-
-.rdp-table {
-  width: 100%;
-  border-collapse: collapse;
-}
-
-.rdp-head_cell,
-.rdp-cell {
-  width: var(--rdp-cell-size);
-  height: var(--rdp-cell-size);
-  text-align: center;
-  font-size: 0.875rem;
-}
-
-.rdp-day {
-  width: var(--rdp-cell-size);
-  height: var(--rdp-cell-size);
-}
 
 .success {
   color: var(--success);
