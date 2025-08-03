@@ -394,6 +394,118 @@ export const BUSINESS_EXPENSE_CATEGORIES = [
   "Other Expenses"
 ] as const;
 
+// Smart category suggestions to reduce decision fatigue
+export const FREQUENTLY_USED_CATEGORIES = [
+  "Work Travel", 
+  "Big Gear or Equipment",
+  "Car (besides mileage)",
+  "Work Meals (50% deductible)",
+  "Supplies"
+] as const;
+
+// Category suggestions based on merchant/purpose keywords
+export const CATEGORY_SUGGESTIONS: Record<string, string[]> = {
+  // Transportation & Travel
+  "uber": ["Work Travel", "Car (besides mileage)"],
+  "lyft": ["Work Travel", "Car (besides mileage)"], 
+  "gas": ["Car (besides mileage)", "Work Travel"],
+  "fuel": ["Car (besides mileage)", "Work Travel"],
+  "parking": ["Work Travel", "Car (besides mileage)"],
+  "toll": ["Work Travel", "Car (besides mileage)"],
+  "hotel": ["Work Travel"],
+  "airbnb": ["Work Travel"],
+  "flight": ["Work Travel"],
+  "airline": ["Work Travel"],
+  
+  // Equipment & Gear
+  "camera": ["Big Gear or Equipment"],
+  "lens": ["Big Gear or Equipment"],
+  "tripod": ["Big Gear or Equipment"],
+  "microphone": ["Big Gear or Equipment"],
+  "lighting": ["Big Gear or Equipment"],
+  "backdrop": ["Big Gear or Equipment"],
+  "costume": ["Appearance / Wardrobe (for performers/models)"],
+  "makeup": ["Appearance / Wardrobe (for performers/models)"],
+  "props": ["Big Gear or Equipment"],
+  "amazon": ["Big Gear or Equipment", "Supplies"],
+  "best buy": ["Big Gear or Equipment"],
+  
+  // Food & Entertainment
+  "restaurant": ["Work Meals (50% deductible)"],
+  "coffee": ["Work Meals (50% deductible)"],
+  "starbucks": ["Work Meals (50% deductible)"],
+  "lunch": ["Work Meals (50% deductible)"],
+  "dinner": ["Work Meals (50% deductible)"],
+  "catering": ["Work Meals (50% deductible)"],
+  
+  // Communications & Office
+  "phone": ["Office Expenses"],
+  "internet": ["Office Expenses", "Utilities"],
+  "verizon": ["Office Expenses"],
+  "at&t": ["Office Expenses"],
+  "t-mobile": ["Office Expenses"],
+  "office depot": ["Office Expenses"],
+  "staples": ["Office Expenses"],
+  "supplies": ["Supplies"],
+  "paper": ["Office Expenses"],
+  "ink": ["Office Expenses"],
+  "printer": ["Big Gear or Equipment", "Office Expenses"],
+  
+  // Professional Services
+  "lawyer": ["Legal and Professional Services"],
+  "attorney": ["Legal and Professional Services"],
+  "accountant": ["Legal and Professional Services"],
+  "insurance": ["Insurance (other than health)"],
+  "coach": ["Legal and Professional Services"],
+  "training": ["Legal and Professional Services"],
+  "course": ["Legal and Professional Services"],
+  "workshop": ["Legal and Professional Services"],
+  
+  // Marketing & Promotion
+  "facebook": ["Promo & Marketing"],
+  "instagram": ["Promo & Marketing"],
+  "google ads": ["Promo & Marketing"],
+  "advertising": ["Promo & Marketing"],
+  "marketing": ["Promo & Marketing"],
+  "website": ["Promo & Marketing"],
+  "business cards": ["Promo & Marketing"],
+  
+  // Platform & Fees
+  "paypal": ["Platform or Payment Fees"],
+  "stripe": ["Platform or Payment Fees"],
+  "square": ["Platform or Payment Fees"],
+  "venmo": ["Platform or Payment Fees"],
+  "fee": ["Platform or Payment Fees"],
+  "commission": ["Platform or Payment Fees"]
+};
+
+// Get smart category suggestions based on merchant and purpose
+export const getCategorySuggestions = (merchant?: string, purpose?: string): string[] => {
+  const suggestions = new Set<string>();
+  
+  // Check merchant name for keywords
+  if (merchant) {
+    const merchantLower = merchant.toLowerCase();
+    Object.entries(CATEGORY_SUGGESTIONS).forEach(([keyword, categories]) => {
+      if (merchantLower.includes(keyword)) {
+        categories.forEach(cat => suggestions.add(cat));
+      }
+    });
+  }
+  
+  // Check purpose for keywords
+  if (purpose) {
+    const purposeLower = purpose.toLowerCase();
+    Object.entries(CATEGORY_SUGGESTIONS).forEach(([keyword, categories]) => {
+      if (purposeLower.includes(keyword)) {
+        categories.forEach(cat => suggestions.add(cat));
+      }
+    });
+  }
+  
+  return Array.from(suggestions);
+};
+
 // Zod schemas for validation
 export const insertExpenseSchema = createInsertSchema(expenses).omit({ id: true, createdAt: true, updatedAt: true });
 export type InsertExpense = z.infer<typeof insertExpenseSchema>;
