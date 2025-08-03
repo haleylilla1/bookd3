@@ -14,6 +14,7 @@ import { editExpenseSchema, type ExpenseFormData } from "@/lib/form-schemas";
 import { useFormErrorHandler } from "@/hooks/use-form-error-handler";
 import { ChevronLeft, ChevronRight, Edit2, Save, X, DollarSign, Calendar, Users, TrendingUp, Receipt, Calculator, PiggyBank, FileText, Download, Trash2 } from "lucide-react";
 import { AmountField, MerchantField, BusinessPurposeField, CategoryField, DateField } from "@/components/ui/form-field-wrapper";
+import { useToast } from "@/hooks/use-toast";
 import type { Gig, User, Expense } from "@shared/schema";
 import { BUSINESS_EXPENSE_CATEGORIES } from "@shared/schema";
 
@@ -43,6 +44,7 @@ export default function Dashboard() {
   const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
   
   const { handleError, handleSuccess } = useFormErrorHandler();
+  const { toast } = useToast();
   const queryClient = useQueryClient();
 
   const { data: user, isLoading: userLoading, error: userError } = useQuery<User>({
@@ -1129,7 +1131,7 @@ export default function Dashboard() {
                           <p className="text-sm text-gray-600">{expense.businessPurpose}</p>
                         </div>
                         <div className="text-right">
-                          <p className="font-semibold text-blue-600">${expense.amount.toFixed(2)}</p>
+                          <p className="font-semibold text-blue-600">${typeof expense.amount === 'string' ? parseFloat(expense.amount).toFixed(2) : expense.amount.toFixed(2)}</p>
                           <p className="text-xs text-gray-500">
                             {new Date(expense.date).toLocaleDateString()}
                           </p>
@@ -1138,7 +1140,10 @@ export default function Dashboard() {
                           <Button
                             size="icon"
                             variant="ghost"
-                            onClick={() => setEditingExpense(expense)}
+                            onClick={() => setEditingExpense({
+                              ...expense,
+                              amount: typeof expense.amount === 'number' ? expense.amount.toString() : expense.amount
+                            })}
                             disabled={updateExpenseMutation.isPending}
                             className="h-8 w-8"
                           >
