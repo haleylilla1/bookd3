@@ -187,12 +187,21 @@ export const expenses = pgTable("expenses", {
   userId: integer("user_id").notNull().references(() => users.id),
   date: date("date").notNull(),
   amount: decimal("amount", { precision: 10, scale: 2 }).notNull(),
-  category: text("category").notNull(), // Bills, Expenses, Savings, Income, Debt
-  subcategory: text("subcategory"), // Rent, Insurance, etc.
-  description: text("description"),
-  isIncome: boolean("is_income").default(false),
-  gigId: integer("gig_id"), // Link to gig if it's gig income
-  allocations: jsonb("allocations"), // [{goalId: 1, amount: 100}, {type: "emergency", amount: 50}]
+  vendor: text("vendor").notNull(), // Who'd you pay? (e.g. Delta Airlines)
+  description: text("description").notNull(), // What was it for, business-wise?
+  categoryUi: text("category_ui").notNull(), // User-friendly category name
+  irsCategory: text("irs_category").notNull(), // Maps to backend IRS category
+  linkedGigId: integer("linked_gig_id").references(() => gigs.id), // Optional link to gig
+  receiptNote: text("receipt_note"), // Optional notes about receipt
+  isReimbursed: boolean("is_reimbursed").default(false), // Did you get reimbursed?
+  
+  // Legacy fields (keeping for backward compatibility)
+  category: text("category"), // Old category field
+  subcategory: text("subcategory"), // Old subcategory field  
+  isIncome: boolean("is_income").default(false), // Legacy field
+  gigId: integer("gig_id"), // Legacy gig link
+  allocations: jsonb("allocations"), // Legacy allocations
+  
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -334,6 +343,31 @@ export const insertYearlyStatsSchema = createInsertSchema(yearlyStats).omit({
   createdAt: true,
 });
 
+export const insertExpenseSchema = createInsertSchema(expenses).omit({
+  id: true,
+  createdAt: true,
+}).extend({
+  date: z.string().default(() => new Date().toISOString().split('T')[0]),
+  amount: z.string().min(1, "Amount is required"),
+  vendor: z.string().min(1, "Vendor is required"),
+  description: z.string().min(1, "Description is required"),
+  categoryUi: z.string().min(1, "Category is required"),
+  irsCategory: z.string().min(1, "IRS category is required"),
+  linkedGigId: z.number().optional(),
+  receiptNote: z.string().optional(),
+  isReimbursed: z.boolean().default(false),
+});
+
+export const insertBudgetSchema = createInsertSchema(budgets).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertExpenseCategorySchema = createInsertSchema(expenseCategories).omit({
+  id: true,
+  createdAt: true,
+});
+
 export type InsertWeeklyStats = z.infer<typeof insertWeeklyStatsSchema>;
 export type WeeklyStats = typeof weeklyStats.$inferSelect;
 export type InsertMonthlyStats = z.infer<typeof insertMonthlyStatsSchema>;
@@ -375,26 +409,12 @@ export const insertInvoiceSchema = createInsertSchema(invoices).omit({
 export type InsertInvoice = z.infer<typeof insertInvoiceSchema>;
 export type Invoice = typeof invoices.$inferSelect;
 
-export const insertExpenseCategorySchema = createInsertSchema(expenseCategories).omit({
-  id: true,
-  createdAt: true,
-});
-
-export const insertExpenseSchema = createInsertSchema(expenses).omit({
-  id: true,
-  createdAt: true,
-});
-
-export const insertBudgetSchema = createInsertSchema(budgets).omit({
-  id: true,
-  createdAt: true,
-});
-
 export type InsertExpenseCategory = z.infer<typeof insertExpenseCategorySchema>;
 export type ExpenseCategory = typeof expenseCategories.$inferSelect;
-
 export type InsertExpense = z.infer<typeof insertExpenseSchema>;
 export type Expense = typeof expenses.$inferSelect;
+export type InsertBudget = z.infer<typeof insertBudgetSchema>;
+export type Budget = typeof budgets.$inferSelect;
 
 export type InsertBudget = z.infer<typeof insertBudgetSchema>;
 export type Budget = typeof budgets.$inferSelect;
