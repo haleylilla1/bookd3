@@ -216,7 +216,7 @@ export default function SimpleGigForm({ onClose }: SimpleGigFormProps) {
     try {
       // Save new client to preferred clients if it's not already there
       if (data.clientName && user?.workPreferences?.preferredClients) {
-        const preferredClients = (user.workPreferences?.preferredClients as string[]) || [];
+        const preferredClients = (user.workPreferences.preferredClients as string[]) || [];
         if (!preferredClients.includes(data.clientName)) {
           try {
             await apiRequest('POST', '/api/user/add-preferred-client', {
