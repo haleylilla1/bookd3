@@ -187,7 +187,7 @@ export const expenses = pgTable("expenses", {
   userId: integer("user_id").notNull().references(() => users.id),
   date: varchar("date", { length: 10 }).notNull(), // YYYY-MM-DD format  
   amount: varchar("amount", { length: 20 }).notNull(),
-  merchant: varchar("merchant", { length: 255 }).notNull(),
+  merchant: varchar("merchant", { length: 255 }),
   businessPurpose: text("business_purpose").notNull(),
   category: varchar("category", { length: 100 }).notNull(), // Business expense category
   gigId: integer("gig_id").references(() => gigs.id), // Optional link to gig

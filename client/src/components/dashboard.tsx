@@ -21,8 +21,8 @@ type TimePeriod = "monthly" | "annual";
 // Schema for expense edit form
 const expenseEditSchema = z.object({
   date: z.string().min(1, "Date is required"),
-  amount: z.string().min(1, "Amount is required").refine(val => !isNaN(Number(val)) && Number(val) > 0, "Must be a positive number"),
-  merchant: z.string().min(1, "Merchant is required"),
+  amount: z.string().min(1, "Amount is required").refine(val => !isNaN(Number(val)) && Number(val) >= 0, "Must be a valid number (0 or greater)"),
+  merchant: z.string().optional(),
   businessPurpose: z.string().min(1, "Business purpose is required"),
   category: z.string().min(1, "Category is required"),
 });
@@ -1287,7 +1287,7 @@ function ExpenseEditForm({
     defaultValues: {
       date: expense.date,
       amount: expense.amount.toString(),
-      merchant: expense.merchant,
+      merchant: expense.merchant || "",
       businessPurpose: expense.businessPurpose,
       category: expense.category,
     },
@@ -1333,9 +1333,9 @@ function ExpenseEditForm({
           name="merchant"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Merchant/Vendor</FormLabel>
+              <FormLabel>Merchant/Vendor (optional)</FormLabel>
               <FormControl>
-                <Input placeholder="Store or service name" {...field} />
+                <Input placeholder="Store or service name (leave blank if unknown)" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
