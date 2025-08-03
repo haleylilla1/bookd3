@@ -73,12 +73,6 @@ export default function Dashboard() {
     retry: 1,
   });
 
-  // Fetch expenses for calculations
-  const { data: expenses = [], isLoading: expensesLoading } = useQuery({
-    queryKey: ["/api/expenses"],
-    retry: 1,
-  });
-
 
 
   // Automatically update gig statuses when dashboard loads (once per session)
@@ -276,27 +270,12 @@ export default function Dashboard() {
     }, 0);
     
     // EXPENSE FIX: Use grouped gigs to prevent counting expenses multiple times for multi-day events
-    const gigExpenses = groupedGigs.reduce((sum, gig) => {
+    const totalExpenses = groupedGigs.reduce((sum, gig) => {
       const parkingExpense = safeParseFloat(gig.parkingExpense);
       const otherExpenses = safeParseFloat(gig.otherExpenses);
       const mileageDeduction = (gig.mileage || 0) * 0.67;
       return sum + parkingExpense + otherExpenses + mileageDeduction;
     }, 0);
-
-    // Add tracked expenses for the period
-    const currentPeriodStart = new Date(currentDate.getFullYear(), selectedPeriod === "monthly" ? currentDate.getMonth() : 0);
-    const currentPeriodEnd = selectedPeriod === "monthly" 
-      ? new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0)
-      : new Date(currentDate.getFullYear(), 11, 31);
-      
-    const trackedExpenses = expenses.filter((expense: any) => {
-      const expenseDate = new Date(expense.date);
-      return expenseDate >= currentPeriodStart && expenseDate <= currentPeriodEnd;
-    }).reduce((sum: number, expense: any) => {
-      return sum + parseFloat(expense.amount);
-    }, 0);
-
-    const totalExpenses = gigExpenses + trackedExpenses;
     
     const projectedEarnings = groupedGigs.reduce((sum, gig) => {
       if (gig.status === "completed") {
@@ -344,8 +323,7 @@ export default function Dashboard() {
       totalGigs: groupedGigs.length,
       // New tax-smart fields
       totalReceived: Math.round(totalReceived * 100) / 100,
-      businessDeductions: Math.round(businessDeductions * 100) / 100,
-      trackedExpenses: Math.round(trackedExpenses * 100) / 100
+      businessDeductions: Math.round(businessDeductions * 100) / 100
     };
   }, [currentPeriodGigs, user]);
 

@@ -7,17 +7,14 @@ import Profile from "@/components/profile";
 import BottomNavigation from "@/components/bottom-navigation";
 import AppHeader from "@/components/app-header";
 import DesktopSidebar from "@/components/desktop-sidebar";
-import { AddExpenseForm } from "@/components/add-expense-form";
-import ExpensesTab from "@/components/expenses-tab";
 import { useAuth } from "@/lib/replit-auth";
 import { Button } from "@/components/ui/button";
-import { Plus, Bell, Briefcase, Receipt } from "lucide-react";
+import { Plus, Bell, Briefcase } from "lucide-react";
 
-export type Screen = "calendar" | "dashboard" | "profile" | "gig-form" | "expense-form" | "settings";
+export type Screen = "calendar" | "dashboard" | "profile" | "gig-form" | "settings";
 
 export default function Home() {
   const [currentScreen, setCurrentScreen] = useState<Screen>("calendar");
-  const [showExpenseForm, setShowExpenseForm] = useState(false);
   const queryClient = useQueryClient();
   const { user } = useAuth();
 
@@ -32,15 +29,10 @@ export default function Home() {
         return <CalendarView />;
       case "dashboard":
         return <Dashboard />;
-
       case "profile":
         return <Profile />;
       case "gig-form":
         return <SimpleGigForm onClose={() => setCurrentScreen("calendar")} />;
-      case "expense-form":
-        setShowExpenseForm(true);
-        setCurrentScreen("calendar"); // Go back to calendar after opening form
-        return <CalendarView />;
       case "settings":
         return <Profile />; // Use Profile component for settings for now
       default:
@@ -51,11 +43,7 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Desktop Sidebar */}
-      <DesktopSidebar 
-        currentScreen={currentScreen} 
-        onScreenChange={setCurrentScreen}
-        onOpenExpenseForm={() => setShowExpenseForm(true)}
-      />
+      <DesktopSidebar currentScreen={currentScreen} onScreenChange={setCurrentScreen} />
 
       {/* Main Content Area */}
       <div className="lg:ml-64">
@@ -69,24 +57,15 @@ export default function Home() {
           {renderScreen()}
         </main>
 
-        {/* Floating Action Buttons - Hidden on desktop (buttons are in sidebar) */}
+        {/* Floating Action Button - Hidden on desktop (button is in sidebar) */}
         {currentScreen !== "gig-form" && (
-          <>
-            <Button
-              onClick={() => setCurrentScreen("gig-form")}
-              className="fixed bottom-32 right-4 px-4 py-3 rounded-full shadow-lg hover:scale-105 transition-all duration-200 bg-primary hover:bg-primary/90 text-white font-medium lg:hidden"
-            >
-              <Plus className="w-4 h-4 mr-2" />
-              Add Gig
-            </Button>
-            <Button
-              onClick={() => setShowExpenseForm(true)}
-              className="fixed bottom-20 right-4 px-4 py-3 rounded-full shadow-lg hover:scale-105 transition-all duration-200 bg-green-600 hover:bg-green-700 text-white font-medium lg:hidden"
-            >
-              <Receipt className="w-4 h-4 mr-2" />
-              Add Expense
-            </Button>
-          </>
+          <Button
+            onClick={() => setCurrentScreen("gig-form")}
+            className="fixed bottom-20 right-4 px-4 py-3 rounded-full shadow-lg hover:scale-105 transition-all duration-200 bg-primary hover:bg-primary/90 text-white font-medium lg:hidden"
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            Add Gig
+          </Button>
         )}
 
         {/* Bottom Navigation - Hidden on desktop */}
@@ -97,12 +76,6 @@ export default function Home() {
           />
         </div>
       </div>
-
-      {/* Add Expense Form Modal */}
-      <AddExpenseForm
-        isOpen={showExpenseForm}
-        onClose={() => setShowExpenseForm(false)}
-      />
     </div>
   );
 }

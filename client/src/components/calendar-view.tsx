@@ -1105,10 +1105,6 @@ function GigEditForm({ gig, onSave, onCancel, isLoading }: GigEditFormProps) {
     otherExpenses: gig.otherExpenses || "",
     otherExpenseDescription: gig.otherExpenseDescription || "",
     otherExpensesReimbursed: (gig as any).otherExpensesReimbursed || false,
-    // New expense fields
-    expenseDate: (gig as any).expenseDate || gig.date,
-    expenseVendor: (gig as any).expenseVendor || "",
-    expenseCategory: (gig as any).expenseCategory || "",
   });
 
   const [isCalculatingMileage, setIsCalculatingMileage] = useState(false);
@@ -1499,24 +1495,11 @@ function GigEditForm({ gig, onSave, onCancel, isLoading }: GigEditFormProps) {
         {/* Other Expenses Section */}
         <div className="space-y-3 p-3 bg-green-50 rounded-lg border">
           <h5 className="font-medium text-green-900 text-xs">Other Expenses</h5>
-          
-          {/* Purchase Date */}
-          <div>
-            <label className="block text-xs font-medium mb-1">When did you make this purchase?</label>
-            <Input
-              type="date"
-              value={formData.expenseDate}
-              onChange={(e) => setFormData({ ...formData, expenseDate: e.target.value })}
-            />
-          </div>
-
-          {/* Amount and Reimbursed */}
           <div className="grid grid-cols-2 gap-2">
             <div>
-              <label className="block text-xs font-medium mb-1">How much did it cost? ($)</label>
+              <label className="block text-xs font-medium mb-1">Amount ($)</label>
               <Input
                 type="number"
-                step="0.01"
                 placeholder="0.00"
                 value={formData.otherExpenses}
                 onChange={(e) => setFormData({ ...formData, otherExpenses: e.target.value })}
@@ -1533,55 +1516,13 @@ function GigEditForm({ gig, onSave, onCancel, isLoading }: GigEditFormProps) {
               </label>
             </div>
           </div>
-
-          {/* Who did you pay? */}
           <div>
-            <label className="block text-xs font-medium mb-1">Who did you pay?</label>
+            <label className="block text-xs font-medium mb-1">Expense Details (optional)</label>
             <Input
-              placeholder="e.g., Home Depot, Staples, Amazon"
-              value={formData.expenseVendor}
-              onChange={(e) => setFormData({ ...formData, expenseVendor: e.target.value })}
-            />
-          </div>
-
-          {/* What was it for? */}
-          <div>
-            <label className="block text-xs font-medium mb-1">What was it for?</label>
-            <Input
-              placeholder="e.g., supplies, tools, materials, props"
+              placeholder="e.g., supplies, tools, materials"
               value={formData.otherExpenseDescription}
               onChange={(e) => setFormData({ ...formData, otherExpenseDescription: e.target.value })}
             />
-          </div>
-
-          {/* Expense Category */}
-          <div>
-            <label className="block text-xs font-medium mb-1">Expense Category</label>
-            <Select 
-              value={formData.expenseCategory} 
-              onValueChange={(value) => setFormData({ ...formData, expenseCategory: value })}
-            >
-              <SelectTrigger className="text-xs">
-                <SelectValue placeholder="Select expense category" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="Event Supplies">Event Supplies</SelectItem>
-                <SelectItem value="Car or Mileage">Car or Mileage</SelectItem>
-                <SelectItem value="Big Gear or Equipment (Over $500)">Big Gear or Equipment (Over $500)</SelectItem>
-                <SelectItem value="Rented Gear or Spaces">Rented Gear or Spaces</SelectItem>
-                <SelectItem value="Fixing or Cleaning Gear">Fixing or Cleaning Gear</SelectItem>
-                <SelectItem value="Work Meals">Work Meals</SelectItem>
-                <SelectItem value="Travel (Out-of-Town Gigs)">Travel (Out-of-Town Gigs)</SelectItem>
-                <SelectItem value="Phone/Wi-Fi (Work Portion)">Phone/Wi-Fi (Work Portion)</SelectItem>
-                <SelectItem value="Office & Admin Stuff">Office & Admin Stuff</SelectItem>
-                <SelectItem value="Pro Services (Accounting, Legal)">Pro Services (Accounting, Legal)</SelectItem>
-                <SelectItem value="Business Insurance">Business Insurance</SelectItem>
-                <SelectItem value="Platform or Payment Fees">Platform or Payment Fees</SelectItem>
-                <SelectItem value="Promo & Marketing">Promo & Marketing</SelectItem>
-                <SelectItem value="Hired Help (Assistants, DJs, etc.)">Hired Help (Assistants, DJs, etc.)</SelectItem>
-                <SelectItem value="Other Work Stuff">Other Work Stuff</SelectItem>
-              </SelectContent>
-            </Select>
           </div>
         </div>
       </div>

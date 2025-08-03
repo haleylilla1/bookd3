@@ -52,10 +52,6 @@ const gigFormSchema = z.object({
   otherExpenses: z.string().optional(),
   otherExpenseDescription: z.string().optional(),
   otherExpensesReimbursed: z.boolean().default(false),
-  // New expense fields
-  expenseDate: z.string().optional(),
-  expenseVendor: z.string().optional(),
-  expenseCategory: z.string().optional(),
 });
 
 type GigFormData = z.infer<typeof gigFormSchema>;
@@ -1048,36 +1044,15 @@ export default function GigForm({ onClose }: GigFormProps) {
                     {/* Other Expenses Section */}
                     <div className="space-y-3 p-4 bg-green-50 rounded-lg border">
                       <h4 className="font-medium text-green-900">Other Expenses</h4>
-                      
-                      {/* Purchase Date */}
-                      <FormField
-                        control={form.control}
-                        name="expenseDate"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>When did you make this purchase?</FormLabel>
-                            <FormControl>
-                              <Input 
-                                type="date" 
-                                {...field}
-                                value={field.value || form.getValues("startDate")}
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-
-                      {/* Amount and Reimbursed */}
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <FormField
                           control={form.control}
                           name="otherExpenses"
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel>How much did it cost? ($)</FormLabel>
+                              <FormLabel>Amount ($)</FormLabel>
                               <FormControl>
-                                <Input type="number" step="0.01" placeholder="0.00" {...field} />
+                                <Input type="number" placeholder="0.00" {...field} />
                               </FormControl>
                             </FormItem>
                           )}
@@ -1100,74 +1075,19 @@ export default function GigForm({ onClose }: GigFormProps) {
                           )}
                         />
                       </div>
-
-                      {/* Vendor */}
-                      <FormField
-                        control={form.control}
-                        name="expenseVendor"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Who did you pay?</FormLabel>
-                            <FormControl>
-                              <Input 
-                                placeholder="e.g., Home Depot, Staples, Amazon"
-                                {...field} 
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-
-                      {/* Description */}
                       <FormField
                         control={form.control}
                         name="otherExpenseDescription"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>What was it for?</FormLabel>
+                            <FormLabel>Expense Details (optional)</FormLabel>
                             <FormControl>
                               <Input 
-                                placeholder="e.g., supplies, tools, materials, props"
+                                placeholder="e.g., supplies, tools, materials"
                                 {...field} 
                               />
                             </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-
-                      {/* Expense Category */}
-                      <FormField
-                        control={form.control}
-                        name="expenseCategory"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Expense Category</FormLabel>
-                            <Select onValueChange={field.onChange} value={field.value}>
-                              <FormControl>
-                                <SelectTrigger>
-                                  <SelectValue placeholder="Select expense category" />
-                                </SelectTrigger>
-                              </FormControl>
-                              <SelectContent>
-                                <SelectItem value="Event Supplies">Event Supplies</SelectItem>
-                                <SelectItem value="Car or Mileage">Car or Mileage</SelectItem>
-                                <SelectItem value="Big Gear or Equipment (Over $500)">Big Gear or Equipment (Over $500)</SelectItem>
-                                <SelectItem value="Rented Gear or Spaces">Rented Gear or Spaces</SelectItem>
-                                <SelectItem value="Fixing or Cleaning Gear">Fixing or Cleaning Gear</SelectItem>
-                                <SelectItem value="Work Meals">Work Meals</SelectItem>
-                                <SelectItem value="Travel (Out-of-Town Gigs)">Travel (Out-of-Town Gigs)</SelectItem>
-                                <SelectItem value="Phone/Wi-Fi (Work Portion)">Phone/Wi-Fi (Work Portion)</SelectItem>
-                                <SelectItem value="Office & Admin Stuff">Office & Admin Stuff</SelectItem>
-                                <SelectItem value="Pro Services (Accounting, Legal)">Pro Services (Accounting, Legal)</SelectItem>
-                                <SelectItem value="Business Insurance">Business Insurance</SelectItem>
-                                <SelectItem value="Platform or Payment Fees">Platform or Payment Fees</SelectItem>
-                                <SelectItem value="Promo & Marketing">Promo & Marketing</SelectItem>
-                                <SelectItem value="Hired Help (Assistants, DJs, etc.)">Hired Help (Assistants, DJs, etc.)</SelectItem>
-                                <SelectItem value="Other Work Stuff">Other Work Stuff</SelectItem>
-                              </SelectContent>
-                            </Select>
+                            <p className="text-xs text-gray-500">Brief description of other expenses</p>
                             <FormMessage />
                           </FormItem>
                         )}

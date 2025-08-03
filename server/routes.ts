@@ -475,65 +475,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Expense routes
-  app.get('/api/expenses', requireAuth, async (req: any, res: Response) => {
-    try {
-      const userId = getUserId(req);
-      const expenses = await storage.getExpensesByUser(userId);
-      res.json(expenses);
-    } catch (error) {
-      res.status(500).json({ error: 'Failed to fetch expenses' });
-    }
-  });
-
-  app.post('/api/expenses', requireAuth, async (req: any, res: Response) => {
-    try {
-      const userId = getUserId(req);
-      const expenseData = { ...req.body, userId };
-      const expense = await storage.createExpense(expenseData);
-      res.status(201).json(expense);
-    } catch (error) {
-      console.error('Error creating expense:', error);
-      res.status(500).json({ error: 'Failed to create expense' });
-    }
-  });
-
-  app.put('/api/expenses/:id', requireAuth, async (req: any, res: Response) => {
-    try {
-      const userId = getUserId(req);
-      const expenseId = parseInt(req.params.id);
-      
-      // Verify ownership
-      const expense = await storage.getExpense(expenseId);
-      if (!expense || expense.userId !== userId) {
-        return res.status(404).json({ error: 'Expense not found' });
-      }
-      
-      const updatedExpense = await storage.updateExpense(expenseId, req.body);
-      res.json(updatedExpense);
-    } catch (error) {
-      res.status(500).json({ error: 'Failed to update expense' });
-    }
-  });
-
-  app.delete('/api/expenses/:id', requireAuth, async (req: any, res: Response) => {
-    try {
-      const userId = getUserId(req);
-      const expenseId = parseInt(req.params.id);
-      
-      // Verify ownership
-      const expense = await storage.getExpense(expenseId);
-      if (!expense || expense.userId !== userId) {
-        return res.status(404).json({ error: 'Expense not found' });
-      }
-      
-      await storage.deleteExpense(expenseId);
-      res.json({ message: 'Expense deleted successfully' });
-    } catch (error) {
-      res.status(500).json({ error: 'Failed to delete expense' });
-    }
-  });
-
   // Simple database health check
   app.get('/api/db-health', requireAuth, async (req: any, res: Response) => {
     try {
