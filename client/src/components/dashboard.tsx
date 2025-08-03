@@ -96,13 +96,6 @@ export default function Dashboard() {
   const { data: expenses = [], isLoading: expensesLoading } = useQuery<Expense[]>({
     queryKey: ["/api/expenses"],
     retry: 1,
-    onSuccess: (data) => {
-      console.log('🧾 Expenses loaded:', data?.length || 0, 'expenses');
-      console.log('🧾 Raw expenses data:', data);
-    },
-    onError: (error) => {
-      console.error('❌ Failed to load expenses:', error);
-    }
   });
 
 
@@ -255,15 +248,7 @@ export default function Dashboard() {
       return expenseDate >= startDate && expenseDate <= endDate;
     });
     
-    console.log('📅 Period filtering:', {
-      period: selectedPeriod,
-      currentDate: currentDate.toISOString(),
-      startDate: startDate.toISOString(),
-      endDate: endDate.toISOString(),
-      totalExpenses: expenses.length,
-      filteredExpenses: filtered.length,
-      filtered: filtered.map(e => ({ date: e.date, amount: e.amount, merchant: e.merchant }))
-    });
+
     
     return filtered;
   }, [expenses, selectedPeriod, currentDate]);
@@ -389,13 +374,7 @@ export default function Dashboard() {
     
     const totalExpenses = gigExpenses + standaloneExpenses;
     
-    console.log('💰 Expense calculation:', {
-      gigExpenses,
-      standaloneExpenses,
-      totalExpenses,
-      currentPeriodExpensesCount: currentPeriodExpenses.length,
-      expenseAmounts: currentPeriodExpenses.map(e => ({ amount: e.amount, parsed: safeParseFloat(e.amount) }))
-    });
+
     
     const projectedEarnings = groupedGigs.reduce((sum, gig) => {
       if (gig.status === "completed") {

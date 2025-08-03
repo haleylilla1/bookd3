@@ -358,10 +358,74 @@ export async function generateProfessionalHTML(options: ReportOptions): Promise<
 
         <!-- Expense Receipts Page -->
         <div class="page">
-            <h2 style="font-size: 24px; margin-bottom: 30px; text-align: center;">BUSINESS EXPENSES & RECEIPTS</h2>
+            <h2 style="font-size: 24px; margin-bottom: 30px; text-align: center;">BUSINESS EXPENSES</h2>
             
+            <!-- Standalone Business Expenses by Category -->
+            ${data.expenses.length > 0 ? `
+                <div style="margin: 30px 0;">
+                    <h3 style="font-size: 18px; margin-bottom: 20px; color: #2c3e50;">Business Expense Categories</h3>
+                    <table style="width: 100%; border-collapse: collapse; font-family: monospace;">
+                        <thead>
+                            <tr>
+                                <th style="text-align: left; padding: 10px 0; border-bottom: 1px solid #333;">Date</th>
+                                <th style="text-align: left; padding: 10px 0; border-bottom: 1px solid #333;">Merchant</th>
+                                <th style="text-align: left; padding: 10px 0; border-bottom: 1px solid #333;">Category</th>
+                                <th style="text-align: left; padding: 10px 0; border-bottom: 1px solid #333;">Purpose</th>
+                                <th style="text-align: right; padding: 10px 0; border-bottom: 1px solid #333;">Amount</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${data.expenses.map(expense => `
+                                <tr>
+                                    <td style="padding: 8px 0;">${new Date(expense.date).toLocaleDateString()}</td>
+                                    <td style="padding: 8px 0;">${expense.merchant}</td>
+                                    <td style="padding: 8px 0;">${expense.category}</td>
+                                    <td style="padding: 8px 0;">${expense.businessPurpose}</td>
+                                    <td style="padding: 8px 0; text-align: right;">$${parseFloat(expense.amount).toFixed(2)}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                    
+                    <!-- Category Summary -->
+                    ${(() => {
+                        const categoryTotals: Record<string, number> = data.expenses.reduce((acc, expense) => {
+                            const category = expense.category;
+                            acc[category] = (acc[category] || 0) + parseFloat(expense.amount);
+                            return acc;
+                        }, {} as Record<string, number>);
+                        
+                        const sortedCategories = Object.entries(categoryTotals).sort(([,a], [,b]) => (b as number) - (a as number));
+                        
+                        return sortedCategories.length > 0 ? `
+                            <div style="margin-top: 30px;">
+                                <h4 style="font-size: 16px; margin-bottom: 15px; color: #2c3e50;">Summary by Category</h4>
+                                <table style="width: 100%; border-collapse: collapse; font-family: monospace;">
+                                    <thead>
+                                        <tr>
+                                            <th style="text-align: left; padding: 8px 0; border-bottom: 1px solid #333;">Category</th>
+                                            <th style="text-align: right; padding: 8px 0; border-bottom: 1px solid #333;">Total</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        ${sortedCategories.map(([category, total]) => `
+                                            <tr>
+                                                <td style="padding: 6px 0;">${category}</td>
+                                                <td style="padding: 6px 0; text-align: right;">$${(total as number).toFixed(2)}</td>
+                                            </tr>
+                                        `).join('')}
+                                    </tbody>
+                                </table>
+                            </div>
+                        ` : '';
+                    })()}
+                </div>
+            ` : ''}
+            
+            <!-- Legacy Gig-Related Expenses (if any) -->
             ${data.receipts.length > 0 ? `
-                <div style="margin: 20px 0;">
+                <div style="margin: 30px 0;">
+                    <h3 style="font-size: 18px; margin-bottom: 20px; color: #2c3e50;">Gig-Related Expenses</h3>
                     ${data.receipts.map(receipt => `
                         <div style="margin-bottom: 30px; border: 1px solid #ddd; border-radius: 8px; padding: 20px; background-color: ${receipt.reimbursed ? '#f8f9fa' : '#fff'};">
                             <!-- Receipt Header -->
@@ -632,11 +696,19 @@ async function prepareReportData(options: ReportOptions): Promise<ReportData> {
     return sum + actualPay + tips;
   }, 0);
 
-  const totalExpenses = completedGigs.reduce((sum, gig) => {
+  // Calculate gig-related expenses (legacy parking/other expenses)
+  const gigExpenses = completedGigs.reduce((sum, gig) => {
     const parking = parseFloat(gig.parkingExpense || '0');
     const other = parseFloat(gig.otherExpenses || '0');
     return sum + parking + other;
   }, 0);
+
+  // Add standalone business expenses by category
+  const standaloneExpenses = expenses.reduce((sum, expense) => {
+    return sum + parseFloat(expense.amount || '0');
+  }, 0);
+
+  const totalExpenses = gigExpenses + standaloneExpenses;
 
   const totalMileage = completedGigs.reduce((sum, gig) => {
     return sum + (parseInt(String(gig.mileage || 0)) || 0);
