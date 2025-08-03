@@ -512,12 +512,7 @@ export async function generateProfessionalHTML(options: ReportOptions): Promise<
                         </div>
                     </div>
                 </div>
-            ` : `
-                <div style="text-align: center; padding: 60px 20px; color: #666;">
-                    <h3 style="margin-bottom: 15px;">No Expenses Found</h3>
-                    <p>No business expenses were recorded for this period.</p>
-                </div>
-            `}
+            ` : ''}
         </div>
 
         <!-- Summary Totals Page - Matching Exact Format -->
