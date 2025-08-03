@@ -523,9 +523,11 @@ export default function SimpleGigForm({ onClose }: SimpleGigFormProps) {
                   <FormItem>
                     <FormLabel>Start Date *</FormLabel>
                     <FormControl>
-                      <DateInput
+                      <Input
+                        type="date"
                         value={field.value || ""}
-                        onChange={field.onChange}
+                        onChange={(e) => field.onChange(e.target.value)}
+                        className="h-12 text-base cursor-pointer"
                         placeholder="Select start date"
                       />
                     </FormControl>
@@ -541,9 +543,11 @@ export default function SimpleGigForm({ onClose }: SimpleGigFormProps) {
                   <FormItem>
                     <FormLabel>End Date (Optional)</FormLabel>
                     <FormControl>
-                      <DateInput
+                      <Input
+                        type="date"
                         value={field.value || ""}
-                        onChange={field.onChange}
+                        onChange={(e) => field.onChange(e.target.value)}
+                        className="h-12 text-base cursor-pointer"
                         placeholder="Select end date (optional)"
                       />
                     </FormControl>
