@@ -13,7 +13,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { CalendarIcon, DollarSign, Store, FileText, Briefcase, ArrowLeft } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { insertExpenseSchema, type Gig } from "@shared/schema";
+import { insertExpenseSchema, type Gig, BUSINESS_EXPENSE_CATEGORIES } from "@shared/schema";
 import { cn } from "@/lib/utils";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
@@ -24,6 +24,7 @@ const addExpenseFormSchema = insertExpenseSchema.extend({
     (val) => !isNaN(Number(val)) && Number(val) > 0,
     "Amount must be a valid positive number"
   ),
+  category: z.string().min(1, "Category is required"),
 });
 
 type AddExpenseFormData = z.infer<typeof addExpenseFormSchema>;
@@ -48,7 +49,7 @@ export default function AddExpenseForm({ onClose, linkedGigId }: AddExpenseFormP
     defaultValues: {
       date: new Date().toISOString().split('T')[0],
       amount: "",
-      category: "Business Expense",
+      category: "",
       merchant: "",
       businessPurpose: "",
       gigId: linkedGigId,
@@ -218,6 +219,35 @@ export default function AddExpenseForm({ onClose, linkedGigId }: AddExpenseFormP
                         rows={3}
                       />
                     </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              {/* Business Category - MANDATORY for tax preparation */}
+              <FormField
+                control={form.control}
+                name="category"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="flex items-center gap-2">
+                      <Briefcase className="h-4 w-4" />
+                      Business Category *
+                    </FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select business category for taxes" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {BUSINESS_EXPENSE_CATEGORIES.map((category) => (
+                          <SelectItem key={category} value={category}>
+                            {category}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                     <FormMessage />
                   </FormItem>
                 )}
