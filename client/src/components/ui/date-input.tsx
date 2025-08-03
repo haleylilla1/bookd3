@@ -78,23 +78,45 @@ export function DateInput({ value, onChange, placeholder, className, disabled }:
   };
 
   const openNativePicker = () => {
-    // For mobile devices, try to trigger native date picker
+    // Create a temporary input element to trigger date picker
     const input = document.createElement("input");
     input.type = "date";
     input.value = value || "";
     input.style.position = "absolute";
     input.style.left = "-9999px";
+    input.style.top = "-9999px";
+    input.style.width = "1px";
+    input.style.height = "1px";
+    input.style.opacity = "0";
+    input.style.pointerEvents = "none";
+    
     document.body.appendChild(input);
+    
+    const cleanup = () => {
+      if (document.body.contains(input)) {
+        document.body.removeChild(input);
+      }
+    };
     
     input.addEventListener("change", (e) => {
       const target = e.target as HTMLInputElement;
-      onChange?.(target.value);
-      setDisplayValue(target.value);
-      document.body.removeChild(input);
+      if (target.value) {
+        onChange?.(target.value);
+        setDisplayValue(target.value);
+      }
+      cleanup();
     });
     
-    input.focus();
-    input.click();
+    input.addEventListener("blur", cleanup);
+    
+    // Trigger the picker
+    setTimeout(() => {
+      input.focus();
+      input.click();
+      
+      // Backup cleanup in case events don't fire
+      setTimeout(cleanup, 5000);
+    }, 0);
   };
 
   useEffect(() => {
@@ -111,19 +133,25 @@ export function DateInput({ value, onChange, placeholder, className, disabled }:
         type={inputType}
         value={displayValue}
         onChange={handleChange}
-        placeholder={inputType === "date" ? undefined : (placeholder || "MM/DD/YYYY")}
-        className={cn("h-12 text-base touch-manipulation pr-12", className)}
+        onClick={inputType === "date" ? undefined : openNativePicker}
+        placeholder={inputType === "date" ? placeholder : (placeholder || "MM/DD/YYYY")}
+        className={cn("h-12 text-base touch-manipulation pr-12 cursor-pointer", className)}
         disabled={disabled}
+        readOnly={inputType === "text"}
         style={inputType === "date" ? { colorScheme: 'light dark' } : undefined}
       />
       
-      {/* Calendar button for text mode or as backup */}
+      {/* Calendar button - always clickable for better UX */}
       <Button
         type="button"
         variant="ghost"
         size="sm"
-        className="absolute right-1 top-1/2 transform -translate-y-1/2 h-10 w-10 p-0 hover:bg-gray-100"
-        onClick={inputType === "text" ? openNativePicker : undefined}
+        className="absolute right-1 top-1/2 transform -translate-y-1/2 h-10 w-10 p-0 hover:bg-gray-100 cursor-pointer"
+        onClick={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          openNativePicker();
+        }}
         disabled={disabled}
       >
         <CalendarIcon className="h-4 w-4 text-gray-400" />
