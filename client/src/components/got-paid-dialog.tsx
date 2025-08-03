@@ -18,18 +18,11 @@ interface GotPaidDialogProps {
   onSave: (data: GotPaidData) => Promise<void>;
 }
 
-interface OtherExpense {
-  name: string;
-  amount: number;
-}
-
 export interface GotPaidData {
   totalReceived: number;
   mileage: number;
   parkingSpent: number;
   parkingReimbursed: number;
-  otherExpenses: OtherExpense[];
-  otherReimbursed: number;
   paymentMethod?: string;
   taxPercentage: number;
 }
@@ -62,8 +55,6 @@ export default function GotPaidDialog({ gig, isOpen, onClose, onSave }: GotPaidD
     mileage: gig.mileage || 0,
     parkingSpent: parseFloat(gig.parkingExpense || "0"),
     parkingReimbursed: gig.parkingReimbursed ? parseFloat(gig.parkingExpense || "0") : 0,
-    otherExpenses: parseFloat(gig.otherExpenses || "0") > 0 ? [{ name: "Other expenses", amount: parseFloat(gig.otherExpenses || "0") }] : [],
-    otherReimbursed: gig.otherExpensesReimbursed ? parseFloat(gig.otherExpenses || "0") : 0,
     paymentMethod: gig.paymentMethod || "",
     taxPercentage: gig.taxPercentage || 25,
   });
@@ -128,11 +119,10 @@ export default function GotPaidDialog({ gig, isOpen, onClose, onSave }: GotPaidD
   };
 
   // Simplified tax calculations - separate taxable income from business deductions
-  const totalOtherSpent = formData.otherExpenses.reduce((sum, expense) => sum + expense.amount, 0);
   const mileageDeduction = formData.mileage * 0.655; // 2024 IRS standard mileage rate
   const calculations = {
-    taxableIncome: formData.totalReceived - formData.parkingReimbursed - formData.otherReimbursed,
-    businessDeductions: (formData.parkingSpent - formData.parkingReimbursed) + (totalOtherSpent - formData.otherReimbursed) + mileageDeduction,
+    taxableIncome: formData.totalReceived - formData.parkingReimbursed,
+    businessDeductions: (formData.parkingSpent - formData.parkingReimbursed) + mileageDeduction,
     mileageDeduction
   };
 
@@ -149,14 +139,13 @@ export default function GotPaidDialog({ gig, isOpen, onClose, onSave }: GotPaidD
     }
   };
 
-  const nextStep = () => setStep(prev => Math.min(prev + 1, 6));
+  const nextStep = () => setStep(prev => Math.min(prev + 1, 5));
   const prevStep = () => setStep(prev => Math.max(prev - 1, 1));
 
   const stepTitles = [
     "Total Payment",
     "Mileage Tracking", 
     "Parking Expenses",
-    "Other Expenses",
     "Tax Rate & Payment",
     "Review & Confirm"
   ];
@@ -170,7 +159,7 @@ export default function GotPaidDialog({ gig, isOpen, onClose, onSave }: GotPaidD
             Got Paid: {gig.eventName}
           </DialogTitle>
           <DialogDescription>
-            Step {step} of 6: {stepTitles[step - 1]}
+            Step {step} of 5: {stepTitles[step - 1]}
           </DialogDescription>
         </DialogHeader>
 
@@ -373,113 +362,8 @@ export default function GotPaidDialog({ gig, isOpen, onClose, onSave }: GotPaidD
           </div>
         )}
 
-        {/* Step 4: Other Expenses */}
+        {/* Step 4: Tax Rate & Payment Method */}
         {step === 4 && (
-          <div className="space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <Receipt className="w-5 h-5" />
-                  Other Expenses
-                </CardTitle>
-                <p className="text-sm text-gray-600">Add any other expenses (materials, food, supplies, etc.)</p>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {/* Expense List */}
-                <div className="space-y-3">
-                  {formData.otherExpenses.map((expense, index) => (
-                    <div key={index} className="flex items-center gap-2 p-3 bg-gray-50 rounded-lg">
-                      <Input
-                        placeholder="Expense name (e.g., supplies)"
-                        value={expense.name}
-                        onChange={(e) => {
-                          const newExpenses = [...formData.otherExpenses];
-                          newExpenses[index].name = e.target.value;
-                          setFormData({ ...formData, otherExpenses: newExpenses });
-                        }}
-                        className="flex-1"
-                      />
-                      <div className="flex items-center gap-1">
-                        <span className="text-sm text-gray-500">$</span>
-                        <Input
-                          type="number"
-                          step="0.01"
-                          placeholder="0.00"
-                          value={expense.amount || ""}
-                          onChange={(e) => {
-                            const newExpenses = [...formData.otherExpenses];
-                            newExpenses[index].amount = parseFloat(e.target.value) || 0;
-                            setFormData({ ...formData, otherExpenses: newExpenses });
-                          }}
-                          className="w-24"
-                        />
-                      </div>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => {
-                          const newExpenses = formData.otherExpenses.filter((_, i) => i !== index);
-                          setFormData({ ...formData, otherExpenses: newExpenses });
-                        }}
-                        className="text-red-500 hover:text-red-700"
-                      >
-                        <X className="w-4 h-4" />
-                      </Button>
-                    </div>
-                  ))}
-                </div>
-
-                {/* Add New Expense Button */}
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => {
-                    setFormData({
-                      ...formData,
-                      otherExpenses: [...formData.otherExpenses, { name: "", amount: 0 }]
-                    });
-                  }}
-                  className="w-full flex items-center gap-2"
-                >
-                  <Plus className="w-4 h-4" />
-                  Add Expense
-                </Button>
-
-                {/* Total Spent */}
-                {formData.otherExpenses.length > 0 && (
-                  <div className="pt-3 border-t">
-                    <div className="flex justify-between items-center mb-3">
-                      <span className="font-medium">Total other expenses:</span>
-                      <span className="font-bold">{formatCurrency(totalOtherSpent)}</span>
-                    </div>
-                    
-                    {/* Reimbursement Question */}
-                    <div>
-                      <label className="block text-sm font-medium mb-1">Amount reimbursed by client</label>
-                      <Input
-                        type="number"
-                        step="0.01"
-                        value={formData.otherReimbursed}
-                        onChange={(e) => setFormData({ ...formData, otherReimbursed: parseFloat(e.target.value) || 0 })}
-                        placeholder="0.00"
-                      />
-                    </div>
-
-                    {totalOtherSpent - formData.otherReimbursed > 0 && (
-                      <Badge variant="secondary" className="bg-blue-50 text-blue-700 mt-2">
-                        Business deduction: {formatCurrency(totalOtherSpent - formData.otherReimbursed)}
-                      </Badge>
-                    )}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </div>
-        )}
-
-        {/* Step 5: Tax Rate & Payment Method */}
-        {step === 5 && (
           <div className="space-y-4">
             <Card>
               <CardHeader>
@@ -555,8 +439,8 @@ export default function GotPaidDialog({ gig, isOpen, onClose, onSave }: GotPaidD
           </div>
         )}
 
-        {/* Step 6: Summary & Confirmation */}
-        {step === 6 && (
+        {/* Step 5: Summary & Confirmation */}
+        {step === 5 && (
           <div className="space-y-4">
             <Card>
               <CardHeader>
@@ -574,7 +458,7 @@ export default function GotPaidDialog({ gig, isOpen, onClose, onSave }: GotPaidD
                   </div>
                   <div>
                     <span className="text-gray-600">Reimbursements:</span>
-                    <div className="font-semibold">{formatCurrency(formData.parkingReimbursed + formData.otherReimbursed)}</div>
+                    <div className="font-semibold">{formatCurrency(formData.parkingReimbursed)}</div>
                   </div>
                   <div className="col-span-2 pt-2 border-t">
                     <span className="text-gray-600">Taxable Income:</span>
@@ -602,9 +486,6 @@ export default function GotPaidDialog({ gig, isOpen, onClose, onSave }: GotPaidD
                       {formData.parkingSpent - formData.parkingReimbursed > 0 && (
                         <div>• Parking: {formatCurrency(formData.parkingSpent - formData.parkingReimbursed)}</div>
                       )}
-                      {totalOtherSpent - formData.otherReimbursed > 0 && (
-                        <div>• Other expenses: {formatCurrency(totalOtherSpent - formData.otherReimbursed)}</div>
-                      )}
                       <div className="text-xs text-blue-500 mt-2 italic">Track these for tax filing - not included in tax estimate above</div>
                     </div>
                   </div>
@@ -626,7 +507,7 @@ export default function GotPaidDialog({ gig, isOpen, onClose, onSave }: GotPaidD
             Back
           </Button>
           
-          {step < 6 ? (
+          {step < 5 ? (
             <Button onClick={nextStep} className="flex items-center gap-2">
               Next
               <ArrowRight className="w-4 h-4" />

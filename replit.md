@@ -45,16 +45,17 @@ Bookd is a mobile-first gig worker companion app designed for comprehensive fina
 - Keep existing fields unchanged for backward compatibility
 - Migration: populate new fields from existing data
 
-**PHASE 2: "Got Paid" Dialog**
+**PHASE 2: "Got Paid" Dialog** ✅ COMPLETED (August 2025)
 - Single button on gig cards: "Got Paid"
-- Multi-step wizard:
+- Multi-step wizard (simplified to 5 steps):
   1. "Total amount received?" → `total_received`
-  2. "Parking expense?" → Amount spent vs Amount reimbursed
-  3. "Other expenses?" → Multiple individual expenses with names and amounts, then total reimbursement
+  2. "Mileage tracking?" → Calculate or manual entry with Google Maps integration
+  3. "Parking expense?" → Amount spent vs Amount reimbursed
   4. "Tax rate?" → Uses user's default tax percentage, adjustable per gig
   5. "Payment method?" → Optional payment method selection
-  6. Auto-calculate: `actual_pay` = `total_received` - `reimbursed_parking` - `reimbursed_other`
-  7. Auto-calculate: Business deductions = unreimbursed amounts
+- Auto-calculate: `actual_pay` = `total_received` - `reimbursed_parking`
+- Auto-calculate: Business deductions = unreimbursed amounts + mileage
+- **REMOVED**: Step 4 "Other expenses" - replaced by comprehensive expense tracking system
 
 **PHASE 3: Dashboard Integration**
 - **Income Section**: Show taxable income only (excludes reimbursements)
