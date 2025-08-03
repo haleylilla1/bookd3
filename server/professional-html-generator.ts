@@ -363,29 +363,44 @@ export async function generateProfessionalHTML(options: ReportOptions): Promise<
             <!-- Standalone Business Expenses by Category -->
             ${data.expenses.length > 0 ? `
                 <div style="margin: 30px 0;">
-                    <h3 style="font-size: 18px; margin-bottom: 20px; color: #2c3e50;">Business Expense Categories</h3>
-                    <table style="width: 100%; border-collapse: collapse; font-family: monospace;">
-                        <thead>
-                            <tr>
-                                <th style="text-align: left; padding: 10px 0; border-bottom: 1px solid #333;">Date</th>
-                                <th style="text-align: left; padding: 10px 0; border-bottom: 1px solid #333;">Merchant</th>
-                                <th style="text-align: left; padding: 10px 0; border-bottom: 1px solid #333;">Category</th>
-                                <th style="text-align: left; padding: 10px 0; border-bottom: 1px solid #333;">Purpose</th>
-                                <th style="text-align: right; padding: 10px 0; border-bottom: 1px solid #333;">Amount</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            ${data.expenses.map(expense => `
-                                <tr>
-                                    <td style="padding: 8px 0;">${new Date(expense.date).toLocaleDateString()}</td>
-                                    <td style="padding: 8px 0;">${expense.merchant}</td>
-                                    <td style="padding: 8px 0;">${expense.category}</td>
-                                    <td style="padding: 8px 0;">${expense.businessPurpose}</td>
-                                    <td style="padding: 8px 0; text-align: right;">$${parseFloat(expense.amount).toFixed(2)}</td>
-                                </tr>
-                            `).join('')}
-                        </tbody>
-                    </table>
+                    ${(() => {
+                        // Group expenses by category
+                        const expensesByCategory: Record<string, any[]> = data.expenses.reduce((acc, expense) => {
+                            const category = expense.category;
+                            if (!acc[category]) acc[category] = [];
+                            acc[category].push(expense);
+                            return acc;
+                        }, {} as Record<string, any[]>);
+                        
+                        // Sort categories alphabetically
+                        const sortedCategories = Object.keys(expensesByCategory).sort();
+                        
+                        return sortedCategories.map(category => `
+                            <div style="margin-bottom: 30px;">
+                                <h3 style="font-size: 16px; margin-bottom: 15px; color: #2c3e50; background: #f8f9fa; padding: 10px; border-left: 4px solid #3498db;">${category}</h3>
+                                <table style="width: 100%; border-collapse: collapse; font-family: monospace; margin-left: 20px;">
+                                    <thead>
+                                        <tr>
+                                            <th style="text-align: left; padding: 8px 0; border-bottom: 1px solid #ddd; font-size: 14px;">Date</th>
+                                            <th style="text-align: left; padding: 8px 0; border-bottom: 1px solid #ddd; font-size: 14px;">Merchant</th>
+                                            <th style="text-align: left; padding: 8px 0; border-bottom: 1px solid #ddd; font-size: 14px;">Purpose</th>
+                                            <th style="text-align: right; padding: 8px 0; border-bottom: 1px solid #ddd; font-size: 14px;">Amount</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        ${expensesByCategory[category].map(expense => `
+                                            <tr>
+                                                <td style="padding: 6px 0; font-size: 14px;">${new Date(expense.date).toLocaleDateString()}</td>
+                                                <td style="padding: 6px 0; font-size: 14px;">${expense.merchant}</td>
+                                                <td style="padding: 6px 0; font-size: 14px;">${expense.businessPurpose}</td>
+                                                <td style="padding: 6px 0; text-align: right; font-size: 14px;">$${parseFloat(expense.amount).toFixed(2)}</td>
+                                            </tr>
+                                        `).join('')}
+                                    </tbody>
+                                </table>
+                            </div>
+                        `).join('');
+                    })()}
                     
                     <!-- Category Summary -->
                     ${(() => {
@@ -398,22 +413,26 @@ export async function generateProfessionalHTML(options: ReportOptions): Promise<
                         const sortedCategories = Object.entries(categoryTotals).sort(([,a], [,b]) => (b as number) - (a as number));
                         
                         return sortedCategories.length > 0 ? `
-                            <div style="margin-top: 30px;">
-                                <h4 style="font-size: 16px; margin-bottom: 15px; color: #2c3e50;">Summary by Category</h4>
+                            <div style="margin-top: 40px; border-top: 2px solid #3498db; padding-top: 20px;">
+                                <h3 style="font-size: 18px; margin-bottom: 20px; color: #2c3e50;">Summary by Category</h3>
                                 <table style="width: 100%; border-collapse: collapse; font-family: monospace;">
                                     <thead>
                                         <tr>
-                                            <th style="text-align: left; padding: 8px 0; border-bottom: 1px solid #333;">Category</th>
-                                            <th style="text-align: right; padding: 8px 0; border-bottom: 1px solid #333;">Total</th>
+                                            <th style="text-align: left; padding: 10px 0; border-bottom: 1px solid #333; font-size: 16px;">Category</th>
+                                            <th style="text-align: right; padding: 10px 0; border-bottom: 1px solid #333; font-size: 16px;">Total</th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         ${sortedCategories.map(([category, total]) => `
                                             <tr>
-                                                <td style="padding: 6px 0;">${category}</td>
-                                                <td style="padding: 6px 0; text-align: right;">$${(total as number).toFixed(2)}</td>
+                                                <td style="padding: 8px 0; font-size: 14px;">${category}</td>
+                                                <td style="padding: 8px 0; text-align: right; font-size: 14px; font-weight: bold;">$${(total as number).toFixed(2)}</td>
                                             </tr>
                                         `).join('')}
+                                        <tr style="border-top: 2px solid #333; font-weight: bold;">
+                                            <td style="padding: 10px 0; font-size: 16px;">TOTAL BUSINESS EXPENSES</td>
+                                            <td style="padding: 10px 0; text-align: right; font-size: 16px;">$${Object.values(categoryTotals).reduce((sum, val) => sum + (val as number), 0).toFixed(2)}</td>
+                                        </tr>
                                     </tbody>
                                 </table>
                             </div>
