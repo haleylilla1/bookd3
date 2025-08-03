@@ -795,9 +795,7 @@ function GigEditForm({ gig, onSave, onCancel, isLoading }: GigEditFormProps) {
     parkingExpense: gig.parkingExpense || "",
     parkingReceipts: (gig as any).parkingReceipts || [],
     parkingReimbursed: (gig as any).parkingReimbursed || false,
-    otherExpenses: gig.otherExpenses || "",
-    otherExpenseReceipts: (gig as any).otherExpenseReceipts || [],
-    otherExpensesReimbursed: (gig as any).otherExpensesReimbursed || false,
+
   });
 
   const [isCalculatingMileage, setIsCalculatingMileage] = useState(false);

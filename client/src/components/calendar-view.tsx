@@ -504,7 +504,7 @@ export default function CalendarView() {
     updatePayload.actualPay = safeParseFloat(updatedData.actualPay);
     updatePayload.tips = safeParseFloat(updatedData.tips);
     updatePayload.parkingExpense = safeParseFloat(updatedData.parkingExpense);
-    updatePayload.otherExpenses = safeParseFloat(updatedData.otherExpenses);
+
     
     // Handle mileage calculation
     if (updatedData.calculatedMileage) {
@@ -517,17 +517,13 @@ export default function CalendarView() {
     if (updatedData.parkingDescription !== undefined) {
       updatePayload.parkingDescription = updatedData.parkingDescription;
     }
-    if (updatedData.otherExpenseDescription !== undefined) {
-      updatePayload.otherExpenseDescription = updatedData.otherExpenseDescription;
-    }
+
     
     // Add reimbursement tracking fields
     if (updatedData.parkingReimbursed !== undefined) {
       updatePayload.parkingReimbursed = Boolean(updatedData.parkingReimbursed);
     }
-    if (updatedData.otherExpensesReimbursed !== undefined) {
-      updatePayload.otherExpensesReimbursed = Boolean(updatedData.otherExpensesReimbursed);
-    }
+
 
     console.log("Saving gig edit:", updatePayload); // Debug log
     
@@ -1102,9 +1098,7 @@ function GigEditForm({ gig, onSave, onCancel, isLoading }: GigEditFormProps) {
     parkingExpense: gig.parkingExpense || "",
     parkingDescription: gig.parkingDescription || "",
     parkingReimbursed: (gig as any).parkingReimbursed || false,
-    otherExpenses: gig.otherExpenses || "",
-    otherExpenseDescription: gig.otherExpenseDescription || "",
-    otherExpensesReimbursed: (gig as any).otherExpensesReimbursed || false,
+
   });
 
   const [isCalculatingMileage, setIsCalculatingMileage] = useState(false);

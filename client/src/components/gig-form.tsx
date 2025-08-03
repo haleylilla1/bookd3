@@ -1041,58 +1041,7 @@ export default function GigForm({ onClose }: GigFormProps) {
                       />
                     </div>
 
-                    {/* Other Expenses Section */}
-                    <div className="space-y-3 p-4 bg-green-50 rounded-lg border">
-                      <h4 className="font-medium text-green-900">Other Expenses</h4>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <FormField
-                          control={form.control}
-                          name="otherExpenses"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Amount ($)</FormLabel>
-                              <FormControl>
-                                <Input type="number" placeholder="0.00" {...field} />
-                              </FormControl>
-                            </FormItem>
-                          )}
-                        />
-                        <FormField
-                          control={form.control}
-                          name="otherExpensesReimbursed"
-                          render={({ field }) => (
-                            <FormItem className="flex flex-row items-start space-x-3 space-y-0 pt-6">
-                              <FormControl>
-                                <Checkbox
-                                  checked={field.value}
-                                  onCheckedChange={field.onChange}
-                                />
-                              </FormControl>
-                              <div className="space-y-1 leading-none">
-                                <FormLabel className="text-sm">Reimbursed</FormLabel>
-                              </div>
-                            </FormItem>
-                          )}
-                        />
-                      </div>
-                      <FormField
-                        control={form.control}
-                        name="otherExpenseDescription"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Expense Details (optional)</FormLabel>
-                            <FormControl>
-                              <Input 
-                                placeholder="e.g., supplies, tools, materials"
-                                {...field} 
-                              />
-                            </FormControl>
-                            <p className="text-xs text-gray-500">Brief description of other expenses</p>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </div>
+
                   </div>
                 )}
               </div>
