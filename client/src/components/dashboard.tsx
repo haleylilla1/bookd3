@@ -8,7 +8,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { ChevronLeft, ChevronRight, Edit2, Save, X, DollarSign, Calendar, Users, TrendingUp, Receipt, Calculator, PiggyBank, FileText, Download } from "lucide-react";
-import type { Gig, User } from "@shared/schema";
+import type { Gig, User, Expense } from "@shared/schema";
 
 type TimePeriod = "monthly" | "annual";
 
@@ -28,6 +28,7 @@ export default function Dashboard() {
   const [showTaxBreakdown, setShowTaxBreakdown] = useState(false);
   const [showTipsBreakdown, setShowTipsBreakdown] = useState(false);
   const [showExpensesBreakdown, setShowExpensesBreakdown] = useState(false);
+  const [showNewExpensesBreakdown, setShowNewExpensesBreakdown] = useState(false);
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
   const hasUpdatedStatusesRef = useRef(false);
   
@@ -70,6 +71,12 @@ export default function Dashboard() {
   const { data: gigs = [], isLoading: gigsLoading, error: gigsError } = useQuery<Gig[]>({
     queryKey: ["/api/gigs", { lightweight: true }],
     queryFn: () => fetch('/api/gigs?lightweight=true').then(res => res.json()),
+    retry: 1,
+  });
+
+  // Fetch expenses for dashboard
+  const { data: expenses = [], isLoading: expensesLoading } = useQuery<Expense[]>({
+    queryKey: ["/api/expenses"],
     retry: 1,
   });
 
@@ -161,6 +168,24 @@ export default function Dashboard() {
       }
     });
   }, [gigs, selectedPeriod, currentDate]);
+
+  // Filter expenses for current period
+  const currentPeriodExpenses = useMemo(() => {
+    if (!Array.isArray(expenses)) return [];
+    
+    const startDate = selectedPeriod === "monthly" 
+      ? new Date(currentDate.getFullYear(), currentDate.getMonth(), 1)
+      : new Date(currentDate.getFullYear(), 0, 1);
+    
+    const endDate = selectedPeriod === "monthly"
+      ? new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0)
+      : new Date(currentDate.getFullYear(), 11, 31);
+
+    return expenses.filter(expense => {
+      const expenseDate = new Date(expense.date + 'T00:00:00');
+      return expenseDate >= startDate && expenseDate <= endDate;
+    });
+  }, [expenses, selectedPeriod, currentDate]);
 
   // Helper function to group multi-day gigs (prevents double-counting)
   const getGroupedGigs = (gigs: Gig[]): (Gig & { isMultiDay?: boolean; startDate?: string; endDate?: string })[] => {
@@ -269,13 +294,19 @@ export default function Dashboard() {
       return sum + safeParseFloat(gig.tips);
     }, 0);
     
-    // EXPENSE FIX: Use grouped gigs to prevent counting expenses multiple times for multi-day events
-    const totalExpenses = groupedGigs.reduce((sum, gig) => {
+    // Calculate expenses from both gigs and standalone expense entries
+    const gigExpenses = groupedGigs.reduce((sum, gig) => {
       const parkingExpense = safeParseFloat(gig.parkingExpense);
       const otherExpenses = safeParseFloat(gig.otherExpenses);
       const mileageDeduction = (gig.mileage || 0) * 0.67;
       return sum + parkingExpense + otherExpenses + mileageDeduction;
     }, 0);
+    
+    const standaloneExpenses = currentPeriodExpenses.reduce((sum, expense) => {
+      return sum + safeParseFloat(expense.amount);
+    }, 0);
+    
+    const totalExpenses = gigExpenses + standaloneExpenses;
     
     const projectedEarnings = groupedGigs.reduce((sum, gig) => {
       if (gig.status === "completed") {
@@ -531,7 +562,18 @@ export default function Dashboard() {
       .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
   };
 
-  if (gigsLoading) {
+  const getNewExpensesBreakdown = () => {
+    return currentPeriodExpenses
+      .map(expense => ({
+        ...expense,
+        amount: safeParseFloat(expense.amount),
+        date: expense.date
+      }))
+      .filter(expense => expense.amount > 0)
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  };
+
+  if (gigsLoading || expensesLoading) {
     return (
       <div className="p-4">
         <div className="animate-pulse space-y-4">
@@ -734,7 +776,7 @@ export default function Dashboard() {
         {/* Expenses Breakdown */}
         <Card 
           className="cursor-pointer hover:shadow-md transition-shadow"
-          onClick={() => setShowExpensesBreakdown(true)}
+          onClick={() => setShowNewExpensesBreakdown(true)}
         >
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
@@ -744,7 +786,7 @@ export default function Dashboard() {
                   ${periodStats.totalExpenses.toFixed(2)}
                 </p>
                 <p className="text-xs text-gray-500 mt-1">
-                  Mileage and business costs
+                  {currentPeriodExpenses.length} standalone + gig expenses
                 </p>
               </div>
               <Receipt className="w-8 h-8 text-orange-500" />
@@ -1021,6 +1063,92 @@ export default function Dashboard() {
             ))}
             {getExpensesBreakdown().length === 0 && (
               <p className="text-center text-gray-500 py-4">No expenses recorded</p>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* New Standalone Expenses Breakdown Modal */}
+      <Dialog open={showNewExpensesBreakdown} onOpenChange={setShowNewExpensesBreakdown}>
+        <DialogContent className="max-w-md max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>All Expenses Breakdown</DialogTitle>
+            <DialogDescription>
+              View all expenses including standalone expenses and gig-related costs.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            {/* Standalone Expenses Section */}
+            {getNewExpensesBreakdown().length > 0 && (
+              <div>
+                <h4 className="font-medium text-sm text-gray-700 mb-2">Standalone Expenses</h4>
+                <div className="space-y-3">
+                  {getNewExpensesBreakdown().map((expense, index) => (
+                    <div key={`expense-${expense.id}`} className="border rounded-lg p-3 bg-blue-50">
+                      <div className="flex justify-between items-start mb-2">
+                        <div className="flex-1">
+                          <p className="font-medium">{expense.merchant}</p>
+                          <p className="text-sm text-gray-600">{expense.businessPurpose}</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="font-semibold text-blue-600">${expense.amount.toFixed(2)}</p>
+                          <p className="text-xs text-gray-500">
+                            {new Date(expense.date).toLocaleDateString()}
+                          </p>
+                        </div>
+                      </div>
+                      <Badge variant="outline" className="text-xs">
+                        Standalone Expense
+                      </Badge>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Gig-Related Expenses Section */}
+            {getExpensesBreakdown().length > 0 && (
+              <div>
+                <h4 className="font-medium text-sm text-gray-700 mb-2">Gig-Related Expenses</h4>
+                <div className="space-y-3">
+                  {getExpensesBreakdown().map((gig, index) => (
+                    <div key={`gig-${gig.id}`} className="border rounded-lg p-3 bg-orange-50">
+                      <div className="flex justify-between items-start mb-2">
+                        <div className="flex-1">
+                          <p className="font-medium">{gig.eventName || "Unnamed Gig"}</p>
+                          <p className="text-sm text-gray-600">{gig.clientName}</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="font-semibold text-orange-600">${gig.amount.toFixed(2)}</p>
+                          <p className="text-xs text-gray-500">
+                            {gig.isMultiDay 
+                              ? `${parseGigDate(gig.startDate!).toLocaleDateString()} - ${parseGigDate(gig.endDate!).toLocaleDateString()}`
+                              : parseGigDate(gig.date).toLocaleDateString()
+                            }
+                          </p>
+                        </div>
+                      </div>
+                      <div className="text-xs text-gray-600 mb-2 space-y-1">
+                        {gig.parkingExpense > 0 && <div>Parking: ${gig.parkingExpense.toFixed(2)}</div>}
+                        {gig.otherExpenses > 0 && <div>Other: ${gig.otherExpenses.toFixed(2)}</div>}
+                        {gig.mileageDeduction > 0 && <div>Mileage: ${gig.mileageDeduction.toFixed(2)} ({gig.mileage} mi)</div>}
+                      </div>
+                      <Badge variant="secondary" className="text-xs">
+                        {gig.gigType}
+                      </Badge>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* No expenses found */}
+            {getNewExpensesBreakdown().length === 0 && getExpensesBreakdown().length === 0 && (
+              <div className="text-center text-gray-500 py-8">
+                <Receipt className="w-12 h-12 mx-auto mb-3 text-gray-300" />
+                <p className="font-medium">No expenses found</p>
+                <p className="text-sm">Add expenses to track your business costs</p>
+              </div>
             )}
           </div>
         </DialogContent>

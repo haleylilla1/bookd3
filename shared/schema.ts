@@ -190,6 +190,8 @@ export const expenses = pgTable("expenses", {
   category: text("category").notNull(), // Bills, Expenses, Savings, Income, Debt
   subcategory: text("subcategory"), // Rent, Insurance, etc.
   description: text("description"),
+  merchant: text("merchant"), // Vendor/merchant name
+  businessPurpose: text("business_purpose"), // Business purpose description
   isIncome: boolean("is_income").default(false),
   gigId: integer("gig_id"), // Link to gig if it's gig income
   allocations: jsonb("allocations"), // [{goalId: 1, amount: 100}, {type: "emergency", amount: 50}]
@@ -383,6 +385,14 @@ export const insertExpenseCategorySchema = createInsertSchema(expenseCategories)
 export const insertExpenseSchema = createInsertSchema(expenses).omit({
   id: true,
   createdAt: true,
+}).extend({
+  // Make fields more flexible for the Add Expense form
+  category: z.string().default("Business Expense"),
+  amount: z.string().min(1, "Amount is required"),
+  date: z.string().min(1, "Date is required"),
+  merchant: z.string().optional(),
+  businessPurpose: z.string().optional(),
+  gigId: z.number().optional(),
 });
 
 export const insertBudgetSchema = createInsertSchema(budgets).omit({
