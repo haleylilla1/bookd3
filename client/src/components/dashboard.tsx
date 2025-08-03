@@ -4,13 +4,30 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { ChevronLeft, ChevronRight, Edit2, Save, X, DollarSign, Calendar, Users, TrendingUp, Receipt, Calculator, PiggyBank, FileText, Download, Trash2 } from "lucide-react";
 import type { Gig, User, Expense } from "@shared/schema";
+import { BUSINESS_EXPENSE_CATEGORIES } from "@shared/schema";
 
 type TimePeriod = "monthly" | "annual";
+
+// Schema for expense edit form
+const expenseEditSchema = z.object({
+  date: z.string().min(1, "Date is required"),
+  amount: z.string().min(1, "Amount is required").refine(val => !isNaN(Number(val)) && Number(val) > 0, "Must be a positive number"),
+  merchant: z.string().min(1, "Merchant is required"),
+  businessPurpose: z.string().min(1, "Business purpose is required"),
+  category: z.string().min(1, "Category is required"),
+});
+
+type ExpenseEditFormData = z.infer<typeof expenseEditSchema>;
 
 // Utility function to parse dates consistently across timezones
 const parseGigDate = (dateString: string): Date => {
@@ -142,7 +159,51 @@ export default function Dashboard() {
     },
   });
 
+  // Update expense mutation
+  const updateExpenseMutation = useMutation({
+    mutationFn: async (expenseData: { id: number; data: Partial<Expense> }) => {
+      const response = await apiRequest("PUT", `/api/expenses/${expenseData.id}`, expenseData.data);
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Success", 
+        description: "Expense updated successfully!",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/expenses"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/dashboard"] });
+      setEditingExpense(null);
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to update expense. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
 
+  // Delete expense mutation
+  const deleteExpenseMutation = useMutation({
+    mutationFn: async (expenseId: number) => {
+      await apiRequest("DELETE", `/api/expenses/${expenseId}`);
+    },
+    onSuccess: () => {
+      toast({
+        title: "Success",
+        description: "Expense deleted successfully!",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/expenses"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/dashboard"] });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to delete expense. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
 
   // Safe numeric parsing function
   const safeParseFloat = (value: string | null | undefined): number => {
@@ -1097,10 +1158,35 @@ export default function Dashboard() {
                             {new Date(expense.date).toLocaleDateString()}
                           </p>
                         </div>
+                        <div className="flex gap-1 ml-2">
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            onClick={() => setEditingExpense(expense)}
+                            disabled={updateExpenseMutation.isPending}
+                            className="h-8 w-8"
+                          >
+                            <Edit2 className="w-4 h-4 text-blue-500" />
+                          </Button>
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            onClick={() => deleteExpenseMutation.mutate(expense.id)}
+                            disabled={deleteExpenseMutation.isPending}
+                            className="h-8 w-8"
+                          >
+                            <Trash2 className="w-4 h-4 text-red-500" />
+                          </Button>
+                        </div>
                       </div>
-                      <Badge variant="outline" className="text-xs">
-                        Standalone Expense
-                      </Badge>
+                      <div className="flex justify-between items-center">
+                        <Badge variant="outline" className="text-xs">
+                          Standalone Expense
+                        </Badge>
+                        <Badge variant="outline" className="text-xs bg-gray-100 text-gray-600">
+                          {expense.category}
+                        </Badge>
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -1154,6 +1240,150 @@ export default function Dashboard() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Edit Expense Dialog */}
+      <Dialog open={!!editingExpense} onOpenChange={() => setEditingExpense(null)}>
+        <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Edit Expense</DialogTitle>
+            <DialogDescription>
+              Update expense details and category information.
+            </DialogDescription>
+          </DialogHeader>
+          {editingExpense && (
+            <ExpenseEditForm 
+              expense={editingExpense}
+              onSave={(data) => updateExpenseMutation.mutate({ id: editingExpense.id, data })}
+              onCancel={() => setEditingExpense(null)}
+              isLoading={updateExpenseMutation.isPending}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
+  );
+}
+
+// Expense Edit Form Component
+function ExpenseEditForm({ 
+  expense, 
+  onSave, 
+  onCancel, 
+  isLoading 
+}: {
+  expense: Expense;
+  onSave: (data: ExpenseEditFormData) => void;
+  onCancel: () => void;
+  isLoading: boolean;
+}) {
+  const form = useForm<ExpenseEditFormData>({
+    resolver: zodResolver(expenseEditSchema),
+    defaultValues: {
+      date: expense.date,
+      amount: expense.amount.toString(),
+      merchant: expense.merchant,
+      businessPurpose: expense.businessPurpose,
+      category: expense.category,
+    },
+  });
+
+  const onSubmit = (data: ExpenseEditFormData) => {
+    onSave(data);
+  };
+
+  return (
+    <Form {...form}>
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+        <FormField
+          control={form.control}
+          name="date"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Date</FormLabel>
+              <FormControl>
+                <Input type="date" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="amount"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Amount ($)</FormLabel>
+              <FormControl>
+                <Input type="number" step="0.01" placeholder="0.00" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="merchant"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Merchant/Vendor</FormLabel>
+              <FormControl>
+                <Input placeholder="Store or service name" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="businessPurpose"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Business Purpose</FormLabel>
+              <FormControl>
+                <Input placeholder="What was this expense for?" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="category"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Business Category</FormLabel>
+              <Select onValueChange={field.onChange} defaultValue={field.value}>
+                <FormControl>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Choose expense category..." />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  {BUSINESS_EXPENSE_CATEGORIES.map((category) => (
+                    <SelectItem key={category} value={category}>
+                      {category}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <div className="flex gap-3 pt-4">
+          <Button type="button" variant="outline" onClick={onCancel} className="flex-1">
+            Cancel
+          </Button>
+          <Button type="submit" disabled={isLoading} className="flex-1">
+            {isLoading ? "Saving..." : "Save Changes"}
+          </Button>
+        </div>
+      </form>
+    </Form>
   );
 }
