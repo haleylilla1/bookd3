@@ -49,9 +49,7 @@ const gigFormSchema = z.object({
   parkingExpense: z.string().optional(),
   parkingDescription: z.string().optional(),
   parkingReimbursed: z.boolean().default(false),
-  otherExpenses: z.string().optional(),
-  otherExpenseDescription: z.string().optional(),
-  otherExpensesReimbursed: z.boolean().default(false),
+
 });
 
 type GigFormData = z.infer<typeof gigFormSchema>;
@@ -257,9 +255,7 @@ export default function GigForm({ onClose }: GigFormProps) {
     parkingExpense: "",
     parkingDescription: "",
     parkingReimbursed: false,
-    otherExpenses: "",
-    otherExpenseDescription: "",
-    otherExpensesReimbursed: false,
+
   }), [user?.defaultTaxPercentage, user?.homeAddress]);
 
   const form = useForm<GigFormData>({
@@ -489,9 +485,7 @@ export default function GigForm({ onClose }: GigFormProps) {
               parkingExpense: parseNumeric(submitData.parkingExpense),
               parkingDescription: submitData.parkingDescription || null,
               parkingReimbursed: submitData.parkingReimbursed,
-              otherExpenses: parseNumeric(submitData.otherExpenses),
-              otherExpenseDescription: submitData.otherExpenseDescription || null,
-              otherExpensesReimbursed: submitData.otherExpensesReimbursed,
+
             };
             
             await createGigMutation.mutateAsync(gigData);
