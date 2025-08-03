@@ -1,4 +1,4 @@
-import { Calendar, LayoutDashboard, User, FileText, Plus, LogOut, Receipt } from "lucide-react";
+import { Calendar, LayoutDashboard, User, FileText, Plus, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Screen } from "@/pages/home";
 import { useAuth } from "@/hooks/useAuth";
@@ -6,10 +6,9 @@ import { useAuth } from "@/hooks/useAuth";
 interface DesktopSidebarProps {
   currentScreen: Screen;
   onScreenChange: (screen: Screen) => void;
-  onOpenExpenseForm?: () => void;
 }
 
-export default function DesktopSidebar({ currentScreen, onScreenChange, onOpenExpenseForm }: DesktopSidebarProps) {
+export default function DesktopSidebar({ currentScreen, onScreenChange }: DesktopSidebarProps) {
   const { logout, user } = useAuth();
   const navItems = [
     {
@@ -22,7 +21,6 @@ export default function DesktopSidebar({ currentScreen, onScreenChange, onOpenEx
       icon: LayoutDashboard,
       label: "Dashboard",
     },
-
     {
       id: "profile" as Screen,
       icon: User,
@@ -38,21 +36,14 @@ export default function DesktopSidebar({ currentScreen, onScreenChange, onOpenEx
         <p className="text-sm text-gray-500 mt-1">Work different</p>
       </div>
 
-      {/* Action Buttons */}
-      <div className="p-4 border-b border-gray-200 space-y-3">
+      {/* Add Gig Button */}
+      <div className="p-4 border-b border-gray-200">
         <Button
           onClick={() => onScreenChange("gig-form")}
           className="w-full bg-primary hover:bg-primary/90 text-white"
         >
           <Plus className="w-4 h-4 mr-2" />
           Add Gig
-        </Button>
-        <Button
-          onClick={() => onOpenExpenseForm?.()}
-          className="w-full bg-green-600 hover:bg-green-700 text-white"
-        >
-          <Plus className="w-4 h-4 mr-2" />
-          Add Expense
         </Button>
       </div>
 
