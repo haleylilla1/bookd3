@@ -8,26 +8,18 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
+import { editExpenseSchema, type ExpenseFormData } from "@/lib/form-schemas";
+import { useFormErrorHandler } from "@/hooks/use-form-error-handler";
 import { ChevronLeft, ChevronRight, Edit2, Save, X, DollarSign, Calendar, Users, TrendingUp, Receipt, Calculator, PiggyBank, FileText, Download, Trash2 } from "lucide-react";
+import { AmountField, MerchantField, BusinessPurposeField, CategoryField, DateField } from "@/components/ui/form-field-wrapper";
 import type { Gig, User, Expense } from "@shared/schema";
 import { BUSINESS_EXPENSE_CATEGORIES } from "@shared/schema";
 
 type TimePeriod = "monthly" | "annual";
 
-// Schema for expense edit form
-const expenseEditSchema = z.object({
-  date: z.string().min(1, "Date is required"),
-  amount: z.string().min(1, "Amount is required").refine(val => !isNaN(Number(val)) && Number(val) >= 0, "Must be a valid number (0 or greater)"),
-  merchant: z.string().optional(),
-  businessPurpose: z.string().min(1, "Business purpose is required"),
-  category: z.string().min(1, "Category is required"),
-});
-
-type ExpenseEditFormData = z.infer<typeof expenseEditSchema>;
+type ExpenseEditFormData = ExpenseFormData;
 
 // Utility function to parse dates consistently across timezones
 const parseGigDate = (dateString: string): Date => {
@@ -50,7 +42,7 @@ export default function Dashboard() {
   const hasUpdatedStatusesRef = useRef(false);
   const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
   
-  const { toast } = useToast();
+  const { handleError, handleSuccess } = useFormErrorHandler();
   const queryClient = useQueryClient();
 
   const { data: user, isLoading: userLoading, error: userError } = useQuery<User>({
@@ -143,19 +135,11 @@ export default function Dashboard() {
     onSuccess: () => {
       // Invalidate cache to force refetch
       queryClient.invalidateQueries({ queryKey: ["/api/goals/period", selectedPeriod, currentDate.toISOString()] });
-      toast({
-        title: "Success",
-        description: "Goal updated successfully!",
-      });
+      handleSuccess("Goal updated successfully!");
       setEditingGoal(null);
     },
     onError: (error) => {
-      console.error('Goal update error:', error);
-      toast({
-        title: "Error",
-        description: "Failed to update goal. Please try again.",
-        variant: "destructive",
-      });
+      handleError(error, "update goal");
     },
   });
 
@@ -166,20 +150,13 @@ export default function Dashboard() {
       return response.json();
     },
     onSuccess: () => {
-      toast({
-        title: "Success", 
-        description: "Expense updated successfully!",
-      });
+      handleSuccess("Expense updated successfully!");
       queryClient.invalidateQueries({ queryKey: ["/api/expenses"] });
       queryClient.invalidateQueries({ queryKey: ["/api/dashboard"] });
       setEditingExpense(null);
     },
-    onError: () => {
-      toast({
-        title: "Error",
-        description: "Failed to update expense. Please try again.",
-        variant: "destructive",
-      });
+    onError: (error) => {
+      handleError(error, "update expense");
     },
   });
 
@@ -189,19 +166,12 @@ export default function Dashboard() {
       await apiRequest("DELETE", `/api/expenses/${expenseId}`);
     },
     onSuccess: () => {
-      toast({
-        title: "Success",
-        description: "Expense deleted successfully!",
-      });
+      handleSuccess("Expense deleted successfully!");
       queryClient.invalidateQueries({ queryKey: ["/api/expenses"] });
       queryClient.invalidateQueries({ queryKey: ["/api/dashboard"] });
     },
-    onError: () => {
-      toast({
-        title: "Error",
-        description: "Failed to delete expense. Please try again.",
-        variant: "destructive",
-      });
+    onError: (error) => {
+      handleError(error, "delete expense");
     },
   });
 
@@ -1283,7 +1253,7 @@ function ExpenseEditForm({
   isLoading: boolean;
 }) {
   const form = useForm<ExpenseEditFormData>({
-    resolver: zodResolver(expenseEditSchema),
+    resolver: zodResolver(editExpenseSchema),
     defaultValues: {
       date: expense.date,
       amount: expense.amount.toString(),
@@ -1299,93 +1269,28 @@ function ExpenseEditForm({
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-        <FormField
-          control={form.control}
-          name="date"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Date</FormLabel>
-              <FormControl>
-                <Input type="date" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+        {/* Mobile-optimized form fields using reusable components */}
+        <DateField control={form.control} />
+        <AmountField control={form.control} />
+        <MerchantField control={form.control} />
+        <BusinessPurposeField control={form.control} />
+        <CategoryField control={form.control} />
 
-        <FormField
-          control={form.control}
-          name="amount"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Amount ($)</FormLabel>
-              <FormControl>
-                <Input type="number" step="0.01" placeholder="0.00" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <FormField
-          control={form.control}
-          name="merchant"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Merchant/Vendor (optional)</FormLabel>
-              <FormControl>
-                <Input placeholder="Store or service name (leave blank if unknown)" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <FormField
-          control={form.control}
-          name="businessPurpose"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Business Purpose</FormLabel>
-              <FormControl>
-                <Input placeholder="What was this expense for?" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <FormField
-          control={form.control}
-          name="category"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Business Category</FormLabel>
-              <Select onValueChange={field.onChange} defaultValue={field.value}>
-                <FormControl>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Choose expense category..." />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  {BUSINESS_EXPENSE_CATEGORIES.map((category) => (
-                    <SelectItem key={category} value={category}>
-                      {category}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <div className="flex gap-3 pt-4">
-          <Button type="button" variant="outline" onClick={onCancel} className="flex-1">
+        <div className="flex gap-3 pt-6">
+          <Button 
+            type="button" 
+            variant="outline" 
+            onClick={onCancel} 
+            className="flex-1 h-12 text-base font-medium touch-manipulation"
+          >
             Cancel
           </Button>
-          <Button type="submit" disabled={isLoading} className="flex-1">
+          <Button 
+            type="submit" 
+            disabled={isLoading} 
+            className="flex-1 h-12 text-base font-medium touch-manipulation"
+          >
             {isLoading ? "Saving..." : "Save Changes"}
           </Button>
         </div>
