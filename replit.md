@@ -72,6 +72,13 @@ Bookd is a mobile-first gig worker companion app designed for comprehensive fina
 
 - **PHOTO UPLOAD REMOVAL COMPLETED (August 2025)**: Removed entire receipt photo upload system (500+ lines of code). All expense tracking now uses simple text descriptions for better mobile UX, faster performance, and eliminates scaling issues. Database schema updated from receipt arrays to simple text fields.
 
+- **TECHNICAL DEBT FIXES COMPLETED (August 2025)**: Major refactoring to eliminate code duplication and improve maintainability:
+  - **Centralized Form Schemas**: Created `/client/src/lib/form-schemas.ts` with reusable validation schemas for expenses and gigs, eliminating duplicate validation logic across components
+  - **Reusable Form Components**: Built `/client/src/components/ui/form-field-wrapper.tsx` with mobile-optimized field components (AmountField, MerchantField, BusinessPurposeField, etc.) featuring consistent touch-friendly sizing (h-12, text-base)
+  - **Unified Error Handling**: Implemented `/client/src/hooks/use-form-error-handler.ts` for consistent error messaging and recovery flows across all forms
+  - **Mobile Touch Optimization**: All forms now use `touch-manipulation` CSS, 12px height inputs, and base text sizing for better mobile UX
+  - **Schema Improvements**: Made merchant field optional in database and forms, allowing $0.00 expenses for tax-deductible free items
+
 ## External Dependencies
 - **SendGrid**: For email integration, specifically password reset functionality.
 - **Google Maps API (Places API, Distance Matrix API)**: For address autocomplete and mileage calculation. Includes user quota management.
