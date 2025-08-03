@@ -65,7 +65,7 @@ export default function Home() {
           <div className="fixed bottom-20 right-4 flex flex-col gap-3 lg:hidden">
             <Button
               onClick={() => setCurrentScreen("expense-form")}
-              className="px-4 py-3 rounded-full shadow-lg hover:scale-105 transition-all duration-200 bg-green-600 hover:bg-green-700 text-white font-medium"
+              className="px-4 py-3 rounded-full shadow-lg hover:scale-105 transition-all duration-200 bg-[#c258d1] hover:bg-green-700 text-white font-medium"
             >
               <Receipt className="w-4 h-4 mr-2" />
               Add Expense
