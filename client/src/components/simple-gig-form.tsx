@@ -22,13 +22,9 @@ const gigFormSchema = z.object({
   startDate: z.string().min(1, "Start date is required"),
   endDate: z.string().optional(),
   expectedPay: z.string().optional(),
-  paymentMethod: z.string().default("Cash"),
   status: z.enum(["upcoming", "pending payment", "completed"]).default("upcoming"),
   duties: z.string().optional(),
   notes: z.string().optional(),
-  // Simple estimates for planning (no complex tracking)
-  estimatedMileage: z.string().optional(),
-  estimatedExpenses: z.string().optional(),
 });
 
 type GigFormData = z.infer<typeof gigFormSchema>;
@@ -130,12 +126,9 @@ export default function SimpleGigForm({ onClose }: SimpleGigFormProps) {
       startDate: new Date().toISOString().split('T')[0],
       endDate: "",
       expectedPay: "",
-      paymentMethod: "Cash",
       status: "upcoming" as const,
       duties: "",
       notes: "",
-      estimatedMileage: "",
-      estimatedExpenses: "",
     }
   });
 
@@ -254,11 +247,11 @@ export default function SimpleGigForm({ onClose }: SimpleGigFormProps) {
         expectedPay: data.expectedPay || "0",
         actualPay: "0", // Will be set via "Got Paid" workflow
         tips: "0", // Will be set via "Got Paid" workflow
-        paymentMethod: data.paymentMethod,
+        paymentMethod: "Cash", // Default payment method, will be set via "Got Paid"
         status: data.status,
         duties: data.duties || null,
         taxPercentage: user.defaultTaxPercentage || 23, // Use user default
-        mileage: data.estimatedMileage ? parseFloat(data.estimatedMileage) || 0 : 0,
+        mileage: 0, // Will be set via "Got Paid" workflow
         notes: data.notes || null,
         // Default values for fields handled by "Got Paid"
         parkingExpense: "0",
@@ -582,65 +575,10 @@ export default function SimpleGigForm({ onClose }: SimpleGigFormProps) {
                 )}
               />
 
-              <FormField
-                control={form.control}
-                name="paymentMethod"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Payment Method</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select method" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="Cash">Cash</SelectItem>
-                        <SelectItem value="Check">Check</SelectItem>
-                        <SelectItem value="Venmo">Venmo</SelectItem>
-                        <SelectItem value="PayPal">PayPal</SelectItem>
-                        <SelectItem value="Zelle">Zelle</SelectItem>
-                        <SelectItem value="Bank Transfer">Bank Transfer</SelectItem>
-                        <SelectItem value="Other">Other</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
             </div>
 
-            {/* Simple Estimates for Planning */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="estimatedMileage"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Estimated Mileage</FormLabel>
-                    <FormControl>
-                      <Input type="number" placeholder="20" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
 
-              <FormField
-                control={form.control}
-                name="estimatedExpenses"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Estimated Expenses (optional)</FormLabel>
-                    <FormControl>
-                      <Input placeholder="e.g., parking, supplies - $25" {...field} />
-                    </FormControl>
-                    <p className="text-xs text-gray-500">Brief description for planning (detailed tracking in "Got Paid")</p>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
+
 
             {/* Duties */}
             <FormField
