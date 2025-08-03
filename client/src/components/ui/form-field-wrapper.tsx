@@ -135,7 +135,7 @@ export function BusinessPurposeField<T extends FieldValues>({ control }: { contr
 
 export function CategoryField<T extends FieldValues>({ control }: { control: Control<T> }) {
   return (
-    <SmartCategoryField control={control} name="category" />
+    <SmartCategoryField control={control} name={"category" as FieldPath<T>} />
   );
 }
 
