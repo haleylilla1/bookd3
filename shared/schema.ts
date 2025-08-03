@@ -185,17 +185,14 @@ export const expenseCategories = pgTable("expense_categories", {
 export const expenses = pgTable("expenses", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").notNull().references(() => users.id),
-  date: date("date").notNull(),
-  amount: decimal("amount", { precision: 10, scale: 2 }).notNull(),
-  category: text("category").notNull(), // Bills, Expenses, Savings, Income, Debt
-  subcategory: text("subcategory"), // Rent, Insurance, etc.
-  description: text("description"),
-  merchant: text("merchant"), // Vendor/merchant name
-  businessPurpose: text("business_purpose"), // Business purpose description
-  isIncome: boolean("is_income").default(false),
-  gigId: integer("gig_id"), // Link to gig if it's gig income
-  allocations: jsonb("allocations"), // [{goalId: 1, amount: 100}, {type: "emergency", amount: 50}]
-  createdAt: timestamp("created_at").defaultNow(),
+  date: varchar("date", { length: 10 }).notNull(), // YYYY-MM-DD format  
+  amount: varchar("amount", { length: 20 }).notNull(),
+  merchant: varchar("merchant", { length: 255 }).notNull(),
+  businessPurpose: text("business_purpose").notNull(),
+  category: varchar("category", { length: 100 }).notNull(), // Business expense category
+  gigId: integer("gig_id").references(() => gigs.id), // Optional link to gig
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
 export const budgets = pgTable("budgets", {
@@ -377,23 +374,37 @@ export const insertInvoiceSchema = createInsertSchema(invoices).omit({
 export type InsertInvoice = z.infer<typeof insertInvoiceSchema>;
 export type Invoice = typeof invoices.$inferSelect;
 
+// Business expense categories for tax deductions
+export const BUSINESS_EXPENSE_CATEGORIES = [
+  "Promo & Marketing",
+  "Car (besides mileage)", 
+  "Platform or Payment Fees",
+  "Hired Help",
+  "Big Gear or Equipment",
+  "Insurance (other than health)",
+  "Legal and Professional Services",
+  "Office Expenses", 
+  "Rent or Lease (equipment or business property)",
+  "Gear Repairs and Maintenance",
+  "Supplies",
+  "Work Travel",
+  "Work Meals (50% deductible)",
+  "Utilities",
+  "Appearance / Wardrobe (for performers/models)",
+  "Other Expenses"
+] as const;
+
+// Zod schemas for validation
+export const insertExpenseSchema = createInsertSchema(expenses).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertExpense = z.infer<typeof insertExpenseSchema>;
+export type Expense = typeof expenses.$inferSelect;
+
 export const insertExpenseCategorySchema = createInsertSchema(expenseCategories).omit({
   id: true,
   createdAt: true,
 });
 
-export const insertExpenseSchema = createInsertSchema(expenses).omit({
-  id: true,
-  createdAt: true,
-}).extend({
-  // Make fields more flexible for the Add Expense form
-  category: z.string().default("Business Expense"),
-  amount: z.string().min(1, "Amount is required"),
-  date: z.string().min(1, "Date is required"),
-  merchant: z.string().optional(),
-  businessPurpose: z.string().optional(),
-  gigId: z.number().optional(),
-});
+
 
 export const insertBudgetSchema = createInsertSchema(budgets).omit({
   id: true,
@@ -402,9 +413,6 @@ export const insertBudgetSchema = createInsertSchema(budgets).omit({
 
 export type InsertExpenseCategory = z.infer<typeof insertExpenseCategorySchema>;
 export type ExpenseCategory = typeof expenseCategories.$inferSelect;
-
-export type InsertExpense = z.infer<typeof insertExpenseSchema>;
-export type Expense = typeof expenses.$inferSelect;
 
 export type InsertBudget = z.infer<typeof insertBudgetSchema>;
 export type Budget = typeof budgets.$inferSelect;
