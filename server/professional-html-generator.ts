@@ -703,11 +703,11 @@ async function prepareReportData(options: ReportOptions): Promise<ReportData> {
   // Add parking expenses from gigs to expenses array as "Work Travel" category
   const parkingExpenses = groupedGigs
     .filter(gig => parseFloat(gig.parkingExpense || '0') > 0)
-    .map(gig => ({
-      id: `gig-parking-${gig.id}`,
+    .map((gig, index) => ({
+      id: parseInt(`${gig.id}${index}000`), // Create unique numeric ID
       userId: gig.userId,
       date: gig.date,
-      amount: parseFloat(gig.parkingExpense || '0'),
+      amount: parseFloat(gig.parkingExpense || '0').toString(),
       merchant: `Parking - ${gig.eventName || 'Gig'}`,
       businessPurpose: `Parking expense for ${gig.eventName || 'gig'} with ${gig.clientName || 'client'}${
         gig.parkingDescription ? ` (${gig.parkingDescription})` : ''
@@ -715,15 +715,13 @@ async function prepareReportData(options: ReportOptions): Promise<ReportData> {
         (gig as any).parkingReimbursed ? ' - REIMBURSED' : ''
       }`,
       category: 'Work Travel',
+      gigId: gig.id,
       createdAt: new Date(),
       updatedAt: new Date()
     }));
   
   // Combine standalone expenses with parking expenses from gigs
   const allExpenses = [...expenses, ...parkingExpenses];
-  
-  // Group multi-day gigs to prevent double counting
-  const groupedGigs = groupMultiDayGigs(gigs);
   
   // Filter completed gigs for income calculations
   const completedGigs = groupedGigs.filter(g => g.status === 'completed' || g.actualPay);
