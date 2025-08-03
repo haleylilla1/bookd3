@@ -7,7 +7,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
-import { ChevronLeft, ChevronRight, Edit2, Save, X, DollarSign, Calendar, Users, TrendingUp, Receipt, Calculator, PiggyBank, FileText, Download } from "lucide-react";
+import { ChevronLeft, ChevronRight, Edit2, Save, X, DollarSign, Calendar, Users, TrendingUp, Receipt, Calculator, PiggyBank, FileText, Download, Trash2 } from "lucide-react";
 import type { Gig, User, Expense } from "@shared/schema";
 
 type TimePeriod = "monthly" | "annual";
@@ -31,6 +31,7 @@ export default function Dashboard() {
   const [showNewExpensesBreakdown, setShowNewExpensesBreakdown] = useState(false);
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
   const hasUpdatedStatusesRef = useRef(false);
+  const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
   
   const { toast } = useToast();
   const queryClient = useQueryClient();
