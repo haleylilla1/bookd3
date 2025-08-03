@@ -19,8 +19,8 @@ import { cn } from "@/lib/utils";
 
 const addExpenseFormSchema = insertExpenseSchema.extend({
   amount: z.string().min(1, "Amount is required").refine(
-    (val) => !isNaN(Number(val)) && Number(val) > 0,
-    "Amount must be a valid positive number"
+    (val) => !isNaN(Number(val)) && Number(val) >= 0,
+    "Amount must be a valid number (0 or greater)"
   ),
   category: z.string().min(1, "Category is required"),
 });
@@ -169,12 +169,13 @@ export default function AddExpenseForm({ onClose, linkedGigId }: AddExpenseFormP
                   <FormItem>
                     <FormLabel className="flex items-center gap-2">
                       <Store className="h-4 w-4" />
-                      Who'd you pay?
+                      Who'd you pay? (optional)
                     </FormLabel>
                     <FormControl>
                       <Input
                         {...field}
-                        placeholder="Store, vendor, or merchant name"
+                        value={field.value || ""}
+                        placeholder="Store, vendor, or merchant name (leave blank if unknown)"
                       />
                     </FormControl>
                     <FormMessage />
