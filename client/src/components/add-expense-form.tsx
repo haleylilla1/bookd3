@@ -13,6 +13,11 @@ import { addExpenseSchema, type ExpenseFormData, getTodayISO } from "@/lib/form-
 import { AmountField, MerchantField, BusinessPurposeField, CategoryField, DateField } from "@/components/ui/form-field-wrapper";
 import { useFormErrorHandler } from "@/hooks/use-form-error-handler";
 
+// Utility function to parse dates consistently across timezones
+const parseGigDate = (dateString: string): Date => {
+  return new Date(dateString + 'T00:00:00');
+};
+
 interface AddExpenseFormProps {
   onClose: () => void;
   linkedGigId?: number; // For gig-linked flow from "Got Paid"
@@ -129,7 +134,7 @@ export default function AddExpenseForm({ onClose, linkedGigId }: AddExpenseFormP
                           <SelectItem value="none" className="h-12 text-base touch-manipulation cursor-pointer">No gig selected</SelectItem>
                           {gigs.map((gig) => (
                             <SelectItem key={gig.id} value={gig.id.toString()} className="h-12 text-base touch-manipulation cursor-pointer">
-                              {gig.eventName} - {gig.clientName} ({new Date(gig.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })})
+                              {gig.eventName} - {gig.clientName} ({parseGigDate(gig.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })})
                             </SelectItem>
                           ))}
                         </SelectContent>
