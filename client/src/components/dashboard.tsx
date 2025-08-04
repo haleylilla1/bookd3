@@ -99,17 +99,22 @@ export default function Dashboard() {
   });
 
   // Fetch gigs for calculations (lightweight version for dashboard performance)
-  const { data: gigs = [], isLoading: gigsLoading, error: gigsError } = useQuery<Gig[]>({
+  const { data: gigsResponse, isLoading: gigsLoading, error: gigsError } = useQuery<{ gigs: Gig[], total: number }>({
     queryKey: ["/api/gigs", { lightweight: true }],
-    queryFn: () => fetch('/api/gigs?lightweight=true').then(res => res.json()),
+    queryFn: () => fetch('/api/gigs?lightweight=true&limit=1000').then(res => res.json()),
     retry: 1,
   });
 
+  const gigs = gigsResponse?.gigs || [];
+
   // Fetch expenses for dashboard
-  const { data: expenses = [], isLoading: expensesLoading } = useQuery<Expense[]>({
+  const { data: expensesResponse, isLoading: expensesLoading } = useQuery<{ expenses: Expense[], total: number }>({
     queryKey: ["/api/expenses"],
+    queryFn: () => fetch('/api/expenses?limit=1000').then(res => res.json()),
     retry: 1,
   });
+
+  const expenses = expensesResponse?.expenses || [];
 
 
 

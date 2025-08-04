@@ -6,6 +6,7 @@ if (!process.env.NODE_ENV) {
 
 import express from "express";
 import cookieParser from "cookie-parser";
+import rateLimit from "express-rate-limit";
 import { registerRoutes } from "./routes";
 // Removed over-engineered startup validation system
 import { setupVite, serveStatic } from "./vite";
@@ -14,10 +15,26 @@ import { handleUnhandledRejections, handleUncaughtExceptions } from "./error-han
 const app = express();
 const port = process.env.PORT || 5000;
 
+// Rate limiting middleware
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 1000, // Limit each IP to 1000 requests per windowMs
+  message: 'Too many requests from this IP, please try again later.',
+  standardHeaders: true, // Return rate limit info in headers
+  legacyHeaders: false, // Disable X-RateLimit-* headers
+});
+
+const strictLimiter = rateLimit({
+  windowMs: 60 * 1000, // 1 minute  
+  max: 100, // Limit to 100 requests per minute for sensitive endpoints
+  message: 'Rate limit exceeded, please slow down.',
+});
+
 // Basic middleware
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
+app.use(limiter); // Apply general rate limiting
 
 async function start() {
   // Set up global error handlers

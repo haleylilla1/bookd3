@@ -55,11 +55,13 @@ export default function CalendarView() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const { data: gigs = [], isLoading } = useQuery<Gig[]>({
+  const { data: gigsResponse, isLoading } = useQuery<{ gigs: Gig[], total: number }>({
     queryKey: ["/api/gigs"],
     staleTime: 5 * 60 * 1000, // Cache for 5 minutes
     retry: 2,
   });
+
+  const gigs = gigsResponse?.gigs || [];
 
   const { data: user } = useQuery({
     queryKey: ["/api/user"],
@@ -296,8 +298,8 @@ export default function CalendarView() {
         grouped.push({
           ...currentGig,
           isMultiDay: currentGig.isMultiDay || false,
-          startDate: currentGig.startDate || undefined,
-          endDate: currentGig.endDate || undefined,
+          startDate: currentGig.startDate || currentGig.date,
+          endDate: currentGig.endDate || currentGig.date,
           gigIds: undefined
         });
       }
@@ -931,7 +933,7 @@ export default function CalendarView() {
                                 if (groupedGig) {
                                   setEditingGig(groupedGig);
                                 } else {
-                                  setEditingGig(gig);
+                                  setEditingGig({ ...gig, isMultiDay: false, startDate: gig.date, endDate: gig.date });
                                 }
                                 setShowDayGigs(false);
                               }}

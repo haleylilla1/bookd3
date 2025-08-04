@@ -84,14 +84,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Gig routes
+  // Gig routes with pagination
   app.get('/api/gigs', requireAuth, async (req: any, res: Response) => {
     try {
       const userId = getUserId(req);
+      const limit = parseInt(req.query.limit as string) || 50;
+      const offset = parseInt(req.query.offset as string) || 0;
+      
       console.log('🔍 Fetching gigs for user:', userId);
-      const gigs = await storage.getGigsByUser(userId);
-      console.log('✅ Gigs fetched successfully:', gigs?.length || 0);
-      res.json(gigs);
+      const gigsData = await storage.getGigsByUser(userId, limit, offset);
+      console.log('✅ Gigs fetched successfully:', gigsData.gigs.length, 'of', gigsData.total);
+      res.json(gigsData);
     } catch (error) {
       console.error('❌ Error fetching gigs:', error);
       res.status(500).json({ error: 'Failed to fetch gigs' });
@@ -365,12 +368,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/gigs/update-statuses', requireAuth, async (req: any, res) => {
     try {
       const userId = getUserId(req);
-      const gigs = await storage.getGigsByUser(userId);
+      const gigsData = await storage.getGigsByUser(userId, 1000); // Get all for status update
       const today = new Date();
       today.setHours(0, 0, 0, 0);
       
       let updatedCount = 0;
-      for (const gig of gigs) {
+      for (const gig of gigsData.gigs) {
         const gigDate = new Date(gig.date);
         gigDate.setHours(0, 0, 0, 0);
         
@@ -487,8 +490,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/expenses', requireAuth, async (req: any, res: Response) => {
     try {
       const userId = getUserId(req);
-      const expenses = await storage.getExpensesByUser(userId);
-      res.json(expenses);
+      const limit = parseInt(req.query.limit as string) || 50;
+      const offset = parseInt(req.query.offset as string) || 0;
+      
+      const expensesData = await storage.getExpensesByUser(userId, limit, offset);
+      res.json(expensesData);
     } catch (error) {
       res.status(500).json({ error: 'Failed to fetch expenses' });
     }

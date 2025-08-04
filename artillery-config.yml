@@ -1,0 +1,96 @@
+# Load testing configuration for Bookd API
+config:
+  target: 'http://localhost:5000'
+  phases:
+    # Warm-up phase
+    - duration: 30
+      arrivalRate: 2
+      name: "Warm-up"
+    # Ramp-up phase  
+    - duration: 60
+      arrivalRate: 5
+      rampTo: 10
+      name: "Ramp-up"
+    # Sustained load
+    - duration: 120
+      arrivalRate: 10
+      name: "Sustained load"
+    # Peak load test
+    - duration: 60
+      arrivalRate: 15
+      rampTo: 25
+      name: "Peak load"
+  defaults:
+    headers:
+      Content-Type: 'application/json'
+  processor: './load-test-processor.js'
+
+scenarios:
+  # Health check endpoint
+  - name: 'Health Check'
+    weight: 10
+    flow:
+      - get:
+          url: '/health'
+          expect:
+            - statusCode: 200
+
+  # API endpoint load testing (requires authentication)
+  - name: 'Gigs API Load Test'
+    weight: 40
+    flow:
+      # Test pagination with different limits
+      - get:
+          url: '/api/gigs?limit=10&offset=0'
+          headers:
+            Cookie: 'session=test-session'
+          expect:
+            - statusCode: [200, 401] # 401 if not authenticated
+      - get:
+          url: '/api/gigs?limit=50&offset=10'
+          headers:
+            Cookie: 'session=test-session'
+          expect:
+            - statusCode: [200, 401]
+
+  # Expenses API load testing
+  - name: 'Expenses API Load Test'
+    weight: 30
+    flow:
+      - get:
+          url: '/api/expenses?limit=25&offset=0'
+          headers:
+            Cookie: 'session=test-session'
+          expect:
+            - statusCode: [200, 401]
+
+  # Dashboard load testing
+  - name: 'Dashboard Load Test'
+    weight: 20
+    flow:
+      - get:
+          url: '/api/dashboard/optimized?lightweight=true'
+          headers:
+            Cookie: 'session=test-session'
+          expect:
+            - statusCode: [200, 401]
+
+# Performance thresholds
+expect:
+  http:
+    response_time:
+      p95: 1000  # 95% of requests should complete within 1 second
+      p99: 2000  # 99% of requests should complete within 2 seconds
+  scenarios:
+    - name: 'Health Check'
+      expect:
+        - http.response_time.p95: 100  # Health check should be very fast
+    - name: 'Gigs API Load Test'
+      expect:
+        - http.response_time.p95: 800
+    - name: 'Expenses API Load Test'
+      expect:
+        - http.response_time.p95: 600
+    - name: 'Dashboard Load Test'
+      expect:
+        - http.response_time.p95: 1200  # Dashboard can be slightly slower

@@ -22,9 +22,11 @@ export default function GigLog() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const { data: gigs = [], isLoading } = useQuery<Gig[]>({
+  const { data: gigsResponse, isLoading } = useQuery<{ gigs: Gig[], total: number }>({
     queryKey: ["/api/gigs"],
   });
+
+  const gigs = gigsResponse?.gigs || [];
 
   const updateGigMutation = useMutation({
     mutationFn: async (gigData: { id: number; data: Partial<Gig> }) => {
@@ -345,7 +347,7 @@ export default function GigLog() {
             setGotPaidGig(null);
           }}
           gig={gotPaidGig}
-          onSubmit={(data) => gotPaidMutation.mutate({ gigId: gotPaidGig.id, data })}
+          onSave={(data) => gotPaidMutation.mutate({ gigId: gotPaidGig.id, data })}
           isLoading={gotPaidMutation.isPending}
         />
       )}
@@ -492,34 +494,14 @@ function GigEditForm({ gig, onSave, onCancel, isLoading }: GigEditFormProps) {
         />
       </div>
 
-      <div className="flex justify-between items-center pt-4">
-        <AutoSaveIndicator 
-          isSaving={isLoading}
-          lastSaved={autoSaveLastSaved}
-          isOnline={isOnline}
-        />
-        <div className="flex gap-2">
-          <Button type="button" variant="outline" onClick={onCancel}>
-            Cancel
-          </Button>
-          <Button type="submit" disabled={isLoading}>
-            {isLoading ? "Saving..." : "Save Changes"}
-          </Button>
-        </div>
+      <div className="flex justify-end gap-2 pt-4">
+        <Button type="button" variant="outline" onClick={onCancel}>
+          Cancel
+        </Button>
+        <Button type="submit" disabled={isLoading}>
+          {isLoading ? "Saving..." : "Save Changes"}
+        </Button>
       </div>
-      
-      {/* Simple recovery notification */}
-      {showRecoveryDialog && (
-        <div className="fixed bottom-4 right-4 bg-blue-500 text-white p-4 rounded-lg shadow-lg">
-          <p>Unsaved changes detected</p>
-          <button 
-            onClick={() => setShowRecoveryDialog(false)}
-            className="mt-2 px-3 py-1 bg-white text-blue-500 rounded"
-          >
-            Dismiss
-          </button>
-        </div>
-      )}
     </form>
   );
 }
