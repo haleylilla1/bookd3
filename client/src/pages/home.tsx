@@ -6,6 +6,7 @@ import AddExpenseForm from "@/components/add-expense-form";
 import Dashboard from "@/components/dashboard";
 import Profile from "@/components/profile";
 import BottomNavigation from "@/components/bottom-navigation";
+import SimpleMobileNav from "@/components/simple-mobile-nav";
 import AppHeader from "@/components/app-header";
 import DesktopSidebar from "@/components/desktop-sidebar";
 import { useAuth } from "@/lib/replit-auth";
@@ -60,29 +61,9 @@ export default function Home() {
           {renderScreen()}
         </main>
 
-        {/* Floating Action Buttons - Hidden on desktop (buttons are in sidebar) */}
-        {currentScreen !== "gig-form" && currentScreen !== "expense-form" && (
-          <div className="fixed bottom-20 right-4 flex flex-col gap-3 lg:hidden z-40">
-            <Button
-              onClick={() => setCurrentScreen("expense-form")}
-              className="px-4 py-3 rounded-full shadow-lg hover:scale-105 transition-all duration-200 bg-[#c258d1] hover:bg-green-700 text-white font-medium"
-            >
-              <Receipt className="w-4 h-4 mr-2" />
-              Add Expense
-            </Button>
-            <Button
-              onClick={() => setCurrentScreen("gig-form")}
-              className="px-4 py-3 rounded-full shadow-lg hover:scale-105 transition-all duration-200 bg-primary hover:bg-primary/90 text-white font-medium"
-            >
-              <Plus className="w-4 h-4 mr-2" />
-              Add Gig
-            </Button>
-          </div>
-        )}
-
-        {/* Bottom Navigation - Hidden on desktop */}
-        <div className="lg:hidden">
-          <BottomNavigation 
+        {/* Mobile Navigation - Always visible on mobile */}
+        <div className="block lg:hidden">
+          <SimpleMobileNav 
             currentScreen={currentScreen} 
             onScreenChange={setCurrentScreen} 
           />
