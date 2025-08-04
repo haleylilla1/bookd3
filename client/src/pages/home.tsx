@@ -62,7 +62,7 @@ export default function Home() {
 
         {/* Floating Action Buttons - Hidden on desktop (buttons are in sidebar) */}
         {currentScreen !== "gig-form" && currentScreen !== "expense-form" && (
-          <div className="fixed bottom-20 right-4 flex flex-col gap-3 lg:hidden">
+          <div className="fixed right-4 flex flex-col gap-3 lg:hidden z-40" style={{ bottom: 'calc(80px + env(safe-area-inset-bottom))' }}>
             <Button
               onClick={() => setCurrentScreen("expense-form")}
               className="px-4 py-3 rounded-full shadow-lg hover:scale-105 transition-all duration-200 bg-[#c258d1] hover:bg-green-700 text-white font-medium"
