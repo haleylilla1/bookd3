@@ -714,12 +714,8 @@ async function prepareReportData(options: ReportOptions): Promise<ReportData> {
   const gigs = await storage.getGigsByDateRange(options.userId, startDate, endDate);
   const expenses = await storage.getExpensesByDateRange(options.userId, startDate, endDate);
   
-  console.log(`📊 Raw gigs retrieved: ${gigs.length}`);
-  console.log(`📅 Date range: ${startDate} to ${endDate}`);
-  
   // Group multi-day gigs to prevent double counting
   const groupedGigs = groupMultiDayGigs(gigs);
-  console.log(`🎯 After grouping: ${groupedGigs.length} unique gigs`);
   
   // Add parking expenses from gigs to expenses array as "Work Travel" category
   const parkingExpenses = groupedGigs
@@ -746,17 +742,13 @@ async function prepareReportData(options: ReportOptions): Promise<ReportData> {
   
   // Filter completed gigs for income calculations
   const completedGigs = groupedGigs.filter(g => g.status === 'completed' || g.actualPay);
-  console.log(`💰 Completed gigs after filtering: ${completedGigs.length}`);
   
   // Calculate totals
   const totalIncome = completedGigs.reduce((sum, gig) => {
     const actualPay = parseFloat(gig.actualPay || '0');
     const tips = parseFloat(gig.tips || '0');
-    const gigTotal = actualPay + tips;
-    console.log(`💵 ${gig.eventName}: $${actualPay} + $${tips} = $${gigTotal}`);
-    return sum + gigTotal;
+    return sum + actualPay + tips;
   }, 0);
-  console.log(`📈 Total income calculated: $${totalIncome}`);
 
   // Calculate gig-related expenses (legacy parking/other expenses)
   const gigExpenses = completedGigs.reduce((sum, gig) => {
