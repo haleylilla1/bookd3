@@ -61,11 +61,35 @@ export default function Home() {
           {renderScreen()}
         </main>
 
-        {/* Mobile Navigation - Force visible */}
-        <SimpleMobileNav 
-          currentScreen={currentScreen} 
-          onScreenChange={setCurrentScreen} 
-        />
+        {/* DEBUG: Test navigation rendering */}
+        <div style={{ 
+          position: 'fixed', 
+          bottom: '0px', 
+          left: '0px', 
+          right: '0px', 
+          backgroundColor: 'red', 
+          height: '60px', 
+          zIndex: 9999,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          color: 'white',
+          fontSize: '18px'
+        }}>
+          DEBUG: NAVIGATION TEST
+        </div>
+        
+        <div style={{ 
+          position: 'fixed', 
+          bottom: '80px', 
+          right: '16px', 
+          backgroundColor: 'blue', 
+          padding: '20px', 
+          zIndex: 9998,
+          color: 'white'
+        }}>
+          DEBUG: BUTTONS TEST
+        </div>
       </div>
     </div>
   );
