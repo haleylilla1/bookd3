@@ -284,16 +284,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/reports/html', requireAuth, async (req: any, res) => {
     try {
       const userId = getUserId(req);
-      const { month, year, type = 'monthly' } = req.query;
+      const { month, year, quarter, period = 'monthly' } = req.query;
       
       const { generateProfessionalHTML } = await import('./professional-html-generator');
-      const reportRequest = {
+      const reportRequest: any = {
         userId,
-        month: parseInt(month as string),
         year: parseInt(year as string),
-        type: type as string,
-        period: (type === 'annual' ? 'annual' : 'monthly') as 'monthly' | 'annual'
+        period: period as 'monthly' | 'quarterly' | 'annual'
       };
+      
+      if (period === 'monthly' && month) {
+        reportRequest.month = parseInt(month as string);
+      } else if (period === 'quarterly' && quarter) {
+        reportRequest.quarter = parseInt(quarter as string);
+      }
       
       const htmlContent = await generateProfessionalHTML(reportRequest);
       
@@ -309,16 +313,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/reports/pdf', requireAuth, async (req: any, res) => {
     try {
       const userId = getUserId(req);
-      const { month, year, type = 'monthly' } = req.query;
+      const { month, year, quarter, period = 'monthly' } = req.query;
       
       const { generateProfessionalHTML } = await import('./professional-html-generator');
-      const reportRequest = {
+      const reportRequest: any = {
         userId,
-        month: parseInt(month as string),
         year: parseInt(year as string),
-        type: type as string,
-        period: (type === 'annual' ? 'annual' : 'monthly') as 'monthly' | 'annual'
+        period: period as 'monthly' | 'quarterly' | 'annual'
       };
+      
+      if (period === 'monthly' && month) {
+        reportRequest.month = parseInt(month as string);
+      } else if (period === 'quarterly' && quarter) {
+        reportRequest.quarter = parseInt(quarter as string);
+      }
       
       const htmlContent = await generateProfessionalHTML(reportRequest);
       
