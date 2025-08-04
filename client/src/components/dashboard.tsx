@@ -27,20 +27,23 @@ const parseGigDate = (dateString: string): Date => {
   return new Date(dateString + 'T00:00:00');
 };
 
-// IRS 2025 Quarterly Tax Dates
+// IRS 2025 Quarterly Tax Dates (Income Earned Periods)
 const getQuarterDateRange = (year: number, quarter: number) => {
   const quarterRanges = {
     1: { start: new Date(year, 0, 1), end: new Date(year, 2, 31) }, // Jan 1 - Mar 31
-    2: { start: new Date(year, 3, 1), end: new Date(year, 5, 30) }, // Apr 1 - Jun 30
-    3: { start: new Date(year, 6, 1), end: new Date(year, 8, 30) }, // Jul 1 - Sep 30
-    4: { start: new Date(year, 9, 1), end: new Date(year, 11, 31) } // Oct 1 - Dec 31
+    2: { start: new Date(year, 3, 1), end: new Date(year, 4, 31) }, // Apr 1 - May 31
+    3: { start: new Date(year, 5, 1), end: new Date(year, 7, 31) }, // Jun 1 - Aug 31
+    4: { start: new Date(year, 8, 1), end: new Date(year, 11, 31) } // Sep 1 - Dec 31
   };
   return quarterRanges[quarter as keyof typeof quarterRanges];
 };
 
 const getCurrentQuarter = (date: Date): number => {
-  const month = date.getMonth();
-  return Math.floor(month / 3) + 1;
+  const month = date.getMonth() + 1; // Convert to 1-12
+  if (month >= 1 && month <= 3) return 1; // Jan-Mar
+  if (month >= 4 && month <= 5) return 2; // Apr-May
+  if (month >= 6 && month <= 8) return 3; // Jun-Aug
+  return 4; // Sep-Dec
 };
 
 export default function Dashboard() {
@@ -451,10 +454,29 @@ export default function Dashboard() {
         newDate.setMonth(newDate.getMonth() + 1);
       }
     } else if (selectedPeriod === "quarterly") {
+      const currentQuarter = getCurrentQuarter(currentDate);
+      let targetQuarter: number;
+      
       if (direction === "prev") {
-        newDate.setMonth(newDate.getMonth() - 3);
+        targetQuarter = currentQuarter === 1 ? 4 : currentQuarter - 1;
       } else {
-        newDate.setMonth(newDate.getMonth() + 3);
+        targetQuarter = currentQuarter === 4 ? 1 : currentQuarter + 1;
+      }
+      
+      // Set date to first month of target quarter
+      if (targetQuarter === 1) {
+        newDate.setMonth(0); // January
+        if (direction === "prev" && currentQuarter === 1) {
+          newDate.setFullYear(newDate.getFullYear() - 1);
+        } else if (direction === "next" && currentQuarter === 4) {
+          newDate.setFullYear(newDate.getFullYear() + 1);
+        }
+      } else if (targetQuarter === 2) {
+        newDate.setMonth(3); // April
+      } else if (targetQuarter === 3) {
+        newDate.setMonth(5); // June
+      } else { // targetQuarter === 4
+        newDate.setMonth(8); // September
       }
     } else if (selectedPeriod === "annual") {
       if (direction === "prev") {
@@ -731,10 +753,10 @@ export default function Dashboard() {
               {(() => {
                 const quarter = getCurrentQuarter(currentDate);
                 const quarterRanges = {
-                  1: "Jan 1 - Mar 31",
-                  2: "Apr 1 - Jun 30", 
-                  3: "Jul 1 - Sep 30",
-                  4: "Oct 1 - Dec 31"
+                  1: "Jan 1 - Mar 31 (Due Apr 15)",
+                  2: "Apr 1 - May 31 (Due Jun 15)", 
+                  3: "Jun 1 - Aug 31 (Due Sep 15)",
+                  4: "Sep 1 - Dec 31 (Due Jan 15)"
                 };
                 return quarterRanges[quarter as keyof typeof quarterRanges];
               })()}

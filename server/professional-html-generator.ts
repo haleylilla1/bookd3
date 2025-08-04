@@ -691,14 +691,19 @@ async function prepareReportData(options: ReportOptions): Promise<ReportData> {
     const nextYear = options.month === 12 ? options.year + 1 : options.year;
     endDate = `${nextYear}-${nextMonth.toString().padStart(2, '0')}-01`;
   } else if (options.period === 'quarterly' && options.quarter) {
-    const quarterStartMonth = (options.quarter - 1) * 3 + 1;
-    const quarterEndMonth = options.quarter * 3;
-    startDate = `${options.year}-${quarterStartMonth.toString().padStart(2, '0')}-01`;
-    
-    if (quarterEndMonth === 12) {
-      endDate = `${options.year + 1}-01-01`;
-    } else {
-      endDate = `${options.year}-${(quarterEndMonth + 1).toString().padStart(2, '0')}-01`;
+    // IRS Quarterly Tax Periods (Income Earned Periods)
+    if (options.quarter === 1) {
+      startDate = `${options.year}-01-01`; // Jan 1
+      endDate = `${options.year}-04-01`;   // Mar 31 (end date is exclusive)
+    } else if (options.quarter === 2) {
+      startDate = `${options.year}-04-01`; // Apr 1
+      endDate = `${options.year}-06-01`;   // May 31 (end date is exclusive)
+    } else if (options.quarter === 3) {
+      startDate = `${options.year}-06-01`; // Jun 1
+      endDate = `${options.year}-09-01`;   // Aug 31 (end date is exclusive)
+    } else { // quarter 4 or fallback
+      startDate = `${options.year}-09-01`; // Sep 1
+      endDate = `${options.year + 1}-01-01`; // Dec 31 (end date is exclusive)
     }
   } else {
     startDate = `${options.year}-01-01`;
