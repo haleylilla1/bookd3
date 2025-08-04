@@ -72,9 +72,9 @@
     @apply font-sans antialiased bg-background text-foreground;
   }
 
-  /* iOS Safari zoom prevention and mobile fixes */
+  /* iOS Safari zoom prevention and mobile fixes - GLOBAL APPLICATION */
   input, textarea, select, button {
-    font-size: 16px !important; /* Prevent iOS zoom */
+    font-size: 16px !important; /* Prevent iOS zoom on ALL inputs */
     min-height: 44px !important; /* Touch targets */
     padding: 12px 16px !important;
     touch-action: manipulation !important;
@@ -85,22 +85,35 @@
     -webkit-touch-callout: none;
     -webkit-user-select: none;
     user-select: none;
+    -webkit-text-size-adjust: 100% !important;
+    text-size-adjust: 100% !important;
   }
 
-  /* Specific input field fixes for iOS */
+  /* Specific input field fixes for iOS - ALL FORM INPUTS */
   input[type="text"], 
   input[type="email"], 
   input[type="password"], 
   input[type="number"], 
   input[type="tel"], 
   input[type="search"],
-  textarea {
-    -webkit-appearance: none;
-    -webkit-border-radius: 0;
-    border-radius: 6px;
-    background-clip: padding-box;
-    -webkit-user-select: text;
-    user-select: text;
+  input[type="date"],
+  input[type="time"],
+  input[type="datetime-local"],
+  input[type="month"],
+  input[type="week"],
+  textarea,
+  select {
+    font-size: 16px !important; /* Critical for iOS zoom prevention */
+    -webkit-appearance: none !important;
+    -webkit-border-radius: 0 !important;
+    border-radius: 6px !important;
+    background-clip: padding-box !important;
+    -webkit-user-select: text !important;
+    user-select: text !important;
+    -webkit-text-size-adjust: 100% !important;
+    text-size-adjust: 100% !important;
+    transform: translateZ(0) !important; /* Hardware acceleration */
+    -webkit-transform: translateZ(0) !important;
   }
 
   button, [role="button"] {
@@ -167,13 +180,21 @@
       -webkit-overflow-scrolling: touch;
     }
 
-    /* Prevent iOS zoom in dialog inputs */
+    /* Prevent iOS zoom in ALL dialog and form inputs */
     [data-radix-dialog-content] input,
     [data-radix-dialog-content] textarea,
-    [data-radix-dialog-content] select {
+    [data-radix-dialog-content] select,
+    form input,
+    form textarea,
+    form select,
+    .form-field input,
+    .form-field textarea,
+    .form-field select {
       font-size: 16px !important;
-      -webkit-text-size-adjust: 100%;
-      transform: translateZ(0);
+      -webkit-text-size-adjust: 100% !important;
+      text-size-adjust: 100% !important;
+      transform: translateZ(0) !important;
+      -webkit-transform: translateZ(0) !important;
     }
 
     /* Ensure virtual keyboard doesn't break layout */
@@ -231,30 +252,72 @@
     }
   }
 
-  /* Additional iOS Safari fixes for better mobile experience */
-  @media screen and (-webkit-min-device-pixel-ratio: 2) {
-    /* High DPI iOS devices */
-    input, textarea, select {
+  /* Additional iOS Safari fixes for better mobile experience - ALL DEVICES */
+  @media screen and (-webkit-min-device-pixel-ratio: 1) {
+    /* ALL iOS devices including older ones */
+    input, textarea, select, button {
       font-size: 16px !important;
-      -webkit-text-size-adjust: none;
+      -webkit-text-size-adjust: 100% !important;
+      text-size-adjust: 100% !important;
+    }
+    
+    /* Force 16px on any missed form elements */
+    [class*="input"], [class*="field"], [class*="form"] input,
+    [class*="input"], [class*="field"], [class*="form"] textarea,
+    [class*="input"], [class*="field"], [class*="form"] select {
+      font-size: 16px !important;
     }
   }
 
-  /* Fix iOS keyboard behavior */
+  /* Fix iOS keyboard behavior - ENTIRE APP */
   @supports (-webkit-touch-callout: none) {
-    /* Only target iOS Safari */
-    input:focus, textarea:focus, select:focus {
-      -webkit-transform: translateZ(0);
-      transform: translateZ(0);
-      -webkit-user-select: text;
-      user-select: text;
+    /* Only target iOS Safari - GLOBAL FIXES */
+    input:focus, textarea:focus, select:focus, 
+    input:active, textarea:active, select:active {
+      font-size: 16px !important; /* Prevent zoom on focus/active */
+      -webkit-transform: translateZ(0) !important;
+      transform: translateZ(0) !important;
+      -webkit-user-select: text !important;
+      user-select: text !important;
+      -webkit-text-size-adjust: 100% !important;
+      text-size-adjust: 100% !important;
     }
     
     /* Prevent body scroll when iOS keyboard opens */
     body.keyboard-open {
       position: fixed;
       width: 100%;
+      overflow: hidden;
     }
+    
+    /* Override any library styles that might cause zoom */
+    * {
+      -webkit-text-size-adjust: 100% !important;
+      text-size-adjust: 100% !important;
+    }
+    
+    /* Specific overrides for common UI libraries and app components */
+    [class*="shadcn"] input, [class*="radix"] input,
+    [class*="shadcn"] textarea, [class*="radix"] textarea,
+    [class*="shadcn"] select, [class*="radix"] select,
+    /* App-specific form components */
+    .expense-form input, .expense-form textarea, .expense-form select,
+    .gig-form input, .gig-form textarea, .gig-form select,
+    .got-paid-dialog input, .got-paid-dialog textarea, .got-paid-dialog select,
+    .add-expense-dialog input, .add-expense-dialog textarea, .add-expense-dialog select,
+    .dashboard input, .dashboard textarea, .dashboard select,
+    .auth-form input, .auth-form textarea, .auth-form select {
+      font-size: 16px !important;
+      -webkit-text-size-adjust: 100% !important;
+      text-size-adjust: 100% !important;
+    }
+  }
+
+  /* Final catch-all for any missed inputs - highest priority */
+  input, textarea, select {
+    font-size: 16px !important;
+    -webkit-text-size-adjust: 100% !important;
+    text-size-adjust: 100% !important;
   }
 }
 
