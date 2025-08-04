@@ -726,6 +726,20 @@ export default function Dashboard() {
         
         <div className="text-center">
           <div className="font-semibold text-lg text-gray-900">{getPeriodText()}</div>
+          {selectedPeriod === "quarterly" && (
+            <div className="text-xs text-gray-500 mb-1">
+              {(() => {
+                const quarter = getCurrentQuarter(currentDate);
+                const quarterRanges = {
+                  1: "Jan 1 - Mar 31",
+                  2: "Apr 1 - Jun 30", 
+                  3: "Jul 1 - Sep 30",
+                  4: "Oct 1 - Dec 31"
+                };
+                return quarterRanges[quarter as keyof typeof quarterRanges];
+              })()}
+            </div>
+          )}
           <div className="text-sm text-gray-600">
             {periodStats.totalGigs} total gigs • {periodStats.completedGigs} completed
           </div>
