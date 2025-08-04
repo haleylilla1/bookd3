@@ -742,9 +742,8 @@ async function prepareReportData(options: ReportOptions): Promise<ReportData> {
   // Combine standalone expenses with parking expenses from gigs
   const allExpenses = [...expenses, ...parkingExpenses];
   
-  // Filter completed gigs for income calculations
-  const completedGigs = groupedGigs.filter(g => g.status === 'completed' || g.actualPay);
-  
+  // Filter completed gigs for income calculations (match dashboard logic exactly)
+  const completedGigs = groupedGigs.filter(g => g.status === 'completed');
   // Calculate totals using tax-smart logic (same as dashboard)
   let totalIncome = 0; // Taxable income
   let totalReceived = 0; // Gross income
