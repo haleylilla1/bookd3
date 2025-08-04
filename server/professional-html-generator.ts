@@ -873,9 +873,29 @@ function groupMultiDayGigs(gigs: Gig[]): Gig[] {
     }
     
     if (similarGigs.length > 1) {
-      // Multi-day gig - Use only first entry's amount (same as dashboard logic)
+      // Multi-day gig - Sum up the amounts from all days
+      const totalActualPay = similarGigs.reduce((sum, gig) => {
+        return sum + parseFloat(gig.actualPay || '0');
+      }, 0);
+      
+      const totalTips = similarGigs.reduce((sum, gig) => {
+        return sum + parseFloat(gig.tips || '0');
+      }, 0);
+      
+      const totalParkingExpense = similarGigs.reduce((sum, gig) => {
+        return sum + parseFloat(gig.parkingExpense || '0');
+      }, 0);
+      
+      const totalMileage = similarGigs.reduce((sum, gig) => {
+        return sum + parseInt(String(gig.mileage || 0)) || 0;
+      }, 0);
+      
       grouped.push({
-        ...similarGigs[0], // Use first entry data completely
+        ...similarGigs[0], // Use first entry's non-financial data
+        actualPay: totalActualPay.toString(),
+        tips: totalTips.toString(),
+        parkingExpense: totalParkingExpense.toString(),
+        mileage: totalMileage,
         date: `${similarGigs[0].date} - ${similarGigs[similarGigs.length - 1].date}`
       });
     } else {
