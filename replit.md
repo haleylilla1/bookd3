@@ -91,6 +91,17 @@ Bookd is a mobile-first gig worker companion app designed for comprehensive fina
 
 - **MOBILE SCROLLING FIX COMPLETED (August 2025)**: Resolved critical mobile UX issue where virtual keyboards blocked access to navigation buttons in dialogs. Implemented simplified scrolling approach with proper bottom padding (96px) and sticky navigation for reliable mobile experience across all devices.
 
+- **COMPREHENSIVE iOS SAFARI ZOOM PREVENTION COMPLETED (August 2025)**: Implemented enterprise-grade iOS Safari zoom prevention across the entire application. Features include:
+  - Global 16px font size enforcement on ALL input fields, textareas, and select elements
+  - Enhanced HTML meta tags with shrink-to-fit=no and apple-mobile-web-app configurations
+  - Dynamic MutationObserver monitoring for React re-renders and new form components
+  - Hardware acceleration with translateZ(0) for smooth input interactions
+  - Double-tap zoom prevention and touch manipulation controls
+  - Comprehensive CSS coverage including all UI library components and app-specific forms
+  - Virtual keyboard detection with background scroll prevention
+  - Focus/active state zoom prevention with webkit text-size-adjust controls
+  - Coverage for Got Paid dialog, expense forms, gig forms, dashboard inputs, and authentication forms
+
 - **TECHNICAL DEBT FIXES COMPLETED (August 2025)**: Major refactoring to eliminate code duplication and improve maintainability:
   - **Centralized Form Schemas**: Created `/client/src/lib/form-schemas.ts` with reusable validation schemas for expenses and gigs, eliminating duplicate validation logic across components
   - **Reusable Form Components**: Built `/client/src/components/ui/form-field-wrapper.tsx` with mobile-optimized field components (AmountField, MerchantField, BusinessPurposeField, etc.) featuring consistent touch-friendly sizing (h-12, text-base)

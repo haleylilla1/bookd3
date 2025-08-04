@@ -11,6 +11,8 @@ export class IOSMobileFixes {
   static init(): void {
     if (!this.isIOS()) return;
 
+    console.log('🍎 Initializing iOS Safari fixes for entire app');
+
     // Prevent zoom on input focus
     this.preventInputZoom();
     
@@ -19,29 +21,80 @@ export class IOSMobileFixes {
     
     // Fix viewport issues
     this.fixViewport();
+    
+    // Additional global fixes
+    this.applyGlobalIOSFixes();
+  }
+
+  private static applyGlobalIOSFixes(): void {
+    // Prevent double-tap zoom globally
+    document.addEventListener('touchstart', (e) => {
+      if (e.touches.length > 1) {
+        e.preventDefault();
+      }
+    }, { passive: false });
+
+    let lastTouchEnd = 0;
+    document.addEventListener('touchend', (e) => {
+      const now = (new Date()).getTime();
+      if (now - lastTouchEnd <= 300) {
+        e.preventDefault();
+      }
+      lastTouchEnd = now;
+    }, { passive: false });
+
+    // Add event listeners for focus events to ensure zoom prevention
+    document.addEventListener('focusin', (e) => {
+      const target = e.target as HTMLElement;
+      if (target.matches('input, textarea, select')) {
+        target.style.fontSize = '16px';
+        target.style.webkitTextSizeAdjust = '100%';
+        target.style.textSizeAdjust = '100%';
+      }
+    });
   }
 
   private static preventInputZoom(): void {
-    // Ensure all inputs have 16px font size to prevent zoom
-    const inputs = document.querySelectorAll('input, textarea, select');
-    inputs.forEach((input) => {
-      const element = input as HTMLElement;
+    // Ensure ALL inputs throughout the app have 16px font size to prevent zoom
+    const applyZoomPrevention = (element: HTMLElement) => {
       element.style.fontSize = '16px';
       element.style.webkitTextSizeAdjust = '100%';
+      element.style.textSizeAdjust = '100%';
+      element.style.webkitTransform = 'translateZ(0)';
+      element.style.transform = 'translateZ(0)';
+    };
+
+    // Apply to existing inputs
+    const inputs = document.querySelectorAll('input, textarea, select, button[type="submit"]');
+    inputs.forEach((input) => {
+      applyZoomPrevention(input as HTMLElement);
     });
 
-    // Listen for dynamically added inputs
+    // Listen for dynamically added inputs (React re-renders, new forms, etc.)
     const observer = new MutationObserver((mutations) => {
       mutations.forEach((mutation) => {
         mutation.addedNodes.forEach((node) => {
           if (node.nodeType === Node.ELEMENT_NODE) {
             const element = node as Element;
-            const newInputs = element.querySelectorAll('input, textarea, select');
+            
+            // Check if the node itself is an input
+            if (element.matches('input, textarea, select, button[type="submit"]')) {
+              applyZoomPrevention(element as HTMLElement);
+            }
+            
+            // Check for child inputs
+            const newInputs = element.querySelectorAll('input, textarea, select, button[type="submit"]');
             newInputs.forEach((input) => {
-              const inputElement = input as HTMLElement;
-              inputElement.style.fontSize = '16px';
-              inputElement.style.webkitTextSizeAdjust = '100%';
+              applyZoomPrevention(input as HTMLElement);
             });
+            
+            // Special handling for form components and dialogs
+            if (element.matches('[data-radix-dialog-content], form, [class*="form"], [class*="dialog"]')) {
+              const formInputs = element.querySelectorAll('input, textarea, select');
+              formInputs.forEach((input) => {
+                applyZoomPrevention(input as HTMLElement);
+              });
+            }
           }
         });
       });
