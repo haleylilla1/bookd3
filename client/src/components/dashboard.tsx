@@ -18,7 +18,7 @@ import { useToast } from "@/hooks/use-toast";
 import type { Gig, User, Expense } from "@shared/schema";
 import { BUSINESS_EXPENSE_CATEGORIES } from "@shared/schema";
 
-type TimePeriod = "monthly" | "annual";
+type TimePeriod = "monthly" | "quarterly" | "annual";
 
 type ExpenseEditFormData = ExpenseFormData;
 
@@ -27,9 +27,25 @@ const parseGigDate = (dateString: string): Date => {
   return new Date(dateString + 'T00:00:00');
 };
 
+// IRS 2025 Quarterly Tax Dates
+const getQuarterDateRange = (year: number, quarter: number) => {
+  const quarterRanges = {
+    1: { start: new Date(year, 0, 1), end: new Date(year, 2, 31) }, // Jan 1 - Mar 31
+    2: { start: new Date(year, 3, 1), end: new Date(year, 5, 30) }, // Apr 1 - Jun 30
+    3: { start: new Date(year, 6, 1), end: new Date(year, 8, 30) }, // Jul 1 - Sep 30
+    4: { start: new Date(year, 9, 1), end: new Date(year, 11, 31) } // Oct 1 - Dec 31
+  };
+  return quarterRanges[quarter as keyof typeof quarterRanges];
+};
+
+const getCurrentQuarter = (date: Date): number => {
+  const month = date.getMonth();
+  return Math.floor(month / 3) + 1;
+};
+
 export default function Dashboard() {
   const [selectedPeriod, setSelectedPeriod] = useState<TimePeriod>("monthly");
-  const [editingGoal, setEditingGoal] = useState<"monthly" | "annual" | null>(null);
+  const [editingGoal, setEditingGoal] = useState<"monthly" | "quarterly" | "annual" | null>(null);
   const [goalAmount, setGoalAmount] = useState("");
   const [currentDate, setCurrentDate] = useState(new Date());
   const [showEarningsBreakdown, setShowEarningsBreakdown] = useState(false);
@@ -197,6 +213,10 @@ export default function Dashboard() {
       if (selectedPeriod === "monthly") {
         return gigDate.getUTCMonth() === currentUtcDate.getUTCMonth() && 
                gigDate.getUTCFullYear() === currentUtcDate.getUTCFullYear();
+      } else if (selectedPeriod === "quarterly") {
+        const quarter = getCurrentQuarter(currentUtcDate);
+        const quarterRange = getQuarterDateRange(currentUtcDate.getUTCFullYear(), quarter);
+        return gigDate >= quarterRange.start && gigDate <= quarterRange.end;
       } else {
         return gigDate.getUTCFullYear() === currentUtcDate.getUTCFullYear();
       }
@@ -207,13 +227,20 @@ export default function Dashboard() {
   const currentPeriodExpenses = useMemo(() => {
     if (!Array.isArray(expenses)) return [];
     
-    const startDate = selectedPeriod === "monthly" 
-      ? new Date(currentDate.getFullYear(), currentDate.getMonth(), 1)
-      : new Date(currentDate.getFullYear(), 0, 1);
+    let startDate: Date, endDate: Date;
     
-    const endDate = selectedPeriod === "monthly"
-      ? new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0)
-      : new Date(currentDate.getFullYear(), 11, 31);
+    if (selectedPeriod === "monthly") {
+      startDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
+      endDate = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
+    } else if (selectedPeriod === "quarterly") {
+      const quarter = getCurrentQuarter(currentDate);
+      const quarterRange = getQuarterDateRange(currentDate.getFullYear(), quarter);
+      startDate = quarterRange.start;
+      endDate = quarterRange.end;
+    } else {
+      startDate = new Date(currentDate.getFullYear(), 0, 1);
+      endDate = new Date(currentDate.getFullYear(), 11, 31);
+    }
 
     const filtered = expenses.filter(expense => {
       const expenseDate = new Date(expense.date + 'T00:00:00');
@@ -403,6 +430,9 @@ export default function Dashboard() {
     switch (selectedPeriod) {
       case "monthly":
         return currentDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+      case "quarterly":
+        const quarter = getCurrentQuarter(currentDate);
+        return `Q${quarter} ${currentDate.getFullYear()}`;
       case "annual":
         return currentDate.getFullYear().toString();
       default:
@@ -420,6 +450,12 @@ export default function Dashboard() {
       } else {
         newDate.setMonth(newDate.getMonth() + 1);
       }
+    } else if (selectedPeriod === "quarterly") {
+      if (direction === "prev") {
+        newDate.setMonth(newDate.getMonth() - 3);
+      } else {
+        newDate.setMonth(newDate.getMonth() + 3);
+      }
     } else if (selectedPeriod === "annual") {
       if (direction === "prev") {
         newDate.setFullYear(newDate.getFullYear() - 1);
@@ -432,7 +468,7 @@ export default function Dashboard() {
   };
 
   // Goal management functions
-  const startEditingGoal = (period: "monthly" | "annual") => {
+  const startEditingGoal = (period: "monthly" | "quarterly" | "annual") => {
     setEditingGoal(period);
     setGoalAmount(currentGoal?.goalAmount || "");
   };
@@ -459,6 +495,9 @@ export default function Dashboard() {
       
       if (selectedPeriod === 'monthly') {
         params.append('month', month.toString());
+      } else if (selectedPeriod === 'quarterly') {
+        const quarter = getCurrentQuarter(currentDate);
+        params.append('quarter', quarter.toString());
       }
       
       console.log('Opening HTML report with params:', params.toString());
@@ -468,7 +507,8 @@ export default function Dashboard() {
       window.open(reportUrl, '_blank');
       
       toast({
-        title: `${selectedPeriod === 'monthly' ? 'Monthly' : 'Annual'} Income Report Opened`,
+        title: `${selectedPeriod === 'monthly' ? 'Monthly' : 
+               selectedPeriod === 'quarterly' ? 'Quarterly' : 'Annual'} Income Report Opened`,
         description: "Your comprehensive income report has been opened in a new tab.",
         duration: 3000,
       });
@@ -656,6 +696,14 @@ export default function Dashboard() {
           Monthly
         </Button>
         <Button 
+          variant={selectedPeriod === "quarterly" ? "default" : "ghost"} 
+          size="sm" 
+          className="flex-1"
+          onClick={() => setSelectedPeriod("quarterly")}
+        >
+          Quarterly
+        </Button>
+        <Button 
           variant={selectedPeriod === "annual" ? "default" : "ghost"} 
           size="sm" 
           className="flex-1"
@@ -709,7 +757,8 @@ export default function Dashboard() {
             className="flex items-center gap-2 bg-green-600 hover:bg-green-700"
           >
             <FileText className="w-4 h-4" />
-            {selectedPeriod === 'monthly' ? 'View Monthly Report' : 'View Annual Report'}
+            {selectedPeriod === 'monthly' ? 'View Monthly Report' : 
+             selectedPeriod === 'quarterly' ? 'View Quarterly Report' : 'View Annual Report'}
           </Button>
 
         </div>
@@ -840,7 +889,8 @@ export default function Dashboard() {
         <CardContent className="p-6">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-semibold">
-              {selectedPeriod === "monthly" ? "Monthly" : "Annual"} Goal
+              {selectedPeriod === "monthly" ? "Monthly" : 
+               selectedPeriod === "quarterly" ? "Quarterly" : "Annual"} Goal
             </h3>
             {!editingGoal && (
               <Button

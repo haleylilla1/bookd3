@@ -19,9 +19,10 @@ import type { User, Gig, Expense } from '@shared/schema';
 
 interface ReportOptions {
   userId: number;
-  period: 'monthly' | 'annual';
+  period: 'monthly' | 'quarterly' | 'annual';
   year: number;
   month?: number;
+  quarter?: number;
 }
 
 interface ReportData {
@@ -60,9 +61,10 @@ export async function generateProfessionalHTML(options: ReportOptions): Promise<
   // Validate input parameters with defaults (outside try block)
   const safeOptions = {
     userId: options.userId || 0,
-    period: (options.period === 'monthly' || options.period === 'annual') ? options.period : 'monthly',
+    period: (options.period === 'monthly' || options.period === 'quarterly' || options.period === 'annual') ? options.period : 'monthly',
     year: options.year || new Date().getFullYear(),
-    month: options.month || new Date().getMonth() + 1
+    month: options.month || new Date().getMonth() + 1,
+    quarter: options.quarter || Math.floor(new Date().getMonth() / 3) + 1
   };
 
   try {
@@ -688,6 +690,16 @@ async function prepareReportData(options: ReportOptions): Promise<ReportData> {
     const nextMonth = options.month === 12 ? 1 : options.month + 1;
     const nextYear = options.month === 12 ? options.year + 1 : options.year;
     endDate = `${nextYear}-${nextMonth.toString().padStart(2, '0')}-01`;
+  } else if (options.period === 'quarterly' && options.quarter) {
+    const quarterStartMonth = (options.quarter - 1) * 3 + 1;
+    const quarterEndMonth = options.quarter * 3;
+    startDate = `${options.year}-${quarterStartMonth.toString().padStart(2, '0')}-01`;
+    
+    if (quarterEndMonth === 12) {
+      endDate = `${options.year + 1}-01-01`;
+    } else {
+      endDate = `${options.year}-${(quarterEndMonth + 1).toString().padStart(2, '0')}-01`;
+    }
   } else {
     startDate = `${options.year}-01-01`;
     endDate = `${options.year + 1}-01-01`;
@@ -804,6 +816,8 @@ async function prepareReportData(options: ReportOptions): Promise<ReportData> {
 
   const periodStr = options.period === 'monthly' && options.month 
     ? `${new Date(options.year, options.month - 1).toLocaleString('default', { month: 'long' })} ${options.year}`
+    : options.period === 'quarterly' && options.quarter
+    ? `Q${options.quarter} ${options.year}`
     : `${options.year}`;
 
   return {
