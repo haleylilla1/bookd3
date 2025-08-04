@@ -253,7 +253,7 @@
     /* Prevent content overlap */
     .main-content-area {
       position: relative;
-      z-index: 10;
+      z-index: 1;
     }
   }
 }

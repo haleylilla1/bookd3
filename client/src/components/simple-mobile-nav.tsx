@@ -27,7 +27,7 @@ export default function SimpleMobileNav({ currentScreen, onScreenChange }: Simpl
           left: '0px',
           right: '0px',
           width: '100%',
-          backgroundColor: 'red', // Temporarily red to make it visible
+          backgroundColor: 'white',
           borderTop: '1px solid #e5e7eb',
           padding: '8px',
           zIndex: 9999,
@@ -69,8 +69,7 @@ export default function SimpleMobileNav({ currentScreen, onScreenChange }: Simpl
             display: 'flex',
             flexDirection: 'column',
             gap: '12px',
-            backgroundColor: 'blue',
-            padding: '10px'
+            padding: '0px'
           }}
         >
           <Button
