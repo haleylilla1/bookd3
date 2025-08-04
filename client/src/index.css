@@ -117,7 +117,6 @@
       padding-top: env(safe-area-inset-top);
       padding-left: env(safe-area-inset-left);
       padding-right: env(safe-area-inset-right);
-      /* Don't add bottom padding to body - let components handle it */
       padding-bottom: 0;
     }
     
@@ -232,7 +231,7 @@
   }
 
 /* iOS Safari-specific viewport and scrolling fixes */
-@supports (-webkit-touch-callout: none) and (max-width: 768px) {
+@supports (-webkit-touch-callout: none) {
   /* Ensure full viewport height accounting for dynamic Safari UI */
   .min-h-screen {
     min-height: 100vh;
@@ -240,17 +239,14 @@
     min-height: calc(var(--vh, 1vh) * 100);
   }
   
-  /* Remove body::after - this was hiding the bottom navigation */
-  
-  /* Force scrollable content area */
-  main, .main-content, #root > div {
-    min-height: calc(100vh + 120px);
-    min-height: calc(-webkit-fill-available + 120px);
-  }
-  
-  /* Prevent Safari from cutting off bottom content */
-  .container, .page-container {
-    margin-bottom: 120px;
+  /* Ensure content can scroll past Safari UI but preserve layout */
+  body::after {
+    content: '';
+    display: block;
+    height: 80px; /* Smaller buffer - just enough for Safari UI */
+    width: 1px;
+    opacity: 0;
+    pointer-events: none;
   }
 }
 
@@ -350,14 +346,22 @@
   margin-bottom: env(safe-area-inset-bottom);
 }
 
-/* Fix for iOS Safari bottom content being cut off */
+/* iOS Safari mobile optimizations */
 @media screen and (max-width: 768px) {
-  /* Reserve space for bottom navigation (80px) plus Safari UI buffer */
+  /* Restore proper content spacing without removing top padding */
   .screen-content {
-    padding-bottom: 160px !important; /* 80px nav + 80px Safari buffer */
+    padding: 1rem !important;
+    padding-bottom: 120px !important; /* Space for bottom nav + Safari UI */
+    margin-bottom: 0 !important;
   }
   
-  /* Ensure bottom navigation stays visible and accessible */
+  /* Ensure main content containers have proper spacing */
+  main, .main-content, .dashboard-container {
+    padding: 1rem !important;
+    padding-bottom: 120px !important;
+  }
+  
+  /* Bottom navigation positioning */
   .bottom-navigation, .footer-nav {
     position: fixed !important;
     bottom: 0 !important;
@@ -370,10 +374,14 @@
     box-shadow: 0 -2px 10px rgba(0,0,0,0.1) !important;
   }
   
-  /* Ensure dialogs and modals are fully accessible */
+  /* Floating action buttons positioning */
+  .fixed[style*="bottom"] {
+    z-index: 50 !important;
+  }
+  
+  /* Ensure dialogs are accessible */
   [role="dialog"], .modal-content {
-    max-height: calc(100vh - 60px) !important;
-    margin-bottom: 60px !important;
+    max-height: calc(100vh - 120px) !important;
   }
 }
 
