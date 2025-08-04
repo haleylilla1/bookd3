@@ -40,6 +40,20 @@ export default function GotPaidDialog({ gig, isOpen, onClose, onSave }: GotPaidD
   const [isCalculatingMileage, setIsCalculatingMileage] = useState(false);
   const [mileageError, setMileageError] = useState<string | null>(null);
 
+  // Handle iOS dialog behavior
+  React.useEffect(() => {
+    if (isOpen) {
+      // Import and use iOS fixes dynamically to avoid SSR issues
+      import("../lib/ios-fixes").then(({ IOSMobileFixes }) => {
+        IOSMobileFixes.handleDialogOpen();
+      });
+    } else {
+      import("../lib/ios-fixes").then(({ IOSMobileFixes }) => {
+        IOSMobileFixes.handleDialogClose();
+      });
+    }
+  }, [isOpen]);
+
   // Fetch user data for default tax percentage
   React.useEffect(() => {
     if (isOpen) {

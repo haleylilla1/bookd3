@@ -72,8 +72,8 @@
     @apply font-sans antialiased bg-background text-foreground;
   }
 
-  /* Simple mobile fixes */
-  input, textarea, select {
+  /* iOS Safari zoom prevention and mobile fixes */
+  input, textarea, select, button {
     font-size: 16px !important; /* Prevent iOS zoom */
     min-height: 44px !important; /* Touch targets */
     padding: 12px 16px !important;
@@ -81,6 +81,26 @@
     -webkit-appearance: none;
     -moz-appearance: none;
     appearance: none;
+    -webkit-tap-highlight-color: transparent;
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+
+  /* Specific input field fixes for iOS */
+  input[type="text"], 
+  input[type="email"], 
+  input[type="password"], 
+  input[type="number"], 
+  input[type="tel"], 
+  input[type="search"],
+  textarea {
+    -webkit-appearance: none;
+    -webkit-border-radius: 0;
+    border-radius: 6px;
+    background-clip: padding-box;
+    -webkit-user-select: text;
+    user-select: text;
   }
 
   button, [role="button"] {
@@ -97,14 +117,46 @@
       padding: 12px 20px !important;
     }
 
+    /* iOS Safari specific fixes */
+    body {
+      -webkit-overflow-scrolling: touch;
+      -webkit-text-size-adjust: 100%;
+      -ms-text-size-adjust: 100%;
+      text-size-adjust: 100%;
+    }
+
+    /* Prevent iOS bounce scrolling where not wanted */
+    .no-bounce {
+      overscroll-behavior: none;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    /* Fix iOS input focus zoom */
+    @supports (-webkit-touch-callout: none) {
+      input, textarea, select {
+        font-size: 16px !important;
+        transform: translateZ(0);
+        -webkit-transform: translateZ(0);
+      }
+      
+      /* Prevent zoom on double tap */
+      * {
+        touch-action: manipulation;
+      }
+    }
+
     /* Fix mobile viewport and scrolling issues */
     html {
       -webkit-text-size-adjust: 100%;
+      -ms-text-size-adjust: 100%;
+      text-size-adjust: 100%;
     }
 
     body {
       overscroll-behavior-y: none;
       -webkit-overflow-scrolling: touch;
+      position: relative;
+      min-height: 100vh;
     }
 
     /* Dialog scrolling fixes for mobile */
@@ -112,6 +164,16 @@
       max-height: 85vh !important;
       height: auto !important;
       overflow-y: auto !important;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    /* Prevent iOS zoom in dialog inputs */
+    [data-radix-dialog-content] input,
+    [data-radix-dialog-content] textarea,
+    [data-radix-dialog-content] select {
+      font-size: 16px !important;
+      -webkit-text-size-adjust: 100%;
+      transform: translateZ(0);
     }
 
     /* Ensure virtual keyboard doesn't break layout */
@@ -166,6 +228,32 @@
     .main-content-area {
       position: relative;
       z-index: 10;
+    }
+  }
+
+  /* Additional iOS Safari fixes for better mobile experience */
+  @media screen and (-webkit-min-device-pixel-ratio: 2) {
+    /* High DPI iOS devices */
+    input, textarea, select {
+      font-size: 16px !important;
+      -webkit-text-size-adjust: none;
+    }
+  }
+
+  /* Fix iOS keyboard behavior */
+  @supports (-webkit-touch-callout: none) {
+    /* Only target iOS Safari */
+    input:focus, textarea:focus, select:focus {
+      -webkit-transform: translateZ(0);
+      transform: translateZ(0);
+      -webkit-user-select: text;
+      user-select: text;
+    }
+    
+    /* Prevent body scroll when iOS keyboard opens */
+    body.keyboard-open {
+      position: fixed;
+      width: 100%;
     }
   }
 }
