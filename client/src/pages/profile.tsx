@@ -184,7 +184,7 @@ export default function Profile() {
                           max={50}
                           step={1}
                           value={[field.value]}
-                          onValueChange={(value) => field.onChange(value[0])}
+                          onValueChange={(value: number[]) => field.onChange(value[0])}
                           className="mt-2"
                         />
                       </FormControl>
