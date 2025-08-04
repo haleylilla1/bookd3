@@ -78,6 +78,9 @@
     min-height: 44px !important; /* Touch targets */
     padding: 12px 16px !important;
     touch-action: manipulation !important;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
   }
 
   button, [role="button"] {
@@ -92,6 +95,60 @@
     button, [role="button"] {
       min-height: 48px !important; /* Android minimum */
       padding: 12px 20px !important;
+    }
+
+    /* Fix mobile viewport and scrolling issues */
+    html {
+      height: 100%;
+      -webkit-text-size-adjust: 100%;
+    }
+
+    body {
+      height: 100vh;
+      overscroll-behavior: none;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    /* Dialog scrolling fixes for mobile */
+    [data-radix-dialog-content] {
+      max-height: 95vh !important;
+      height: auto !important;
+      display: flex !important;
+      flex-direction: column !important;
+      overflow: hidden !important;
+      margin: 0 !important;
+    }
+
+    /* Ensure virtual keyboard doesn't break layout */
+    .mobile-dialog-content {
+      height: auto;
+      max-height: 95vh;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Mobile scroll container */
+    .mobile-scroll-content {
+      flex: 1;
+      overflow-y: auto;
+      overscroll-behavior: contain;
+      -webkit-overflow-scrolling: touch;
+      padding-bottom: env(keyboard-inset-height, 80px);
+      min-height: 0;
+      position: relative;
+    }
+
+    /* Fixed bottom navigation on mobile */
+    .mobile-fixed-bottom {
+      position: sticky;
+      bottom: 0;
+      background: white;
+      border-top: 1px solid #e5e7eb;
+      padding: 16px 0;
+      margin-top: auto;
+      z-index: 10;
+      flex-shrink: 0;
     }
   }
 

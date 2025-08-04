@@ -152,8 +152,8 @@ export default function GotPaidDialog({ gig, isOpen, onClose, onSave }: GotPaidD
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-lg">
-        <DialogHeader>
+      <DialogContent className="max-w-lg mobile-dialog-content">
+        <DialogHeader className="flex-shrink-0">
           <DialogTitle className="flex items-center gap-2">
             <DollarSign className="w-5 h-5 text-green-600" />
             Got Paid: {gig.eventName}
@@ -164,7 +164,7 @@ export default function GotPaidDialog({ gig, isOpen, onClose, onSave }: GotPaidD
         </DialogHeader>
 
         {/* Progress indicator */}
-        <div className="flex gap-2 mb-6">
+        <div className="flex gap-2 mb-6 flex-shrink-0">
           {Array.from({ length: 6 }).map((_, i) => (
             <div
               key={i}
@@ -174,6 +174,9 @@ export default function GotPaidDialog({ gig, isOpen, onClose, onSave }: GotPaidD
             />
           ))}
         </div>
+
+        {/* Scrollable content area */}
+        <div className="mobile-scroll-content">
 
         {/* Step 1: Total Payment */}
         {step === 1 && (
@@ -494,9 +497,10 @@ export default function GotPaidDialog({ gig, isOpen, onClose, onSave }: GotPaidD
             </Card>
           </div>
         )}
+        </div>
 
-        {/* Navigation */}
-        <div className="flex justify-between pt-4">
+        {/* Fixed Navigation at bottom */}
+        <div className="mobile-fixed-bottom flex justify-between">
           <Button
             variant="outline"
             onClick={prevStep}
