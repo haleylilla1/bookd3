@@ -21,12 +21,16 @@ Bookd is a mobile-first gig worker companion app designed for comprehensive fina
 - QUARTERLY REPORTS: Requested for tax season alignment - assessed as trivial implementation (2-4 hours) due to excellent existing date-based architecture.
 
 ## System Architecture
-- **Frontend**: React with TypeScript, optimized for mobile-first experience.
-- **Backend**: Express.js with Node.js and PostgreSQL.
+- **Frontend**: React with TypeScript, optimized for mobile-first experience with comprehensive frontend performance monitoring.
+- **Backend**: Express.js with Node.js and PostgreSQL featuring advanced rate limiting and load balancing.
 - **Simplified Expense Tracking**: Text-based descriptions replace complex photo upload system (removed August 2025 - 500+ lines eliminated).
 - **Memory Management**: Real-time Node.js memory tracking with warning/critical thresholds and intelligent emergency cleanup (e.g., 400MB warning/500MB critical). Features advanced garbage collection integration and memory pressure handling.
 - **Cache Optimization**: Data compression for large objects (>10KB), strict 100KB entry size limits, and automatic rejection of oversized entries. Implements intelligent gzip compression (70-85% savings) and an advanced cache system with a priority queue (O(log n) cleanup), dynamic interval adjustment, and intelligent cache warming. Supports automatic Redis/memory fallback.
-- **Database Performance**: Utilizes 9 critical database indexes for user queries, authentication, goals, and dashboard filters, yielding 20-30% performance improvement. Employs clean, straightforward database queries. Neon serverless handles connection pooling.
+- **Database Performance**: Utilizes 9 critical database indexes for user queries, authentication, goals, and dashboard filters, yielding 20-30% performance improvement. Employs clean, straightforward database queries. Neon serverless handles connection pooling with optimized pagination (50-1000 items per page).
+- **Production-Ready Pagination**: Complete API pagination implementation with limit/offset support for gigs and expenses endpoints. Frontend components updated to handle paginated responses with backward compatibility. Includes intelligent caching per page and performance monitoring.
+- **Advanced Rate Limiting**: Multi-tier rate limiting system (1000 requests/15min general, 100 requests/min for sensitive endpoints) with IP-based tracking, standard headers, and intelligent error messaging. Protects against abuse while maintaining performance.
+- **Load Testing Infrastructure**: Comprehensive Artillery.js configuration with realistic traffic patterns, performance thresholds (p95: <1s, p99: <2s), custom processors for authentication simulation, and detailed response validation for production readiness.
+- **Frontend Performance Monitoring**: Real-time performance tracking for page loads, API calls, render times, and user interactions. Automatic slow operation detection (>1s API, >100ms render), metric cleanup, and development warnings. Maintains rolling 5-minute performance windows.
 - **Optimized Recovery System**: Features an ultra-efficient recovery mechanism with intelligent storage selection (localStorage, sessionStorage, IndexedDB, memory fallback). Includes data deduplication with checksum validation and compression support for large datasets. Provides performance monitoring for save/retrieval timing and cache hit ratios.
 - **Enterprise-Grade Recovery System**: Comprehensive unsaved data recovery with an enhanced dialog system, tabbed interface for validation, completeness tracking, and storage source detection. Includes global recovery provider and manager for consistent state management.
 - **Authentication**: Single consolidated `auth.ts` file with database-backed sessions, comprehensive password reset functionality using SendGrid, and a secure, zero-complexity design. Features development mode fallback for testing and secure session management.
@@ -34,8 +38,8 @@ Bookd is a mobile-first gig worker companion app designed for comprehensive fina
 - **Infrastructure Monitoring**: Real-time system health tracking with automated alerting. Includes 5-minute metric collection, 24-hour history, automated health checks (every 2 minutes) for critical services, and intelligent alerting with multi-level severity. Features a simple, reliable daily JSON backup system.
 - **Multi-Day Gig Logic**: Employs `getGroupedGigs()` helper function to prevent double-counting across components. Database stores multi-day events as separate entries, consolidated at the UI layer.
 - **Date Handling**: Consistent UTC date parsing using `parseGigDate()` utility to prevent timezone issues.
-- **API and Data**: 41+ RESTful API endpoints with robust error handling and 15+ normalized database tables with data validation.
-- **Security**: Enterprise-grade security with comprehensive audit logging, memory-efficient form state management, sequential database operations to prevent race conditions, and comprehensive input sanitization. Implements timeout and retry logic for external API calls and maximum limits to prevent resource exhaustion.
+- **API and Data**: 41+ RESTful API endpoints with robust error handling, comprehensive pagination, and 15+ normalized database tables with data validation. Production-ready performance optimization.
+- **Security**: Enterprise-grade security with comprehensive audit logging, memory-efficient form state management, sequential database operations to prevent race conditions, comprehensive input sanitization, and advanced rate limiting. Implements timeout and retry logic for external API calls and maximum limits to prevent resource exhaustion.
 - **Mobile UI**: Mobile-only approach with a single responsive design optimized for mobile devices and small screens, eliminating desktop-specific styling.
 
 ## Future Development Plans

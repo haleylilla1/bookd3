@@ -66,7 +66,7 @@ export interface IStorage {
 
   // Gigs
   getGig(id: number): Promise<Gig | undefined>;
-  getGigsByUser(userId: number): Promise<Gig[]>;
+  getGigsByUser(userId: number, limit?: number, offset?: number): Promise<{ gigs: Gig[], total: number }>;
   getGigsByDateRange(userId: number, startDate: string, endDate: string): Promise<Gig[]>;
   createGig(gig: InsertGig): Promise<Gig>;
   updateGig(id: number, gig: Partial<InsertGig>): Promise<Gig | undefined>;
@@ -117,7 +117,7 @@ export interface IStorage {
 
   // Expenses
   getExpense(id: number): Promise<Expense | undefined>;
-  getExpensesByUser(userId: number): Promise<Expense[]>;
+  getExpensesByUser(userId: number, limit?: number, offset?: number): Promise<{ expenses: Expense[], total: number }>;
   getExpensesByDateRange(userId: number, startDate: string, endDate: string): Promise<Expense[]>;
   createExpense(expense: InsertExpense): Promise<Expense>;
   updateExpense(id: number, expense: Partial<InsertExpense>): Promise<Expense | undefined>;
@@ -319,20 +319,20 @@ export class DatabaseStorage implements IStorage {
 
   async getUserExportData(userId: number): Promise<any> {
     const user = await this.getUser(userId);
-    const userGigs = await this.getGigsByUser(userId);
+    const gigsData = await this.getGigsByUser(userId, 1000); // Get all for export
     const userGoals = await this.getGoalsByUser(userId);
     const userAllocations = await this.getAllocationsByUser(userId);
     const userInvoices = await this.getInvoicesByUser(userId);
-    const userExpenses = await this.getExpensesByUser(userId);
+    const expensesData = await this.getExpensesByUser(userId, 1000); // Get all for export
     const userBudgets = await this.getBudgetsByUser(userId);
 
     return {
       user,
-      gigs: userGigs,
+      gigs: gigsData.gigs,
       goals: userGoals,
       allocations: userAllocations,
       invoices: userInvoices,
-      expenses: userExpenses,
+      expenses: expensesData.expenses,
       budgets: userBudgets,
       exportedAt: new Date().toISOString(),
     };
@@ -343,18 +343,25 @@ export class DatabaseStorage implements IStorage {
     return gig || undefined;
   }
 
-  async getGigsByUser(userId: number): Promise<Gig[]> {
-    // Use proper Drizzle query with caching
-    const cacheKey = `gigs:${userId}`;
+  async getGigsByUser(userId: number, limit: number = 50, offset: number = 0): Promise<{ gigs: Gig[], total: number }> {
+    // Get total count first
+    const [totalResult] = await db.select({ count: count() }).from(gigs).where(eq(gigs.userId, userId));
+    const total = totalResult.count;
+
+    // Use proper Drizzle query with pagination and caching
+    const cacheKey = `gigs:${userId}:${limit}:${offset}`;
     const cached = await ultraSimpleCache.get(cacheKey);
     if (cached) return cached;
 
     const userGigs = await db.select().from(gigs)
       .where(eq(gigs.userId, userId))
-      .orderBy(desc(gigs.date));
+      .orderBy(desc(gigs.date))
+      .limit(limit)
+      .offset(offset);
     
-    await ultraSimpleCache.set(cacheKey, userGigs, 120); // 2 minutes
-    return userGigs;
+    const result = { gigs: userGigs, total };
+    await ultraSimpleCache.set(cacheKey, result, 120); // 2 minutes
+    return result;
   }
 
   async getGigsByDateRange(userId: number, startDate: string, endDate: string): Promise<Gig[]> {
@@ -798,10 +805,18 @@ export class DatabaseStorage implements IStorage {
     return expense || undefined;
   }
 
-  async getExpensesByUser(userId: number): Promise<Expense[]> {
-    return await db.select().from(expenses)
+  async getExpensesByUser(userId: number, limit: number = 50, offset: number = 0): Promise<{ expenses: Expense[], total: number }> {
+    // Get total count first
+    const [totalResult] = await db.select({ count: count() }).from(expenses).where(eq(expenses.userId, userId));
+    const total = totalResult.count;
+
+    const userExpenses = await db.select().from(expenses)
       .where(eq(expenses.userId, userId))
-      .orderBy(desc(expenses.date));
+      .orderBy(desc(expenses.date))
+      .limit(limit)
+      .offset(offset);
+    
+    return { expenses: userExpenses, total };
   }
 
   async getExpensesByDateRange(userId: number, startDate: string, endDate: string): Promise<Expense[]> {
