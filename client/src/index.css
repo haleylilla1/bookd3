@@ -72,170 +72,28 @@
     @apply font-sans antialiased bg-background text-foreground;
   }
 
-  /* Enhanced iOS mobile fixes */
+  /* Simple mobile fixes */
   input, textarea, select {
     font-size: 16px !important; /* Prevent iOS zoom */
     min-height: 44px !important; /* Touch targets */
     padding: 12px 16px !important;
     touch-action: manipulation !important;
-    -webkit-appearance: none !important;
-    border-radius: 8px !important;
-    transition: all 0.2s ease !important;
-  }
-
-  input:focus, textarea:focus, select:focus {
-    outline: 2px solid hsl(var(--primary)) !important;
-    outline-offset: 2px !important;
-    transform: scale(1.02) !important;
   }
 
   button, [role="button"] {
-    min-height: 48px !important; /* iOS minimum for comfortable tapping */
-    min-width: 48px !important;
-    padding: 12px 20px !important;
+    min-height: 44px !important; /* Touch targets */
+    min-width: 44px !important;
+    padding: 8px 16px !important;
     touch-action: manipulation !important;
-    -webkit-tap-highlight-color: rgba(0,0,0,0.1) !important;
-    transition: all 0.15s ease !important;
-    cursor: pointer !important;
   }
 
-  button:active, [role="button"]:active {
-    transform: scale(0.98) !important;
-    opacity: 0.8 !important;
-  }
-
-  /* iOS-specific adjustments */
-  @supports (-webkit-touch-callout: none) {
-    /* iOS Safari specific styles */
-    html {
-      height: -webkit-fill-available;
-    }
-    
-    body {
-      min-height: 100vh;
-      min-height: -webkit-fill-available;
-      padding-top: env(safe-area-inset-top);
-      padding-left: env(safe-area-inset-left);
-      padding-right: env(safe-area-inset-right);
-      padding-bottom: env(safe-area-inset-bottom);
-    }
-    
-    /* Main app container adjustments */
-    .min-h-screen {
-      min-height: 100vh;
-      min-height: -webkit-fill-available;
-    }
-    
-    /* Prevent iOS double-tap zoom */
-    * {
-      touch-action: manipulation !important;
-    }
-    
-    /* Better button spacing for iOS */
+  /* Mobile-only adjustments */
+  @media (max-width: 768px) {
     button, [role="button"] {
-      min-height: 52px !important;
-      padding: 14px 24px !important;
-      margin: 4px 0 !important;
-    }
-    
-    /* Form field enhancements for iOS */
-    input, textarea, select {
-      min-height: 52px !important;
-      padding: 16px 20px !important;
-      border: 2px solid hsl(var(--border)) !important;
+      min-height: 48px !important; /* Android minimum */
+      padding: 12px 20px !important;
     }
   }
-
-  /* Keyboard visibility adjustments */
-  body.ios-keyboard-visible {
-    padding-bottom: 0 !important;
-  }
-
-  /* Modal and dialog improvements for mobile */
-  @media (max-width: 768px) {
-    [role="dialog"], .dialog-content {
-      margin: 16px !important;
-      max-height: calc(100vh - 32px) !important;
-      border-radius: 16px !important;
-    }
-    
-    /* Ensure buttons at bottom are accessible */
-    .dialog-footer, .form-actions {
-      padding: 20px !important;
-      padding-bottom: calc(20px + env(safe-area-inset-bottom)) !important;
-      position: sticky !important;
-      bottom: 0 !important;
-      background: white !important;
-      border-top: 1px solid hsl(var(--border)) !important;
-      margin: 0 -20px -20px -20px !important;
-    }
-  }
-
-  /* iOS-specific dialog optimizations */
-  .ios-optimized-dialog {
-    padding-bottom: calc(80px + env(safe-area-inset-bottom)) !important;
-  }
-  
-  .ios-dialog-footer {
-    background: rgba(255, 255, 255, 0.95) !important;
-    backdrop-filter: blur(10px) !important;
-    -webkit-backdrop-filter: blur(10px) !important;
-    border-top: 1px solid hsl(var(--border)) !important;
-    margin-bottom: calc(-24px - env(safe-area-inset-bottom)) !important;
-    padding-bottom: calc(24px + env(safe-area-inset-bottom)) !important;
-  }
-  
-  .ios-touch-button {
-    border-radius: 12px !important;
-    font-weight: 600 !important;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.1) !important;
-    transition: all 0.15s ease !important;
-  }
-  
-  .ios-touch-button:active {
-    transform: scale(0.96) !important;
-    box-shadow: 0 1px 4px rgba(0,0,0,0.15) !important;
-  }
-
-  /* Enhanced touch targets for mileage step */
-  @media (max-width: 768px) {
-    .got-paid-dialog input[type="checkbox"] {
-      width: 20px !important;
-      height: 20px !important;
-      margin-right: 8px !important;
-    }
-    
-    .got-paid-dialog label {
-      font-size: 16px !important;
-      line-height: 1.5 !important;
-      padding: 8px 0 !important;
-      cursor: pointer !important;
-    }
-    
-    .address-input {
-      min-height: 56px !important;
-      font-size: 16px !important;
-      padding: 16px 20px !important;
-    }
-  }
-  
-  /* Prevent iOS bounce scroll in dialogs */
-  .ios-optimized-dialog {
-    overscroll-behavior: contain !important;
-  }
-
-/* iOS Safari-specific fixes for content scrolling */
-@supports (-webkit-touch-callout: none) {
-  /* Add small invisible element to ensure scrollability past Safari UI */
-  body::after {
-    content: '';
-    display: block;
-    height: 60px;
-    width: 1px;
-    opacity: 0;
-    pointer-events: none;
-  }
-}
 
   /* Desktop layout improvements */
   @media (min-width: 1024px) {
@@ -253,7 +111,7 @@
     /* Prevent content overlap */
     .main-content-area {
       position: relative;
-      z-index: 1;
+      z-index: 10;
     }
   }
 }
@@ -317,22 +175,13 @@
   max-width: 428px;
   margin: 0 auto;
   min-height: 100vh;
-  min-height: calc(var(--vh, 1vh) * 100);
   background: white;
   box-shadow: 0 0 20px rgba(0,0,0,0.1);
 }
 
 .screen-content {
-  padding-bottom: 80px; /* Space for bottom navigation */
-}
-
-/* Ensure all content containers accommodate iOS Safari UI */
-.main-container, .dashboard-container, .form-container {
   padding-bottom: 80px;
-  margin-bottom: env(safe-area-inset-bottom);
 }
-
-/* Remove problematic mobile optimizations - they're hiding elements */
 
 /* Desktop layout adjustments */
 @media (min-width: 1024px) {
