@@ -30,7 +30,9 @@ interface ReportData {
   gigs: Gig[];
   expenses: Expense[];
   period: string;
-  totalIncome: number;
+  totalIncome: number; // Taxable income (excludes reimbursements)
+  totalReceived?: number; // Gross income (optional for backward compatibility)
+  businessDeductions?: number; // Unreimbursed expenses (optional for backward compatibility)
   totalExpenses: number;
   totalMileage: number;
   mileageValue: number;
@@ -743,12 +745,32 @@ async function prepareReportData(options: ReportOptions): Promise<ReportData> {
   // Filter completed gigs for income calculations
   const completedGigs = groupedGigs.filter(g => g.status === 'completed' || g.actualPay);
   
-  // Calculate totals
-  const totalIncome = completedGigs.reduce((sum, gig) => {
-    const actualPay = parseFloat(gig.actualPay || '0');
+  // Calculate totals using tax-smart logic (same as dashboard)
+  let totalIncome = 0; // Taxable income
+  let totalReceived = 0; // Gross income
+  let businessDeductions = 0; // Unreimbursed expenses
+  
+  completedGigs.forEach(gig => {
     const tips = parseFloat(gig.tips || '0');
-    return sum + actualPay + tips;
-  }, 0);
+    
+    if (gig.totalReceived && parseFloat(gig.totalReceived) > 0) {
+      // New "Got Paid" workflow - use tax-smart calculation
+      const received = parseFloat(gig.totalReceived || '0');
+      const reimbursedParking = parseFloat(gig.reimbursedParking || '0');
+      const reimbursedOther = parseFloat(gig.reimbursedOther || '0');
+      const unreimbursedParking = parseFloat(gig.unreimbursedParking || '0');
+      const unreimbursedOther = parseFloat(gig.unreimbursedOther || '0');
+      
+      totalReceived += received + tips;
+      businessDeductions += unreimbursedParking + unreimbursedOther;
+      totalIncome += (received - reimbursedParking - reimbursedOther) + tips; // Taxable income
+    } else {
+      // Legacy calculation
+      const payAmount = parseFloat(gig.actualPay || '0');
+      totalReceived += payAmount + tips;
+      totalIncome += payAmount + tips;
+    }
+  });
 
   // Calculate gig-related expenses (legacy parking/other expenses)
   const gigExpenses = completedGigs.reduce((sum, gig) => {
@@ -772,13 +794,29 @@ async function prepareReportData(options: ReportOptions): Promise<ReportData> {
   const mileageValue = totalMileage * MILEAGE_RATE;
   const netIncome = totalIncome - totalExpenses - mileageValue;
   
-  // Calculate tax estimates using same logic as dashboard
+  // Calculate tax estimates using tax-smart logic (same as dashboard)
   const estimatedTaxes = completedGigs.reduce((sum, gig) => {
-    const gigIncome = parseFloat(gig.actualPay || '0') + parseFloat(gig.tips || '0');
+    const tips = parseFloat(gig.tips || '0');
+    let taxableIncome = 0;
+    
+    if (gig.totalReceived && parseFloat(gig.totalReceived) > 0) {
+      // New calculation: total received minus reimbursements
+      const received = parseFloat(gig.totalReceived || '0');
+      const reimbursedParking = parseFloat(gig.reimbursedParking || '0');
+      const reimbursedOther = parseFloat(gig.reimbursedOther || '0');
+      taxableIncome = received - reimbursedParking - reimbursedOther;
+    } else {
+      // Legacy calculation
+      taxableIncome = parseFloat(gig.actualPay || '0');
+    }
+    
+    // Add tips (always taxable)
+    taxableIncome += tips;
+    
     const gigTaxRate = (gig.taxPercentage !== null && gig.taxPercentage !== undefined) 
       ? gig.taxPercentage 
       : (user.defaultTaxPercentage || 23);
-    return sum + (gigIncome * gigTaxRate / 100);
+    return sum + (taxableIncome * gigTaxRate / 100);
   }, 0);
   
   // Use user's default tax percentage for display (individual rates used in calculation)
@@ -830,7 +868,9 @@ async function prepareReportData(options: ReportOptions): Promise<ReportData> {
     gigs: completedGigs,
     expenses: allExpenses,
     period: periodStr,
-    totalIncome,
+    totalIncome, // Now represents taxable income
+    totalReceived, // Gross income (new field)
+    businessDeductions, // Unreimbursed expenses (new field)
     totalExpenses,
     totalMileage,
     mileageValue,
