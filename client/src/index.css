@@ -99,35 +99,28 @@
 
     /* Fix mobile viewport and scrolling issues */
     html {
-      height: 100%;
       -webkit-text-size-adjust: 100%;
     }
 
     body {
-      height: 100vh;
-      overscroll-behavior: none;
+      overscroll-behavior-y: none;
       -webkit-overflow-scrolling: touch;
     }
 
     /* Dialog scrolling fixes for mobile */
     [data-radix-dialog-content] {
-      max-height: 90vh !important;
+      max-height: 85vh !important;
       height: auto !important;
-      display: flex !important;
-      flex-direction: column !important;
-      overflow: hidden !important;
-      margin: 0 !important;
-      padding-bottom: 0 !important;
+      overflow-y: auto !important;
     }
 
     /* Ensure virtual keyboard doesn't break layout */
     .mobile-dialog-content {
       height: auto;
-      max-height: 90vh;
-      overflow: hidden;
+      max-height: 85vh;
+      overflow-y: auto;
       display: flex;
       flex-direction: column;
-      padding-bottom: 0;
     }
 
     /* Mobile scroll container */
@@ -136,12 +129,9 @@
       overflow-y: auto;
       overscroll-behavior: contain;
       -webkit-overflow-scrolling: touch;
-      padding-bottom: env(keyboard-inset-height, 180px);
-      min-height: 0;
+      padding-bottom: 120px;
+      min-height: 200px;
       position: relative;
-      padding-top: 8px;
-      margin-bottom: 24px;
-      scroll-behavior: smooth;
     }
 
     /* Fixed bottom navigation on mobile */
@@ -150,24 +140,13 @@
       bottom: 0;
       background: white;
       border-top: 1px solid #e5e7eb;
-      padding: 24px 0 32px 0;
+      padding: 16px 0 24px 0;
       margin-top: auto;
       z-index: 10;
       flex-shrink: 0;
-      box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
-      min-height: 88px;
     }
 
-    /* iOS Safari specific fixes */
-    @supports (-webkit-touch-callout: none) {
-      .mobile-scroll-content {
-        padding-bottom: env(keyboard-inset-height, 200px) !important;
-      }
-      
-      .mobile-fixed-bottom {
-        padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 32px) !important;
-      }
-    }
+
   }
 
   /* Desktop layout improvements */

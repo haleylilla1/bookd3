@@ -152,7 +152,7 @@ export default function GotPaidDialog({ gig, isOpen, onClose, onSave }: GotPaidD
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-lg mobile-dialog-content">
+      <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
         <DialogHeader className="flex-shrink-0">
           <DialogTitle className="flex items-center gap-2">
             <DollarSign className="w-5 h-5 text-green-600" />
@@ -175,8 +175,8 @@ export default function GotPaidDialog({ gig, isOpen, onClose, onSave }: GotPaidD
           ))}
         </div>
 
-        {/* Scrollable content area */}
-        <div className="mobile-scroll-content pb-8">
+        {/* Content area */}
+        <div className="space-y-4 pb-24">
 
         {/* Step 1: Total Payment */}
         {step === 1 && (
@@ -499,8 +499,8 @@ export default function GotPaidDialog({ gig, isOpen, onClose, onSave }: GotPaidD
         )}
         </div>
 
-        {/* Fixed Navigation at bottom */}
-        <div className="mobile-fixed-bottom flex justify-between items-center">
+        {/* Navigation */}
+        <div className="flex justify-between items-center pt-4 border-t bg-white sticky bottom-0">
           <Button
             variant="outline"
             onClick={prevStep}
