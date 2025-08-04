@@ -61,11 +61,102 @@ export default function Home() {
           {renderScreen()}
         </main>
 
-        {/* Mobile Navigation - Restored */}
-        <SimpleMobileNav 
-          currentScreen={currentScreen} 
-          onScreenChange={setCurrentScreen} 
-        />
+        {/* Test: Add basic HTML elements directly */}
+        <div 
+          id="test-nav"
+          style={{
+            position: 'fixed',
+            bottom: '0px',
+            left: '0px',
+            right: '0px',
+            height: '60px',
+            backgroundColor: '#ffffff',
+            borderTop: '2px solid #000000',
+            zIndex: 999999,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-around'
+          }}
+        >
+          <button 
+            onClick={() => setCurrentScreen("calendar")}
+            style={{
+              padding: '8px 16px',
+              backgroundColor: currentScreen === "calendar" ? '#6366f1' : '#ffffff',
+              color: currentScreen === "calendar" ? '#ffffff' : '#000000',
+              border: '1px solid #000000',
+              borderRadius: '4px'
+            }}
+          >
+            Calendar
+          </button>
+          <button 
+            onClick={() => setCurrentScreen("dashboard")}
+            style={{
+              padding: '8px 16px',
+              backgroundColor: currentScreen === "dashboard" ? '#6366f1' : '#ffffff',
+              color: currentScreen === "dashboard" ? '#ffffff' : '#000000',
+              border: '1px solid #000000',
+              borderRadius: '4px'
+            }}
+          >
+            Dashboard
+          </button>
+          <button 
+            onClick={() => setCurrentScreen("profile")}
+            style={{
+              padding: '8px 16px',
+              backgroundColor: currentScreen === "profile" ? '#6366f1' : '#ffffff',
+              color: currentScreen === "profile" ? '#ffffff' : '#000000',
+              border: '1px solid #000000',
+              borderRadius: '4px'
+            }}
+          >
+            Profile
+          </button>
+        </div>
+        
+        {/* Test: Add floating buttons directly */}
+        <div 
+          style={{
+            position: 'fixed',
+            bottom: '80px',
+            right: '16px',
+            zIndex: 999998,
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '8px'
+          }}
+        >
+          <button 
+            onClick={() => setCurrentScreen("expense-form")}
+            style={{
+              padding: '12px 16px',
+              backgroundColor: '#c258d1',
+              color: '#ffffff',
+              border: 'none',
+              borderRadius: '25px',
+              fontSize: '14px',
+              fontWeight: 'bold'
+            }}
+          >
+            Add Expense
+          </button>
+          <button 
+            onClick={() => setCurrentScreen("gig-form")}
+            style={{
+              padding: '12px 16px',
+              backgroundColor: '#6366f1',
+              color: '#ffffff',
+              border: 'none',
+              borderRadius: '25px',
+              fontSize: '14px',
+              fontWeight: 'bold'
+            }}
+          >
+            Add Gig
+          </button>
+        </div>
       </div>
     </div>
   );
