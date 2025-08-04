@@ -714,8 +714,12 @@ async function prepareReportData(options: ReportOptions): Promise<ReportData> {
   const gigs = await storage.getGigsByDateRange(options.userId, startDate, endDate);
   const expenses = await storage.getExpensesByDateRange(options.userId, startDate, endDate);
   
+  console.log(`📊 Raw gigs retrieved: ${gigs.length}`);
+  console.log(`📅 Date range: ${startDate} to ${endDate}`);
+  
   // Group multi-day gigs to prevent double counting
   const groupedGigs = groupMultiDayGigs(gigs);
+  console.log(`🎯 After grouping: ${groupedGigs.length} unique gigs`);
   
   // Add parking expenses from gigs to expenses array as "Work Travel" category
   const parkingExpenses = groupedGigs
@@ -742,13 +746,17 @@ async function prepareReportData(options: ReportOptions): Promise<ReportData> {
   
   // Filter completed gigs for income calculations
   const completedGigs = groupedGigs.filter(g => g.status === 'completed' || g.actualPay);
+  console.log(`💰 Completed gigs after filtering: ${completedGigs.length}`);
   
   // Calculate totals
   const totalIncome = completedGigs.reduce((sum, gig) => {
     const actualPay = parseFloat(gig.actualPay || '0');
     const tips = parseFloat(gig.tips || '0');
-    return sum + actualPay + tips;
+    const gigTotal = actualPay + tips;
+    console.log(`💵 ${gig.eventName}: $${actualPay} + $${tips} = $${gigTotal}`);
+    return sum + gigTotal;
   }, 0);
+  console.log(`📈 Total income calculated: $${totalIncome}`);
 
   // Calculate gig-related expenses (legacy parking/other expenses)
   const gigExpenses = completedGigs.reduce((sum, gig) => {
@@ -873,29 +881,9 @@ function groupMultiDayGigs(gigs: Gig[]): Gig[] {
     }
     
     if (similarGigs.length > 1) {
-      // Multi-day gig - Sum up the amounts from all days
-      const totalActualPay = similarGigs.reduce((sum, gig) => {
-        return sum + parseFloat(gig.actualPay || '0');
-      }, 0);
-      
-      const totalTips = similarGigs.reduce((sum, gig) => {
-        return sum + parseFloat(gig.tips || '0');
-      }, 0);
-      
-      const totalParkingExpense = similarGigs.reduce((sum, gig) => {
-        return sum + parseFloat(gig.parkingExpense || '0');
-      }, 0);
-      
-      const totalMileage = similarGigs.reduce((sum, gig) => {
-        return sum + parseInt(String(gig.mileage || 0)) || 0;
-      }, 0);
-      
+      // Multi-day gig - Use only first entry (total amount already entered once)
       grouped.push({
-        ...similarGigs[0], // Use first entry's non-financial data
-        actualPay: totalActualPay.toString(),
-        tips: totalTips.toString(),
-        parkingExpense: totalParkingExpense.toString(),
-        mileage: totalMileage,
+        ...similarGigs[0], // Use first entry data completely
         date: `${similarGigs[0].date} - ${similarGigs[similarGigs.length - 1].date}`
       });
     } else {
