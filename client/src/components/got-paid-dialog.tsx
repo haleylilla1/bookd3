@@ -176,7 +176,7 @@ export default function GotPaidDialog({ gig, isOpen, onClose, onSave }: GotPaidD
         </div>
 
         {/* Scrollable content area */}
-        <div className="mobile-scroll-content">
+        <div className="mobile-scroll-content pb-8">
 
         {/* Step 1: Total Payment */}
         {step === 1 && (
@@ -500,19 +500,22 @@ export default function GotPaidDialog({ gig, isOpen, onClose, onSave }: GotPaidD
         </div>
 
         {/* Fixed Navigation at bottom */}
-        <div className="mobile-fixed-bottom flex justify-between">
+        <div className="mobile-fixed-bottom flex justify-between items-center">
           <Button
             variant="outline"
             onClick={prevStep}
             disabled={step === 1}
-            className="flex items-center gap-2"
+            className="flex items-center gap-2 min-h-12 px-6"
           >
             <ArrowLeft className="w-4 h-4" />
             Back
           </Button>
           
           {step < 5 ? (
-            <Button onClick={nextStep} className="flex items-center gap-2">
+            <Button 
+              onClick={nextStep} 
+              className="flex items-center gap-2 min-h-12 px-6 bg-primary hover:bg-primary/90"
+            >
               Next
               <ArrowRight className="w-4 h-4" />
             </Button>
@@ -520,7 +523,7 @@ export default function GotPaidDialog({ gig, isOpen, onClose, onSave }: GotPaidD
             <Button 
               onClick={handleSave}
               disabled={isLoading}
-              className="bg-green-600 hover:bg-green-700 flex items-center gap-2"
+              className="bg-green-600 hover:bg-green-700 flex items-center gap-2 min-h-12 px-6"
             >
               <CheckCircle className="w-4 h-4" />
               {isLoading ? "Saving..." : "Confirm Payment"}
