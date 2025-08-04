@@ -77,14 +77,11 @@
     font-size: 16px !important; /* Prevent iOS zoom on ALL inputs */
     min-height: 44px !important; /* Touch targets */
     padding: 12px 16px !important;
-    touch-action: manipulation !important;
     -webkit-appearance: none;
     -moz-appearance: none;
     appearance: none;
     -webkit-tap-highlight-color: transparent;
     -webkit-touch-callout: none;
-    -webkit-user-select: none;
-    user-select: none;
     -webkit-text-size-adjust: 100% !important;
     text-size-adjust: 100% !important;
   }
@@ -120,7 +117,6 @@
     min-height: 44px !important; /* Touch targets */
     min-width: 44px !important;
     padding: 8px 16px !important;
-    touch-action: manipulation !important;
   }
 
   /* Mobile-only adjustments */
@@ -152,9 +148,14 @@
         -webkit-transform: translateZ(0);
       }
       
-      /* Prevent zoom on double tap */
-      * {
+      /* Prevent zoom on double tap - only on form elements */
+      input, textarea, select, button {
         touch-action: manipulation;
+      }
+
+      /* Ensure normal scrolling for content areas */
+      main, .content, [role="main"], article, section {
+        touch-action: pan-y pinch-zoom;
       }
     }
 
@@ -170,6 +171,8 @@
       -webkit-overflow-scrolling: touch;
       position: relative;
       min-height: 100vh;
+      /* Allow normal touch actions for scrolling */
+      touch-action: pan-y pinch-zoom;
     }
 
     /* Dialog scrolling fixes for mobile */

@@ -27,17 +27,21 @@ export class IOSMobileFixes {
   }
 
   private static applyGlobalIOSFixes(): void {
-    // Prevent double-tap zoom globally
+    // Prevent double-tap zoom globally - only on specific elements, not globally
     document.addEventListener('touchstart', (e) => {
-      if (e.touches.length > 1) {
+      const target = e.target as HTMLElement;
+      // Only prevent on inputs and buttons, not the entire document
+      if (e.touches.length > 1 && target.matches('input, textarea, select, button')) {
         e.preventDefault();
       }
     }, { passive: false });
 
     let lastTouchEnd = 0;
     document.addEventListener('touchend', (e) => {
+      const target = e.target as HTMLElement;
       const now = (new Date()).getTime();
-      if (now - lastTouchEnd <= 300) {
+      // Only prevent double-tap zoom on inputs and buttons, allow scrolling elsewhere
+      if (now - lastTouchEnd <= 300 && target.matches('input, textarea, select, button')) {
         e.preventDefault();
       }
       lastTouchEnd = now;
