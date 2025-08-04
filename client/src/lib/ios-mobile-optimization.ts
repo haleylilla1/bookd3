@@ -33,14 +33,14 @@ export const restoreIOSZoom = () => {
   }
 };
 
-// Handle iOS keyboard covering buttons
+// Handle iOS keyboard covering buttons and Safari UI issues
 export const handleIOSKeyboard = (callback?: (keyboardVisible: boolean) => void) => {
   if (!isIOS()) return;
 
-  let initialViewportHeight = window.innerHeight;
+  let initialViewportHeight = window.visualViewport?.height || window.innerHeight;
   
   const handleResize = () => {
-    const currentHeight = window.innerHeight;
+    const currentHeight = window.visualViewport?.height || window.innerHeight;
     const heightDifference = initialViewportHeight - currentHeight;
     const keyboardVisible = heightDifference > 150; // Keyboard likely visible
     
@@ -53,14 +53,69 @@ export const handleIOSKeyboard = (callback?: (keyboardVisible: boolean) => void)
       setTimeout(() => {
         const focused = document.activeElement as HTMLElement;
         if (focused && (focused.tagName === 'INPUT' || focused.tagName === 'TEXTAREA' || focused.tagName === 'SELECT')) {
-          focused.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          // Scroll to top first to ensure Safari address bar is hidden
+          window.scrollTo(0, 1);
+          setTimeout(() => {
+            focused.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          }, 100);
         }
       }, 300);
     }
   };
+  
+  // Use visualViewport API if available (better for iOS)
+  if (window.visualViewport) {
+    window.visualViewport.addEventListener('resize', handleResize);
+    return () => window.visualViewport?.removeEventListener('resize', handleResize);
+  } else {
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }
+};
 
-  window.addEventListener('resize', handleResize);
-  return () => window.removeEventListener('resize', handleResize);
+// Fix iOS Safari viewport and scrolling issues
+export const fixIOSSafariViewport = () => {
+  if (!isIOSSafari()) return;
+  
+  // Fix the iOS Safari viewport height issue
+  const setVHProperty = () => {
+    const vh = window.innerHeight * 0.01;
+    document.documentElement.style.setProperty('--vh', `${vh}px`);
+  };
+  
+  setVHProperty();
+  window.addEventListener('resize', setVHProperty);
+  window.addEventListener('orientationchange', () => {
+    setTimeout(setVHProperty, 500);
+  });
+  
+  // Ensure content is scrollable beyond Safari UI
+  const ensureScrollability = () => {
+    const body = document.body;
+    const scrollHeight = body.scrollHeight;
+    const windowHeight = window.innerHeight;
+    
+    if (scrollHeight <= windowHeight) {
+      // Add minimum padding to ensure scrollability past Safari UI
+      body.style.paddingBottom = `${Math.max(120, window.innerHeight * 0.15)}px`;
+    }
+  };
+  
+  // Run on load and when content changes
+  ensureScrollability();
+  
+  // Observe DOM changes to maintain scrollability
+  const observer = new MutationObserver(ensureScrollability);
+  observer.observe(document.body, { 
+    childList: true, 
+    subtree: true,
+    attributes: false
+  });
+  
+  return () => {
+    window.removeEventListener('resize', setVHProperty);
+    observer.disconnect();
+  };
 };
 
 // Enhanced touch feedback for buttons
@@ -194,6 +249,9 @@ export const initializeIOSOptimizations = () => {
     document.documentElement.style.setProperty('--sar', 'env(safe-area-inset-right)');
   }
   
+  // Fix Safari viewport issues
+  fixIOSSafariViewport();
+  
   // Initialize form focus optimizations
   optimizeIOSFormFocus();
   
@@ -201,6 +259,13 @@ export const initializeIOSOptimizations = () => {
   handleIOSKeyboard((keyboardVisible) => {
     document.body.classList.toggle('ios-keyboard-visible', keyboardVisible);
   });
+  
+  // Ensure initial scroll position avoids Safari UI
+  setTimeout(() => {
+    if (window.pageYOffset === 0) {
+      window.scrollTo(0, 1);
+    }
+  }, 100);
   
   // Add touch feedback to all buttons
   const addFeedbackToButtons = () => {

@@ -107,11 +107,25 @@
   /* iOS-specific adjustments */
   @supports (-webkit-touch-callout: none) {
     /* iOS Safari specific styles */
+    html {
+      height: -webkit-fill-available;
+    }
+    
     body {
+      min-height: 100vh;
+      min-height: -webkit-fill-available;
       padding-top: env(safe-area-inset-top);
       padding-bottom: env(safe-area-inset-bottom);
       padding-left: env(safe-area-inset-left);
       padding-right: env(safe-area-inset-right);
+      /* Prevent iOS Safari address bar from covering content */
+      padding-bottom: max(env(safe-area-inset-bottom), 100px);
+    }
+    
+    /* Main app container adjustments */
+    .min-h-screen {
+      min-height: 100vh;
+      min-height: -webkit-fill-available;
     }
     
     /* Prevent iOS double-tap zoom */
@@ -131,6 +145,12 @@
       min-height: 52px !important;
       padding: 16px 20px !important;
       border: 2px solid hsl(var(--border)) !important;
+    }
+    
+    /* Ensure content is scrollable beyond Safari UI */
+    .screen-content {
+      padding-bottom: 120px !important;
+      margin-bottom: env(safe-area-inset-bottom);
     }
   }
 
@@ -212,6 +232,35 @@
     overscroll-behavior: contain !important;
   }
 
+/* iOS Safari-specific viewport and scrolling fixes */
+@supports (-webkit-touch-callout: none) and (max-width: 768px) {
+  /* Ensure full viewport height accounting for dynamic Safari UI */
+  .min-h-screen {
+    min-height: 100vh;
+    min-height: -webkit-fill-available;
+    min-height: calc(var(--vh, 1vh) * 100);
+  }
+  
+  /* Critical fix: Ensure content extends beyond Safari UI */
+  body::after {
+    content: '';
+    display: block;
+    height: 120px;
+    width: 1px;
+  }
+  
+  /* Force scrollable content area */
+  main, .main-content, #root > div {
+    min-height: calc(100vh + 120px);
+    min-height: calc(-webkit-fill-available + 120px);
+  }
+  
+  /* Prevent Safari from cutting off bottom content */
+  .container, .page-container {
+    margin-bottom: 120px;
+  }
+}
+
   /* Desktop layout improvements */
   @media (min-width: 1024px) {
     .screen-content {
@@ -292,12 +341,37 @@
   max-width: 428px;
   margin: 0 auto;
   min-height: 100vh;
+  min-height: calc(var(--vh, 1vh) * 100);
   background: white;
   box-shadow: 0 0 20px rgba(0,0,0,0.1);
 }
 
 .screen-content {
-  padding-bottom: 80px;
+  padding-bottom: 120px;
+  min-height: calc(100vh + 120px);
+}
+
+/* Ensure all content containers accommodate iOS Safari UI */
+.main-container, .dashboard-container, .form-container {
+  padding-bottom: 120px !important;
+  margin-bottom: env(safe-area-inset-bottom);
+}
+
+/* Fix for iOS Safari bottom content being cut off */
+@media screen and (max-width: 768px) {
+  body {
+    padding-bottom: 120px !important;
+  }
+  
+  .bottom-navigation, .footer-nav {
+    margin-bottom: env(safe-area-inset-bottom);
+  }
+  
+  /* Ensure dialogs and modals are fully accessible */
+  [role="dialog"], .modal-content {
+    max-height: calc(100vh - 60px) !important;
+    margin-bottom: 60px !important;
+  }
 }
 
 /* Desktop layout adjustments */
