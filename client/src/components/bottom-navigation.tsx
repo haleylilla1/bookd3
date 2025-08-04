@@ -16,7 +16,7 @@ export default function BottomNavigation({ currentScreen, onScreenChange }: Bott
   ];
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 w-full bg-white border-t border-gray-200 px-2 py-2 z-50 bottom-navigation" style={{ paddingBottom: `max(20px, env(safe-area-inset-bottom))` }}>
+    <nav className="fixed bottom-0 left-0 right-0 w-full bg-white border-t border-gray-200 px-2 py-2 z-50">
       <div className="flex items-center justify-around">
         {navItems.map((item) => {
           const isActive = currentScreen === item.id;

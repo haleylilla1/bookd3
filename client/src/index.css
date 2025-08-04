@@ -117,7 +117,7 @@
       padding-top: env(safe-area-inset-top);
       padding-left: env(safe-area-inset-left);
       padding-right: env(safe-area-inset-right);
-      padding-bottom: 0;
+      padding-bottom: env(safe-area-inset-bottom);
     }
     
     /* Main app container adjustments */
@@ -143,12 +143,6 @@
       min-height: 52px !important;
       padding: 16px 20px !important;
       border: 2px solid hsl(var(--border)) !important;
-    }
-    
-    /* Ensure content is scrollable beyond Safari UI */
-    .screen-content {
-      padding-bottom: 120px !important;
-      margin-bottom: env(safe-area-inset-bottom);
     }
   }
 
@@ -230,20 +224,13 @@
     overscroll-behavior: contain !important;
   }
 
-/* iOS Safari-specific viewport and scrolling fixes */
+/* iOS Safari-specific fixes for content scrolling */
 @supports (-webkit-touch-callout: none) {
-  /* Ensure full viewport height accounting for dynamic Safari UI */
-  .min-h-screen {
-    min-height: 100vh;
-    min-height: -webkit-fill-available;
-    min-height: calc(var(--vh, 1vh) * 100);
-  }
-  
-  /* Ensure content can scroll past Safari UI but preserve layout */
+  /* Add small invisible element to ensure scrollability past Safari UI */
   body::after {
     content: '';
     display: block;
-    height: 80px; /* Smaller buffer - just enough for Safari UI */
+    height: 60px;
     width: 1px;
     opacity: 0;
     pointer-events: none;
@@ -336,54 +323,16 @@
 }
 
 .screen-content {
-  padding-bottom: 100px; /* Space for bottom navigation + buffer */
-  min-height: calc(100vh + 100px);
+  padding-bottom: 80px; /* Space for bottom navigation */
 }
 
 /* Ensure all content containers accommodate iOS Safari UI */
 .main-container, .dashboard-container, .form-container {
-  padding-bottom: 120px !important;
+  padding-bottom: 80px;
   margin-bottom: env(safe-area-inset-bottom);
 }
 
-/* iOS Safari mobile optimizations */
-@media screen and (max-width: 768px) {
-  /* Restore proper content spacing without removing top padding */
-  .screen-content {
-    padding: 1rem !important;
-    padding-bottom: 120px !important; /* Space for bottom nav + Safari UI */
-    margin-bottom: 0 !important;
-  }
-  
-  /* Ensure main content containers have proper spacing */
-  main, .main-content, .dashboard-container {
-    padding: 1rem !important;
-    padding-bottom: 120px !important;
-  }
-  
-  /* Bottom navigation positioning */
-  .bottom-navigation, .footer-nav {
-    position: fixed !important;
-    bottom: 0 !important;
-    left: 0 !important;
-    right: 0 !important;
-    z-index: 1000 !important;
-    background: white !important;
-    border-top: 1px solid hsl(var(--border)) !important;
-    padding-bottom: max(env(safe-area-inset-bottom), 20px) !important;
-    box-shadow: 0 -2px 10px rgba(0,0,0,0.1) !important;
-  }
-  
-  /* Floating action buttons positioning */
-  .fixed[style*="bottom"] {
-    z-index: 50 !important;
-  }
-  
-  /* Ensure dialogs are accessible */
-  [role="dialog"], .modal-content {
-    max-height: calc(100vh - 120px) !important;
-  }
-}
+/* Remove problematic mobile optimizations - they're hiding elements */
 
 /* Desktop layout adjustments */
 @media (min-width: 1024px) {
