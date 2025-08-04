@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
@@ -9,6 +9,7 @@ import { DollarSign, Calculator, Receipt, CheckCircle, ArrowRight, ArrowLeft, Pl
 import { formatCurrency } from "@/lib/utils";
 import { AddressAutocomplete } from "@/components/address-autocomplete";
 import { apiRequest } from "@/lib/queryClient";
+import { initializeIOSOptimizations, handleIOSKeyboard } from "@/lib/ios-mobile-optimization";
 import type { Gig } from "@shared/schema";
 
 interface GotPaidDialogProps {
@@ -31,6 +32,26 @@ export default function GotPaidDialog({ gig, isOpen, onClose, onSave }: GotPaidD
   const [step, setStep] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
   const [user, setUser] = useState<any>(null);
+
+  // Initialize iOS optimizations when dialog opens
+  useEffect(() => {
+    if (isOpen) {
+      initializeIOSOptimizations();
+      // Set up keyboard handling for this dialog
+      const cleanup = handleIOSKeyboard((keyboardVisible) => {
+        // Scroll to bottom when keyboard appears to ensure buttons are visible
+        if (keyboardVisible) {
+          setTimeout(() => {
+            const footer = document.querySelector('.ios-dialog-footer');
+            if (footer) {
+              footer.scrollIntoView({ behavior: 'smooth', block: 'end' });
+            }
+          }, 300);
+        }
+      });
+      return cleanup;
+    }
+  }, [isOpen]);
   
   // Mileage calculation state
   const [startingAddress, setStartingAddress] = useState("");
@@ -152,13 +173,13 @@ export default function GotPaidDialog({ gig, isOpen, onClose, onSave }: GotPaidD
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-lg">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <DollarSign className="w-5 h-5 text-green-600" />
+      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto ios-optimized-dialog got-paid-dialog">
+        <DialogHeader className="pb-6">
+          <DialogTitle className="flex items-center gap-2 text-xl">
+            <DollarSign className="w-6 h-6 text-green-600" />
             Got Paid: {gig.eventName}
           </DialogTitle>
-          <DialogDescription>
+          <DialogDescription className="text-base mt-2">
             Step {step} of 5: {stepTitles[step - 1]}
           </DialogDescription>
         </DialogHeader>
@@ -495,33 +516,38 @@ export default function GotPaidDialog({ gig, isOpen, onClose, onSave }: GotPaidD
           </div>
         )}
 
-        {/* Navigation */}
-        <div className="flex justify-between pt-4">
-          <Button
-            variant="outline"
-            onClick={prevStep}
-            disabled={step === 1}
-            className="flex items-center gap-2"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            Back
-          </Button>
-          
-          {step < 5 ? (
-            <Button onClick={nextStep} className="flex items-center gap-2">
-              Next
-              <ArrowRight className="w-4 h-4" />
-            </Button>
-          ) : (
-            <Button 
-              onClick={handleSave}
-              disabled={isLoading}
-              className="bg-green-600 hover:bg-green-700 flex items-center gap-2"
+        {/* iOS-Optimized Navigation - Sticky Footer */}
+        <div className="sticky bottom-0 bg-white border-t pt-6 pb-6 -mx-6 px-6 mt-8 ios-dialog-footer">
+          <div className="flex justify-between gap-4">
+            <Button
+              variant="outline"
+              onClick={prevStep}
+              disabled={step === 1}
+              className="flex-1 h-14 text-base font-medium flex items-center justify-center gap-2 ios-touch-button"
             >
-              <CheckCircle className="w-4 h-4" />
-              {isLoading ? "Saving..." : "Confirm Payment"}
+              <ArrowLeft className="w-5 h-5" />
+              Back
             </Button>
-          )}
+            
+            {step < 5 ? (
+              <Button 
+                onClick={nextStep} 
+                className="flex-1 h-14 text-base font-medium bg-green-600 hover:bg-green-700 flex items-center justify-center gap-2 ios-touch-button"
+              >
+                Next
+                <ArrowRight className="w-5 h-5" />
+              </Button>
+            ) : (
+              <Button 
+                onClick={handleSave}
+                disabled={isLoading}
+                className="flex-1 h-14 text-base font-medium bg-green-600 hover:bg-green-700 flex items-center justify-center gap-2 ios-touch-button"
+              >
+                <CheckCircle className="w-5 h-5" />
+                {isLoading ? "Saving..." : "Confirm Payment"}
+              </Button>
+            )}
+          </div>
         </div>
       </DialogContent>
     </Dialog>
