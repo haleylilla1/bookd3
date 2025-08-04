@@ -61,13 +61,11 @@ export default function Home() {
           {renderScreen()}
         </main>
 
-        {/* Mobile Navigation - Always visible on mobile */}
-        <div className="block lg:hidden">
-          <SimpleMobileNav 
-            currentScreen={currentScreen} 
-            onScreenChange={setCurrentScreen} 
-          />
-        </div>
+        {/* Mobile Navigation - Force visible */}
+        <SimpleMobileNav 
+          currentScreen={currentScreen} 
+          onScreenChange={setCurrentScreen} 
+        />
       </div>
     </div>
   );

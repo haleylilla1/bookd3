@@ -8,6 +8,8 @@ interface SimpleMobileNavProps {
 }
 
 export default function SimpleMobileNav({ currentScreen, onScreenChange }: SimpleMobileNavProps) {
+  console.log('SimpleMobileNav rendering with currentScreen:', currentScreen);
+  
   const navItems = [
     { id: "calendar" as const, label: "Calendar", icon: Calendar },
     { id: "dashboard" as const, label: "Dashboard", icon: PieChart },
@@ -16,14 +18,21 @@ export default function SimpleMobileNav({ currentScreen, onScreenChange }: Simpl
 
   return (
     <>
+      {console.log('Rendering SimpleMobileNav navigation elements')}
       {/* Bottom Navigation */}
       <nav 
-        className="fixed bottom-0 left-0 right-0 w-full bg-white border-t border-gray-200 px-2 py-2"
         style={{ 
-          zIndex: 1000, 
-          display: 'block',
           position: 'fixed',
-          bottom: '0px'
+          bottom: '0px',
+          left: '0px',
+          right: '0px',
+          width: '100%',
+          backgroundColor: 'red', // Temporarily red to make it visible
+          borderTop: '1px solid #e5e7eb',
+          padding: '8px',
+          zIndex: 9999,
+          display: 'block !important',
+          height: '60px'
         }}
       >
         <div className="flex items-center justify-around">
@@ -52,11 +61,16 @@ export default function SimpleMobileNav({ currentScreen, onScreenChange }: Simpl
       {/* Floating Action Buttons */}
       {currentScreen !== "gig-form" && currentScreen !== "expense-form" && (
         <div 
-          className="fixed right-4 flex flex-col gap-3"
           style={{ 
+            position: 'fixed',
             bottom: '80px', 
-            zIndex: 999,
-            display: 'flex'
+            right: '16px',
+            zIndex: 9998,
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '12px',
+            backgroundColor: 'blue',
+            padding: '10px'
           }}
         >
           <Button
