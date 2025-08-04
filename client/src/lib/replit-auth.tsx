@@ -7,6 +7,8 @@ export interface User {
   id: number;
   email: string;
   name: string;
+  subscriptionTier?: string;
+  profileImageUrl?: string;
 }
 
 // Auth status response
