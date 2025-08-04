@@ -115,11 +115,10 @@
       min-height: 100vh;
       min-height: -webkit-fill-available;
       padding-top: env(safe-area-inset-top);
-      padding-bottom: env(safe-area-inset-bottom);
       padding-left: env(safe-area-inset-left);
       padding-right: env(safe-area-inset-right);
-      /* Prevent iOS Safari address bar from covering content */
-      padding-bottom: max(env(safe-area-inset-bottom), 100px);
+      /* Don't add bottom padding to body - let components handle it */
+      padding-bottom: 0;
     }
     
     /* Main app container adjustments */
@@ -241,13 +240,7 @@
     min-height: calc(var(--vh, 1vh) * 100);
   }
   
-  /* Critical fix: Ensure content extends beyond Safari UI */
-  body::after {
-    content: '';
-    display: block;
-    height: 120px;
-    width: 1px;
-  }
+  /* Remove body::after - this was hiding the bottom navigation */
   
   /* Force scrollable content area */
   main, .main-content, #root > div {
@@ -347,8 +340,8 @@
 }
 
 .screen-content {
-  padding-bottom: 120px;
-  min-height: calc(100vh + 120px);
+  padding-bottom: 100px; /* Space for bottom navigation + buffer */
+  min-height: calc(100vh + 100px);
 }
 
 /* Ensure all content containers accommodate iOS Safari UI */
@@ -359,12 +352,22 @@
 
 /* Fix for iOS Safari bottom content being cut off */
 @media screen and (max-width: 768px) {
-  body {
-    padding-bottom: 120px !important;
+  /* Reserve space for bottom navigation (80px) plus Safari UI buffer */
+  .screen-content {
+    padding-bottom: 160px !important; /* 80px nav + 80px Safari buffer */
   }
   
+  /* Ensure bottom navigation stays visible and accessible */
   .bottom-navigation, .footer-nav {
-    margin-bottom: env(safe-area-inset-bottom);
+    position: fixed !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    z-index: 1000 !important;
+    background: white !important;
+    border-top: 1px solid hsl(var(--border)) !important;
+    padding-bottom: max(env(safe-area-inset-bottom), 20px) !important;
+    box-shadow: 0 -2px 10px rgba(0,0,0,0.1) !important;
   }
   
   /* Ensure dialogs and modals are fully accessible */
