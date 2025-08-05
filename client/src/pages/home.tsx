@@ -88,7 +88,7 @@ export default function Home() {
         </main>
 
         {/* Floating Action Buttons - Hidden on desktop (buttons are in sidebar) */}
-        {currentScreen !== "gig-form" && currentScreen !== "expense-form" && (
+        {(currentScreen === "calendar" || currentScreen === "dashboard") && (
           <div className="fixed bottom-20 right-4 flex flex-col gap-3 lg:hidden">
             <Button
               onClick={() => setCurrentScreen("expense-form")}
