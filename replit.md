@@ -42,11 +42,13 @@ Bookd is a mobile-first gig worker companion app designed for comprehensive fina
     - **"Got Paid" Workflow**: New additive workflow for tracking income and expenses with fields for `total_received`, `reimbursed_parking`, `reimbursed_other`, `unreimbursed_parking`, `unreimbursed_other`. Automatically calculates actual pay and business deductions. Integrates with dashboard and report updates.
     - **Quarterly Reports**: Planned implementation to include `TimePeriod` type update, quarter navigation/display logic, and UI button addition, leveraging existing date-based architecture for tax season planning.
     - **Technical Debt Fixes**: Centralized form schemas, reusable form components, unified error handling, and standardized date input components.
+    - **Error Monitoring**: Comprehensive Sentry integration for both frontend and backend error tracking, performance monitoring, user context tracking, and API error categorization. Includes smart error filtering, authentication event tracking, and production-ready configuration.
 
 ## External Dependencies
 - **SendGrid**: Email integration for password reset.
 - **Google Maps API (Places API, Distance Matrix API)**: Address autocomplete and mileage calculation.
 - **Supabase**: Database, authentication.
+- **Sentry**: Error monitoring and performance tracking for production reliability.
 - **Redis**: Considered for caching.
 - **Cloudinary**: Considered for media management.
 - **Stripe**: Considered for payment integration.

@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiRequest } from './queryClient';
+import { setSentryUser, clearSentryUser, addSentryBreadcrumb } from './sentry';
 import React, { useState } from 'react';
 
 // User type for traditional auth
@@ -37,7 +38,7 @@ export function useAuth() {
     gcTime: 0, // No garbage collection time - always fresh auth check
   });
 
-  // Debug authentication state changes
+  // Debug authentication state changes and update Sentry
   React.useEffect(() => {
     if (user) {
       debugAuth('User authenticated', { 
@@ -45,10 +46,19 @@ export function useAuth() {
         email: user.email, 
         name: user.name 
       });
+      // Set Sentry user context
+      setSentryUser({
+        id: user.id,
+        email: user.email,
+        name: user.name
+      });
+      addSentryBreadcrumb('User authenticated', 'auth', { userId: user.id });
     } else if (error) {
       debugAuth('Authentication failed', { error: error.message });
+      addSentryBreadcrumb('Authentication failed', 'auth.error', { error: error.message });
     } else if (!isLoading && !user) {
       debugAuth('No authenticated user', {});
+      clearSentryUser();
     }
   }, [user, error, isLoading]);
 
@@ -57,7 +67,9 @@ export function useAuth() {
       const response = await apiRequest('POST', '/api/auth/login', credentials);
       return response.json();
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      // Add Sentry breadcrumb for successful login
+      addSentryBreadcrumb('User logged in', 'auth', { email: data.email });
       // Refresh user data after login
       queryClient.invalidateQueries({ queryKey: ['/api/user'] });
     },
@@ -69,6 +81,9 @@ export function useAuth() {
       return response.json();
     },
     onSuccess: () => {
+      // Add Sentry breadcrumb and clear user context
+      addSentryBreadcrumb('User logged out', 'auth');
+      clearSentryUser();
       // Clear all queries after logout
       queryClient.clear();
       // Force full page reload to ensure complete logout

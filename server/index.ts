@@ -4,6 +4,10 @@ if (!process.env.NODE_ENV) {
   console.log('⚠️ NODE_ENV was undefined, set to development');
 }
 
+// Initialize Sentry first, before other imports
+import { initSentry } from "./lib/sentry";
+initSentry();
+
 import express from "express";
 import cookieParser from "cookie-parser";
 import rateLimit from "express-rate-limit";

@@ -1,9 +1,40 @@
 import { QueryClient, QueryFunction } from "@tanstack/react-query";
+import * as Sentry from "@sentry/react";
 
 async function throwIfResNotOk(res: Response) {
   if (!res.ok) {
     const text = (await res.text()) || res.statusText;
-    throw new Error(`${res.status}: ${text}`);
+    const error = new Error(`${res.status}: ${text}`);
+    
+    // Track API errors in Sentry
+    if (res.status >= 500) {
+      // Server errors
+      Sentry.withScope((scope) => {
+        scope.setTag('api_error', true);
+        scope.setTag('http_status', res.status);
+        scope.setContext('api_request', {
+          url: res.url,
+          status: res.status,
+          statusText: res.statusText,
+        });
+        scope.setLevel('error');
+        Sentry.captureException(error);
+      });
+    } else if (res.status >= 400 && res.status < 500) {
+      // Client errors (4xx) - track but as info level
+      Sentry.addBreadcrumb({
+        message: `API client error: ${res.status}`,
+        category: 'api',
+        data: {
+          url: res.url,
+          status: res.status,
+          response: text,
+        },
+        level: 'info',
+      });
+    }
+    
+    throw error;
   }
 }
 
