@@ -55,14 +55,14 @@ export function OnboardingFlow({ isOpen, onComplete, onClose }: OnboardingFlowPr
       icon: <Briefcase className="w-8 h-8 text-purple-500" />,
       field: "gigTypes", 
       placeholder: "e.g., Food delivery, Rideshare, Photography",
-      description: "List at least one type of gig work. You can add more later."
+      description: "List at least one type of gig work. You can add more later by going to your Profile."
     },
     {
       title: "Name one of your clients",
       icon: <Users className="w-8 h-8 text-orange-500" />,
       field: "clientName",
       placeholder: "e.g., DoorDash, Sarah's Wedding, Local Restaurant",
-      description: "This helps us set up your client tracking. You can add more clients as you work."
+      description: "This helps us set up your client tracking. You can add more later by going to your Profile."
     }
   ];
 
