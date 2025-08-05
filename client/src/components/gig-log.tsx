@@ -347,7 +347,17 @@ export default function GigLog() {
             setGotPaidGig(null);
           }}
           gig={gotPaidGig}
-          onSave={(data) => gotPaidMutation.mutate({ gigId: gotPaidGig.id, data })}
+          onSave={async (data) => {
+            return new Promise((resolve, reject) => {
+              gotPaidMutation.mutate(
+                { gigId: gotPaidGig.id, data }, 
+                {
+                  onSuccess: () => resolve(),
+                  onError: (error) => reject(error)
+                }
+              );
+            });
+          }}
           isLoading={gotPaidMutation.isPending}
         />
       )}
