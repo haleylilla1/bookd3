@@ -100,10 +100,15 @@ export function DataExport() {
               )}
             </Button>
           </div>
+          
+          <Alert className="mt-4">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>
+              <strong>Privacy Notice:</strong> Sensitive information like passwords are automatically excluded from exports.
+            </AlertDescription>
+          </Alert>
         </CardContent>
       </Card>
-
-
     </div>
   );
 }
