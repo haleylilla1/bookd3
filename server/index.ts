@@ -22,7 +22,12 @@ const port = process.env.PORT || 5000;
 // Production configuration
 const isProduction = process.env.NODE_ENV === 'production';
 const allowedOrigins = isProduction 
-  ? [process.env.CORS_ORIGIN || 'https://bookd.tools', 'https://www.bookd.tools']
+  ? [
+      process.env.CORS_ORIGIN || 'https://app.bookd.tools', 
+      'https://app.bookd.tools',
+      'https://bookd.tools',
+      'https://www.bookd.tools'
+    ]
   : ['http://localhost:3000', 'http://localhost:5173', 'http://127.0.0.1:5173'];
 
 // CORS configuration for production

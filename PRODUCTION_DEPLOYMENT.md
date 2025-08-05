@@ -26,8 +26,8 @@ These can be set as regular environment variables:
 ```bash
 NODE_ENV=production
 PORT=5000
-PRODUCTION_DOMAIN=bookd.tools
-CORS_ORIGIN=https://bookd.tools
+PRODUCTION_DOMAIN=app.bookd.tools
+CORS_ORIGIN=https://app.bookd.tools
 BCRYPT_ROUNDS=12
 MAX_REQUEST_SIZE=10mb
 RATE_LIMIT_WINDOW_MS=900000
@@ -97,7 +97,7 @@ node scripts/production-start.js
 - [x] Production server starts successfully ✅
 - [x] Health endpoints responding ✅
 - [x] Security headers configured ✅
-- [x] CORS configured for bookd.tools ✅
+- [x] CORS configured for app.bookd.tools + bookd.tools ✅
 - [x] Rate limiting optimized ✅
 - [ ] All required secrets configured in Replit
 - [ ] Database connection tested in production
@@ -109,8 +109,8 @@ node scripts/production-start.js
 ## Post-Deployment Verification
 
 1. Check health endpoints:
-   - `https://bookd.tools/health`
-   - `https://bookd.tools/api/health/database`
+   - `https://app.bookd.tools/health`
+   - `https://app.bookd.tools/api/health/database`
 
 2. Test core functionality:
    - User registration/login

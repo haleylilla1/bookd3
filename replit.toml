@@ -9,5 +9,8 @@ domain = "bookd.tools"
 [[domains]]
 domain = "www.bookd.tools"
 
+[[domains]]
+domain = "app.bookd.tools"
+
 [nix]
 channel = "stable-23_11"
