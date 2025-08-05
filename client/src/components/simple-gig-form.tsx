@@ -310,10 +310,10 @@ export default function SimpleGigForm({ onClose }: SimpleGigFormProps) {
 
   // MAIN FORM - Simple, clean, reliable
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-40">
+      <div className="w-full max-w-2xl max-h-[85vh] overflow-hidden bg-white relative z-50 touch-manipulation rounded-lg flex flex-col">
         {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b">
+        <div className="flex items-center justify-between p-4 border-b shrink-0">
           <h2 className="text-lg font-semibold">Add New Gig</h2>
           <Button variant="ghost" size="sm" onClick={onClose}>
             <X className="w-4 h-4" />
@@ -322,7 +322,9 @@ export default function SimpleGigForm({ onClose }: SimpleGigFormProps) {
 
         {/* Form */}
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="p-4 space-y-4">
+          <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col min-h-0 flex-1">
+            <div className="flex-1 overflow-y-auto overscroll-behavior-contain px-4 min-h-0">
+              <div className="space-y-4 py-4">
             {/* Basic Info */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <FormField
@@ -665,28 +667,37 @@ export default function SimpleGigForm({ onClose }: SimpleGigFormProps) {
                 </FormItem>
               )}
             />
-
-            {/* Submit Button */}
-            <div className="flex gap-2 pt-4">
-              <Button
-                type="submit"
-                disabled={isSubmitting}
-                className="flex-1"
-              >
-                {isSubmitting ? (
-                  <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Creating gig...
-                  </>
-                ) : (
-                  multiDayInfo.isMultiDay 
-                    ? `Save ${multiDayInfo.dayCount}-Day Gig` 
-                    : "Save Gig"
-                )}
-              </Button>
-              <Button type="button" variant="outline" onClick={onClose}>
-                Cancel
-              </Button>
+              </div>
+            </div>
+            
+            {/* Fixed bottom buttons - always visible */}
+            <div className="border-t bg-white p-4 rounded-b-lg shrink-0">
+              <div className="flex gap-2">
+                <Button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="flex-1 h-12 text-base font-medium touch-manipulation"
+                >
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Creating gig...
+                    </>
+                  ) : (
+                    multiDayInfo.isMultiDay 
+                      ? `Save ${multiDayInfo.dayCount}-Day Gig` 
+                      : "Save Gig"
+                  )}
+                </Button>
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  onClick={onClose}
+                  className="flex-1 h-12 text-base font-medium touch-manipulation"
+                >
+                  Cancel
+                </Button>
+              </div>
             </div>
           </form>
         </Form>
