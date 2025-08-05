@@ -684,6 +684,58 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Backup and Data Export endpoints
+  app.get('/api/backup/export', requireAuth, async (req: any, res) => {
+    try {
+      const userId = getUserId(req);
+      console.log(`📦 Export requested by user ${userId}`);
+      
+      const { backupManager } = await import('./backup');
+      const backupData = await backupManager.createUserBackup(userId);
+      
+      res.setHeader('Content-Type', 'application/json');
+      res.setHeader('Content-Disposition', `attachment; filename="bookd-export-${userId}-${Date.now()}.json"`);
+      res.json(backupData);
+      
+    } catch (error) {
+      console.error('❌ Export failed:', error);
+      res.status(500).json({ error: 'Failed to export user data' });
+    }
+  });
+
+  app.get('/api/backup/download', requireAuth, async (req: any, res) => {
+    try {
+      const userId = getUserId(req);
+      console.log(`📥 Backup download requested by user ${userId}`);
+      
+      const { backupManager } = await import('./backup');
+      const filepath = await backupManager.createBackupArchive(userId);
+      
+      res.setHeader('Content-Type', 'application/zip');
+      res.setHeader('Content-Disposition', `attachment; filename="bookd-backup-${userId}-${Date.now()}.zip"`);
+      res.download(filepath, (err) => {
+        if (err) {
+          console.error('❌ Download failed:', err);
+        }
+      });
+      
+    } catch (error) {
+      console.error('❌ Backup download failed:', error);
+      res.status(500).json({ error: 'Failed to create backup archive' });
+    }
+  });
+
+  app.get('/api/backup/info', requireAuth, async (req: any, res) => {
+    try {
+      const { backupManager } = await import('./backup');
+      const info = await backupManager.getBackupInfo();
+      res.json(info);
+    } catch (error) {
+      console.error('❌ Backup info failed:', error);
+      res.status(500).json({ error: 'Failed to get backup information' });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

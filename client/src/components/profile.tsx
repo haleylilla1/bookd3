@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { User, Plus, X, Percent, Edit2, Play } from "lucide-react";
 import { OnboardingFlow } from "@/components/onboarding-flow";
+import { DataExport } from "@/components/data-export";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import type { User as UserType } from "@shared/schema";
@@ -631,6 +632,18 @@ export default function Profile() {
           )}
         </CardContent>
       </Card>
+
+      {/* Data Export Section */}
+      <DataExport />
+
+      {/* Demo Onboarding */}
+      {showOnboardingDemo && (
+        <OnboardingFlow
+          isOpen={showOnboardingDemo}
+          onComplete={() => setShowOnboardingDemo(false)}
+          onClose={() => setShowOnboardingDemo(false)}
+        />
+      )}
     </div>
   );
 }
