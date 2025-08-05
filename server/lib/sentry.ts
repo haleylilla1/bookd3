@@ -1,12 +1,14 @@
 import * as Sentry from "@sentry/node";
 
 export function initSentry() {
-  const dsn = process.env.SENTRY_DSN;
+  const dsn = process.env.SENTRY_DSN || "https://e3a605a82a58b7bcda7ada1c8f676fbd@o4509788026765312.ingest.us.sentry.io/4509788821389312";
   
   if (!dsn) {
     console.warn("Sentry DSN not found - error monitoring disabled");
     return;
   }
+  
+  console.log("Initializing Sentry server with DSN:", dsn.substring(0, 30) + "...");
 
   Sentry.init({
     dsn,
