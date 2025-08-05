@@ -1,9 +1,13 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Progress } from "@/components/ui/progress";
-import { CheckCircle, DollarSign, MapPin, Calendar, TrendingUp, ArrowRight, ArrowLeft } from "lucide-react";
+import { User, MapPin, Briefcase, Users, ArrowRight, ArrowLeft, CheckCircle, Eye } from "lucide-react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 
 interface OnboardingFlowProps {
   isOpen: boolean;
@@ -11,97 +15,118 @@ interface OnboardingFlowProps {
   onClose: () => void;
 }
 
+interface SetupData {
+  name: string;
+  homeAddress: string;
+  gigTypes: string;
+  clientName: string;
+}
+
 export function OnboardingFlow({ isOpen, onComplete, onClose }: OnboardingFlowProps) {
   const [currentStep, setCurrentStep] = useState(0);
-  
-  const steps = [
+  const [setupData, setSetupData] = useState<SetupData>({
+    name: "",
+    homeAddress: "",
+    gigTypes: "",
+    clientName: ""
+  });
+
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  // Phase 1: Setup steps
+  const setupSteps = [
     {
-      title: "Welcome to Bookd!",
+      title: "What's your name?",
+      icon: <User className="w-8 h-8 text-blue-500" />,
+      field: "name",
+      placeholder: "Enter your full name",
+      description: "We'll use this to personalize your experience and for your records."
+    },
+    {
+      title: "What's your home address?", 
+      icon: <MapPin className="w-8 h-8 text-green-500" />,
+      field: "homeAddress",
+      placeholder: "123 Main St, City, State",
+      description: "We need this to calculate business mileage from home to your gigs for tax deductions."
+    },
+    {
+      title: "What type of gig work do you do?",
+      icon: <Briefcase className="w-8 h-8 text-purple-500" />,
+      field: "gigTypes", 
+      placeholder: "e.g., Food delivery, Rideshare, Photography",
+      description: "List at least one type of gig work. You can add more later."
+    },
+    {
+      title: "Name one of your clients",
+      icon: <Users className="w-8 h-8 text-orange-500" />,
+      field: "clientName",
+      placeholder: "e.g., DoorDash, Sarah's Wedding, Local Restaurant",
+      description: "This helps us set up your client tracking. You can add more clients as you work."
+    }
+  ];
+
+  // Phase 2: Feature tour steps  
+  const tourSteps = [
+    {
+      title: "Track Your Work",
       icon: <CheckCircle className="w-8 h-8 text-green-500" />,
       content: (
         <div className="space-y-4">
           <p className="text-gray-600">
-            Bookd helps gig workers like you track income and expenses to maximize tax deductions and keep more of what you earn.
-          </p>
-          <div className="bg-green-50 p-4 rounded-lg">
-            <h4 className="font-semibold text-green-800 mb-2">What you'll learn:</h4>
-            <ul className="space-y-1 text-green-700 text-sm">
-              <li>• How to track gigs and payments</li>
-              <li>• Automatic mileage calculation for tax deductions</li>
-              <li>• Recording business expenses</li>
-              <li>• Understanding your tax savings</li>
-            </ul>
-          </div>
-        </div>
-      )
-    },
-    {
-      title: "Track Every Gig",
-      icon: <Calendar className="w-8 h-8 text-blue-500" />,
-      content: (
-        <div className="space-y-4">
-          <p className="text-gray-600">
-            Log each gig with details like date, location, and expected pay. This creates a complete record for tax time.
+            Use the <strong>"Add Gig"</strong> and <strong>"Add Expense"</strong> buttons to track your work and business expenses.
           </p>
           <div className="bg-blue-50 p-4 rounded-lg">
-            <h4 className="font-semibold text-blue-800 mb-2">Pro Tip:</h4>
             <p className="text-blue-700 text-sm">
-              Add gigs as soon as you accept them. The more detailed your records, the more deductions you can claim.
+              💡 <strong>Tip:</strong> Add gigs as soon as you accept them, and log expenses immediately so you don't forget!
             </p>
           </div>
         </div>
       )
     },
     {
-      title: "Automatic Mileage Tracking",
-      icon: <MapPin className="w-8 h-8 text-purple-500" />,
+      title: "Check Payment Status",
+      icon: <Eye className="w-8 h-8 text-yellow-500" />,
       content: (
         <div className="space-y-4">
           <p className="text-gray-600">
-            Bookd automatically calculates business mileage between your home and gig locations. 
-            In 2024, that's <strong>$0.67 per mile</strong> you can deduct!
-          </p>
-          <div className="bg-purple-50 p-4 rounded-lg">
-            <h4 className="font-semibold text-purple-800 mb-2">Example:</h4>
-            <p className="text-purple-700 text-sm">
-              A 20-mile roundtrip gig = $13.40 in tax deductions. Do 10 of those per week and that's $134 weekly in deductions!
-            </p>
-          </div>
-        </div>
-      )
-    },
-    {
-      title: "Record Payments & Expenses",
-      icon: <DollarSign className="w-8 h-8 text-green-500" />,
-      content: (
-        <div className="space-y-4">
-          <p className="text-gray-600">
-            Use the "Got Paid" button to record what you actually received, plus any business expenses like parking or supplies.
+            Scroll to <strong>"All Gigs"</strong> and click on the status bar to filter gigs.
           </p>
           <div className="bg-yellow-50 p-4 rounded-lg">
-            <h4 className="font-semibold text-yellow-800 mb-2">Track These Expenses:</h4>
-            <ul className="space-y-1 text-yellow-700 text-sm">
-              <li>• Parking fees</li>
-              <li>• Tolls</li>
-              <li>• Equipment purchases</li>
-              <li>• Phone bills (business portion)</li>
-            </ul>
+            <p className="text-yellow-700 text-sm">
+              💡 <strong>Tip:</strong> Check to see who hasn't paid you yet - never lose track of money owed to you!
+            </p>
           </div>
         </div>
       )
     },
     {
-      title: "Maximize Your Tax Savings",
-      icon: <TrendingUp className="w-8 h-8 text-green-500" />,
+      title: "Dashboard Insights",
+      icon: <ArrowRight className="w-8 h-8 text-purple-500" />,
       content: (
         <div className="space-y-4">
           <p className="text-gray-600">
-            Bookd tracks everything you need to reduce your tax bill. The average gig worker saves $2,000-$4,000 per year with proper record keeping.
+            Go to <strong>Dashboard</strong> and click on different cards to see breakdowns of your earnings and expenses.
+          </p>
+          <div className="bg-purple-50 p-4 rounded-lg">
+            <p className="text-purple-700 text-sm">
+              💡 <strong>Tip:</strong> Click on cards to see detailed breakdowns of your financial data!
+            </p>
+          </div>
+        </div>
+      )
+    },
+    {
+      title: "Generate Reports",
+      icon: <CheckCircle className="w-8 h-8 text-green-500" />,
+      content: (
+        <div className="space-y-4">
+          <p className="text-gray-600">
+            Generate your income reports here - perfect for tax time or tracking your business performance.
           </p>
           <div className="bg-green-50 p-4 rounded-lg">
-            <h4 className="font-semibold text-green-800 mb-2">Ready to start saving?</h4>
             <p className="text-green-700 text-sm">
-              Let's add your first gig and start building your tax deduction record!
+              💡 <strong>You're all set!</strong> Start tracking your gigs and watch your tax deductions add up.
             </p>
           </div>
         </div>
@@ -109,8 +134,41 @@ export function OnboardingFlow({ isOpen, onComplete, onClose }: OnboardingFlowPr
     }
   ];
 
+  const allSteps = [...setupSteps, ...tourSteps];
+  const isSetupPhase = currentStep < setupSteps.length;
+  const currentStepData = allSteps[currentStep];
+
+  const saveSetupMutation = useMutation({
+    mutationFn: async (data: SetupData) => {
+      const response = await apiRequest("POST", "/api/user/setup", data);
+      if (!response.ok) {
+        throw new Error("Failed to save setup data");
+      }
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/user"] });
+      toast({
+        title: "Setup Complete!",
+        description: "Your profile has been set up successfully."
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Setup Error",
+        description: "Failed to save your setup. Please try again.",
+        variant: "destructive"
+      });
+    }
+  });
+
   const nextStep = () => {
-    if (currentStep < steps.length - 1) {
+    // If we're at the end of setup phase, save data
+    if (currentStep === setupSteps.length - 1) {
+      saveSetupMutation.mutate(setupData);
+    }
+    
+    if (currentStep < allSteps.length - 1) {
       setCurrentStep(currentStep + 1);
     } else {
       onComplete();
@@ -123,23 +181,53 @@ export function OnboardingFlow({ isOpen, onComplete, onClose }: OnboardingFlowPr
     }
   };
 
-  const progress = ((currentStep + 1) / steps.length) * 100;
+  const updateSetupData = (field: keyof SetupData, value: string) => {
+    setSetupData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const canProceed = () => {
+    if (!isSetupPhase) return true;
+    const field = setupSteps[currentStep].field as keyof SetupData;
+    return setupData[field].trim().length > 0;
+  };
+
+  const progress = ((currentStep + 1) / allSteps.length) * 100;
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            {steps[currentStep].icon}
-            {steps[currentStep].title}
+            {currentStepData.icon}
+            {currentStepData.title}
           </DialogTitle>
         </DialogHeader>
         
         <div className="space-y-6">
           <Progress value={progress} className="w-full" />
           
-          <div className="min-h-[200px]">
-            {steps[currentStep].content}
+          <div className="min-h-[200px] space-y-4">
+            {isSetupPhase ? (
+              <>
+                <p className="text-gray-600 text-sm">
+                  {(currentStepData as any).description}
+                </p>
+                <div className="space-y-2">
+                  <Label htmlFor={(currentStepData as any).field}>
+                    {currentStepData.title}
+                  </Label>
+                  <Input
+                    id={(currentStepData as any).field}
+                    value={setupData[(currentStepData as any).field as keyof SetupData]}
+                    onChange={(e) => updateSetupData((currentStepData as any).field as keyof SetupData, e.target.value)}
+                    placeholder={(currentStepData as any).placeholder}
+                    className="text-base"
+                  />
+                </div>
+              </>
+            ) : (
+              (currentStepData as any).content
+            )}
           </div>
           
           <div className="flex justify-between items-center pt-4">
@@ -154,14 +242,15 @@ export function OnboardingFlow({ isOpen, onComplete, onClose }: OnboardingFlowPr
             </Button>
             
             <span className="text-sm text-gray-500">
-              {currentStep + 1} of {steps.length}
+              {currentStep + 1} of {allSteps.length}
             </span>
             
             <Button
               onClick={nextStep}
+              disabled={!canProceed() || saveSetupMutation.isPending}
               className="flex items-center gap-2"
             >
-              {currentStep === steps.length - 1 ? "Get Started" : "Next"}
+              {currentStep === allSteps.length - 1 ? "Finish" : "Next"}
               <ArrowRight className="w-4 h-4" />
             </Button>
           </div>
