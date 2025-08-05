@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { useQueryClient } from "@tanstack/react-query";
+import { useState, useEffect } from "react";
+import { useQueryClient, useQuery } from "@tanstack/react-query";
 import CalendarView from "@/components/calendar-view";
 import SimpleGigForm from "@/components/simple-gig-form";
 import AddExpenseForm from "@/components/add-expense-form";
@@ -8,6 +8,7 @@ import Profile from "@/components/profile";
 import BottomNavigation from "@/components/bottom-navigation";
 import AppHeader from "@/components/app-header";
 import DesktopSidebar from "@/components/desktop-sidebar";
+import { OnboardingFlow } from "@/components/onboarding-flow";
 import { useAuth } from "@/lib/replit-auth";
 import { Button } from "@/components/ui/button";
 import { Plus, Bell, Briefcase, Receipt } from "lucide-react";
@@ -16,12 +17,31 @@ export type Screen = "calendar" | "dashboard" | "profile" | "gig-form" | "expens
 
 export default function Home() {
   const [currentScreen, setCurrentScreen] = useState<Screen>("calendar");
+  const [showOnboarding, setShowOnboarding] = useState(false);
   const queryClient = useQueryClient();
   const { user } = useAuth();
+
+  // Fetch current user data to check onboarding status
+  const { data: userData } = useQuery({
+    queryKey: ["/api/user"],
+    enabled: !!user
+  });
+
+  // Check if user needs onboarding
+  useEffect(() => {
+    if (userData && !userData.onboardingCompleted) {
+      setShowOnboarding(true);
+    }
+  }, [userData]);
 
   const handleUserChange = () => {
     // Refresh all data when user changes
     queryClient.invalidateQueries();
+  };
+
+  const handleOnboardingComplete = () => {
+    setShowOnboarding(false);
+    queryClient.invalidateQueries({ queryKey: ["/api/user"] });
   };
 
   const renderScreen = () => {
@@ -45,6 +65,13 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      {/* Onboarding Flow */}
+      <OnboardingFlow 
+        isOpen={showOnboarding}
+        onComplete={handleOnboardingComplete}
+        onClose={() => setShowOnboarding(false)}
+      />
+
       {/* Desktop Sidebar */}
       <DesktopSidebar currentScreen={currentScreen} onScreenChange={setCurrentScreen} />
 

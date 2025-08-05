@@ -140,6 +140,65 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Onboarding setup endpoint
+  app.post('/api/user/setup', requireAuth, async (req: any, res: Response) => {
+    try {
+      const userId = getUserId(req);
+      const { name, homeAddress, gigTypes, clientName } = req.body;
+      
+      // Validate required fields
+      if (!name || !homeAddress || !gigTypes || !clientName) {
+        return res.status(400).json({ error: 'All setup fields are required' });
+      }
+
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ error: 'User not found' });
+      }
+
+      // Update user profile with setup data
+      const workPreferences = user.workPreferences || { primaryGigTypes: [], preferredClients: [] };
+      
+      // Add gig types (split by comma and clean up)
+      const gigTypesList = gigTypes.split(',').map((type: string) => type.trim()).filter(Boolean);
+      const existingTypes = ((workPreferences as any)?.primaryGigTypes || []);
+      const allTypes = [...existingTypes, ...gigTypesList];
+      const updatedGigTypes = Array.from(new Set(allTypes));
+      
+      // Add client (avoid duplicates)
+      const updatedClients = (workPreferences as any)?.preferredClients || [];
+      if (!updatedClients.includes(clientName.trim())) {
+        updatedClients.push(clientName.trim());
+      }
+
+      const updateData = {
+        name: name.trim(),
+        homeAddress: homeAddress.trim(),
+        onboardingCompleted: true,
+        workPreferences: {
+          ...workPreferences,
+          primaryGigTypes: updatedGigTypes,
+          preferredClients: updatedClients
+        }
+      };
+
+      await storage.updateUser(userId, updateData);
+      
+      res.json({ 
+        message: 'Setup completed successfully',
+        user: {
+          name: updateData.name,
+          homeAddress: updateData.homeAddress,
+          onboardingCompleted: true,
+          workPreferences: updateData.workPreferences
+        }
+      });
+    } catch (error) {
+      console.error('Error saving setup data:', error);
+      res.status(500).json({ error: 'Failed to save setup data' });
+    }
+  });
+
   // Gig routes with pagination
   app.get('/api/gigs', requireAuth, async (req: any, res: Response) => {
     try {
