@@ -1431,7 +1431,7 @@ function ExpenseEditForm({
     resolver: zodResolver(editExpenseSchema),
     defaultValues: {
       date: expense.date,
-      amount: typeof expense.amount === 'string' ? expense.amount : expense.amount.toString(),
+      amount: typeof expense.amount === 'string' ? expense.amount : expense.amount?.toString() || "",
       merchant: expense.merchant || "",
       businessPurpose: expense.businessPurpose || "",
       category: expense.category,
