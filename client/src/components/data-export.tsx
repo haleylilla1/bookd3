@@ -103,42 +103,7 @@ export function DataExport() {
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Excel Export Details</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid gap-4 md:grid-cols-2">
-            <div>
-              <h4 className="font-semibold mb-2">Excel Sheets Included:</h4>
-              <ul className="text-sm space-y-1 text-gray-600">
-                <li>• <strong>Profile</strong> - Your account information</li>
-                <li>• <strong>Gigs</strong> - All gig records with payments</li>
-                <li>• <strong>Expenses</strong> - Business expenses by category</li>
-                <li>• <strong>Goals</strong> - Income goals by month/year</li>
-                <li>• <strong>Summary</strong> - Total income, expenses, mileage</li>
-              </ul>
-            </div>
-            <div>
-              <h4 className="font-semibold mb-2">Perfect for:</h4>
-              <ul className="text-sm space-y-1 text-gray-600">
-                <li>• Tax preparation and filing</li>
-                <li>• Accountant collaboration</li>
-                <li>• Financial analysis and budgeting</li>
-                <li>• Backup and record keeping</li>
-                <li>• Import into other software</li>
-              </ul>
-            </div>
-          </div>
-          
-          <Alert className="mt-4">
-            <AlertCircle className="h-4 w-4" />
-            <AlertDescription>
-              <strong>Privacy Notice:</strong> Sensitive information like passwords are automatically excluded from exports.
-            </AlertDescription>
-          </Alert>
-        </CardContent>
-      </Card>
+
     </div>
   );
 }
