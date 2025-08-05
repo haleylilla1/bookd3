@@ -103,7 +103,7 @@ export default function AddExpenseForm({ onClose, linkedGigId }: AddExpenseFormP
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center p-0 sm:p-4 z-40">
-      <Card className="w-full max-w-72 h-96 sm:h-auto sm:max-h-96 overflow-hidden bg-white relative z-50 touch-manipulation rounded-t-lg sm:rounded-lg flex flex-col">
+      <Card className="w-full max-w-sm h-[80vh] sm:h-auto sm:max-h-[75vh] overflow-hidden bg-white relative z-50 touch-manipulation rounded-t-lg sm:rounded-lg flex flex-col">
         <CardHeader className="flex flex-row items-center space-y-0 pb-4">
           <Button
             variant="ghost"
