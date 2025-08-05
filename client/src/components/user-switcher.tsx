@@ -129,7 +129,6 @@ export default function UserSwitcher({ currentUser, onUserChange }: UserSwitcher
 
             <div className="text-xs text-muted-foreground space-y-1">
               <p><strong>Current User:</strong> {currentUser?.name} (ID: {currentUser?.id})</p>
-              <p><strong>Testing Note:</strong> Create a new user for your friend to test with separate data</p>
             </div>
           </div>
         </DialogContent>

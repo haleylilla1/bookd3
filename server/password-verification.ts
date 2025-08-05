@@ -41,7 +41,6 @@ export class PasswordVerificationService {
         try {
           const isValid = await bcrypt.compare(testPassword, user.passwordHash);
           if (isValid) {
-            console.log(`✅ Found working password for ${email.substring(0, 3)}***`);
             return testPassword;
           }
         } catch (error) {
@@ -52,7 +51,6 @@ export class PasswordVerificationService {
 
       return null;
     } catch (error) {
-      console.error('Error testing user password:', error);
       return null;
     }
   }
@@ -72,10 +70,8 @@ export class PasswordVerificationService {
         })
         .where(eq(users.email, email));
 
-      console.log(`🔧 Set known password for ${email.substring(0, 3)}***`);
       return true;
     } catch (error) {
-      console.error('Error setting known password:', error);
       return false;
     }
   }
@@ -107,7 +103,6 @@ export class PasswordVerificationService {
       }
 
     } catch (error) {
-      console.error('Error verifying all users:', error);
     }
 
     return { working, needReset };

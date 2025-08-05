@@ -22,13 +22,9 @@ export interface AuthStatus {
 export function useAuth() {
   const queryClient = useQueryClient();
   
-  // SECURITY DEBUG: Log authentication state changes
+  // Authentication state tracking for Sentry
   const debugAuth = (action: string, data?: any) => {
-    console.log(`🔐 AUTH DEBUG: ${action}`, {
-      timestamp: new Date().toISOString(),
-      url: window.location.href,
-      data
-    });
+    // Production: Only use Sentry, no console logs
   };
 
   const { data: user, isLoading, error } = useQuery<User>({
