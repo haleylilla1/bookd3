@@ -27,10 +27,20 @@ export default function AddExpenseForm({ onClose, linkedGigId }: AddExpenseFormP
   const { handleError, handleSuccess } = useFormErrorHandler();
   const queryClient = useQueryClient();
 
-  // Get user's gigs for the dropdown
-  const { data: gigs = [] } = useQuery<Gig[]>({
+  // Get user's gigs for the dropdown  
+  const { data: gigsResponse } = useQuery({
     queryKey: ["/api/gigs"],
   });
+  
+  // Handle both nested and direct array formats
+  const gigs = Array.isArray(gigsResponse) 
+    ? gigsResponse 
+    : (gigsResponse && typeof gigsResponse === 'object' && 'gigs' in gigsResponse 
+       ? (gigsResponse as any).gigs || [] 
+       : []);
+  
+  // Debug log to understand data format
+  console.log("🔍 Add Expense - Gigs data:", { gigsResponse, gigs: gigs.slice(0, 3), gigsLength: gigs.length });
 
   const form = useForm<ExpenseFormData>({
     resolver: zodResolver(addExpenseSchema),
