@@ -225,7 +225,7 @@ export default function Profile() {
         <Button 
           variant="outline" 
           onClick={() => setShowOnboardingDemo(true)}
-          className="px-4 py-2 h-auto flex items-center gap-2"
+          className="px-4 py-2 h-auto flex items-center gap-2 pl-[38px] pr-[38px]"
         >
           <Play className="w-4 h-4" />
           Demo Onboarding
