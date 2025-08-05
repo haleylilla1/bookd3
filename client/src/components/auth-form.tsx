@@ -10,30 +10,60 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { Eye, EyeOff, Loader2, ArrowLeft } from "lucide-react";
+import { clientValidation, FormErrorHandler, sanitizeText, sanitizeEmail } from "@/utils/validation";
 
-// Form schemas
+// Enhanced form schemas with sanitization
 const loginSchema = z.object({
-  email: z.string().email("Invalid email address"),
-  password: z.string().min(1, "Password is required"),
+  email: z.string()
+    .min(1, "Email is required")
+    .email("Invalid email address")
+    .transform(sanitizeEmail)
+    .refine(val => val.includes('@'), 'Email must contain @ symbol'),
+  password: z.string()
+    .min(1, "Password is required")
+    .max(128, "Password too long")
+    .transform(val => val.trim()),
 });
 
 const registerSchema = z.object({
-  name: z.string().min(1, "Name is required"),
-  email: z.string().email("Invalid email address"),
-  password: z.string().min(6, "Password must be at least 6 characters"),
-  confirmPassword: z.string(),
+  name: z.string()
+    .min(1, "Name is required")
+    .max(100, "Name must be less than 100 characters")
+    .transform(sanitizeText)
+    .refine(val => val.length > 0, 'Name cannot be empty'),
+  email: z.string()
+    .min(1, "Email is required")
+    .email("Invalid email address")
+    .transform(sanitizeEmail)
+    .refine(val => val.includes('@'), 'Email must contain @ symbol'),
+  password: z.string()
+    .min(6, "Password must be at least 6 characters")
+    .max(128, "Password too long")
+    .transform(val => val.trim()),
+  confirmPassword: z.string()
+    .min(1, "Please confirm your password")
+    .transform(val => val.trim()),
 }).refine((data) => data.password === data.confirmPassword, {
   message: "Passwords don't match",
   path: ["confirmPassword"],
 });
 
 const resetRequestSchema = z.object({
-  email: z.string().email("Invalid email address"),
+  email: z.string()
+    .min(1, "Email is required")
+    .email("Invalid email address")
+    .transform(sanitizeEmail)
+    .refine(val => val.includes('@'), 'Email must contain @ symbol'),
 });
 
 const resetPasswordSchema = z.object({
-  token: z.string(),
-  newPassword: z.string().min(6, "Password must be at least 6 characters"),
+  token: z.string()
+    .min(1, "Reset token is required")
+    .transform(sanitizeText),
+  newPassword: z.string()
+    .min(6, "Password must be at least 6 characters")
+    .max(128, "Password too long")
+    .transform(val => val.trim()),
 });
 
 type LoginData = z.infer<typeof loginSchema>;
@@ -45,6 +75,7 @@ export default function AuthForm() {
   const [mode, setMode] = useState<'login' | 'register' | 'reset-request' | 'reset-password'>('login');
   const [showPassword, setShowPassword] = useState(false);
   const { toast } = useToast();
+  const [errorHandler] = useState(() => new FormErrorHandler());
 
   // Forms
   const loginForm = useForm<LoginData>({

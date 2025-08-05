@@ -20,6 +20,8 @@ import crypto from 'crypto';
 import { db } from './db';
 import { users, userSessions, passwordResetTokens } from '@shared/schema';
 import { eq, and, gt } from 'drizzle-orm';
+import { sanitizeText, sanitizeEmail } from '@shared/validation';
+import { authRateLimit } from './security';
 
 import type { Express, Request, Response, NextFunction } from 'express';
 
@@ -340,13 +342,15 @@ export async function requireAuth(req: any, res: Response, next: NextFunction): 
     const sessionId = req.cookies?.sessionId;
     
     if (!sessionId) {
-      return res.status(401).json({ error: 'Not authenticated' });
+      res.status(401).json({ error: 'Not authenticated' });
+      return;
     }
 
     const session = await Auth.validateSession(sessionId);
     
     if (!session) {
-      return res.status(401).json({ error: 'Invalid session' });
+      res.status(401).json({ error: 'Invalid session' });
+      return;
     }
 
     // SET USER ID - SINGLE SOURCE OF TRUTH
@@ -375,10 +379,10 @@ export function setupAuthRoutes(app: Express): void {
         return res.status(400).json({ error: 'Email, password, and name are required' });
       }
 
-      const sanitizedEmail = email.toLowerCase().trim();
-      const sanitizedName = sanitizeInput(name);
+      const sanitizedEmail = sanitizeEmail(email);
+      const sanitizedName = sanitizeText(name);
 
-      if (!isValidEmail(sanitizedEmail)) {
+      if (!sanitizedEmail.includes('@')) {
         return res.status(400).json({ error: 'Please enter a valid email address' });
       }
 
@@ -440,9 +444,9 @@ export function setupAuthRoutes(app: Express): void {
         return res.status(400).json({ error: 'Email and password are required' });
       }
 
-      const sanitizedEmail = email.toLowerCase().trim();
+      const sanitizedEmail = sanitizeEmail(email);
 
-      if (!isValidEmail(sanitizedEmail)) {
+      if (!sanitizedEmail.includes('@')) {
         return res.status(400).json({ error: 'Please enter a valid email address' });
       }
 
@@ -524,9 +528,9 @@ export function setupAuthRoutes(app: Express): void {
         return res.status(400).json({ error: 'Email is required' });
       }
 
-      const sanitizedEmail = email.toLowerCase().trim();
+      const sanitizedEmail = sanitizeEmail(email);
 
-      if (!isValidEmail(sanitizedEmail)) {
+      if (!sanitizedEmail.includes('@')) {
         return res.status(400).json({ error: 'Please enter a valid email address' });
       }
 
