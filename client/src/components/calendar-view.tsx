@@ -821,14 +821,7 @@ export default function CalendarView() {
                       <Button
                         variant="default"
                         onClick={() => handleGotPaid(gig)}
-                        className="bg-green-600 hover:bg-green-700 text-white text-[11px] font-medium rounded-sm flex items-center justify-center gap-0.5 w-fit"
-                        style={{ 
-                          minHeight: '20px !important', 
-                          height: '20px !important', 
-                          padding: '2px 6px !important',
-                          fontSize: '11px !important',
-                          lineHeight: '1 !important'
-                        }}
+                        className="got-paid-btn bg-green-600 hover:bg-green-700 text-white font-medium rounded-sm flex items-center justify-center gap-0.5 w-fit"
                       >
                         <DollarSign className="w-2.5 h-2.5 flex-shrink-0" />
                         Got Paid
@@ -919,14 +912,7 @@ export default function CalendarView() {
                                 handleGotPaid(gig);
                                 setShowDayGigs(false);
                               }}
-                              className="bg-green-600 hover:bg-green-700 text-white text-[11px] font-medium rounded-sm flex items-center justify-center gap-0.5 w-fit"
-                              style={{ 
-                                minHeight: '20px !important', 
-                                height: '20px !important', 
-                                padding: '2px 6px !important',
-                                fontSize: '11px !important',
-                                lineHeight: '1 !important'
-                              }}
+                              className="got-paid-btn bg-green-600 hover:bg-green-700 text-white font-medium rounded-sm flex items-center justify-center gap-0.5 w-fit"
                             >
                               <DollarSign className="w-2.5 h-2.5 flex-shrink-0" />
                               Got Paid
