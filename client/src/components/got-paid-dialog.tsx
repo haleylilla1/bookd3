@@ -265,13 +265,17 @@ export default function GotPaidDialog({ gig, isOpen, onClose, onSave }: GotPaidD
                 <div className="space-y-4 bg-gray-50 p-4 rounded-lg border">
                   <h4 className="font-medium text-sm text-gray-700">Trip Options</h4>
                   
-                  <div className="flex items-start space-x-3 p-3 border-2 border-gray-200 rounded-lg hover:border-blue-300 cursor-pointer transition-colors">
+                  <div className={`flex items-start space-x-3 p-3 border-2 rounded-lg cursor-pointer transition-colors ${
+                    isRoundTrip 
+                      ? 'border-blue-500 bg-blue-50' 
+                      : 'border-gray-200 hover:border-blue-300'
+                  }`}>
                     <input
                       type="checkbox"
                       id="roundTrip"
                       checked={isRoundTrip}
                       onChange={(e) => setIsRoundTrip(e.target.checked)}
-                      className="w-5 h-5 mt-0.5 rounded border-2 border-gray-400 text-blue-600 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 cursor-pointer"
+                      className="w-5 h-5 mt-0.5 rounded border-2 border-gray-400 text-blue-600 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 cursor-pointer checked:bg-blue-600 checked:border-blue-600"
                     />
                     <div className="flex-1">
                       <label htmlFor="roundTrip" className="text-sm font-medium cursor-pointer text-gray-900">
@@ -284,13 +288,17 @@ export default function GotPaidDialog({ gig, isOpen, onClose, onSave }: GotPaidD
                   </div>
                   
                   {gig.isMultiDay && (
-                    <div className="flex items-start space-x-3 p-3 border-2 border-gray-200 rounded-lg hover:border-blue-300 cursor-pointer transition-colors">
+                    <div className={`flex items-start space-x-3 p-3 border-2 rounded-lg cursor-pointer transition-colors ${
+                      isPerDay 
+                        ? 'border-blue-500 bg-blue-50' 
+                        : 'border-gray-200 hover:border-blue-300'
+                    }`}>
                       <input
                         type="checkbox"
                         id="perDay"
                         checked={isPerDay}
                         onChange={(e) => setIsPerDay(e.target.checked)}
-                        className="w-5 h-5 mt-0.5 rounded border-2 border-gray-400 text-blue-600 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 cursor-pointer"
+                        className="w-5 h-5 mt-0.5 rounded border-2 border-gray-400 text-blue-600 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 cursor-pointer checked:bg-blue-600 checked:border-blue-600"
                       />
                       <div className="flex-1">
                         <label htmlFor="perDay" className="text-sm font-medium cursor-pointer text-gray-900">
