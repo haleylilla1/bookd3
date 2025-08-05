@@ -29,7 +29,7 @@ export default function Home() {
 
   // Check if user needs onboarding
   useEffect(() => {
-    if (userData && !userData.onboardingCompleted) {
+    if (userData && userData.onboardingCompleted !== undefined && !userData.onboardingCompleted) {
       setShowOnboarding(true);
     }
   }, [userData]);

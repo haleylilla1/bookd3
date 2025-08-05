@@ -122,7 +122,7 @@ export function OnboardingFlow({ isOpen, onComplete, onClose }: OnboardingFlowPr
       content: (
         <div className="space-y-4">
           <p className="text-gray-600">
-            Generate your income reports here - perfect for tax time or tracking your business performance.
+            Click the big green button that says "Generate Reports" on the dashboard to create your income report - perfect for tax time or tracking your business performance.
           </p>
           <div className="bg-green-50 p-4 rounded-lg">
             <p className="text-green-700 text-sm">
