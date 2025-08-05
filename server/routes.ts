@@ -128,6 +128,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       businessPhone: userValidation.businessPhone.optional(),
       businessEmail: userValidation.businessEmail.optional(),
       defaultTaxPercentage: userValidation.defaultTaxPercentage.optional(),
+      customGigTypes: z.array(z.string().transform(sanitizeText)).optional(),
       workPreferences: z.object({
         gigTypes: z.array(z.string().transform(sanitizeText)).optional(),
         preferredClients: z.array(z.string().transform(sanitizeText)).optional()
