@@ -720,6 +720,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     validateRequestBody(z.object({
       description: expenseValidation.description,
       merchant: expenseValidation.merchant,
+      businessPurpose: z.string().min(1, 'Business purpose is required'),
       amount: expenseValidation.amount,
       category: expenseValidation.category,
       date: expenseValidation.date,

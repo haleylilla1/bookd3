@@ -1,0 +1,381 @@
+> rest-express@1.0.0 dev
+Initializing Sentry server with DSN: https://e3a605a82a58b7bcda7ada...
+✅ Ultra-simple cache initialized
+✅ Server startup: Core systems initialized
+🚀 Server running on port 5000
+🔍 Fetching gigs for user: 14
+✅ Gigs fetched successfully: 40 of 40
+🔍 Validating request body: {
+  description: 'j - h',
+  merchant: 'j',
+  amount: '4',
+  category: 'Work Meals (50% deductible)',
+  date: '2025-08-05',
+  notes: 'h',
+  gigId: 254
+}
+✅ Validation passed, sanitized data: {
+  description: 'j - h',
+  merchant: 'j',
+  amount: '4.00',
+  category: 'Work Meals (50% deductible)',
+  date: '2025-08-05',
+  notes: 'h',
+  isBusinessExpense: true,
+  isTaxDeductible: true,
+  gigId: 254
+}
+💳 Creating expense: {
+  description: 'j - h',
+  merchant: 'j',
+  amount: '4.00',
+  category: 'Work Meals (50% deductible)',
+  date: '2025-08-05',
+  notes: 'h',
+  isBusinessExpense: true,
+  isTaxDeductible: true,
+  gigId: 254,
+  userId: 14
+}
+💳 Request validation passed - proceeding with database insert
+💾 Database insert - expense data: {
+  description: 'j - h',
+  merchant: 'j',
+  amount: '4.00',
+  category: 'Work Meals (50% deductible)',
+  date: '2025-08-05',
+  notes: 'h',
+  isBusinessExpense: true,
+  isTaxDeductible: true,
+  gigId: 254,
+  userId: 14
+}
+💥 Database error creating expense: NeonDbError: null value in column "business_purpose" of relation "expenses" violates not-null constraint
+    at execute (file:///home/runner/workspace/node_modules/@neondatabase/serverless/index.mjs:1556:55)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at async NeonHttpPreparedQuery.execute (/home/runner/workspace/node_modules/src/neon-http/session.ts:68:18)
+    at async DatabaseStorage.createExpense (/home/runner/workspace/server/storage.ts:835:25)
+    at async <anonymous> (/home/runner/workspace/server/routes.ts:738:23) {
+  severity: 'ERROR',
+  code: '23502',
+  detail: 'Failing row contains (13, 14, 2025-08-05, 4.00, j, null, Work Meals (50% deductible), 254, 2025-08-05 20:20:05.419496, 2025-08-05 20:20:05.419496).',
+  hint: undefined,
+  position: undefined,
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: 'public',
+  table: 'expenses',
+  column: 'business_purpose',
+  dataType: undefined,
+  constraint: undefined,
+  file: 'execMain.c',
+  line: '2006',
+  routine: 'ExecConstraints',
+  sourceError: undefined
+}
+💥 Failed to create expense: NeonDbError: null value in column "business_purpose" of relation "expenses" violates not-null constraint
+    at execute (file:///home/runner/workspace/node_modules/@neondatabase/serverless/index.mjs:1556:55)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at async NeonHttpPreparedQuery.execute (/home/runner/workspace/node_modules/src/neon-http/session.ts:68:18)
+    at async DatabaseStorage.createExpense (/home/runner/workspace/server/storage.ts:835:25)
+    at async <anonymous> (/home/runner/workspace/server/routes.ts:738:23) {
+  severity: 'ERROR',
+  code: '23502',
+  detail: 'Failing row contains (13, 14, 2025-08-05, 4.00, j, null, Work Meals (50% deductible), 254, 2025-08-05 20:20:05.419496, 2025-08-05 20:20:05.419496).',
+  hint: undefined,
+  position: undefined,
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: 'public',
+  table: 'expenses',
+  column: 'business_purpose',
+  dataType: undefined,
+  constraint: undefined,
+  file: 'execMain.c',
+  line: '2006',
+  routine: 'ExecConstraints',
+  sourceError: undefined
+}
+🔍 Validating request body: {
+  description: 'j - h',
+  merchant: 'j',
+  amount: '4',
+  category: 'Work Meals (50% deductible)',
+  date: '2025-08-05',
+  notes: 'h',
+  gigId: 254
+}
+✅ Validation passed, sanitized data: {
+  description: 'j - h',
+  merchant: 'j',
+  amount: '4.00',
+  category: 'Work Meals (50% deductible)',
+  date: '2025-08-05',
+  notes: 'h',
+  isBusinessExpense: true,
+  isTaxDeductible: true,
+  gigId: 254
+}
+💳 Creating expense: {
+  description: 'j - h',
+  merchant: 'j',
+  amount: '4.00',
+  category: 'Work Meals (50% deductible)',
+  date: '2025-08-05',
+  notes: 'h',
+  isBusinessExpense: true,
+  isTaxDeductible: true,
+  gigId: 254,
+  userId: 14
+}
+💳 Request validation passed - proceeding with database insert
+💾 Database insert - expense data: {
+  description: 'j - h',
+  merchant: 'j',
+  amount: '4.00',
+  category: 'Work Meals (50% deductible)',
+  date: '2025-08-05',
+  notes: 'h',
+  isBusinessExpense: true,
+  isTaxDeductible: true,
+  gigId: 254,
+  userId: 14
+}
+💥 Database error creating expense: NeonDbError: null value in column "business_purpose" of relation "expenses" violates not-null constraint
+    at execute (file:///home/runner/workspace/node_modules/@neondatabase/serverless/index.mjs:1556:55)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at async NeonHttpPreparedQuery.execute (/home/runner/workspace/node_modules/src/neon-http/session.ts:68:18)
+    at async DatabaseStorage.createExpense (/home/runner/workspace/server/storage.ts:835:25)
+    at async <anonymous> (/home/runner/workspace/server/routes.ts:738:23) {
+  severity: 'ERROR',
+  code: '23502',
+  detail: 'Failing row contains (14, 14, 2025-08-05, 4.00, j, null, Work Meals (50% deductible), 254, 2025-08-05 20:20:06.659695, 2025-08-05 20:20:06.659695).',
+  hint: undefined,
+  position: undefined,
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: 'public',
+  table: 'expenses',
+  column: 'business_purpose',
+  dataType: undefined,
+  constraint: undefined,
+  file: 'execMain.c',
+  line: '2006',
+  routine: 'ExecConstraints',
+  sourceError: undefined
+}
+💥 Failed to create expense: NeonDbError: null value in column "business_purpose" of relation "expenses" violates not-null constraint
+    at execute (file:///home/runner/workspace/node_modules/@neondatabase/serverless/index.mjs:1556:55)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at async NeonHttpPreparedQuery.execute (/home/runner/workspace/node_modules/src/neon-http/session.ts:68:18)
+    at async DatabaseStorage.createExpense (/home/runner/workspace/server/storage.ts:835:25)
+    at async <anonymous> (/home/runner/workspace/server/routes.ts:738:23) {
+  severity: 'ERROR',
+  code: '23502',
+  detail: 'Failing row contains (14, 14, 2025-08-05, 4.00, j, null, Work Meals (50% deductible), 254, 2025-08-05 20:20:06.659695, 2025-08-05 20:20:06.659695).',
+  hint: undefined,
+  position: undefined,
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: 'public',
+  table: 'expenses',
+  column: 'business_purpose',
+  dataType: undefined,
+  constraint: undefined,
+  file: 'execMain.c',
+  line: '2006',
+  routine: 'ExecConstraints',
+  sourceError: undefined
+}
+🔍 Fetching gigs for user: 14
+✅ Gigs fetched successfully: 40 of 40
+🔍 Validating request body: {
+  description: 'j - h',
+  merchant: 'j',
+  amount: '5',
+  category: 'Platform or Payment Fees',
+  date: '2025-08-05',
+  notes: 'h',
+  gigId: 96
+}
+✅ Validation passed, sanitized data: {
+  description: 'j - h',
+  merchant: 'j',
+  amount: '5.00',
+  category: 'Platform or Payment Fees',
+  date: '2025-08-05',
+  notes: 'h',
+  isBusinessExpense: true,
+  isTaxDeductible: true,
+  gigId: 96
+}
+💳 Creating expense: {
+  description: 'j - h',
+  merchant: 'j',
+  amount: '5.00',
+  category: 'Platform or Payment Fees',
+  date: '2025-08-05',
+  notes: 'h',
+  isBusinessExpense: true,
+  isTaxDeductible: true,
+  gigId: 96,
+  userId: 14
+}
+💳 Request validation passed - proceeding with database insert
+💾 Database insert - expense data: {
+  description: 'j - h',
+  merchant: 'j',
+  amount: '5.00',
+  category: 'Platform or Payment Fees',
+  date: '2025-08-05',
+  notes: 'h',
+  isBusinessExpense: true,
+  isTaxDeductible: true,
+  gigId: 96,
+  userId: 14
+}
+💥 Database error creating expense: NeonDbError: null value in column "business_purpose" of relation "expenses" violates not-null constraint
+    at execute (file:///home/runner/workspace/node_modules/@neondatabase/serverless/index.mjs:1556:55)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at async NeonHttpPreparedQuery.execute (/home/runner/workspace/node_modules/src/neon-http/session.ts:68:18)
+    at async DatabaseStorage.createExpense (/home/runner/workspace/server/storage.ts:835:25)
+    at async <anonymous> (/home/runner/workspace/server/routes.ts:738:23) {
+  severity: 'ERROR',
+  code: '23502',
+  detail: 'Failing row contains (15, 14, 2025-08-05, 5.00, j, null, Platform or Payment Fees, 96, 2025-08-05 20:29:53.477937, 2025-08-05 20:29:53.477937).',
+  hint: undefined,
+  position: undefined,
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: 'public',
+  table: 'expenses',
+  column: 'business_purpose',
+  dataType: undefined,
+  constraint: undefined,
+  file: 'execMain.c',
+  line: '2006',
+  routine: 'ExecConstraints',
+  sourceError: undefined
+}
+💥 Failed to create expense: NeonDbError: null value in column "business_purpose" of relation "expenses" violates not-null constraint
+    at execute (file:///home/runner/workspace/node_modules/@neondatabase/serverless/index.mjs:1556:55)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at async NeonHttpPreparedQuery.execute (/home/runner/workspace/node_modules/src/neon-http/session.ts:68:18)
+    at async DatabaseStorage.createExpense (/home/runner/workspace/server/storage.ts:835:25)
+    at async <anonymous> (/home/runner/workspace/server/routes.ts:738:23) {
+  severity: 'ERROR',
+  code: '23502',
+  detail: 'Failing row contains (15, 14, 2025-08-05, 5.00, j, null, Platform or Payment Fees, 96, 2025-08-05 20:29:53.477937, 2025-08-05 20:29:53.477937).',
+  hint: undefined,
+  position: undefined,
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: 'public',
+  table: 'expenses',
+  column: 'business_purpose',
+  dataType: undefined,
+  constraint: undefined,
+  file: 'execMain.c',
+  line: '2006',
+  routine: 'ExecConstraints',
+  sourceError: undefined
+}
+🔍 Validating request body: {
+  description: 'j - h',
+  merchant: 'j',
+  amount: '5',
+  category: 'Platform or Payment Fees',
+  date: '2025-08-05',
+  notes: 'h',
+  gigId: 96
+}
+✅ Validation passed, sanitized data: {
+  description: 'j - h',
+  merchant: 'j',
+  amount: '5.00',
+  category: 'Platform or Payment Fees',
+  date: '2025-08-05',
+  notes: 'h',
+  isBusinessExpense: true,
+  isTaxDeductible: true,
+  gigId: 96
+}
+💳 Creating expense: {
+  description: 'j - h',
+  merchant: 'j',
+  amount: '5.00',
+  category: 'Platform or Payment Fees',
+  date: '2025-08-05',
+  notes: 'h',
+  isBusinessExpense: true,
+  isTaxDeductible: true,
+  gigId: 96,
+  userId: 14
+}
+💳 Request validation passed - proceeding with database insert
+💾 Database insert - expense data: {
+  description: 'j - h',
+  merchant: 'j',
+  amount: '5.00',
+  category: 'Platform or Payment Fees',
+  date: '2025-08-05',
+  notes: 'h',
+  isBusinessExpense: true,
+  isTaxDeductible: true,
+  gigId: 96,
+  userId: 14
+}
+💥 Database error creating expense: NeonDbError: null value in column "business_purpose" of relation "expenses" violates not-null constraint
+    at execute (file:///home/runner/workspace/node_modules/@neondatabase/serverless/index.mjs:1556:55)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at async NeonHttpPreparedQuery.execute (/home/runner/workspace/node_modules/src/neon-http/session.ts:68:18)
+    at async DatabaseStorage.createExpense (/home/runner/workspace/server/storage.ts:835:25)
+    at async <anonymous> (/home/runner/workspace/server/routes.ts:738:23) {
+  severity: 'ERROR',
+  code: '23502',
+  detail: 'Failing row contains (16, 14, 2025-08-05, 5.00, j, null, Platform or Payment Fees, 96, 2025-08-05 20:29:54.706852, 2025-08-05 20:29:54.706852).',
+  hint: undefined,
+  position: undefined,
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: 'public',
+  table: 'expenses',
+  column: 'business_purpose',
+  dataType: undefined,
+  constraint: undefined,
+  file: 'execMain.c',
+  line: '2006',
+  routine: 'ExecConstraints',
+  sourceError: undefined
+}
+💥 Failed to create expense: NeonDbError: null value in column "business_purpose" of relation "expenses" violates not-null constraint
+    at execute (file:///home/runner/workspace/node_modules/@neondatabase/serverless/index.mjs:1556:55)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at async NeonHttpPreparedQuery.execute (/home/runner/workspace/node_modules/src/neon-http/session.ts:68:18)
+    at async DatabaseStorage.createExpense (/home/runner/workspace/server/storage.ts:835:25)
+    at async <anonymous> (/home/runner/workspace/server/routes.ts:738:23) {
+  severity: 'ERROR',
+  code: '23502',
+  detail: 'Failing row contains (16, 14, 2025-08-05, 5.00, j, null, Platform or Payment Fees, 96, 2025-08-05 20:29:54.706852, 2025-08-05 20:29:54.706852).',
+  hint: undefined,
+  position: undefined,
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: 'public',
+  table: 'expenses',
+  column: 'business_purpose',
+  dataType: undefined,
+  constraint: undefined,
+  file: 'execMain.c',
+  line: '2006',
+  routine: 'ExecConstraints',
+  sourceError: undefined
+}
