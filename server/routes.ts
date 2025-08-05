@@ -280,16 +280,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/gigs', requireAuth,
     validateRequestBody(z.object({
-      clientName: gigValidation.clientName,
-      gigType: gigValidation.gigType,
-      location: gigValidation.location,
-      date: gigValidation.date,
-      amount: gigValidation.amount,
-      notes: gigValidation.notes.optional(),
-      mileage: gigValidation.mileage.optional(),
+      // Core gig fields that match InsertGig schema
+      gigType: z.string().min(1, "Gig type is required"),
+      eventName: z.string().min(1, "Event name is required"),
+      clientName: z.string().min(1, "Client name is required"),
+      date: z.string().min(1, "Date is required"),
+      startDate: z.string().min(1, "Start date is required"),
+      endDate: z.string().optional(),
+      expectedPay: z.string().min(1, "Expected pay is required"),
+      actualPay: z.string().default("0"),
+      tips: z.string().default("0"),
+      paymentMethod: z.string().default("Cash"),
+      status: z.enum(["upcoming", "pending payment", "completed"]).default("upcoming"),
+      duties: z.string().optional().nullable(),
+      notes: z.string().optional().nullable(),
+      taxPercentage: z.number().default(23),
+      mileage: z.number().default(0),
+      parkingExpense: z.string().default("0"),
+      parkingDescription: z.string().optional().nullable(),
+      parkingReimbursed: z.boolean().default(false),
+      otherExpenses: z.string().default("0"),
+      otherExpenseDescription: z.string().optional().nullable(),
+      otherExpensesReimbursed: z.boolean().default(false),
+      totalReceived: z.string().default("0"),
+      reimbursedParking: z.string().default("0"),
+      reimbursedOther: z.string().default("0"),
+      unreimbursedParking: z.string().default("0"),
+      unreimbursedOther: z.string().default("0"),
+      gotPaidDate: z.string().optional().nullable(),
+      // Multi-day gig fields
       isMultiDay: z.boolean().optional(),
-      endDate: gigValidation.date.optional(),
-      multiDayGroupId: z.string().optional()
+      multiDayGroupId: z.string().optional().nullable()
     })),
     async (req: any, res) => {
     try {
