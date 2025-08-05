@@ -822,9 +822,9 @@ export default function CalendarView() {
                         variant="default"
                         size="sm"
                         onClick={() => handleGotPaid(gig)}
-                        className="bg-green-600 hover:bg-green-700 text-white w-full"
+                        className="bg-green-600 hover:bg-green-700 text-white text-xs px-3 py-1.5 min-w-0 whitespace-nowrap"
                       >
-                        <DollarSign className="w-4 h-4 mr-1" />
+                        <DollarSign className="w-3 h-3 mr-1" />
                         Got Paid
                       </Button>
                     )}
@@ -914,9 +914,9 @@ export default function CalendarView() {
                                 handleGotPaid(gig);
                                 setShowDayGigs(false);
                               }}
-                              className="bg-green-600 hover:bg-green-700 text-white w-full"
+                              className="bg-green-600 hover:bg-green-700 text-white text-xs px-3 py-1.5 min-w-0 whitespace-nowrap"
                             >
-                              <DollarSign className="h-4 w-4 mr-1" />
+                              <DollarSign className="h-3 w-3 mr-1" />
                               Got Paid
                             </Button>
                           )}
