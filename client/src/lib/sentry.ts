@@ -1,12 +1,14 @@
 import * as Sentry from "@sentry/react";
 
 export function initSentry() {
-  const dsn = import.meta.env.VITE_SENTRY_DSN;
+  const dsn = import.meta.env.VITE_SENTRY_DSN || "https://e3a605a82a58b7bcda7ada1c8f676fbd@o4509788026765312.ingest.us.sentry.io/4509788821389312";
   
   if (!dsn) {
     console.warn("Sentry DSN not found - error monitoring disabled");
     return;
   }
+  
+  console.log("Initializing Sentry with DSN:", dsn.substring(0, 30) + "...");
 
   Sentry.init({
     dsn,
@@ -18,14 +20,18 @@ export function initSentry() {
     // Performance Monitoring
     tracesSampleRate: import.meta.env.MODE === 'production' ? 0.1 : 1.0, // 10% in prod, 100% in dev
     
+    // Enable PII data collection (IP addresses, user agent, etc.)
+    sendDefaultPii: true,
+    
     // Release tracking
     release: import.meta.env.VITE_APP_VERSION || 'unknown',
     
     // Error filtering
     beforeSend(event) {
-      // Don't send events in development unless explicitly enabled
-      if (import.meta.env.MODE === 'development' && !import.meta.env.VITE_SENTRY_DEBUG) {
-        return null;
+      // Send all events in development for testing
+      if (import.meta.env.MODE === 'development') {
+        console.log('Sentry: Sending error event', event);
+        return event;
       }
       return event;
     },
