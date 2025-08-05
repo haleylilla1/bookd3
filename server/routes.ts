@@ -5,6 +5,21 @@ import { requireAuth } from "./auth";
 import { db } from "./db";
 import { users, gigs } from "@shared/schema";
 import { count } from "drizzle-orm";
+import { 
+  generalRateLimit, 
+  authRateLimit, 
+  exportRateLimit,
+  setSecurityHeaders,
+  sanitizeRequestBody,
+  sanitizeQueryParams,
+  validateRequestBody,
+  validateQueryParams,
+  validateRequestSize,
+  secureErrorHandler,
+  commonSchemas
+} from "./security";
+import { userValidation, gigValidation, expenseValidation, goalValidation, sanitizeText, sanitizeNumber, sanitizeAddress } from "@shared/validation";
+import { z } from 'zod';
 
 
 // Helper function to get user ID from request
@@ -18,7 +33,14 @@ function getUserId(req: any): number {
 // Simple rate limiting removed for production simplicity
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // Setup authentication routes
+  // Apply security middleware first
+  app.use(setSecurityHeaders);
+  app.use(generalRateLimit);
+  app.use(sanitizeRequestBody);
+  app.use(sanitizeQueryParams);
+  app.use(validateRequestSize(500)); // 500KB limit for most requests
+
+  // Setup authentication routes with stricter rate limiting
   const { setupAuthRoutes } = await import('./auth');
   setupAuthRoutes(app);
 
@@ -95,7 +117,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put('/api/user', requireAuth, async (req: any, res: Response) => {
+  app.put('/api/user', requireAuth, 
+    validateRequestBody(z.object({
+      name: userValidation.name.optional(),
+      email: userValidation.email.optional(),
+      phone: userValidation.phone.optional(),
+      homeAddress: userValidation.homeAddress.optional(),
+      businessName: userValidation.businessName.optional(),
+      businessAddress: userValidation.businessAddress.optional(),
+      businessPhone: userValidation.businessPhone.optional(),
+      businessEmail: userValidation.businessEmail.optional(),
+      defaultTaxPercentage: userValidation.defaultTaxPercentage.optional(),
+      workPreferences: z.object({
+        gigTypes: z.array(z.string().transform(sanitizeText)).optional(),
+        preferredClients: z.array(z.string().transform(sanitizeText)).optional()
+      }).optional()
+    })),
+    async (req: any, res: Response) => {
     try {
       const userId = getUserId(req);
       const updatedUser = await storage.updateUser(userId, req.body);
@@ -106,14 +144,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Add client to preferred clients list
-  app.post('/api/user/add-preferred-client', requireAuth, async (req: any, res: Response) => {
+  app.post('/api/user/add-preferred-client', requireAuth,
+    validateRequestBody(z.object({
+      clientName: z.string()
+        .min(1, 'Client name is required')
+        .max(200, 'Client name must be less than 200 characters')
+        .transform(sanitizeText)
+    })),
+    async (req: any, res: Response) => {
     try {
       const userId = getUserId(req);
       const { clientName } = req.body;
-      
-      if (!clientName || typeof clientName !== 'string') {
-        return res.status(400).json({ error: 'Client name is required' });
-      }
 
       const user = await storage.getUser(userId);
       if (!user) {
@@ -122,10 +163,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const workPreferences = user.workPreferences || {};
       const currentPreferred = (workPreferences as any)?.preferredClients || [];
-      if (!currentPreferred.includes(clientName.trim())) {
+      if (!currentPreferred.includes(clientName)) {
         const updatedPreferences = {
           ...workPreferences,
-          preferredClients: [...currentPreferred, clientName.trim()]
+          preferredClients: [...currentPreferred, clientName]
         };
         
         await storage.updateUser(userId, { 
@@ -201,11 +242,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Gig routes with pagination
-  app.get('/api/gigs', requireAuth, async (req: any, res: Response) => {
+  app.get('/api/gigs', requireAuth,
+    validateQueryParams(z.object({
+      limit: z.coerce.number().min(1).max(1000).default(50),
+      offset: z.coerce.number().min(0).default(0),
+      status: z.string().optional(),
+      startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+      endDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional()
+    })),
+    async (req: any, res: Response) => {
     try {
       const userId = getUserId(req);
-      const limit = parseInt(req.query.limit as string) || 50;
-      const offset = parseInt(req.query.offset as string) || 0;
+      const { limit, offset } = req.query;
       
       console.log('🔍 Fetching gigs for user:', userId);
       const gigsData = await storage.getGigsByUser(userId, limit, offset);
@@ -234,7 +282,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/gigs', requireAuth, async (req: any, res) => {
+  app.post('/api/gigs', requireAuth,
+    validateRequestBody(z.object({
+      clientName: gigValidation.clientName,
+      gigType: gigValidation.gigType,
+      location: gigValidation.location,
+      date: gigValidation.date,
+      amount: gigValidation.amount,
+      notes: gigValidation.notes.optional(),
+      mileage: gigValidation.mileage.optional(),
+      isMultiDay: z.boolean().optional(),
+      endDate: gigValidation.date.optional(),
+      multiDayGroupId: z.string().optional()
+    })),
+    async (req: any, res) => {
     try {
       const userId = getUserId(req);
       const gigData = { ...req.body, userId };
@@ -287,7 +348,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // "Got Paid" endpoint for tax-smart payment processing
-  app.post('/api/gigs/:id/got-paid', requireAuth, async (req: any, res) => {
+  app.post('/api/gigs/:id/got-paid', requireAuth,
+    validateRequestBody(z.object({
+      totalReceived: z.union([z.string(), z.number()])
+        .transform(val => sanitizeNumber(val, 0))
+        .refine(val => val > 0, 'Total received must be greater than 0'),
+      parkingSpent: z.union([z.string(), z.number()])
+        .transform(val => sanitizeNumber(val, 0))
+        .refine(val => val >= 0, 'Parking spent cannot be negative'),
+      parkingReimbursed: z.union([z.string(), z.number()])
+        .transform(val => sanitizeNumber(val, 0))
+        .refine(val => val >= 0, 'Parking reimbursed cannot be negative'),
+      otherExpenses: z.array(z.object({
+        name: z.string().transform(sanitizeText).refine(val => val.length > 0, 'Expense name required'),
+        amount: z.union([z.string(), z.number()]).transform(val => sanitizeNumber(val, 0))
+      })).optional().default([]),
+      otherReimbursed: z.union([z.string(), z.number()])
+        .transform(val => sanitizeNumber(val, 0))
+        .refine(val => val >= 0, 'Other reimbursed cannot be negative'),
+      paymentMethod: z.string().transform(sanitizeText).optional(),
+      taxPercentage: z.union([z.string(), z.number()])
+        .transform(val => sanitizeNumber(val, 25))
+        .refine(val => val >= 0 && val <= 100, 'Tax percentage must be between 0 and 100')
+    })),
+    async (req: any, res) => {
     try {
       const userId = getUserId(req);
       const gigId = parseInt(req.params.id);
@@ -516,13 +600,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Address autocomplete endpoint using Google Places API
-  app.get('/api/address-autocomplete', requireAuth, async (req: any, res: Response) => {
+  app.get('/api/address-autocomplete', requireAuth, 
+    validateQueryParams(z.object({
+      input: z.string()
+        .min(2, 'Input must be at least 2 characters')
+        .max(200, 'Input must be less than 200 characters')
+        .transform(sanitizeText)
+    })),
+    async (req: any, res: Response) => {
     try {
       const { input } = req.query;
-      
-      if (!input || typeof input !== 'string' || input.length < 2) {
-        return res.json({ suggestions: [] });
-      }
 
       const apiKey = process.env.GOOGLE_MAPS_API_KEY;
       if (!apiKey) {
@@ -557,16 +644,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Distance calculation endpoint - simplified from over-engineered mileage service
-  app.post('/api/calculate-distance', requireAuth, async (req: any, res: Response) => {
+  app.post('/api/calculate-distance', requireAuth,
+    validateRequestBody(z.object({
+      startAddress: z.string()
+        .min(5, 'Start address is required')
+        .max(500, 'Start address must be less than 500 characters')
+        .transform(sanitizeAddress),
+      endAddress: z.string()
+        .min(5, 'End address is required')
+        .max(500, 'End address must be less than 500 characters')
+        .transform(sanitizeAddress),
+      roundTrip: z.boolean().default(false)
+    })),
+    async (req: any, res: Response) => {
     try {
       const { startAddress, endAddress, roundTrip } = req.body;
-      
-      if (!startAddress || !endAddress) {
-        return res.status(400).json({ 
-          error: 'Start and end addresses are required',
-          status: 'error'
-        });
-      }
 
       const { simpleMileageService } = await import('./simple-mileage');
       const result = await simpleMileageService.calculateDistance(startAddress, endAddress);
@@ -603,11 +695,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Expense routes
-  app.get('/api/expenses', requireAuth, async (req: any, res: Response) => {
+  app.get('/api/expenses', requireAuth,
+    validateQueryParams(z.object({
+      limit: z.coerce.number().min(1).max(1000).default(50),
+      offset: z.coerce.number().min(0).default(0),
+      category: z.string().optional(),
+      startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+      endDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional()
+    })),
+    async (req: any, res: Response) => {
     try {
       const userId = getUserId(req);
-      const limit = parseInt(req.query.limit as string) || 50;
-      const offset = parseInt(req.query.offset as string) || 0;
+      const { limit, offset } = req.query;
       
       const expensesData = await storage.getExpensesByUser(userId, limit, offset);
       res.json(expensesData);
@@ -616,7 +715,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/expenses', requireAuth, async (req: any, res: Response) => {
+  app.post('/api/expenses', requireAuth,
+    validateRequestBody(z.object({
+      description: expenseValidation.description,
+      amount: expenseValidation.amount,
+      category: expenseValidation.category,
+      date: expenseValidation.date,
+      notes: expenseValidation.notes.optional(),
+      receiptUrl: z.string().url().optional(),
+      isBusinessExpense: z.boolean().default(true),
+      isTaxDeductible: z.boolean().default(true)
+    })),
+    async (req: any, res: Response) => {
     try {
       const userId = getUserId(req);
       const expenseData = { ...req.body, userId };
@@ -685,10 +795,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Backup and Data Export endpoints
-  app.get('/api/backup/export', requireAuth, async (req: any, res) => {
+  app.get('/api/backup/export', requireAuth, exportRateLimit,
+    validateQueryParams(z.object({
+      format: z.enum(['json', 'excel']).default('json')
+    })),
+    async (req: any, res) => {
     try {
       const userId = getUserId(req);
-      const format = req.query.format || 'json';
+      const { format } = req.query;
       console.log(`📦 ${format.toUpperCase()} export requested by user ${userId}`);
       
       const { backupManager } = await import('./backup');
@@ -715,7 +829,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get('/api/backup/download', requireAuth, async (req: any, res) => {
+  app.get('/api/backup/download', requireAuth, exportRateLimit, async (req: any, res) => {
     try {
       const userId = getUserId(req);
       console.log(`📥 Backup download requested by user ${userId}`);
@@ -748,6 +862,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Apply security error handler last
+  app.use(secureErrorHandler);
+  
   const httpServer = createServer(app);
   return httpServer;
 }
