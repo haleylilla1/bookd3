@@ -817,8 +817,8 @@ export default function CalendarView() {
 
                   {/* Action Buttons - Mobile Optimized Layout */}
                   <div className="flex flex-col gap-2 pt-2">
-                    <div className="flex items-center justify-center gap-2">
-                      {gig.status !== 'completed' && (
+                    {gig.status !== 'completed' && (
+                      <div className="flex justify-center">
                         <Button
                           variant="default"
                           size="sm"
@@ -828,7 +828,9 @@ export default function CalendarView() {
                           <DollarSign className="w-4 h-4 mr-1" />
                           Got Paid
                         </Button>
-                      )}
+                      </div>
+                    )}
+                    <div className="flex items-center justify-center gap-2">
                       <Button
                         variant="ghost"
                         size="sm"
@@ -906,8 +908,8 @@ export default function CalendarView() {
                         
                         {/* Action Buttons - Mobile Optimized Layout */}
                         <div className="flex flex-col gap-2">
-                          <div className="flex items-center justify-center gap-2">
-                            {gig.status !== 'completed' && (
+                          {gig.status !== 'completed' && (
+                            <div className="flex justify-center">
                               <Button
                                 size="sm"
                                 variant="default"
@@ -920,7 +922,9 @@ export default function CalendarView() {
                                 <DollarSign className="h-4 w-4 mr-1" />
                                 Got Paid
                               </Button>
-                            )}
+                            </div>
+                          )}
+                          <div className="flex items-center justify-center gap-2">
                             <Button
                               size="sm"
                               variant="outline"

@@ -283,8 +283,8 @@ export default function GigLog() {
 
                   {/* Action Buttons - Mobile Optimized Layout */}
                   <div className="flex flex-col gap-2 pt-2">
-                    <div className="flex items-center justify-center gap-2">
-                      {gig.status !== 'completed' && (
+                    {gig.status !== 'completed' && (
+                      <div className="flex justify-center">
                         <Button
                           variant="default"
                           size="sm"
@@ -294,7 +294,9 @@ export default function GigLog() {
                           <DollarSign className="w-4 h-4 mr-1" />
                           Got Paid
                         </Button>
-                      )}
+                      </div>
+                    )}
+                    <div className="flex items-center justify-center gap-2">
                       <Button
                         variant="ghost"
                         size="sm"
