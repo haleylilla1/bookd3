@@ -688,14 +688,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/backup/export', requireAuth, async (req: any, res) => {
     try {
       const userId = getUserId(req);
-      console.log(`📦 Export requested by user ${userId}`);
+      const format = req.query.format || 'json';
+      console.log(`📦 ${format.toUpperCase()} export requested by user ${userId}`);
       
       const { backupManager } = await import('./backup');
-      const backupData = await backupManager.createUserBackup(userId);
       
-      res.setHeader('Content-Type', 'application/json');
-      res.setHeader('Content-Disposition', `attachment; filename="bookd-export-${userId}-${Date.now()}.json"`);
-      res.json(backupData);
+      if (format === 'excel') {
+        const filepath = await backupManager.exportUserDataAsExcel(userId);
+        res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        res.setHeader('Content-Disposition', `attachment; filename="bookd-export-${userId}-${Date.now()}.xlsx"`);
+        res.download(filepath, (err) => {
+          if (err) {
+            console.error('❌ Excel download failed:', err);
+          }
+        });
+      } else {
+        const backupData = await backupManager.createUserBackup(userId);
+        res.setHeader('Content-Type', 'application/json');
+        res.setHeader('Content-Disposition', `attachment; filename="bookd-export-${userId}-${Date.now()}.json"`);
+        res.json(backupData);
+      }
       
     } catch (error) {
       console.error('❌ Export failed:', error);

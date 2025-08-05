@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Download, FileJson, Archive, Info, AlertCircle, CheckCircle } from 'lucide-react';
+import { Download, FileJson, Archive, Info, AlertCircle, CheckCircle, FileSpreadsheet } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 interface BackupInfo {
@@ -18,10 +18,47 @@ export function DataExport() {
   const [showInfo, setShowInfo] = useState(false);
   const { toast } = useToast();
 
+  const handleExportExcel = async () => {
+    setIsExporting(true);
+    try {
+      const response = await fetch('/api/backup/export?format=excel', {
+        credentials: 'include'
+      });
+      
+      if (!response.ok) {
+        throw new Error('Export failed');
+      }
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `bookd-export-${Date.now()}.xlsx`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+
+      toast({
+        title: "Export Successful",
+        description: "Your data has been exported as Excel spreadsheet."
+      });
+    } catch (error) {
+      console.error('Export failed:', error);
+      toast({
+        title: "Export Failed",
+        description: "Failed to export your data. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   const handleExportJSON = async () => {
     setIsExporting(true);
     try {
-      const response = await fetch('/api/backup/export', {
+      const response = await fetch('/api/backup/export?format=json', {
         credentials: 'include'
       });
       
@@ -143,14 +180,40 @@ export function DataExport() {
             </AlertDescription>
           </Alert>
 
-          <div className="grid gap-4 md:grid-cols-2">
+          <div className="grid gap-4 md:grid-cols-3">
+            <Card>
+              <CardContent className="pt-6">
+                <div className="flex items-center gap-3 mb-3">
+                  <FileSpreadsheet className="w-8 h-8 text-green-600" />
+                  <div>
+                    <h3 className="font-semibold">Excel Export</h3>
+                    <p className="text-sm text-gray-600">Spreadsheet with separate sheets</p>
+                  </div>
+                </div>
+                <Button 
+                  onClick={handleExportExcel}
+                  disabled={isExporting}
+                  className="w-full"
+                >
+                  {isExporting ? (
+                    <>Exporting...</>
+                  ) : (
+                    <>
+                      <Download className="w-4 h-4 mr-2" />
+                      Export as Excel
+                    </>
+                  )}
+                </Button>
+              </CardContent>
+            </Card>
+
             <Card>
               <CardContent className="pt-6">
                 <div className="flex items-center gap-3 mb-3">
                   <FileJson className="w-8 h-8 text-blue-500" />
                   <div>
                     <h3 className="font-semibold">JSON Export</h3>
-                    <p className="text-sm text-gray-600">Human-readable data format</p>
+                    <p className="text-sm text-gray-600">Raw data format</p>
                   </div>
                 </div>
                 <Button 
@@ -174,16 +237,17 @@ export function DataExport() {
             <Card>
               <CardContent className="pt-6">
                 <div className="flex items-center gap-3 mb-3">
-                  <Archive className="w-8 h-8 text-green-500" />
+                  <Archive className="w-8 h-8 text-purple-500" />
                   <div>
                     <h3 className="font-semibold">Complete Backup</h3>
-                    <p className="text-sm text-gray-600">Compressed archive with metadata</p>
+                    <p className="text-sm text-gray-600">ZIP archive with metadata</p>
                   </div>
                 </div>
                 <Button 
                   onClick={handleDownloadBackup}
                   disabled={isDownloading}
                   className="w-full"
+                  variant="outline"
                 >
                   {isDownloading ? (
                     <>Creating Backup...</>
@@ -227,26 +291,28 @@ export function DataExport() {
 
       <Card>
         <CardHeader>
-          <CardTitle>What's Included in Your Export?</CardTitle>
+          <CardTitle>Excel Export Details</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid gap-4 md:grid-cols-2">
             <div>
-              <h4 className="font-semibold mb-2">User Data:</h4>
+              <h4 className="font-semibold mb-2">Excel Sheets Included:</h4>
               <ul className="text-sm space-y-1 text-gray-600">
-                <li>• Profile information</li>
-                <li>• Business settings</li>
-                <li>• Tax preferences</li>
-                <li>• Home address (for mileage)</li>
+                <li>• <strong>Profile</strong> - Your account information</li>
+                <li>• <strong>Gigs</strong> - All gig records with payments</li>
+                <li>• <strong>Expenses</strong> - Business expenses by category</li>
+                <li>• <strong>Goals</strong> - Income goals by month/year</li>
+                <li>• <strong>Summary</strong> - Total income, expenses, mileage</li>
               </ul>
             </div>
             <div>
-              <h4 className="font-semibold mb-2">Financial Records:</h4>
+              <h4 className="font-semibold mb-2">Perfect for:</h4>
               <ul className="text-sm space-y-1 text-gray-600">
-                <li>• All gig records and payments</li>
-                <li>• Business expenses and receipts</li>
-                <li>• Income goals and tracking</li>
-                <li>• Mileage calculations</li>
+                <li>• Tax preparation and filing</li>
+                <li>• Accountant collaboration</li>
+                <li>• Financial analysis and budgeting</li>
+                <li>• Backup and record keeping</li>
+                <li>• Import into other software</li>
               </ul>
             </div>
           </div>
