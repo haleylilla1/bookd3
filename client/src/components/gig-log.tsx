@@ -288,7 +288,7 @@ export default function GigLog() {
                         variant="default"
                         size="sm"
                         onClick={() => handleGotPaid(gig)}
-                        className="bg-green-600 hover:bg-green-700 text-white w-full px-2 py-1 text-sm"
+                        className="bg-green-600 hover:bg-green-700 text-white px-2 py-1 text-sm w-fit"
                       >
                         <DollarSign className="w-4 h-4 mr-1" />
                         Got Paid
