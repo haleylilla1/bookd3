@@ -23,6 +23,8 @@ export interface GotPaidData {
   mileage: number;
   parkingSpent: number;
   parkingReimbursed: number;
+  otherExpenses: Array<{ name: string; amount: number }>;
+  otherReimbursed: number;
   paymentMethod?: string;
   taxPercentage: number;
 }
@@ -69,6 +71,8 @@ export default function GotPaidDialog({ gig, isOpen, onClose, onSave }: GotPaidD
     mileage: gig.mileage || 0,
     parkingSpent: parseFloat(gig.parkingExpense || "0"),
     parkingReimbursed: gig.parkingReimbursed ? parseFloat(gig.parkingExpense || "0") : 0,
+    otherExpenses: [],
+    otherReimbursed: 0,
     paymentMethod: gig.paymentMethod || "",
     taxPercentage: gig.taxPercentage || 25,
   });
