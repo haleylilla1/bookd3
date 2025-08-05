@@ -60,6 +60,7 @@ export default function AddExpenseForm({ onClose, linkedGigId }: AddExpenseFormP
       const apiData = {
         description: `${data.merchant ? data.merchant + ' - ' : ''}${data.businessPurpose || data.merchant || 'Business expense'}`,
         merchant: data.merchant || 'Unknown', // Database requires merchant field
+        businessPurpose: data.businessPurpose || 'Business expense', // Database requires business_purpose field
         amount: data.amount,
         category: data.category,
         date: data.date,
