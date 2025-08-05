@@ -159,11 +159,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Update user profile with setup data
       const workPreferences = user.workPreferences || { primaryGigTypes: [], preferredClients: [] };
       
-      // Add gig types (split by comma and clean up)
-      const gigTypesList = gigTypes.split(',').map((type: string) => type.trim()).filter(Boolean);
+      // Add single gig type (no comma splitting needed)
+      const gigType = gigTypes.trim();
       const existingTypes = ((workPreferences as any)?.primaryGigTypes || []);
-      const allTypes = [...existingTypes, ...gigTypesList];
-      const updatedGigTypes = Array.from(new Set(allTypes));
+      const updatedGigTypes = existingTypes.includes(gigType) 
+        ? existingTypes 
+        : [...existingTypes, gigType];
       
       // Add client (avoid duplicates)
       const updatedClients = (workPreferences as any)?.preferredClients || [];
