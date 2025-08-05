@@ -820,12 +820,11 @@ export default function CalendarView() {
                     {gig.status !== 'completed' && (
                       <Button
                         variant="default"
-                        size="sm"
                         onClick={() => handleGotPaid(gig)}
-                        className="bg-green-600 hover:bg-green-700 text-white text-xs px-3 py-1.5 min-w-0 whitespace-nowrap"
+                        className="bg-green-600 hover:bg-green-700 text-white text-xs h-7 px-2 py-1 font-medium rounded-md flex items-center justify-center gap-1 min-w-fit max-w-20 sm:max-w-24"
                       >
-                        <DollarSign className="w-3 h-3 mr-1" />
-                        Got Paid
+                        <DollarSign className="w-3 h-3 flex-shrink-0" />
+                        <span className="text-[10px] sm:text-xs leading-none">Paid</span>
                       </Button>
                     )}
                     <div className="flex items-center justify-center gap-2">
@@ -908,16 +907,15 @@ export default function CalendarView() {
                         <div className="flex flex-col gap-2">
                           {gig.status !== 'completed' && (
                             <Button
-                              size="sm"
                               variant="default"
                               onClick={() => {
                                 handleGotPaid(gig);
                                 setShowDayGigs(false);
                               }}
-                              className="bg-green-600 hover:bg-green-700 text-white text-xs px-3 py-1.5 min-w-0 whitespace-nowrap"
+                              className="bg-green-600 hover:bg-green-700 text-white text-xs h-7 px-2 py-1 font-medium rounded-md flex items-center justify-center gap-1 min-w-fit max-w-20 sm:max-w-24"
                             >
-                              <DollarSign className="h-3 w-3 mr-1" />
-                              Got Paid
+                              <DollarSign className="w-3 h-3 flex-shrink-0" />
+                              <span className="text-[10px] sm:text-xs leading-none">Paid</span>
                             </Button>
                           )}
                           <div className="flex items-center justify-center gap-2">
