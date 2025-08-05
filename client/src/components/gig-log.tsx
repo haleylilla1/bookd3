@@ -287,9 +287,8 @@ export default function GigLog() {
                       <div className="flex justify-center">
                         <Button
                           variant="default"
-                          size="sm"
                           onClick={() => handleGotPaid(gig)}
-                          className="bg-green-600 hover:bg-green-700 text-white px-2 py-1 text-sm"
+                          className="bg-green-600 hover:bg-green-700 text-white px-2 py-1 text-sm h-auto"
                         >
                           <DollarSign className="w-4 h-4 mr-1" />
                           Got Paid
