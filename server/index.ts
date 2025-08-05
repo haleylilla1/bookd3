@@ -15,6 +15,7 @@ import { registerRoutes } from "./routes";
 // Removed over-engineered startup validation system
 import { setupVite, serveStatic } from "./vite";
 import { handleUnhandledRejections, handleUncaughtExceptions } from "./error-handler";
+import { performanceMonitor } from "./performance-monitor";
 
 const app = express();
 const port = process.env.PORT || 5000;

@@ -86,7 +86,12 @@ export const users = pgTable("users", {
   
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
-});
+}, (table) => [
+  // AUTHENTICATION INDEXES for fast lookups
+  index("idx_users_email").on(table.email), // Login queries
+  index("idx_users_replit_id").on(table.replitId), // Replit auth
+  index("idx_users_active").on(table.isActive), // Active users only
+]);
 
 export const monthlyGoals = pgTable("monthly_goals", {
   id: serial("id").primaryKey(),
@@ -157,7 +162,14 @@ export const gigs = pgTable("gigs", {
   isMultiDay: boolean("is_multi_day").default(false),
   multiDayGroupId: text("multi_day_group_id"), // Groups multi-day gig entries together
   createdAt: timestamp("created_at").defaultNow(),
-});
+}, (table) => [
+  // CRITICAL SCALABILITY INDEXES for 1,000+ users with 10,000+ records each
+  index("idx_gigs_user_id").on(table.userId), // Most common query: user's gigs
+  index("idx_gigs_user_date").on(table.userId, table.date), // Dashboard date filtering
+  index("idx_gigs_user_status").on(table.userId, table.status), // Status filtering
+  index("idx_gigs_date_range").on(table.date), // Date range queries
+  index("idx_gigs_user_created").on(table.userId, table.createdAt), // Pagination ordering
+]);
 
 export const goals = pgTable("goals", {
   id: serial("id").primaryKey(),
@@ -169,7 +181,11 @@ export const goals = pgTable("goals", {
   dueDate: date("due_date"),
   isCompleted: boolean("is_completed").default(false),
   goalDuration: text("goal_duration").notNull().default("monthly"), // "monthly" or "yearly"
-});
+}, (table) => [
+  // SCALABILITY INDEXES for goals
+  index("idx_goals_user_id").on(table.userId), // User's goals
+  index("idx_goals_user_status").on(table.userId, table.isCompleted), // Active goals
+]);
 
 // Enhanced expense tracking and budget management
 export const expenseCategories = pgTable("expense_categories", {
@@ -193,7 +209,13 @@ export const expenses = pgTable("expenses", {
   gigId: integer("gig_id").references(() => gigs.id), // Optional link to gig
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
-});
+}, (table) => [
+  // SCALABILITY INDEXES for expense queries
+  index("idx_expenses_user_id").on(table.userId), // User's expenses
+  index("idx_expenses_user_date").on(table.userId, table.date), // Date filtering
+  index("idx_expenses_user_category").on(table.userId, table.category), // Category filtering
+  index("idx_expenses_gig_id").on(table.gigId), // Gig-linked expenses
+]);
 
 export const budgets = pgTable("budgets", {
   id: serial("id").primaryKey(),
