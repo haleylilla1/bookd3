@@ -37,6 +37,14 @@ export function OnboardingFlow({ isOpen, onComplete, onClose }: OnboardingFlowPr
   // Phase 1: Setup steps
   const setupSteps = [
     {
+      title: "Welcome to Bookd",
+      icon: <User className="w-8 h-8 text-blue-500" />,
+      field: "welcome",
+      placeholder: "",
+      description: "You weren't made for a 9-to-5—and neither were we. Let's get you set up so money never slips through the cracks.",
+      isWelcome: true
+    },
+    {
       title: "What's your name?",
       icon: <User className="w-8 h-8 text-blue-500" />,
       field: "name",
@@ -163,8 +171,13 @@ export function OnboardingFlow({ isOpen, onComplete, onClose }: OnboardingFlowPr
   });
 
   const nextStep = () => {
-    // If we're at the end of setup phase, save data
-    if (currentStep === setupSteps.length - 1) {
+    // If we're at the end of setup phase (excluding welcome step), save data
+    const actualDataSteps = setupSteps.filter(step => !(step as any).isWelcome);
+    const lastDataStepIndex = setupSteps.findIndex((step, index) => 
+      index === setupSteps.length - 1 && !(step as any).isWelcome
+    ) || setupSteps.length - 1;
+    
+    if (currentStep === lastDataStepIndex) {
       saveSetupMutation.mutate(setupData);
     }
     
@@ -187,6 +200,10 @@ export function OnboardingFlow({ isOpen, onComplete, onClose }: OnboardingFlowPr
 
   const canProceed = () => {
     if (!isSetupPhase) return true;
+    
+    // Welcome step can always proceed
+    if ((setupSteps[currentStep] as any).isWelcome) return true;
+    
     const field = setupSteps[currentStep].field as keyof SetupData;
     return setupData[field].trim().length > 0;
   };
@@ -212,18 +229,20 @@ export function OnboardingFlow({ isOpen, onComplete, onClose }: OnboardingFlowPr
                 <p className="text-gray-600 text-sm">
                   {(currentStepData as any).description}
                 </p>
-                <div className="space-y-2">
-                  <Label htmlFor={(currentStepData as any).field}>
-                    {currentStepData.title}
-                  </Label>
-                  <Input
-                    id={(currentStepData as any).field}
-                    value={setupData[(currentStepData as any).field as keyof SetupData]}
-                    onChange={(e) => updateSetupData((currentStepData as any).field as keyof SetupData, e.target.value)}
-                    placeholder={(currentStepData as any).placeholder}
-                    className="text-base"
-                  />
-                </div>
+                {!(currentStepData as any).isWelcome && (
+                  <div className="space-y-2">
+                    <Label htmlFor={(currentStepData as any).field}>
+                      {currentStepData.title}
+                    </Label>
+                    <Input
+                      id={(currentStepData as any).field}
+                      value={setupData[(currentStepData as any).field as keyof SetupData]}
+                      onChange={(e) => updateSetupData((currentStepData as any).field as keyof SetupData, e.target.value)}
+                      placeholder={(currentStepData as any).placeholder}
+                      className="text-base"
+                    />
+                  </div>
+                )}
               </>
             ) : (
               (currentStepData as any).content
