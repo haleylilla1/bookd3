@@ -1425,13 +1425,15 @@ function ExpenseEditForm({
   onCancel: () => void;
   isLoading: boolean;
 }) {
+  console.log("🔍 Expense data for edit form:", expense);
+  
   const form = useForm<ExpenseEditFormData>({
     resolver: zodResolver(editExpenseSchema),
     defaultValues: {
       date: expense.date,
-      amount: expense.amount.toString(),
+      amount: typeof expense.amount === 'string' ? expense.amount : expense.amount.toString(),
       merchant: expense.merchant || "",
-      businessPurpose: expense.businessPurpose,
+      businessPurpose: expense.businessPurpose || "",
       category: expense.category,
     },
   });
@@ -1484,14 +1486,16 @@ function GigExpenseEditForm({
   onCancel: () => void;
   isLoading: boolean;
 }) {
+  console.log("🔍 Gig data for edit form:", gig);
+  
   const form = useForm({
     defaultValues: {
-      parkingExpense: gig.parkingExpense || "0.00",
+      parkingExpense: typeof gig.parkingExpense === 'string' ? gig.parkingExpense : (gig.parkingExpense || 0).toString(),
       parkingDescription: gig.parkingDescription || "",
-      parkingReimbursed: gig.parkingReimbursed || false,
-      otherExpenses: gig.otherExpenses || "0.00",
+      parkingReimbursed: Boolean(gig.parkingReimbursed),
+      otherExpenses: typeof gig.otherExpenses === 'string' ? gig.otherExpenses : (gig.otherExpenses || 0).toString(),
       otherExpenseDescription: gig.otherExpenseDescription || "",
-      otherExpensesReimbursed: gig.otherExpensesReimbursed || false,
+      otherExpensesReimbursed: Boolean(gig.otherExpensesReimbursed),
       mileage: gig.mileage || 0,
     },
   });
