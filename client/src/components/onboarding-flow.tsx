@@ -226,22 +226,30 @@ export function OnboardingFlow({ isOpen, onComplete, onClose }: OnboardingFlowPr
           <div className="min-h-[200px] space-y-4">
             {isSetupPhase ? (
               <>
-                <p className="text-gray-600 text-sm">
-                  {(currentStepData as any).description}
-                </p>
-                {!(currentStepData as any).isWelcome && (
-                  <div className="space-y-2">
-                    <Label htmlFor={(currentStepData as any).field}>
-                      {currentStepData.title}
-                    </Label>
-                    <Input
-                      id={(currentStepData as any).field}
-                      value={setupData[(currentStepData as any).field as keyof SetupData]}
-                      onChange={(e) => updateSetupData((currentStepData as any).field as keyof SetupData, e.target.value)}
-                      placeholder={(currentStepData as any).placeholder}
-                      className="text-base"
-                    />
+                {(currentStepData as any).isWelcome ? (
+                  <div className="text-center py-8">
+                    <p className="text-lg md:text-xl leading-relaxed text-gray-700 font-medium">
+                      {(currentStepData as any).description}
+                    </p>
                   </div>
+                ) : (
+                  <>
+                    <p className="text-gray-600 text-sm">
+                      {(currentStepData as any).description}
+                    </p>
+                    <div className="space-y-2">
+                      <Label htmlFor={(currentStepData as any).field}>
+                        {currentStepData.title}
+                      </Label>
+                      <Input
+                        id={(currentStepData as any).field}
+                        value={setupData[(currentStepData as any).field as keyof SetupData]}
+                        onChange={(e) => updateSetupData((currentStepData as any).field as keyof SetupData, e.target.value)}
+                        placeholder={(currentStepData as any).placeholder}
+                        className="text-base"
+                      />
+                    </div>
+                  </>
                 )}
               </>
             ) : (
