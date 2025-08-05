@@ -821,9 +821,9 @@ export default function CalendarView() {
                       <Button
                         variant="default"
                         onClick={() => handleGotPaid(gig)}
-                        className="bg-green-600 hover:bg-green-700 text-white text-xs h-6 px-1.5 py-0.5 font-medium rounded flex items-center justify-center gap-0.5 w-fit min-h-0"
+                        className="bg-green-600 hover:bg-green-700 text-white text-[11px] h-5 px-1 py-0 font-medium rounded-sm flex items-center justify-center gap-0.5 w-fit min-h-0 leading-none"
                       >
-                        <DollarSign className="w-3 h-3 flex-shrink-0" />
+                        <DollarSign className="w-2.5 h-2.5 flex-shrink-0" />
                         Got Paid
                       </Button>
                     )}
@@ -912,9 +912,9 @@ export default function CalendarView() {
                                 handleGotPaid(gig);
                                 setShowDayGigs(false);
                               }}
-                              className="bg-green-600 hover:bg-green-700 text-white text-xs h-6 px-1.5 py-0.5 font-medium rounded flex items-center justify-center gap-0.5 w-fit min-h-0"
+                              className="bg-green-600 hover:bg-green-700 text-white text-[11px] h-5 px-1 py-0 font-medium rounded-sm flex items-center justify-center gap-0.5 w-fit min-h-0 leading-none"
                             >
-                              <DollarSign className="w-3 h-3 flex-shrink-0" />
+                              <DollarSign className="w-2.5 h-2.5 flex-shrink-0" />
                               Got Paid
                             </Button>
                           )}
