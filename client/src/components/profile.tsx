@@ -225,9 +225,8 @@ export default function Profile() {
         </div>
         <Button 
           variant="outline" 
-          size="sm" 
           onClick={() => setShowOnboardingDemo(true)}
-          className="justify-center whitespace-nowrap ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-9 rounded-md px-3 flex items-center gap-2 font-semibold pl-[14px] pr-[14px] pt-[8px] pb-[8px] text-[14px]"
+          className="px-4 py-2 h-auto flex items-center gap-2"
         >
           <Play className="w-4 h-4" />
           Demo Onboarding
@@ -424,7 +423,7 @@ export default function Profile() {
           </div>
           <Dialog open={isAddingGigType} onOpenChange={setIsAddingGigType}>
             <DialogTrigger asChild>
-              <Button variant="outline" size="sm">
+              <Button variant="outline" className="px-4 py-2 h-auto">
                 <Plus className="w-4 h-4 mr-2" />
                 Add Type
               </Button>
@@ -534,7 +533,7 @@ export default function Profile() {
           </div>
           <Dialog open={isAddingClient} onOpenChange={setIsAddingClient}>
             <DialogTrigger asChild>
-              <Button variant="outline" size="sm">
+              <Button variant="outline" className="px-4 py-2 h-auto">
                 <Plus className="w-4 h-4 mr-2" />
                 Add Client
               </Button>
