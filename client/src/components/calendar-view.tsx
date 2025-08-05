@@ -821,9 +821,8 @@ export default function CalendarView() {
                       <div className="flex justify-center">
                         <Button
                           variant="default"
-                          size="sm"
                           onClick={() => handleGotPaid(gig)}
-                          className="bg-blue-600 hover:bg-blue-700 text-white px-2 py-1 text-sm"
+                          className="bg-green-600 hover:bg-green-700 text-white px-2 py-1 text-sm h-auto"
                         >
                           <DollarSign className="w-4 h-4 mr-1" />
                           Got Paid
@@ -911,13 +910,12 @@ export default function CalendarView() {
                           {gig.status !== 'completed' && (
                             <div className="flex justify-center">
                               <Button
-                                size="sm"
                                 variant="default"
                                 onClick={() => {
                                   handleGotPaid(gig);
                                   setShowDayGigs(false);
                                 }}
-                                className="bg-blue-600 hover:bg-blue-700 text-white px-2 py-1 text-sm"
+                                className="bg-green-600 hover:bg-green-700 text-white px-2 py-1 text-sm h-auto"
                               >
                                 <DollarSign className="h-4 w-4 mr-1" />
                                 Got Paid
