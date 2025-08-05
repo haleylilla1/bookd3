@@ -8,6 +8,7 @@ import { User, MapPin, Briefcase, Users, ArrowRight, ArrowLeft, CheckCircle, Eye
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { AddressAutocomplete } from "@/components/address-autocomplete";
 
 interface OnboardingFlowProps {
   isOpen: boolean;
@@ -238,16 +239,28 @@ export function OnboardingFlow({ isOpen, onComplete, onClose }: OnboardingFlowPr
                       {(currentStepData as any).description}
                     </p>
                     <div className="space-y-2">
-                      <Label htmlFor={(currentStepData as any).field}>
-                        {currentStepData.title}
-                      </Label>
-                      <Input
-                        id={(currentStepData as any).field}
-                        value={setupData[(currentStepData as any).field as keyof SetupData]}
-                        onChange={(e) => updateSetupData((currentStepData as any).field as keyof SetupData, e.target.value)}
-                        placeholder={(currentStepData as any).placeholder}
-                        className="text-base"
-                      />
+                      {(currentStepData as any).field === "homeAddress" ? (
+                        <AddressAutocomplete
+                          label={currentStepData.title}
+                          placeholder={(currentStepData as any).placeholder}
+                          value={setupData.homeAddress}
+                          onChange={(value) => updateSetupData("homeAddress", value)}
+                          className="text-base"
+                        />
+                      ) : (
+                        <>
+                          <Label htmlFor={(currentStepData as any).field}>
+                            {currentStepData.title}
+                          </Label>
+                          <Input
+                            id={(currentStepData as any).field}
+                            value={setupData[(currentStepData as any).field as keyof SetupData]}
+                            onChange={(e) => updateSetupData((currentStepData as any).field as keyof SetupData, e.target.value)}
+                            placeholder={(currentStepData as any).placeholder}
+                            className="text-base"
+                          />
+                        </>
+                      )}
                     </div>
                   </>
                 )}
