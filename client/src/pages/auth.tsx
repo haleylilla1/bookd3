@@ -246,8 +246,8 @@ export default function AuthPage() {
                     value={formData.name}
                     onChange={(e) => handleInputChange('name', e.target.value)}
                     disabled={loading}
-                    style={inputStyle}
                     {...inputProps}
+                    style={inputStyle}
                   />
                 </div>
               )}
@@ -260,9 +260,9 @@ export default function AuthPage() {
                   value={formData.email}
                   onChange={(e) => handleInputChange('email', e.target.value)}
                   disabled={loading}
-                  style={inputStyle}
-                  {...inputProps}
                   autoComplete="email"
+                  {...inputProps}
+                  style={inputStyle}
                 />
               </div>
 
@@ -275,12 +275,12 @@ export default function AuthPage() {
                     value={formData.password}
                     onChange={(e) => handleInputChange('password', e.target.value)}
                     disabled={loading}
+                    autoComplete={isLogin ? "current-password" : "new-password"}
+                    {...inputProps}
                     style={{
                       ...inputStyle,
                       paddingRight: '50px'
                     }}
-                    {...inputProps}
-                    autoComplete={isLogin ? "current-password" : "new-password"}
                   />
                   <Button
                     type="button"
@@ -309,9 +309,9 @@ export default function AuthPage() {
                     value={formData.confirmPassword}
                     onChange={(e) => handleInputChange('confirmPassword', e.target.value)}
                     disabled={loading}
-                    style={inputStyle}
-                    {...inputProps}
                     autoComplete="new-password"
+                    {...inputProps}
+                    style={inputStyle}
                   />
                 </div>
               )}
