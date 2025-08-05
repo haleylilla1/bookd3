@@ -56,16 +56,30 @@ export default function AddExpenseForm({ onClose, linkedGigId }: AddExpenseFormP
 
   const createExpenseMutation = useMutation({
     mutationFn: async (data: ExpenseFormData) => {
+      // Transform frontend fields to match API expectations
+      const apiData = {
+        description: `${data.merchant ? data.merchant + ' - ' : ''}${data.businessPurpose || data.merchant || 'Business expense'}`,
+        amount: data.amount,
+        category: data.category,
+        date: data.date,
+        notes: data.businessPurpose || '',
+        gigId: data.gigId
+      };
+      
+      console.log("🔍 Sending expense data:", apiData);
+      
       const response = await fetch("/api/expenses", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(data),
+        body: JSON.stringify(apiData),
       });
       
       if (!response.ok) {
-        throw new Error("Failed to create expense");
+        const errorData = await response.json();
+        console.error("API Error:", errorData);
+        throw new Error(`Failed to create expense: ${errorData.error || 'Unknown error'}`);
       }
       
       return response.json();
