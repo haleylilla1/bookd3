@@ -102,9 +102,9 @@ export default function AddExpenseForm({ onClose, linkedGigId }: AddExpenseFormP
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center p-0 sm:p-4 z-40">
-      <Card className="w-full max-w-sm h-[80vh] sm:h-auto sm:max-h-[75vh] overflow-hidden bg-white relative z-50 touch-manipulation rounded-t-lg sm:rounded-lg flex flex-col">
-        <CardHeader className="flex flex-row items-center space-y-0 pb-4">
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-40">
+      <Card className="w-full max-w-sm max-h-[85vh] overflow-hidden bg-white relative z-50 touch-manipulation rounded-lg flex flex-col">
+        <CardHeader className="flex flex-row items-center space-y-0 pb-4 shrink-0">
           <Button
             variant="ghost"
             size="sm"
@@ -127,9 +127,9 @@ export default function AddExpenseForm({ onClose, linkedGigId }: AddExpenseFormP
         </CardHeader>
 
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col h-full">
-            <div className="flex-1 overflow-y-auto overscroll-behavior-contain px-6 py-4">
-              <div className="space-y-6">
+          <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col min-h-0 flex-1">
+            <div className="flex-1 overflow-y-auto overscroll-behavior-contain px-6 min-h-0">
+              <div className="space-y-6 py-4">
                 {/* Mobile-optimized form fields with consistent touch sizing */}
                 <DateField control={form.control} />
                 <AmountField control={form.control} />
@@ -182,8 +182,8 @@ export default function AddExpenseForm({ onClose, linkedGigId }: AddExpenseFormP
               </div>
             </div>
             
-            {/* Fixed bottom buttons for mobile */}
-            <div className="border-t bg-white p-4 rounded-b-lg sm:rounded-b-lg">
+            {/* Fixed bottom buttons - always visible */}
+            <div className="border-t bg-white p-4 rounded-b-lg shrink-0">
               <div className="flex gap-3">
                 <Button
                   type="button"
