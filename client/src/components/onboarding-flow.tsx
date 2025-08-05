@@ -41,7 +41,7 @@ export function OnboardingFlow({ isOpen, onComplete, onClose }: OnboardingFlowPr
       icon: <User className="w-8 h-8 text-blue-500" />,
       field: "welcome",
       placeholder: "",
-      description: "You weren't made for a 9-to-5—and neither were we. Let's get you set up so money never slips through the cracks.",
+      description: "You weren't made for a 9-to-5...and neither were we. Let's get you set up so money never slips through the cracks.",
       isWelcome: true
     },
     {
