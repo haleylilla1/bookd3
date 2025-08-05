@@ -103,7 +103,7 @@ export default function AddExpenseForm({ onClose, linkedGigId }: AddExpenseFormP
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center p-0 sm:p-4 z-40">
-      <Card className="w-full max-w-md h-[85vh] sm:max-h-[80vh] overflow-hidden bg-white relative z-50 touch-manipulation rounded-t-lg sm:rounded-lg">
+      <Card className="w-full max-w-72 h-96 sm:h-auto sm:max-h-96 overflow-hidden bg-white relative z-50 touch-manipulation rounded-t-lg sm:rounded-lg flex flex-col">
         <CardHeader className="flex flex-row items-center space-y-0 pb-4">
           <Button
             variant="ghost"
@@ -126,9 +126,9 @@ export default function AddExpenseForm({ onClose, linkedGigId }: AddExpenseFormP
           </div>
         </CardHeader>
 
-        <div className="flex-1 overflow-y-auto overscroll-behavior-contain">
-          <CardContent className="space-y-6 pb-6">
-            <Form {...form}>
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col h-full">
+            <div className="flex-1 overflow-y-auto overscroll-behavior-contain px-6 py-4">
               <div className="space-y-6">
                 {/* Mobile-optimized form fields with consistent touch sizing */}
                 <DateField control={form.control} />
@@ -180,31 +180,30 @@ export default function AddExpenseForm({ onClose, linkedGigId }: AddExpenseFormP
                   </div>
                 )}
               </div>
-            </Form>
-          </CardContent>
-        </div>
-        
-        {/* Fixed bottom buttons for mobile */}
-        <div className="border-t bg-white p-4 rounded-b-lg sm:rounded-b-lg">
-          <div className="flex gap-3">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={onClose}
-              className="flex-1 h-12 text-base font-medium touch-manipulation"
-            >
-              Cancel
-            </Button>
-            <Button
-              type="submit"
-              disabled={createExpenseMutation.isPending}
-              onClick={form.handleSubmit(onSubmit)}
-              className="flex-1 h-12 text-base font-medium touch-manipulation"
-            >
-              {createExpenseMutation.isPending ? "Adding..." : "Add Expense"}
-            </Button>
-          </div>
-        </div>
+            </div>
+            
+            {/* Fixed bottom buttons for mobile */}
+            <div className="border-t bg-white p-4 rounded-b-lg sm:rounded-b-lg">
+              <div className="flex gap-3">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={onClose}
+                  className="flex-1 h-12 text-base font-medium touch-manipulation"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="submit"
+                  disabled={createExpenseMutation.isPending}
+                  className="flex-1 h-12 text-base font-medium touch-manipulation"
+                >
+                  {createExpenseMutation.isPending ? "Adding..." : "Add Expense"}
+                </Button>
+              </div>
+            </div>
+          </form>
+        </Form>
       </Card>
     </div>
   );
