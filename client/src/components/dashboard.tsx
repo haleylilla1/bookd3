@@ -4,7 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -61,6 +62,7 @@ export default function Dashboard() {
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
   const hasUpdatedStatusesRef = useRef(false);
   const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
+  const [editingGigExpense, setEditingGigExpense] = useState<any | null>(null);
   
   const { handleError, handleSuccess } = useFormErrorHandler();
   const { toast } = useToast();
@@ -198,6 +200,43 @@ export default function Dashboard() {
     },
     onError: (error) => {
       handleError(error, "delete expense");
+    },
+  });
+
+  // Clear gig expenses function
+  const clearGigExpenses = async (gigId: number) => {
+    try {
+      const response = await apiRequest("PUT", `/api/gigs/${gigId}`, {
+        parkingExpense: "0.00",
+        parkingDescription: null,
+        parkingReimbursed: false,
+        otherExpenses: "0.00",
+        otherExpenseDescription: null,
+        otherExpensesReimbursed: false,
+        mileage: 0
+      });
+      
+      handleSuccess("Gig expenses cleared successfully!");
+      queryClient.invalidateQueries({ queryKey: ["/api/gigs"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/dashboard"] });
+    } catch (error) {
+      handleError(error, "clear gig expenses");
+    }
+  };
+
+  // Update gig expenses mutation
+  const updateGigExpensesMutation = useMutation({
+    mutationFn: async (gigData: { id: number; data: any }) => {
+      return await apiRequest("PUT", `/api/gigs/${gigData.id}`, gigData.data);
+    },
+    onSuccess: () => {
+      handleSuccess("Gig expenses updated successfully!");
+      queryClient.invalidateQueries({ queryKey: ["/api/gigs"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/dashboard"] });
+      setEditingGigExpense(null);
+    },
+    onError: (error) => {
+      handleError(error, "update gig expenses");
     },
   });
 
@@ -1286,6 +1325,24 @@ export default function Dashboard() {
                             }
                           </p>
                         </div>
+                        <div className="flex gap-1 ml-2">
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            onClick={() => setEditingGigExpense(gig)}
+                            className="h-8 w-8"
+                          >
+                            <Edit2 className="w-4 h-4 text-orange-500" />
+                          </Button>
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            onClick={() => clearGigExpenses(gig.id)}
+                            className="h-8 w-8"
+                          >
+                            <Trash2 className="w-4 h-4 text-red-500" />
+                          </Button>
+                        </div>
                       </div>
                       <div className="text-xs text-gray-600 mb-2 space-y-1">
                         {gig.parkingExpense > 0 && <div>Parking: ${gig.parkingExpense.toFixed(2)}</div>}
@@ -1332,6 +1389,26 @@ export default function Dashboard() {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Edit Gig Expenses Dialog */}
+      <Dialog open={!!editingGigExpense} onOpenChange={() => setEditingGigExpense(null)}>
+        <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Edit Gig Expenses</DialogTitle>
+            <DialogDescription>
+              Update parking, other expenses, and mileage for {editingGigExpense?.eventName}.
+            </DialogDescription>
+          </DialogHeader>
+          {editingGigExpense && (
+            <GigExpenseEditForm 
+              gig={editingGigExpense}
+              onSave={(data) => updateGigExpensesMutation.mutate({ id: editingGigExpense.id, data })}
+              onCancel={() => setEditingGigExpense(null)}
+              isLoading={updateGigExpensesMutation.isPending}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
@@ -1372,6 +1449,211 @@ function ExpenseEditForm({
         <MerchantField control={form.control} />
         <BusinessPurposeField control={form.control} />
         <CategoryField control={form.control} />
+
+        <div className="flex gap-3 pt-6">
+          <Button 
+            type="button" 
+            variant="outline" 
+            onClick={onCancel} 
+            className="flex-1 h-12 text-base font-medium touch-manipulation"
+          >
+            Cancel
+          </Button>
+          <Button 
+            type="submit" 
+            disabled={isLoading} 
+            className="flex-1 h-12 text-base font-medium touch-manipulation"
+          >
+            {isLoading ? "Saving..." : "Save Changes"}
+          </Button>
+        </div>
+      </form>
+    </Form>
+  );
+}
+
+// Gig Expense Edit Form Component
+function GigExpenseEditForm({ 
+  gig, 
+  onSave, 
+  onCancel, 
+  isLoading 
+}: {
+  gig: any;
+  onSave: (data: any) => void;
+  onCancel: () => void;
+  isLoading: boolean;
+}) {
+  const form = useForm({
+    defaultValues: {
+      parkingExpense: gig.parkingExpense || "0.00",
+      parkingDescription: gig.parkingDescription || "",
+      parkingReimbursed: gig.parkingReimbursed || false,
+      otherExpenses: gig.otherExpenses || "0.00",
+      otherExpenseDescription: gig.otherExpenseDescription || "",
+      otherExpensesReimbursed: gig.otherExpensesReimbursed || false,
+      mileage: gig.mileage || 0,
+    },
+  });
+
+  const onSubmit = (data: any) => {
+    onSave(data);
+  };
+
+  return (
+    <Form {...form}>
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+        {/* Parking Expense */}
+        <FormField
+          control={form.control}
+          name="parkingExpense"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Parking Expense</FormLabel>
+              <FormControl>
+                <Input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  placeholder="0.00"
+                  className="text-base h-12 touch-manipulation"
+                  {...field}
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        {/* Parking Description */}
+        <FormField
+          control={form.control}
+          name="parkingDescription"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Parking Description</FormLabel>
+              <FormControl>
+                <Input
+                  type="text"
+                  placeholder="e.g., Downtown parking garage"
+                  className="text-base h-12 touch-manipulation"
+                  {...field}
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        {/* Parking Reimbursed */}
+        <FormField
+          control={form.control}
+          name="parkingReimbursed"
+          render={({ field }) => (
+            <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+              <div className="space-y-0.5">
+                <FormLabel className="text-base">Parking Reimbursed</FormLabel>
+                <FormDescription>
+                  Was this parking expense reimbursed by the client?
+                </FormDescription>
+              </div>
+              <FormControl>
+                <Checkbox
+                  checked={field.value}
+                  onCheckedChange={field.onChange}
+                />
+              </FormControl>
+            </FormItem>
+          )}
+        />
+
+        {/* Other Expenses */}
+        <FormField
+          control={form.control}
+          name="otherExpenses"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Other Expenses</FormLabel>
+              <FormControl>
+                <Input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  placeholder="0.00"
+                  className="text-base h-12 touch-manipulation"
+                  {...field}
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        {/* Other Expense Description */}
+        <FormField
+          control={form.control}
+          name="otherExpenseDescription"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Other Expense Description</FormLabel>
+              <FormControl>
+                <Input
+                  type="text"
+                  placeholder="e.g., Equipment rental, supplies"
+                  className="text-base h-12 touch-manipulation"
+                  {...field}
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        {/* Other Expenses Reimbursed */}
+        <FormField
+          control={form.control}
+          name="otherExpensesReimbursed"
+          render={({ field }) => (
+            <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+              <div className="space-y-0.5">
+                <FormLabel className="text-base">Other Expenses Reimbursed</FormLabel>
+                <FormDescription>
+                  Were these other expenses reimbursed by the client?
+                </FormDescription>
+              </div>
+              <FormControl>
+                <Checkbox
+                  checked={field.value}
+                  onCheckedChange={field.onChange}
+                />
+              </FormControl>
+            </FormItem>
+          )}
+        />
+
+        {/* Mileage */}
+        <FormField
+          control={form.control}
+          name="mileage"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Mileage (Miles)</FormLabel>
+              <FormControl>
+                <Input
+                  type="number"
+                  min="0"
+                  placeholder="0"
+                  className="text-base h-12 touch-manipulation"
+                  {...field}
+                />
+              </FormControl>
+              <FormDescription>
+                Round-trip mileage for tax deduction (${(0.67 * (field.value || 0)).toFixed(2)} deduction)
+              </FormDescription>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
 
         <div className="flex gap-3 pt-6">
           <Button 
