@@ -801,16 +801,6 @@ export default function Dashboard() {
             {selectedPeriod === 'monthly' ? 'View Monthly Report' : 
              selectedPeriod === 'quarterly' ? 'View Quarterly Report' : 'View Annual Report'}
           </Button>
-          
-          {/* Sentry Test Button - Remove after testing */}
-          <Button
-            variant="destructive"
-            size="sm"
-            onClick={() => {throw new Error("This is your first error!");}}
-            className="flex items-center gap-2"
-          >
-            Break the world
-          </Button>
 
         </div>
       </div>
