@@ -181,7 +181,12 @@ export const userValidation = {
     
   defaultTaxPercentage: z.union([z.string(), z.number()])
     .transform(val => sanitizeNumber(val, 23))
-    .refine(val => val >= 0 && val <= 100, 'Tax percentage must be between 0 and 100')
+    .refine(val => val >= 0 && val <= 100, 'Tax percentage must be between 0 and 100'),
+    
+  customGigTypes: z.array(z.string().transform(sanitizeText))
+    .optional()
+    .refine(val => !val || val.length <= 50, 'Cannot have more than 50 custom gig types')
+    .refine(val => !val || val.every(type => type.length > 0 && type.length <= 100), 'Each gig type must be 1-100 characters')
 };
 
 // Gig input validation schemas
