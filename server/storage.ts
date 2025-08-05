@@ -830,11 +830,26 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createExpense(insertExpense: InsertExpense): Promise<Expense> {
-    const [expense] = await db
-      .insert(expenses)
-      .values(insertExpense)
-      .returning();
-    return expense;
+    try {
+      console.log('💾 Database insert - expense data:', insertExpense);
+      const [expense] = await db
+        .insert(expenses)
+        .values(insertExpense)
+        .returning();
+      
+      // Invalidate user-specific caches since expenses affect dashboard calculations
+      if (expense) {
+        await Promise.all([
+          ultraSimpleCache.invalidate(`dashboard:${expense.userId}`),
+          ultraSimpleCache.invalidate(`expenses:${expense.userId}`)
+        ]);
+      }
+      
+      return expense;
+    } catch (error) {
+      console.error('💥 Database error creating expense:', error);
+      throw error;
+    }
   }
 
   async updateExpense(id: number, updateData: Partial<InsertExpense>): Promise<Expense | undefined> {

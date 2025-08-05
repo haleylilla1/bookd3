@@ -725,16 +725,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       notes: expenseValidation.notes.optional(),
       receiptUrl: z.string().url().optional(),
       isBusinessExpense: z.boolean().default(true),
-      isTaxDeductible: z.boolean().default(true)
+      isTaxDeductible: z.boolean().default(true),
+      gigId: z.number().optional()
     })),
     async (req: any, res: Response) => {
     try {
       const userId = getUserId(req);
       const expenseData = { ...req.body, userId };
+      console.log('💳 Creating expense:', expenseData);
       const expense = await storage.createExpense(expenseData);
+      console.log('✅ Expense created successfully:', expense.id);
       res.json(expense);
     } catch (error) {
-      res.status(500).json({ error: 'Failed to create expense' });
+      console.error('💥 Failed to create expense:', error);
+      res.status(500).json({ error: 'Failed to create expense', details: error instanceof Error ? error.message : 'Unknown error' });
     }
   });
 
