@@ -5,6 +5,7 @@ import fs from 'fs/promises';
 import path from 'path';
 import { createWriteStream } from 'fs';
 import * as archiver from 'archiver';
+import * as XLSX from 'xlsx';
 
 export interface UserBackupData {
   user: any;
@@ -81,6 +82,112 @@ export class BackupManager {
     
     await fs.writeFile(filepath, JSON.stringify(backupData, null, 2));
     console.log(`📁 User export saved: ${filepath}`);
+    
+    return filepath;
+  }
+
+  /**
+   * Export user data as Excel workbook
+   */
+  async exportUserDataAsExcel(userId: number): Promise<string> {
+    const backupData = await this.createUserBackup(userId);
+    const filename = `bookd-export-${userId}-${Date.now()}.xlsx`;
+    const filepath = path.join(this.backupDir, filename);
+    
+    // Create a new workbook
+    const workbook = XLSX.utils.book_new();
+    
+    // User Profile Sheet
+    const userSheet = XLSX.utils.json_to_sheet([{
+      'Name': backupData.user.name,
+      'Email': backupData.user.email,
+      'Phone': backupData.user.phone || '',
+      'Title': backupData.user.title || 'Gig Worker',
+      'Default Tax Rate (%)': backupData.user.defaultTaxPercentage || 23,
+      'Home Address': backupData.user.homeAddress || '',
+      'Business Name': backupData.user.businessName || '',
+      'Business Address': backupData.user.businessAddress || '',
+      'Business Phone': backupData.user.businessPhone || '',
+      'Business Email': backupData.user.businessEmail || '',
+      'Export Date': backupData.exportDate,
+      'Data Version': backupData.version
+    }]);
+    XLSX.utils.book_append_sheet(workbook, userSheet, 'Profile');
+    
+    // Gigs Sheet
+    if (backupData.gigs.length > 0) {
+      const gigsData = backupData.gigs.map(gig => ({
+        'Date': gig.date,
+        'Client': gig.clientName || '',
+        'Gig Type': gig.gigType || '',
+        'Location': gig.location || '',
+        'Status': gig.status || 'pending',
+        'Amount Expected ($)': gig.amount ? parseFloat(gig.amount) : 0,
+        'Amount Received ($)': gig.totalReceived ? parseFloat(gig.totalReceived) : 0,
+        'Parking Reimbursed ($)': gig.reimbursedParking ? parseFloat(gig.reimbursedParking) : 0,
+        'Other Reimbursed ($)': gig.reimbursedOther ? parseFloat(gig.reimbursedOther) : 0,
+        'Parking Expense ($)': gig.unreimbursedParking ? parseFloat(gig.unreimbursedParking) : 0,
+        'Other Expenses ($)': gig.unreimbursedOther ? parseFloat(gig.unreimbursedOther) : 0,
+        'Mileage': gig.mileage || 0,
+        'Notes': gig.notes || '',
+        'Created': gig.createdAt
+      }));
+      const gigsSheet = XLSX.utils.json_to_sheet(gigsData);
+      XLSX.utils.book_append_sheet(workbook, gigsSheet, 'Gigs');
+    }
+    
+    // Expenses Sheet
+    if (backupData.expenses.length > 0) {
+      const expensesData = backupData.expenses.map(expense => ({
+        'Date': expense.date,
+        'Category': expense.category,
+        'Description': expense.description,
+        'Amount ($)': expense.amount ? parseFloat(expense.amount) : 0,
+        'Receipt': expense.receiptUrl ? 'Yes' : 'No',
+        'Business Related': expense.isBusinessExpense ? 'Yes' : 'No',
+        'Tax Deductible': expense.isTaxDeductible ? 'Yes' : 'No',
+        'Notes': expense.notes || '',
+        'Created': expense.createdAt
+      }));
+      const expensesSheet = XLSX.utils.json_to_sheet(expensesData);
+      XLSX.utils.book_append_sheet(workbook, expensesSheet, 'Expenses');
+    }
+    
+    // Goals Sheet
+    if (backupData.goals.length > 0) {
+      const goalsData = backupData.goals.map(goal => ({
+        'Month': goal.month,
+        'Year': goal.year,
+        'Goal Amount ($)': goal.goalAmount ? parseFloat(goal.goalAmount) : 0,
+        'Created': goal.createdAt,
+        'Updated': goal.updatedAt
+      }));
+      const goalsSheet = XLSX.utils.json_to_sheet(goalsData);
+      XLSX.utils.book_append_sheet(workbook, goalsSheet, 'Goals');
+    }
+    
+    // Summary Sheet
+    const totalGigIncome = backupData.gigs.reduce((sum, gig) => 
+      sum + (gig.totalReceived ? parseFloat(gig.totalReceived) : 0), 0);
+    const totalExpenses = backupData.expenses.reduce((sum, expense) => 
+      sum + (expense.amount ? parseFloat(expense.amount) : 0), 0);
+    const totalMileage = backupData.gigs.reduce((sum, gig) => 
+      sum + (gig.mileage || 0), 0);
+    
+    const summarySheet = XLSX.utils.json_to_sheet([{
+      'Total Gigs': backupData.gigs.length,
+      'Total Income ($)': totalGigIncome.toFixed(2),
+      'Total Expenses ($)': totalExpenses.toFixed(2),
+      'Net Income ($)': (totalGigIncome - totalExpenses).toFixed(2),
+      'Total Mileage': totalMileage,
+      'Export Date': backupData.exportDate,
+      'Tax Year': new Date().getFullYear()
+    }]);
+    XLSX.utils.book_append_sheet(workbook, summarySheet, 'Summary');
+    
+    // Write the workbook to file
+    XLSX.writeFile(workbook, filepath);
+    console.log(`📊 Excel export saved: ${filepath}`);
     
     return filepath;
   }
