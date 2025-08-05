@@ -5,7 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { User, Plus, X, Percent, Edit2 } from "lucide-react";
+import { User, Plus, X, Percent, Edit2, Play } from "lucide-react";
+import { OnboardingFlow } from "@/components/onboarding-flow";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import type { User as UserType } from "@shared/schema";
@@ -23,6 +24,7 @@ export default function Profile() {
   const [isAddingGigType, setIsAddingGigType] = useState(false);
   const [newClientName, setNewClientName] = useState("");
   const [isAddingClient, setIsAddingClient] = useState(false);
+  const [showOnboardingDemo, setShowOnboardingDemo] = useState(false);
   
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -202,15 +204,33 @@ export default function Profile() {
 
   return (
     <div className="p-4 space-y-6">
+      {/* Onboarding Demo */}
+      <OnboardingFlow 
+        isOpen={showOnboardingDemo}
+        onComplete={() => setShowOnboardingDemo(false)}
+        onClose={() => setShowOnboardingDemo(false)}
+      />
+
       {/* Header */}
-      <div className="flex items-center gap-3 mb-6">
-        <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center">
-          <User className="w-6 h-6 text-primary" />
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center gap-3">
+          <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center">
+            <User className="w-6 h-6 text-primary" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">Profile</h1>
+            <p className="text-gray-600">Manage your account settings</p>
+          </div>
         </div>
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Profile</h1>
-          <p className="text-gray-600">Manage your account settings</p>
-        </div>
+        <Button 
+          variant="outline" 
+          size="sm" 
+          onClick={() => setShowOnboardingDemo(true)}
+          className="flex items-center gap-2"
+        >
+          <Play className="w-4 h-4" />
+          Demo Onboarding
+        </Button>
       </div>
 
       {/* Basic Information */}
