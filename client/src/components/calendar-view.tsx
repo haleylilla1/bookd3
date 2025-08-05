@@ -820,10 +820,11 @@ export default function CalendarView() {
                     {gig.status !== 'completed' && (
                       <Button
                         variant="default"
+                        size="sm"
                         onClick={() => handleGotPaid(gig)}
-                        className="got-paid-btn bg-green-600 hover:bg-green-700 text-white font-medium rounded-sm flex items-center justify-center gap-0.5 w-fit"
+                        className="bg-green-600 hover:bg-green-700 text-white w-full"
                       >
-                        <DollarSign className="w-2.5 h-2.5 flex-shrink-0" />
+                        <DollarSign className="w-4 h-4 mr-1" />
                         Got Paid
                       </Button>
                     )}
@@ -907,14 +908,15 @@ export default function CalendarView() {
                         <div className="flex flex-col gap-2">
                           {gig.status !== 'completed' && (
                             <Button
+                              size="sm"
                               variant="default"
                               onClick={() => {
                                 handleGotPaid(gig);
                                 setShowDayGigs(false);
                               }}
-                              className="got-paid-btn bg-green-600 hover:bg-green-700 text-white font-medium rounded-sm flex items-center justify-center gap-0.5 w-fit"
+                              className="bg-green-600 hover:bg-green-700 text-white w-full"
                             >
-                              <DollarSign className="w-2.5 h-2.5 flex-shrink-0" />
+                              <DollarSign className="h-4 w-4 mr-1" />
                               Got Paid
                             </Button>
                           )}
