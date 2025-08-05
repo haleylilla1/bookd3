@@ -81,7 +81,10 @@ export default function GotPaidDialog({ gig, isOpen, onClose, onSave }: GotPaidD
     if (user?.homeAddress) {
       setStartingAddress(user.homeAddress);
     }
-  }, [user, gig.taxPercentage]);
+    if (gig.gigAddress) {
+      setEndingAddress(gig.gigAddress);
+    }
+  }, [user, gig.taxPercentage, gig.gigAddress]);
 
   // Calculate mileage using Google Maps API
   const calculateMileage = async () => {
@@ -259,32 +262,44 @@ export default function GotPaidDialog({ gig, isOpen, onClose, onSave }: GotPaidD
                 </div>
 
                 {/* Trip options */}
-                <div className="space-y-3">
-                  <div className="flex items-center space-x-2">
+                <div className="space-y-4 bg-gray-50 p-4 rounded-lg border">
+                  <h4 className="font-medium text-sm text-gray-700">Trip Options</h4>
+                  
+                  <div className="flex items-center space-x-3">
                     <input
                       type="checkbox"
                       id="roundTrip"
                       checked={isRoundTrip}
                       onChange={(e) => setIsRoundTrip(e.target.checked)}
-                      className="rounded"
+                      className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                     />
-                    <label htmlFor="roundTrip" className="text-sm">Round trip (doubles the distance)</label>
+                    <label htmlFor="roundTrip" className="text-sm font-medium cursor-pointer">
+                      Round trip (doubles the distance)
+                    </label>
                   </div>
                   
                   {gig.isMultiDay && (
-                    <div className="flex items-center space-x-2">
+                    <div className="flex items-center space-x-3">
                       <input
                         type="checkbox"
                         id="perDay"
                         checked={isPerDay}
                         onChange={(e) => setIsPerDay(e.target.checked)}
-                        className="rounded"
+                        className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                       />
-                      <label htmlFor="perDay" className="text-sm">
+                      <label htmlFor="perDay" className="text-sm font-medium cursor-pointer">
                         Calculate for each day (×{calculateDayCount()} days)
-                        {isRoundTrip ? ` = ${calculateDayCount()} roundtrips total` : ` = ${calculateDayCount()} one-way trips total`}
+                        <div className="text-xs text-gray-600 mt-1">
+                          {isRoundTrip ? `= ${calculateDayCount()} roundtrips total` : `= ${calculateDayCount()} one-way trips total`}
+                        </div>
                       </label>
                     </div>
+                  )}
+                  
+                  {!gig.isMultiDay && (
+                    <p className="text-xs text-gray-500">
+                      For multi-day gigs, you'll also see a "per day" calculation option.
+                    </p>
                   )}
                 </div>
 
