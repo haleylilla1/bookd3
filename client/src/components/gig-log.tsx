@@ -283,18 +283,18 @@ export default function GigLog() {
 
                   {/* Action Buttons - Mobile Optimized Layout */}
                   <div className="flex flex-col gap-2 pt-2">
-                    {gig.status !== 'completed' && (
-                      <Button
-                        variant="default"
-                        size="sm"
-                        onClick={() => handleGotPaid(gig)}
-                        className="bg-green-600 hover:bg-green-700 text-white px-2 py-1 text-sm w-fit"
-                      >
-                        <DollarSign className="w-4 h-4 mr-1" />
-                        Got Paid
-                      </Button>
-                    )}
                     <div className="flex items-center justify-center gap-2">
+                      {gig.status !== 'completed' && (
+                        <Button
+                          variant="default"
+                          size="sm"
+                          onClick={() => handleGotPaid(gig)}
+                          className="bg-green-600 hover:bg-green-700 text-white px-2 py-1 text-sm"
+                        >
+                          <DollarSign className="w-4 h-4 mr-1" />
+                          Got Paid
+                        </Button>
+                      )}
                       <Button
                         variant="ghost"
                         size="sm"
