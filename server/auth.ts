@@ -287,19 +287,19 @@ export class Auth {
 
   static async sendResetEmail(email: string, token: string): Promise<boolean> {
     if (!process.env.SENDGRID_API_KEY) {
-      console.log(`🔗 Development Reset URL: https://bookd.tools/?reset_token=${token}`);
       return true; // Return true for development
     }
 
     try {
       // Email sending disabled for production simplicity
-      mail.setApiKey(process.env.SENDGRID_API_KEY);
+      const sgMail = require('@sendgrid/mail');
+      sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 
       const resetUrl = `https://bookd.tools/?reset_token=${token}`;
       
-      await mail.send({
+      await sgMail.send({
         to: email,
-        from: 'haleylilla@gmail.com',
+        from: 'noreply@bookd.tools',
         subject: 'Reset Your Bookd Password',
         html: `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
@@ -315,10 +315,8 @@ export class Auth {
         `
       });
       
-      console.log(`✅ Password reset email sent to ${email}`);
       return true;
     } catch (error) {
-      console.log(`❌ Failed to send password reset email to ${email}:`, error);
       return false;
     }
   }
@@ -358,7 +356,6 @@ export async function requireAuth(req: any, res: Response, next: NextFunction): 
     
     next();
   } catch (error) {
-    console.error('Authentication error:', error);
     res.status(500).json({ error: 'Authentication system error' });
   }
 }

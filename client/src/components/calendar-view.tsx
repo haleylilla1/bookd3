@@ -77,13 +77,11 @@ export default function CalendarView() {
     },
     onSuccess: (data) => {
       if (data.updatedCount > 0) {
-        console.log(`${data.updatedCount} gigs updated to pending payment`);
         // Refetch gigs to show updated statuses
         queryClient.invalidateQueries({ queryKey: ["/api/gigs"] });
       }
     },
     onError: (error) => {
-      console.error("Failed to update gig statuses:", error);
     },
   });
 
@@ -365,7 +363,6 @@ export default function CalendarView() {
       setGotPaidGig(null);
     },
     onError: (error) => {
-      console.error("Got paid error:", error);
       toast({
         title: "Error processing payment",
         description: "Please try again or contact support.",

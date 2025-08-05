@@ -87,7 +87,7 @@ export default function AuthPage() {
     if (!validateForm()) return;
 
     setLoading(true);
-    console.log(`${isLogin ? 'Login' : 'Registration'} attempt:`, formData.email);
+
 
     try {
       const endpoint = isLogin ? "/api/auth/login" : "/api/auth/register";
@@ -110,13 +110,12 @@ export default function AuthPage() {
         body: JSON.stringify(payload),
       });
 
-      console.log(`🔍 ${isLogin ? 'Login' : 'Registration'} response:`, response.status);
-      console.log('🔍 Response headers:', response.headers.get('content-type'));
+
       
       // Debug: log first few characters of response to identify HTML vs JSON
       const responseClone = response.clone();
       const responseText = await responseClone.text();
-      console.log('🔍 Response preview:', responseText.substring(0, 200));
+
 
       if (response.ok) {
         let result;
@@ -125,9 +124,8 @@ export default function AuthPage() {
         if (contentType && contentType.includes("application/json")) {
           try {
             result = await response.json();
-            console.log("Success:", result);
+
           } catch (jsonError) {
-            console.error("JSON parsing error:", jsonError);
             // If JSON parsing fails but response is ok, assume success
             result = { message: "Authentication successful" };
           }
@@ -153,15 +151,15 @@ export default function AuthPage() {
           const contentType = response.headers.get("content-type");
           if (contentType && contentType.includes("application/json")) {
             error = await response.json();
-            console.error(`${isLogin ? 'Login' : 'Registration'} error:`, error);
+
           } else {
             // Non-JSON error - might be HTML error page
             const errorText = await response.text();
-            console.error(`Non-JSON error response:`, errorText.substring(0, 200));
+
             error = { message: `Server error: ${response.status} ${response.statusText}` };
           }
         } catch (jsonError) {
-          console.error("Error JSON parsing failed:", jsonError);
+
           error = { message: `Authentication failed: ${response.status} ${response.statusText}` };
         }
         

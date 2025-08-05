@@ -136,7 +136,6 @@ export default function GigForm({ onClose }: GigFormProps) {
       setAutoSaveLastSaved(new Date());
     },
     onError: (error) => {
-      console.error('Bulletproof auto-save error:', error);
       toast({
         title: "Auto-save Warning",
         description: "Having trouble saving form data. Please save manually.",
@@ -156,17 +155,13 @@ export default function GigForm({ onClose }: GigFormProps) {
     staleTime: 0,
     retry: false, // Don't retry auth failures
     queryFn: async () => {
-      console.log("🔧 Gig Form - Fetching user data");
       const response = await fetch("/api/user", {
         credentials: "include"
       });
       if (!response.ok) {
-        console.log("🚨 Gig Form - Auth failed, redirecting to login");
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
       const userData = await response.json();
-      console.log("✅ Gig Form - User data loaded successfully");
-      console.log("🔍 User customGigTypes:", userData.customGigTypes);
       return userData;
     }
   });
@@ -174,7 +169,6 @@ export default function GigForm({ onClose }: GigFormProps) {
   // Handle authentication failures
   useEffect(() => {
     if (userError && userError.message.includes('401')) {
-      console.log("🚨 Authentication required - redirecting to login");
       toast({
         title: "Please log in",
         description: "Redirecting to login page...",

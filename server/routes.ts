@@ -177,7 +177,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       res.json({ success: true });
     } catch (error) {
-      console.error('Error adding preferred client:', error);
       res.status(500).json({ error: 'Failed to add preferred client' });
     }
   });
@@ -237,7 +236,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       });
     } catch (error) {
-      console.error('Error saving setup data:', error);
       res.status(500).json({ error: 'Failed to save setup data' });
     }
   });
@@ -256,12 +254,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = getUserId(req);
       const { limit, offset } = req.query;
       
-      console.log('🔍 Fetching gigs for user:', userId);
       const gigsData = await storage.getGigsByUser(userId, limit, offset);
-      console.log('✅ Gigs fetched successfully:', gigsData.gigs.length, 'of', gigsData.total);
       res.json(gigsData);
     } catch (error) {
-      console.error('❌ Error fetching gigs:', error);
       res.status(500).json({ error: 'Failed to fetch gigs' });
     }
   });

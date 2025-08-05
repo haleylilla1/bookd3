@@ -36,8 +36,6 @@ export class BackupManager {
    */
   async createUserBackup(userId: number): Promise<UserBackupData> {
     try {
-      console.log(`🔄 Creating backup for user ${userId}`);
-      
       // Fetch all user data
       const [user] = await db.select().from(users).where(eq(users.id, userId));
       if (!user) {
@@ -63,11 +61,9 @@ export class BackupManager {
         version: '1.0'
       };
 
-      console.log(`✅ Backup created for user ${userId}: ${userGigs.length} gigs, ${userExpenses.length} expenses`);
       return backupData;
 
     } catch (error) {
-      console.error(`❌ Backup failed for user ${userId}:`, error);
       throw error;
     }
   }
@@ -81,7 +77,6 @@ export class BackupManager {
     const filepath = path.join(this.backupDir, filename);
     
     await fs.writeFile(filepath, JSON.stringify(backupData, null, 2));
-    console.log(`📁 User export saved: ${filepath}`);
     
     return filepath;
   }
@@ -187,7 +182,6 @@ export class BackupManager {
     
     // Write the workbook to file
     XLSX.writeFile(workbook, filepath);
-    console.log(`📊 Excel export saved: ${filepath}`);
     
     return filepath;
   }

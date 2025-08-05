@@ -62,7 +62,7 @@ export default function GotPaidDialog({ gig, isOpen, onClose, onSave }: GotPaidD
       fetch('/api/user')
         .then(res => res.json())
         .then(userData => setUser(userData))
-        .catch(err => console.error('Error fetching user:', err));
+        .catch(err => {});
     }
   }, [isOpen]);
 
@@ -154,7 +154,6 @@ export default function GotPaidDialog({ gig, isOpen, onClose, onSave }: GotPaidD
       onClose();
       setStep(1);
     } catch (error) {
-      console.error("Error saving got paid data:", error);
     } finally {
       setIsLoading(false);
     }

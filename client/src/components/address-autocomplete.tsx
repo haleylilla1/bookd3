@@ -45,55 +45,31 @@ export function AddressAutocomplete({
 
   // Fetch address suggestions with debouncing
   const fetchSuggestions = async (query: string) => {
-    console.log('🔍 fetchSuggestions called with query:', query, 'length:', query.length);
-    
     if (query.length < 2) {
-      console.log('🔍 Query too short, clearing suggestions');
       setSuggestions([]);
       setShowSuggestions(false);
       return;
     }
 
-    console.log('🔍 Setting isLoading to true');
     setIsLoading(true);
     
     try {
-      console.log('🔍 Making fetch request to:', `/api/address-autocomplete?input=${encodeURIComponent(query)}`);
       const response = await fetch(`/api/address-autocomplete?input=${encodeURIComponent(query)}`, {
         credentials: 'include'
       });
       
-      console.log('🔍 Response status:', response.status, 'ok:', response.ok);
-      
       if (response.ok) {
         const data = await response.json();
-        console.log('✅ Autocomplete API response:', data); // Debug log
-        console.log('📋 Number of suggestions:', data.suggestions?.length || 0); // Debug log
-        
         const newSuggestions = data.suggestions || [];
-        console.log('🔍 About to setSuggestions with:', newSuggestions);
         setSuggestions(newSuggestions);
         
         const shouldShow = newSuggestions && newSuggestions.length > 0;
-        console.log('🔍 About to setShowSuggestions with:', shouldShow);
         setShowSuggestions(shouldShow);
-        
-        console.log('👁️ Setting showSuggestions to:', shouldShow); // Debug log
-        console.log('🎯 New suggestions:', newSuggestions); // Debug log
-        console.log('🔢 Suggestions count:', newSuggestions.length); // Debug log
-        
-        // Show helpful message if using fallback suggestions
-        if (data.fallback && data.suggestions && data.suggestions.length > 0) {
-          console.log('Using fallback address suggestions - Google Places API not available');
-        } else if (!data.fallback && data.suggestions && data.suggestions.length > 0) {
-          console.log('Using authentic Google Places suggestions');
-        }
       } else {
         setSuggestions([]);
         setShowSuggestions(false);
       }
     } catch (error) {
-      console.warn('Address autocomplete failed:', error);
       setSuggestions([]);
       setShowSuggestions(false);
     } finally {
@@ -107,11 +83,6 @@ export function AddressAutocomplete({
     setInputValue(newValue);
     onChange(newValue);
 
-    console.log('🔍 Address input changed:', newValue); // Debug log
-    console.log('🔍 Input length:', newValue.length);
-    console.log('🔍 Current suggestions count:', suggestions.length);
-    console.log('🔍 Current showSuggestions:', showSuggestions);
-
     // Clear existing timeout
     if (debounceTimeoutRef.current) {
       clearTimeout(debounceTimeoutRef.current);
@@ -119,8 +90,6 @@ export function AddressAutocomplete({
 
     // Set new timeout for API call - reduced to 100ms for faster response
     debounceTimeoutRef.current = setTimeout(() => {
-      console.log('🌐 Fetching suggestions for:', newValue); // Debug log
-      console.log('🔍 About to call fetchSuggestions with query length:', newValue.length);
       fetchSuggestions(newValue);
     }, 100);
   };
