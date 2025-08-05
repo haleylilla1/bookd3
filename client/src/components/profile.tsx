@@ -227,7 +227,7 @@ export default function Profile() {
           variant="outline" 
           size="sm" 
           onClick={() => setShowOnboardingDemo(true)}
-          className="flex items-center gap-2"
+          className="justify-center whitespace-nowrap ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-9 rounded-md px-3 flex items-center gap-2 font-semibold pl-[14px] pr-[14px] pt-[8px] pb-[8px] text-[14px]"
         >
           <Play className="w-4 h-4" />
           Demo Onboarding
