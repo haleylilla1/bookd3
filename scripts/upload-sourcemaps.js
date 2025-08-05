@@ -5,8 +5,8 @@
  * This script should be run after `npm run build`
  */
 
-const { execSync } = require('child_process');
-const path = require('path');
+import { execSync } from 'child_process';
+import path from 'path';
 
 const SENTRY_ORG = 'bookd-yd';
 const SENTRY_PROJECT = 'bookd';
@@ -15,27 +15,38 @@ const BUILD_DIR = './dist/public';
 console.log('📦 Uploading source maps to Sentry...');
 
 try {
+  // Check for auth token
+  const authToken = process.env.SENTRY_AUTH_TOKEN;
+  if (!authToken) {
+    throw new Error('SENTRY_AUTH_TOKEN environment variable is not set');
+  }
+  
   // Create a release
   const release = process.env.VITE_APP_VERSION || `${Date.now()}`;
   console.log(`🏷️  Creating release: ${release}`);
   
-  execSync(`npx @sentry/cli releases new ${release}`, {
+  const env = { ...process.env, SENTRY_AUTH_TOKEN: authToken };
+  
+  execSync(`npx @sentry/cli releases new ${release} --org ${SENTRY_ORG} --project ${SENTRY_PROJECT}`, {
     stdio: 'inherit',
-    cwd: process.cwd()
+    cwd: process.cwd(),
+    env
   });
 
   // Upload source maps
   console.log('📤 Uploading source maps...');
-  execSync(`npx @sentry/cli releases files ${release} upload-sourcemaps ${BUILD_DIR} --url-prefix "~/"`, {
+  execSync(`npx @sentry/cli releases files ${release} upload-sourcemaps ${BUILD_DIR} --url-prefix "~/" --org ${SENTRY_ORG} --project ${SENTRY_PROJECT}`, {
     stdio: 'inherit',
-    cwd: process.cwd()
+    cwd: process.cwd(),
+    env
   });
 
   // Finalize the release
   console.log('✅ Finalizing release...');
-  execSync(`npx @sentry/cli releases finalize ${release}`, {
+  execSync(`npx @sentry/cli releases finalize ${release} --org ${SENTRY_ORG} --project ${SENTRY_PROJECT}`, {
     stdio: 'inherit',
-    cwd: process.cwd()
+    cwd: process.cwd(),
+    env
   });
 
   console.log('🎉 Source maps uploaded successfully!');
