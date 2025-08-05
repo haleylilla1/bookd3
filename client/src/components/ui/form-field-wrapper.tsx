@@ -175,18 +175,18 @@ export function SmartCategoryField<T extends FieldValues>({ control, name }: { c
                 <SelectValue placeholder="Select business category for taxes" />
               </SelectTrigger>
             </FormControl>
-            <SelectContent className="max-h-[400px] overflow-y-auto">
+            <SelectContent className="max-h-[400px] overflow-y-auto" sideOffset={4} align="start">
               {/* Smart suggestions or frequently used categories */}
               {smartSuggestions.length > 0 && (
                 <>
-                  <div className="px-2 py-1.5 text-xs font-semibold text-gray-500 bg-gray-50">
+                  <div className="px-2 py-1.5 text-xs font-semibold text-gray-500 bg-gray-50 sticky top-0">
                     {suggestions.length > 0 ? "Suggested for you" : "Frequently used"}
                   </div>
                   {smartSuggestions.map((category) => (
                     <SelectItem 
                       key={category} 
                       value={category}
-                      className="h-12 text-base touch-manipulation cursor-pointer bg-blue-50 hover:bg-blue-100"
+                      className="h-12 text-base touch-manipulation cursor-pointer bg-blue-50 hover:bg-blue-100 focus:bg-blue-100 data-[highlighted]:bg-blue-100"
                     >
                       ⭐ {category}
                     </SelectItem>
@@ -196,14 +196,14 @@ export function SmartCategoryField<T extends FieldValues>({ control, name }: { c
               )}
               
               {/* All other categories */}
-              <div className="px-2 py-1.5 text-xs font-semibold text-gray-500 bg-gray-50">
+              <div className="px-2 py-1.5 text-xs font-semibold text-gray-500 bg-gray-50 sticky top-0">
                 All categories
               </div>
               {otherCategories.map((category) => (
                 <SelectItem 
                   key={category} 
                   value={category}
-                  className="h-12 text-base touch-manipulation cursor-pointer"
+                  className="h-12 text-base touch-manipulation cursor-pointer hover:bg-gray-50 focus:bg-gray-50 data-[highlighted]:bg-gray-50"
                 >
                   {category}
                 </SelectItem>
