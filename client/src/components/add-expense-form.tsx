@@ -132,7 +132,7 @@ export default function AddExpenseForm({ onClose, linkedGigId }: AddExpenseFormP
                         </FormControl>
                         <SelectContent className="max-h-[200px]">
                           <SelectItem value="none" className="h-12 text-base touch-manipulation cursor-pointer">No gig selected</SelectItem>
-                          {gigs.map((gig) => (
+                          {Array.isArray(gigs) && gigs.map((gig) => (
                             <SelectItem key={gig.id} value={gig.id.toString()} className="h-12 text-base touch-manipulation cursor-pointer">
                               {gig.eventName} - {gig.clientName} ({parseGigDate(gig.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })})
                             </SelectItem>
