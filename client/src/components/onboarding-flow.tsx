@@ -58,10 +58,10 @@ export function OnboardingFlow({ isOpen, onComplete, onClose }: OnboardingFlowPr
       description: "Enter your primary gig type. You can add more later by going to your Profile."
     },
     {
-      title: "Name one of your clients",
+      title: "What is one person or company you work with a lot?",
       icon: <Users className="w-8 h-8 text-orange-500" />,
       field: "clientName",
-      placeholder: "e.g., DoorDash, Sarah's Wedding, Local Restaurant",
+      placeholder: "Enter a client name",
       description: "This helps us set up your client tracking. You can add more later by going to your Profile."
     }
   ];
