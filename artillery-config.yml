@@ -1,25 +1,35 @@
-# Load testing configuration for Bookd API
+# ENTERPRISE LOAD TESTING - 1,000+ Concurrent Users
 config:
   target: 'http://localhost:5000'
   phases:
     # Warm-up phase
-    - duration: 30
-      arrivalRate: 2
-      name: "Warm-up"
-    # Ramp-up phase  
     - duration: 60
-      arrivalRate: 5
-      rampTo: 10
-      name: "Ramp-up"
-    # Sustained load
-    - duration: 120
       arrivalRate: 10
-      name: "Sustained load"
-    # Peak load test
-    - duration: 60
-      arrivalRate: 15
-      rampTo: 25
-      name: "Peak load"
+      name: "Warm-up"
+    # Gradual ramp-up  
+    - duration: 120
+      arrivalRate: 25
+      rampTo: 100
+      name: "Ramp-up to 100"
+    # Scale to enterprise level
+    - duration: 180
+      arrivalRate: 100
+      rampTo: 500
+      name: "Scale to 500"
+    # PEAK ENTERPRISE LOAD - 1,000+ concurrent users
+    - duration: 300
+      arrivalRate: 500
+      rampTo: 1000
+      name: "Enterprise peak load"
+    # Sustained enterprise load
+    - duration: 600
+      arrivalRate: 1000
+      name: "Sustained 1K users"
+    # Stress test beyond capacity
+    - duration: 120
+      arrivalRate: 1000
+      rampTo: 1500
+      name: "Stress test"
   defaults:
     headers:
       Content-Type: 'application/json'
@@ -75,22 +85,48 @@ scenarios:
           expect:
             - statusCode: [200, 401]
 
-# Performance thresholds
+  # ENTERPRISE: Authentication load testing
+  - name: 'Authentication Load Test'
+    weight: 15
+    flow:
+      - get:
+          url: '/api/user'
+          headers:
+            Cookie: 'session=test-session'
+          expect:
+            - statusCode: [200, 401]
+
+  # ENTERPRISE: Performance monitoring endpoint
+  - name: 'Performance Monitoring'
+    weight: 5
+    flow:
+      - get:
+          url: '/api/performance/metrics'
+          expect:
+            - statusCode: [200, 401]
+
+# ENTERPRISE PERFORMANCE THRESHOLDS
 expect:
   http:
     response_time:
-      p95: 1000  # 95% of requests should complete within 1 second
-      p99: 2000  # 99% of requests should complete within 2 seconds
+      p95: 2000  # Enterprise: 95% under 2s with 1K+ users
+      p99: 5000  # Enterprise: 99% under 5s with 1K+ users
+    codes:
+      200: 90  # 90% success rate minimum
+      500: 5   # Max 5% server errors
   scenarios:
     - name: 'Health Check'
       expect:
-        - http.response_time.p95: 100  # Health check should be very fast
-    - name: 'Gigs API Load Test'
+        - http.response_time.p95: 200  # Health check fast under load
+    - name: 'Gigs API Load Test' 
       expect:
-        - http.response_time.p95: 800
+        - http.response_time.p95: 3000  # Gigs API under enterprise load
     - name: 'Expenses API Load Test'
       expect:
-        - http.response_time.p95: 600
+        - http.response_time.p95: 2500  # Expenses API under enterprise load
     - name: 'Dashboard Load Test'
       expect:
-        - http.response_time.p95: 1200  # Dashboard can be slightly slower
+        - http.response_time.p95: 4000  # Dashboard under enterprise load
+    - name: 'Authentication Load Test'
+      expect:
+        - http.response_time.p95: 1500  # Auth must remain fast
