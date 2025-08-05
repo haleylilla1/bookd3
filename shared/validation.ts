@@ -257,6 +257,12 @@ export const expenseValidation = {
     .transform(sanitizeText)
     .refine(val => val.length > 0, 'Description cannot be empty'),
     
+  merchant: z.string()
+    .min(1, 'Merchant is required')
+    .max(200, 'Merchant must be less than 200 characters')
+    .transform(sanitizeText)
+    .refine(val => val.length > 0, 'Merchant cannot be empty'),
+    
   amount: z.union([z.string(), z.number()])
     .transform(val => sanitizeCurrency(val))
     .refine(val => parseFloat(val) > 0, 'Amount must be greater than 0'),

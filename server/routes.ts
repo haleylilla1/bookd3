@@ -734,6 +734,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = getUserId(req);
       const expenseData = { ...req.body, userId };
       console.log('💳 Creating expense:', expenseData);
+      console.log('💳 Request validation passed - proceeding with database insert');
       const expense = await storage.createExpense(expenseData);
       console.log('✅ Expense created successfully:', expense.id);
       res.json(expense);

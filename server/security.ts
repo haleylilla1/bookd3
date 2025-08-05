@@ -61,9 +61,11 @@ export const exportRateLimit = rateLimit({
  */
 export function validateRequestBody<T>(schema: z.ZodSchema<T>) {
   return (req: Request, res: Response, next: NextFunction) => {
+    console.log('🔍 Validating request body:', req.body);
     const validation = validateInput(req.body, schema);
     
     if (!validation.success) {
+      console.error('❌ Validation failed:', validation.errors);
       return res.status(400).json({
         error: 'Validation failed',
         details: validation.errors,
@@ -71,6 +73,7 @@ export function validateRequestBody<T>(schema: z.ZodSchema<T>) {
       });
     }
     
+    console.log('✅ Validation passed, sanitized data:', validation.data);
     // Replace request body with sanitized data
     req.body = validation.data;
     next();
