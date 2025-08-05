@@ -265,34 +265,41 @@ export default function GotPaidDialog({ gig, isOpen, onClose, onSave }: GotPaidD
                 <div className="space-y-4 bg-gray-50 p-4 rounded-lg border">
                   <h4 className="font-medium text-sm text-gray-700">Trip Options</h4>
                   
-                  <div className="flex items-center space-x-3">
+                  <div className="flex items-start space-x-3 p-3 border-2 border-gray-200 rounded-lg hover:border-blue-300 cursor-pointer transition-colors">
                     <input
                       type="checkbox"
                       id="roundTrip"
                       checked={isRoundTrip}
                       onChange={(e) => setIsRoundTrip(e.target.checked)}
-                      className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                      className="w-5 h-5 mt-0.5 rounded border-2 border-gray-400 text-blue-600 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 cursor-pointer"
                     />
-                    <label htmlFor="roundTrip" className="text-sm font-medium cursor-pointer">
-                      Round trip (doubles the distance)
-                    </label>
+                    <div className="flex-1">
+                      <label htmlFor="roundTrip" className="text-sm font-medium cursor-pointer text-gray-900">
+                        Round trip (doubles the distance)
+                      </label>
+                      <p className="text-xs text-gray-600 mt-1">
+                        Check this if you need to return to your starting point
+                      </p>
+                    </div>
                   </div>
                   
                   {gig.isMultiDay && (
-                    <div className="flex items-center space-x-3">
+                    <div className="flex items-start space-x-3 p-3 border-2 border-gray-200 rounded-lg hover:border-blue-300 cursor-pointer transition-colors">
                       <input
                         type="checkbox"
                         id="perDay"
                         checked={isPerDay}
                         onChange={(e) => setIsPerDay(e.target.checked)}
-                        className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                        className="w-5 h-5 mt-0.5 rounded border-2 border-gray-400 text-blue-600 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 cursor-pointer"
                       />
-                      <label htmlFor="perDay" className="text-sm font-medium cursor-pointer">
-                        Calculate for each day (×{calculateDayCount()} days)
+                      <div className="flex-1">
+                        <label htmlFor="perDay" className="text-sm font-medium cursor-pointer text-gray-900">
+                          Calculate for each day (×{calculateDayCount()} days)
+                        </label>
                         <div className="text-xs text-gray-600 mt-1">
                           {isRoundTrip ? `= ${calculateDayCount()} roundtrips total` : `= ${calculateDayCount()} one-way trips total`}
                         </div>
-                      </label>
+                      </div>
                     </div>
                   )}
                   
