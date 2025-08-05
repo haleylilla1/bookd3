@@ -59,6 +59,7 @@ export default function AddExpenseForm({ onClose, linkedGigId }: AddExpenseFormP
       // Transform frontend fields to match API expectations
       const apiData = {
         description: `${data.merchant ? data.merchant + ' - ' : ''}${data.businessPurpose || data.merchant || 'Business expense'}`,
+        merchant: data.merchant || 'Unknown', // Database requires merchant field
         amount: data.amount,
         category: data.category,
         date: data.date,

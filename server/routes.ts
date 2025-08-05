@@ -719,6 +719,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/expenses', requireAuth,
     validateRequestBody(z.object({
       description: expenseValidation.description,
+      merchant: expenseValidation.merchant,
       amount: expenseValidation.amount,
       category: expenseValidation.category,
       date: expenseValidation.date,
