@@ -22,6 +22,7 @@ import {
   Target,
   BarChart3
 } from "lucide-react";
+import ContactSupport from "./contact-support";
 
 interface AppHeaderProps {
   currentScreen: string;
@@ -126,6 +127,8 @@ export default function AppHeader({ currentScreen, onScreenChange }: AppHeaderPr
               </DropdownMenuItem>
               
               <DropdownMenuSeparator />
+
+              <ContactSupport />
               
               <DropdownMenuItem disabled>
                 <Download className="mr-2 h-4 w-4" />
