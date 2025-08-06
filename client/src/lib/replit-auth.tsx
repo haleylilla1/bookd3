@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiRequest } from './queryClient';
 import { setSentryUser, clearSentryUser, addSentryBreadcrumb } from './sentry';
+import { klaviyo } from './klaviyo';
 import React, { useState } from 'react';
 
 // User type for traditional auth
@@ -66,6 +67,12 @@ export function useAuth() {
     onSuccess: (data) => {
       // Add Sentry breadcrumb for successful login
       addSentryBreadcrumb('User logged in', 'auth', { email: data.email });
+      // Identify user in Klaviyo
+      klaviyo.identify({
+        email: data.user.email,
+        name: data.user.name,
+        subscriptionTier: 'trial'
+      });
       // Refresh user data after login
       queryClient.invalidateQueries({ queryKey: ['/api/user'] });
     },
@@ -80,6 +87,8 @@ export function useAuth() {
       // Add Sentry breadcrumb and clear user context
       addSentryBreadcrumb('User logged out', 'auth');
       clearSentryUser();
+      // Reset Klaviyo user
+      klaviyo.reset();
       // Clear all queries after logout
       queryClient.clear();
       // Force full page reload to ensure complete logout
