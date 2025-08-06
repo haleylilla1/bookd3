@@ -123,6 +123,20 @@ export class KlaviyoService {
     }
   }
 
+  // Send password reset email via Klaviyo (when template is set up)
+  static async sendPasswordResetEmail(email: string, resetToken: string): Promise<boolean> {
+    // For now, just track the event - email templates would need to be set up in Klaviyo dashboard
+    // This is a future enhancement that requires creating email templates in Klaviyo
+    await this.trackEvent(email, 'Password Reset Email Requested', {
+      reset_token: resetToken,
+      reset_url: `${process.env.NODE_ENV === 'production' ? 'https://app.bookd.tools' : 'http://localhost:5000'}/?reset_token=${resetToken}`,
+      expires_at: new Date(Date.now() + 60 * 60 * 1000).toISOString() // 1 hour from now
+    });
+    
+    console.log('Password reset tracked in Klaviyo - email template integration pending');
+    return false; // Return false to indicate email wasn't actually sent via Klaviyo yet
+  }
+
   // Specialized methods for gig worker events
   static async trackUserSignup(email: string, name: string, properties: GigWorkerProperties): Promise<boolean> {
     const [firstName, ...rest] = name.split(' ');
