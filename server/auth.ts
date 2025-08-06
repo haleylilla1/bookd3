@@ -314,8 +314,10 @@ export class Auth {
       if (!process.env.SENDGRID_API_KEY) {
         console.log('SendGrid not configured - password reset link generated but not sent');
         let baseUrl = 'http://localhost:5000';
-        if (process.env.NODE_ENV === 'production' || process.env.REPLIT_DOMAINS) {
+        if (process.env.NODE_ENV === 'production') {
           baseUrl = 'https://app.bookd.tools';
+        } else if (process.env.REPLIT_DOMAINS) {
+          baseUrl = `https://${process.env.REPLIT_DOMAINS}`;
         }
         console.log(`Reset URL: ${baseUrl}/?reset_token=${token}`);
         return true; // Return true for development
@@ -332,8 +334,8 @@ export class Auth {
       if (process.env.NODE_ENV === 'production') {
         baseUrl = 'https://app.bookd.tools';
       } else if (process.env.REPLIT_DOMAINS) {
-        // Running on Replit, use the deployed domain
-        baseUrl = 'https://app.bookd.tools';
+        // Running on Replit, use the actual deployed domain
+        baseUrl = `https://${process.env.REPLIT_DOMAINS}`;
       }
       
       const resetUrl = `${baseUrl}/?reset_token=${token}`;
