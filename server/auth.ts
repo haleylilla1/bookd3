@@ -405,6 +405,18 @@ export function setupAuthRoutes(app: Express): void {
       const user = await Auth.createUser(sanitizedEmail, password, sanitizedName);
       const sessionId = await Auth.createSession(user.id, req.ip, req.get('User-Agent'));
 
+      // Send new user notification email
+      try {
+        const { sendNewUserNotification } = await import('./notifications');
+        await sendNewUserNotification({
+          name: user.name,
+          email: user.email,
+          signupDate: new Date().toISOString(),
+        });
+      } catch (error) {
+        console.log('Note: Failed to send signup notification, but user created successfully');
+      }
+
       res.cookie('sessionId', sessionId, {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',

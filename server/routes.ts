@@ -226,6 +226,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       await storage.updateUser(userId, updateData);
       
+      // Send enhanced notification with onboarding data
+      try {
+        const { sendUserUpdateNotification } = await import('./notifications');
+        await sendUserUpdateNotification(
+          user.email,
+          'Onboarding Completed',
+          {
+            name: updateData.name,
+            homeAddress: updateData.homeAddress,
+            gigTypes: updatedGigTypes,
+            preferredClients: updatedClients,
+            completedAt: new Date().toISOString()
+          }
+        );
+      } catch (error) {
+        console.log('Note: Failed to send onboarding notification');
+      }
+      
       res.json({ 
         message: 'Setup completed successfully',
         user: {
