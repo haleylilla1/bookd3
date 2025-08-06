@@ -235,7 +235,7 @@ export default function AuthForm() {
 
   const resetRequestMutation = useMutation({
     mutationFn: async (data: ResetRequestData) => {
-      const response = await fetch("/api/auth/reset-password-request", {
+      const response = await fetch("/api/auth/reset-password", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
