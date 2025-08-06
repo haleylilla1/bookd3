@@ -87,10 +87,16 @@ export default function AddExpenseForm({ onClose, linkedGigId }: AddExpenseFormP
       return response.json();
     },
     onSuccess: () => {
-      handleSuccess("Expense added successfully!");
-      queryClient.invalidateQueries({ queryKey: ["/api/expenses"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/dashboard"] });
+      // Immediately close to prevent UI freeze
       onClose();
+      
+      // Background cache updates to prevent blocking
+      setTimeout(() => {
+        queryClient.invalidateQueries({ queryKey: ["/api/expenses"] });
+        queryClient.invalidateQueries({ queryKey: ["/api/dashboard"] });
+      }, 100);
+      
+      handleSuccess("Expense added successfully!");
     },
     onError: (error) => {
       handleError(error, "add expense");

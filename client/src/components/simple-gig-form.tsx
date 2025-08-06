@@ -176,19 +176,26 @@ export default function SimpleGigForm({ onClose }: SimpleGigFormProps) {
 
 
 
-  // SIMPLE GIG CREATION MUTATION - No complex retry logic
+  // SIMPLE GIG CREATION MUTATION - Optimized for mobile stability
   const createGigMutation = useMutation({
     mutationFn: async (gigData: InsertGig) => {
-      return await apiRequest("POST", "/api/gigs", gigData);
+      const response = await apiRequest("POST", "/api/gigs", gigData);
+      return response;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/gigs"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/dashboard"] });
+    onSuccess: async () => {
+      // Immediately close to prevent UI freeze
+      onClose();
+      
+      // Background cache updates to prevent blocking
+      setTimeout(() => {
+        queryClient.invalidateQueries({ queryKey: ["/api/gigs"] });
+        queryClient.invalidateQueries({ queryKey: ["/api/dashboard"] });
+      }, 100);
+      
       toast({
         title: "Success",
         description: "Gig created successfully!"
       });
-      onClose();
     },
     onError: (error) => {
       console.error("Gig creation error:", error);
@@ -197,10 +204,14 @@ export default function SimpleGigForm({ onClose }: SimpleGigFormProps) {
         description: "Failed to create gig. Please try again.",
         variant: "destructive"
       });
+    },
+    onSettled: () => {
+      // Always reset loading state
+      setIsSubmitting(false);
     }
   });
 
-  // SIMPLE SUBMIT HANDLER - Clear, reliable logic
+  // MOBILE-OPTIMIZED SUBMIT HANDLER - Prevents UI freezing
   const onSubmit = async (data: GigFormData) => {
     if (!user?.id) {
       toast({
@@ -211,29 +222,16 @@ export default function SimpleGigForm({ onClose }: SimpleGigFormProps) {
       return;
     }
 
+    // Prevent double submission
+    if (isSubmitting || createGigMutation.isPending) {
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
-      // Save new client to preferred clients if it's not already there
-      if (data.clientName && user?.workPreferences && typeof user.workPreferences === 'object' && user.workPreferences !== null && 'preferredClients' in user.workPreferences) {
-        const preferredClients = (user.workPreferences.preferredClients as string[]) || [];
-        if (!preferredClients.includes(data.clientName)) {
-          try {
-            await apiRequest('POST', '/api/user/add-preferred-client', {
-              clientName: data.clientName
-            });
-            // Update local cache
-            queryClient.invalidateQueries({ queryKey: ["/api/user"] });
-          } catch (error) {
-            console.log("Note: Could not save client to preferences, but gig will still be created");
-          }
-        }
-      }
-
       // Create SINGLE gig entry with date range (calendar will show dots on each day)
       const isMultiDay = data.endDate && data.endDate !== data.startDate;
-      
-
 
       const gigData: InsertGig = {
         userId: user.id,
@@ -270,12 +268,30 @@ export default function SimpleGigForm({ onClose }: SimpleGigFormProps) {
         gotPaidDate: null,
       };
 
-      // Create single gig entry
-      await createGigMutation.mutateAsync(gigData);
+      // Use mutation for proper state management
+      createGigMutation.mutate(gigData);
+
+      // Background: Save new client to preferred clients (non-blocking)
+      if (data.clientName && user?.workPreferences && typeof user.workPreferences === 'object' && user.workPreferences !== null && 'preferredClients' in user.workPreferences) {
+        const preferredClients = (user.workPreferences.preferredClients as string[]) || [];
+        if (!preferredClients.includes(data.clientName)) {
+          // Fire and forget - don't block the main flow
+          apiRequest('POST', '/api/user/add-preferred-client', {
+            clientName: data.clientName
+          }).catch(() => {
+            console.log("Note: Could not save client to preferences, but gig was created");
+          });
+        }
+      }
+
     } catch (error) {
       console.error("Submit error:", error);
-    } finally {
       setIsSubmitting(false);
+      toast({
+        title: "Error",
+        description: "Failed to create gig. Please try again.",
+        variant: "destructive"
+      });
     }
   };
 

@@ -106,12 +106,18 @@ export default function CalendarView() {
       return response.json();
     },
     onSuccess: () => {
-      refreshCache();
+      // Immediately close to prevent UI freeze
+      setEditingGig(null);
+      
+      // Background cache updates to prevent blocking
+      setTimeout(() => {
+        refreshCache();
+      }, 100);
+      
       toast({
         title: "Success",
         description: "Gig updated successfully!",
       });
-      setEditingGig(null);
     },
     onError: () => {
       toast({
@@ -354,13 +360,20 @@ export default function CalendarView() {
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/gigs"] });
+      // Immediately close dialog to prevent UI freeze
+      setShowGotPaidDialog(false);
+      setGotPaidGig(null);
+      
+      // Background cache updates to prevent blocking
+      setTimeout(() => {
+        queryClient.invalidateQueries({ queryKey: ["/api/gigs"] });
+        queryClient.invalidateQueries({ queryKey: ["/api/dashboard"] });
+      }, 100);
+      
       toast({
         title: "Payment processed",
         description: "Tax-smart calculations have been saved.",
       });
-      setShowGotPaidDialog(false);
-      setGotPaidGig(null);
     },
     onError: (error) => {
       toast({
@@ -420,13 +433,18 @@ export default function CalendarView() {
         if (!response.ok) throw new Error(`Failed to create gig for ${date}`);
       }
       
-      refreshCache();
+      // Immediately close to prevent UI freeze
+      setEditingGig(null);
+      
+      // Background cache updates to prevent blocking
+      setTimeout(() => {
+        refreshCache();
+      }, 100);
+      
       toast({
         title: "Multi-day gig recreated",
         description: `Created ${newDates.length} days from ${startDate} to ${endDate}`,
       });
-      
-      setEditingGig(null);
     } catch (error) {
       console.error("Error recreating multi-day gigs:", error);
       toast({
@@ -456,13 +474,18 @@ export default function CalendarView() {
       
       await Promise.all(updatePromises);
       
-      refreshCache();
+      // Immediately close to prevent UI freeze
+      setEditingGig(null);
+      
+      // Background cache updates to prevent blocking
+      setTimeout(() => {
+        refreshCache();
+      }, 100);
+      
       toast({
         title: "Multi-day gig updated",
         description: `Updated ${gigIds.length} days of ${editingGig!.eventName}`,
       });
-      
-      setEditingGig(null);
     } catch (error) {
       console.error("Error updating multi-day gigs:", error);
       toast({
