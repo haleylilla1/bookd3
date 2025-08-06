@@ -46,6 +46,50 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.set('trust proxy', 1);
 
+  // Support contact endpoint
+  app.post('/api/support/contact', requireAuth, async (req: any, res: Response) => {
+    try {
+      const userId = getUserId(req);
+      const { subject, category, message, urgency } = req.body;
+      
+      // Validate required fields
+      if (!subject || !category || !message) {
+        return res.status(400).json({ error: 'Subject, category, and message are required' });
+      }
+
+      // Get user details for context
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ error: 'User not found' });
+      }
+
+      // Send support email
+      const { sendSupportMessage } = await import('./notifications');
+      const success = await sendSupportMessage({
+        userName: user.name,
+        userEmail: user.email,
+        subject: subject.trim(),
+        category,
+        urgency: urgency || 'medium',
+        message: message.trim(),
+        userContext: {
+          subscriptionTier: user.subscriptionTier || undefined,
+          signupDate: user.createdAt?.toISOString(),
+          lastLogin: user.lastLoginAt?.toISOString(),
+        }
+      });
+
+      if (success) {
+        res.json({ message: 'Support request sent successfully' });
+      } else {
+        res.status(500).json({ error: 'Failed to send support request' });
+      }
+    } catch (error) {
+      console.error('Support contact error:', error);
+      res.status(500).json({ error: 'Failed to process support request' });
+    }
+  });
+
   // Health check endpoints for UptimeRobot monitoring
   app.get('/health', (req, res) => {
     res.json({ status: 'healthy', timestamp: new Date().toISOString() });

@@ -103,3 +103,82 @@ export async function sendUserUpdateNotification(
     return false;
   }
 }
+
+interface SupportMessage {
+  userName: string;
+  userEmail: string;
+  subject: string;
+  category: string;
+  urgency: string;
+  message: string;
+  userContext: {
+    subscriptionTier?: string;
+    signupDate?: string;
+    lastLogin?: string;
+  };
+}
+
+export async function sendSupportMessage(data: SupportMessage): Promise<boolean> {
+  if (!process.env.SENDGRID_API_KEY) {
+    console.log("SendGrid not configured, support message not sent");
+    return false;
+  }
+
+  try {
+    const urgencyEmoji = {
+      low: '🟢',
+      medium: '🟡', 
+      high: '🔴'
+    }[data.urgency] || '🟡';
+
+    const categoryDisplay = {
+      bug: 'Bug Report',
+      feature: 'Feature Request', 
+      account: 'Account Issue',
+      billing: 'Billing Question',
+      general: 'General Question'
+    }[data.category] || data.category;
+
+    const emailContent = `
+      <h2>${urgencyEmoji} Support Request - Bookd App</h2>
+      
+      <h3>Request Details:</h3>
+      <ul>
+        <li><strong>From:</strong> ${data.userName} (${data.userEmail})</li>
+        <li><strong>Category:</strong> ${categoryDisplay}</li>
+        <li><strong>Urgency:</strong> ${data.urgency.toUpperCase()}</li>
+        <li><strong>Subject:</strong> ${data.subject}</li>
+        <li><strong>Date:</strong> ${new Date().toISOString()}</li>
+      </ul>
+
+      <h3>User Context:</h3>
+      <ul>
+        <li><strong>Subscription:</strong> ${data.userContext.subscriptionTier || 'Unknown'}</li>
+        <li><strong>Signup Date:</strong> ${data.userContext.signupDate || 'Unknown'}</li>
+        <li><strong>Last Login:</strong> ${data.userContext.lastLogin || 'Unknown'}</li>
+      </ul>
+
+      <h3>Message:</h3>
+      <div style="background: #f5f5f5; padding: 15px; border-radius: 5px; white-space: pre-wrap;">${data.message}</div>
+
+      <hr style="margin: 20px 0;">
+      <p><strong>Reply directly to this email to respond to the user.</strong></p>
+      <p><small>This support request was sent automatically from your Bookd application.</small></p>
+    `;
+
+    const msg = {
+      to: 'haleylilla@gmail.com',
+      from: 'haleylilla@gmail.com',
+      replyTo: data.userEmail, // Allows you to reply directly to the user
+      subject: `${urgencyEmoji} Support: ${data.subject} - ${data.userName}`,
+      html: emailContent,
+    };
+
+    await sgMail.send(msg);
+    console.log('Support message sent successfully');
+    return true;
+  } catch (error) {
+    console.error('Failed to send support message:', error);
+    return false;
+  }
+}
