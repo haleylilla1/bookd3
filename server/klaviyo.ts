@@ -129,7 +129,7 @@ export class KlaviyoService {
     // This is a future enhancement that requires creating email templates in Klaviyo
     await this.trackEvent(email, 'Password Reset Email Requested', {
       reset_token: resetToken,
-      reset_url: `${process.env.NODE_ENV === 'production' ? 'https://app.bookd.tools' : 'http://localhost:5000'}/?reset_token=${resetToken}`,
+      reset_url: `${process.env.NODE_ENV === 'production' || process.env.REPLIT_DEPLOYMENT === '1' ? 'https://app.bookd.tools' : 'http://localhost:5000'}/?reset_token=${resetToken}`,
       expires_at: new Date(Date.now() + 60 * 60 * 1000).toISOString() // 1 hour from now
     });
     

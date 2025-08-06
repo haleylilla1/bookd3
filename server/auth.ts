@@ -313,7 +313,11 @@ export class Auth {
       // Use SendGrid for password reset emails (transactional)
       if (!process.env.SENDGRID_API_KEY) {
         console.log('SendGrid not configured - password reset link generated but not sent');
-        console.log(`Development reset URL: ${process.env.NODE_ENV === 'production' ? 'https://app.bookd.tools' : 'http://localhost:5000'}/?reset_token=${token}`);
+        let baseUrl = 'http://localhost:5000';
+        if (process.env.NODE_ENV === 'production' || process.env.REPLIT_DOMAINS) {
+          baseUrl = 'https://app.bookd.tools';
+        }
+        console.log(`Reset URL: ${baseUrl}/?reset_token=${token}`);
         return true; // Return true for development
       }
 
@@ -322,7 +326,17 @@ export class Auth {
       const sgMail = sendgrid.default;
       sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 
-      const resetUrl = `${process.env.NODE_ENV === 'production' ? 'https://app.bookd.tools' : 'http://localhost:5000'}/?reset_token=${token}`;
+      // Determine the correct base URL for reset links
+      let baseUrl = 'http://localhost:5000';
+      
+      if (process.env.NODE_ENV === 'production') {
+        baseUrl = 'https://app.bookd.tools';
+      } else if (process.env.REPLIT_DOMAINS) {
+        // Running on Replit, use the deployed domain
+        baseUrl = 'https://app.bookd.tools';
+      }
+      
+      const resetUrl = `${baseUrl}/?reset_token=${token}`;
       
       await sgMail.send({
         to: email,
