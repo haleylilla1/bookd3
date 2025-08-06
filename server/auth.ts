@@ -405,16 +405,16 @@ export function setupAuthRoutes(app: Express): void {
       const user = await Auth.createUser(sanitizedEmail, password, sanitizedName);
       const sessionId = await Auth.createSession(user.id, req.ip, req.get('User-Agent'));
 
-      // Send new user notification email
+      // Track user signup in Klaviyo
       try {
-        const { sendNewUserNotification } = await import('./notifications');
-        await sendNewUserNotification({
-          name: user.name,
-          email: user.email,
+        const { KlaviyoService } = await import('./klaviyo');
+        await KlaviyoService.trackUserSignup(user.email, user.name, {
           signupDate: new Date().toISOString(),
+          subscriptionTier: 'trial',
+          onboardingCompleted: false
         });
       } catch (error) {
-        console.log('Note: Failed to send signup notification, but user created successfully');
+        console.log('Note: Failed to track signup in Klaviyo, but user created successfully');
       }
 
       res.cookie('sessionId', sessionId, {

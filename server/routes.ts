@@ -63,27 +63,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: 'User not found' });
       }
 
-      // Send support email
-      const { sendSupportMessage } = await import('./notifications');
-      const success = await sendSupportMessage({
-        userName: user.name,
-        userEmail: user.email,
+      // Track support request in Klaviyo
+      const { KlaviyoService } = await import('./klaviyo');
+      const success = await KlaviyoService.trackSupportRequest(user.email, {
         subject: subject.trim(),
         category,
-        urgency: urgency || 'medium',
-        message: message.trim(),
-        userContext: {
-          subscriptionTier: user.subscriptionTier || undefined,
-          signupDate: user.createdAt?.toISOString(),
-          lastLogin: user.lastLoginAt?.toISOString(),
-        }
+        urgency: urgency || 'medium'
       });
 
-      if (success) {
-        res.json({ message: 'Support request sent successfully' });
-      } else {
-        res.status(500).json({ error: 'Failed to send support request' });
+      // Also send email notification to admin (you)
+      try {
+        const sgMail = await import('@sendgrid/mail');
+        if (process.env.SENDGRID_API_KEY) {
+          sgMail.default.setApiKey(process.env.SENDGRID_API_KEY);
+          
+          const emailContent = `
+            <h2>Support Request - Bookd App</h2>
+            <p><strong>From:</strong> ${user.name} (${user.email})</p>
+            <p><strong>Category:</strong> ${category}</p>
+            <p><strong>Urgency:</strong> ${urgency}</p>
+            <p><strong>Subject:</strong> ${subject}</p>
+            <p><strong>Message:</strong></p>
+            <div style="background: #f5f5f5; padding: 15px; border-radius: 5px;">${message}</div>
+          `;
+
+          await sgMail.default.send({
+            to: 'haleylilla@gmail.com',
+            from: 'haleylilla@gmail.com',
+            replyTo: user.email,
+            subject: `Support: ${subject} - ${user.name}`,
+            html: emailContent,
+          });
+        }
+      } catch (error) {
+        console.log('Note: Failed to send admin notification email');
       }
+
+      res.json({ message: 'Support request sent successfully' });
     } catch (error) {
       console.error('Support contact error:', error);
       res.status(500).json({ error: 'Failed to process support request' });
@@ -270,22 +286,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       await storage.updateUser(userId, updateData);
       
-      // Send enhanced notification with onboarding data
+      // Track onboarding completion in Klaviyo
       try {
-        const { sendUserUpdateNotification } = await import('./notifications');
-        await sendUserUpdateNotification(
-          user.email,
-          'Onboarding Completed',
-          {
-            name: updateData.name,
-            homeAddress: updateData.homeAddress,
-            gigTypes: updatedGigTypes,
-            preferredClients: updatedClients,
-            completedAt: new Date().toISOString()
-          }
-        );
+        const { KlaviyoService } = await import('./klaviyo');
+        await KlaviyoService.trackOnboardingCompleted(user.email, {
+          homeAddress: updateData.homeAddress,
+          gigTypes: updatedGigTypes,
+          preferredClients: updatedClients
+        });
       } catch (error) {
-        console.log('Note: Failed to send onboarding notification');
+        console.log('Note: Failed to track onboarding in Klaviyo');
       }
       
       res.json({ 
@@ -381,6 +391,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Create single gig entry (multi-day gigs are ONE database entry with date range)
       const gig = await storage.createGig(gigData);
+      
+      // Track gig creation in Klaviyo
+      try {
+        const user = await storage.getUser(userId);
+        if (user) {
+          const { KlaviyoService } = await import('./klaviyo');
+          await KlaviyoService.trackGigCreated(user.email, {
+            eventName: gig.eventName,
+            expectedPay: parseFloat((gig.expectedPay || 0).toString()),
+            gigType: gig.gigType || 'General',
+            date: new Date(gig.date).toISOString()
+          });
+        }
+      } catch (error) {
+        console.log('Note: Failed to track gig creation in Klaviyo');
+      }
+      
       res.status(201).json(gig);
     } catch (error) {
       res.status(500).json({ error: 'Failed to create gig' });
@@ -816,6 +843,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log('💳 Request validation passed - proceeding with database insert');
       const expense = await storage.createExpense(expenseData);
       console.log('✅ Expense created successfully:', expense.id);
+      
+      // Track expense creation in Klaviyo
+      try {
+        const user = await storage.getUser(userId);
+        if (user) {
+          const { KlaviyoService } = await import('./klaviyo');
+          await KlaviyoService.trackExpenseAdded(user.email, {
+            amount: parseFloat(expense.amount.toString()),
+            category: expense.category,
+            description: expense.businessPurpose || 'Business expense'
+          });
+        }
+      } catch (error) {
+        console.log('Note: Failed to track expense creation in Klaviyo');
+      }
+      
       res.json(expense);
     } catch (error) {
       console.error('💥 Failed to create expense:', error);
