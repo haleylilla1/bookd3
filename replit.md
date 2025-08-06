@@ -54,8 +54,8 @@ Bookd is a mobile-first gig worker companion app designed for comprehensive fina
     - **Klaviyo Email Marketing Integration**: Comprehensive user tracking and behavioral analytics with Klaviyo for marketing automation and user segmentation. Includes event tracking (user signups, onboarding completion, gig creation, expense tracking, support requests, password resets), user profile management, and automated campaign capabilities. SendGrid retained for transactional emails (password resets) while Klaviyo handles user analytics and marketing communication.
 
 ## External Dependencies
-- **Klaviyo**: Primary email marketing and user communication platform with comprehensive event tracking.
-- **SendGrid**: Backup transactional email service (admin notifications only).
+- **Klaviyo**: Primary email marketing platform for user behavior tracking, analytics, and segmentation. Automatically tracks user signups and support contact events.
+- **SendGrid**: Transactional email service for password reset functionality.
 - **Google Maps API (Places API, Distance Matrix API)**: Address autocomplete and mileage calculation.
 - **Supabase**: Database, authentication.
 - **Sentry**: Error monitoring and performance tracking for production reliability.
