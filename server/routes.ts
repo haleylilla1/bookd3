@@ -258,11 +258,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Update user profile with setup data
-      const workPreferences = user.workPreferences || { primaryGigTypes: [], preferredClients: [] };
+      const workPreferences = user.workPreferences || { preferredClients: [] };
       
-      // Add single gig type (no comma splitting needed)
+      // Add single gig type to customGigTypes (consistent with profile page)
       const gigType = gigTypes.trim();
-      const existingTypes = ((workPreferences as any)?.primaryGigTypes || []);
+      const existingTypes = user.customGigTypes || [];
       const updatedGigTypes = existingTypes.includes(gigType) 
         ? existingTypes 
         : [...existingTypes, gigType];
@@ -277,9 +277,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         name: name.trim(),
         homeAddress: homeAddress.trim(),
         onboardingCompleted: true,
+        customGigTypes: updatedGigTypes,  // Save to customGigTypes field
         workPreferences: {
           ...workPreferences,
-          primaryGigTypes: updatedGigTypes,
           preferredClients: updatedClients
         }
       };
@@ -304,6 +304,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           name: updateData.name,
           homeAddress: updateData.homeAddress,
           onboardingCompleted: true,
+          customGigTypes: updateData.customGigTypes,
           workPreferences: updateData.workPreferences
         }
       });
