@@ -75,19 +75,24 @@ export default function AgencyPortal() {
         description: data.description,
       });
       
-      const result = await response.json();
-      setAgencyInfo(result.agency);
-      setIsAuthenticated(true);
-      
-      toast({
-        title: "Registration Successful!",
-        description: "Welcome to the agency portal. You can now post emergency gigs.",
-      });
+      if (response.ok) {
+        const result = await response.json();
+        setAgencyInfo(result.agency);
+        setIsAuthenticated(true);
+        
+        toast({
+          title: "Registration Successful!",
+          description: "Welcome to the agency portal. You can now post emergency gigs.",
+        });
+      } else {
+        const error = await response.json();
+        throw new Error(error.error || 'Registration failed');
+      }
     } catch (error) {
       console.error('Agency signup error:', error);
       toast({
         title: "Registration Failed",
-        description: "There was an error creating your agency account. Please try again.",
+        description: error instanceof Error ? error.message : "There was an error creating your agency account. Please try again.",
         variant: "destructive",
       });
     }
@@ -100,19 +105,24 @@ export default function AgencyPortal() {
         password: data.password,
       });
       
-      const result = await response.json();
-      setAgencyInfo(result.agency);
-      setIsAuthenticated(true);
-      
-      toast({
-        title: "Login Successful!",
-        description: `Welcome back, ${result.agency.companyName}!`,
-      });
+      if (response.ok) {
+        const result = await response.json();
+        setAgencyInfo(result.agency);
+        setIsAuthenticated(true);
+        
+        toast({
+          title: "Login Successful!",
+          description: `Welcome back, ${result.agency.companyName}!`,
+        });
+      } else {
+        const error = await response.json();
+        throw new Error(error.error || 'Login failed');
+      }
     } catch (error) {
       console.error('Agency login error:', error);
       toast({
         title: "Login Failed",
-        description: "Invalid email or password. Please try again.",
+        description: error instanceof Error ? error.message : "Invalid email or password. Please try again.",
         variant: "destructive",
       });
     }
