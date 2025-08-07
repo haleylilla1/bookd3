@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { Eye, EyeOff, Loader2, ArrowLeft } from "lucide-react";
+import { Eye, EyeOff, Loader2, ArrowLeft, Building } from "lucide-react";
 import { clientValidation, FormErrorHandler, sanitizeText, sanitizeEmail } from "@/utils/validation";
 
 // Enhanced form schemas with sanitization
@@ -599,6 +599,22 @@ export default function AuthForm() {
             )}
           </CardContent>
         </Card>
+
+        {/* Agency Portal Button */}
+        <div className="text-center">
+          <Button
+            variant="outline"
+            onClick={() => window.open('/agency', '_blank')}
+            className="w-full border-orange-300 text-orange-700 hover:bg-orange-50 dark:border-orange-600 dark:text-orange-400 dark:hover:bg-orange-950"
+            disabled={isLoading}
+          >
+            <Building className="w-4 h-4 mr-2" />
+            Agency Portal
+          </Button>
+          <p className="text-xs text-gray-500 mt-2">
+            For marketing agencies posting brand ambassador opportunities
+          </p>
+        </div>
       </div>
     </div>
   );
