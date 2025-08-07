@@ -603,7 +603,8 @@ export default function AuthForm() {
         </Card>
 
         {/* Agency Portal Button */}
-        <div className="text-center">
+        {/* Temporarily hidden - Agency Portal not yet ready for public launch */}
+        {/* <div className="text-center">
           <Button
             variant="outline"
             onClick={() => {
@@ -617,7 +618,7 @@ export default function AuthForm() {
             Agency Portal
           </Button>
           <p className="text-xs text-gray-500 mt-2">For agencies dealing with last-minute call outs, use our roster of emergency BA's. COMING SOON.</p>
-        </div>
+        </div> */}
       </div>
     </div>
   );
