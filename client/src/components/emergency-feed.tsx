@@ -67,7 +67,7 @@ export default function EmergencyFeed() {
         </div>
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Emergency Gigs</h1>
-          <p className="text-gray-600">Apply to urgent brand ambassador opportunities posted by agencies.</p>
+          <p className="text-gray-600">Apply to urgent and last minute brand ambassador opportunities posted by agencies. COMING SOON.</p>
         </div>
       </div>
       {/* Emergency Gigs Feed */}
