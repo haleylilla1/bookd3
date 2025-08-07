@@ -604,7 +604,7 @@ export default function AuthForm() {
         <div className="text-center">
           <Button
             variant="outline"
-            onClick={() => window.open('/agency', '_blank')}
+            onClick={() => window.location.href = '/agency'}
             className="w-full border-orange-300 text-orange-700 hover:bg-orange-50 dark:border-orange-600 dark:text-orange-400 dark:hover:bg-orange-950"
             disabled={isLoading}
           >
