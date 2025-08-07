@@ -67,10 +67,9 @@ export default function EmergencyFeed() {
         </div>
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Emergency Gigs</h1>
-          <p className="text-gray-600">Apply to urgent brand ambassador opportunities</p>
+          <p className="text-gray-600">Apply to urgent brand ambassador opportunities posted by agencies.</p>
         </div>
       </div>
-
       {/* Emergency Gigs Feed */}
       <div className="space-y-4">
         {emergencyGigs.length === 0 ? (

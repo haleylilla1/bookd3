@@ -8,6 +8,7 @@ import ProfilePage from '@/pages/profile';
 import BAProfilePage from '@/pages/ba-profile';
 import EmergencyFeedPage from '@/pages/emergency-feed';
 import EmergencyPostPage from '@/pages/emergency-post';
+import AgencyPortal from '@/pages/agency';
 import NotFound from '@/pages/not-found';
 
 
@@ -20,6 +21,7 @@ function AppRouter() {
         <Route path="/ba-profile" component={BAProfilePage} />
         <Route path="/emergency-feed" component={EmergencyFeedPage} />
         <Route path="/emergency-post" component={EmergencyPostPage} />
+        <Route path="/agency" component={AgencyPortal} />
         <Route component={NotFound} />
       </Switch>
     </AuthProvider>

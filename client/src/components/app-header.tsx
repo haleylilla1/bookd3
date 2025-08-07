@@ -137,9 +137,9 @@ export default function AppHeader({ currentScreen, onScreenChange }: AppHeaderPr
                 <span>BA Profile Setup</span>
               </DropdownMenuItem>
               
-              <DropdownMenuItem onClick={() => setLocation('/emergency-post')}>
+              <DropdownMenuItem onClick={() => window.open('/agency', '_blank')}>
                 <AlertTriangle className="mr-2 h-4 w-4" />
-                <span>Post Emergency Gig</span>
+                <span>Agency Portal</span>
               </DropdownMenuItem>
               
               <DropdownMenuItem onClick={() => onScreenChange('settings')}>
