@@ -70,6 +70,15 @@ export default function AppHeader({ currentScreen, onScreenChange }: AppHeaderPr
           {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center gap-1">
             <Button
+              variant={currentScreen === 'calendar' ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => onScreenChange('calendar')}
+              className="gap-2"
+            >
+              <Calendar className="w-4 h-4" />
+              Calendar
+            </Button>
+            <Button
               variant={currentScreen === 'dashboard' ? 'default' : 'ghost'}
               size="sm"
               onClick={() => onScreenChange('dashboard')}
@@ -79,16 +88,14 @@ export default function AppHeader({ currentScreen, onScreenChange }: AppHeaderPr
               Dashboard
             </Button>
             <Button
-              variant={currentScreen === 'calendar' ? 'default' : 'ghost'}
+              variant={currentScreen === 'rescue-roster' ? 'default' : 'ghost'}
               size="sm"
-              onClick={() => onScreenChange('calendar')}
+              onClick={() => onScreenChange('rescue-roster')}
               className="gap-2"
             >
-              <Calendar className="w-4 h-4" />
-              Calendar
+              <AlertTriangle className="w-4 h-4" />
+              Rescue Roster
             </Button>
-
-
           </nav>
         </div>
 
@@ -127,12 +134,12 @@ export default function AppHeader({ currentScreen, onScreenChange }: AppHeaderPr
               
               <DropdownMenuItem onClick={() => setLocation('/ba-profile')}>
                 <Briefcase className="mr-2 h-4 w-4" />
-                <span>BA Profile</span>
+                <span>BA Profile Setup</span>
               </DropdownMenuItem>
               
-              <DropdownMenuItem onClick={() => setLocation('/emergency-feed')}>
+              <DropdownMenuItem onClick={() => setLocation('/emergency-post')}>
                 <AlertTriangle className="mr-2 h-4 w-4" />
-                <span>Emergency Gigs</span>
+                <span>Post Emergency Gig</span>
               </DropdownMenuItem>
               
               <DropdownMenuItem onClick={() => onScreenChange('settings')}>

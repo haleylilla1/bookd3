@@ -43,7 +43,7 @@ export default function EmergencyNavCard() {
           <Button 
             size="sm" 
             variant="outline"
-            onClick={() => window.open('/emergency-post', '_blank')}
+            onClick={() => setLocation('/emergency-post')}
             className="flex flex-col items-center gap-1 h-auto py-2"
           >
             <PlusCircle className="w-4 h-4" />
