@@ -62,3 +62,8 @@ Bookd is a mobile-first gig worker companion app designed for comprehensive fina
 - **Redis**: Considered for caching.
 - **Cloudinary**: Considered for media management.
 - **Stripe**: Considered for payment integration.
+
+## Domain Configuration
+- **Primary Domain**: bookd.tools - Main Bookd application for gig workers
+- **Agency Subdomain**: agency.bookd.tools - Dedicated portal for marketing agencies posting emergency BA opportunities
+- **Auto-redirect**: Agency subdomain automatically redirects to /agency route for seamless user experience

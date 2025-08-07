@@ -10,9 +10,16 @@ import EmergencyFeedPage from '@/pages/emergency-feed';
 import EmergencyPostPage from '@/pages/emergency-post';
 import AgencyPortal from '@/pages/agency';
 import NotFound from '@/pages/not-found';
-
+import { useEffect } from 'react';
 
 function AppRouter() {
+  // Auto-redirect agency subdomain to agency portal
+  useEffect(() => {
+    if (window.location.hostname === 'agency.bookd.tools' && window.location.pathname === '/') {
+      window.location.pathname = '/agency';
+    }
+  }, []);
+
   return (
     <AuthProvider>
       <Switch>
