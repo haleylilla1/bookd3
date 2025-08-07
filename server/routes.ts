@@ -1118,8 +1118,52 @@ export async function registerRoutes(app: Express): Promise<Server> {
         emailSent: false
       });
       
-      // TODO: Send email to agency
-      // await sendBAApplicationEmail(userId, gigId);
+      // Send email notification to agency
+      try {
+        const user = await storage.getUser(userId);
+        if (user && gig) {
+          // Import SendGrid dynamically
+          const { MailService } = await import('@sendgrid/mail');
+          if (process.env.SENDGRID_API_KEY) {
+            const mailService = new MailService();
+            mailService.setApiKey(process.env.SENDGRID_API_KEY);
+            
+            // Send email to agency about new BA application
+            await mailService.send({
+              to: gig.agencyEmail,
+              from: 'noreply@bookd.tools', // You can customize this sender email
+              subject: `New Brand Ambassador Application for ${gig.eventName}`,
+              html: `
+                <h2>New Brand Ambassador Application</h2>
+                <p>A Brand Ambassador has applied for your emergency gig!</p>
+                
+                <h3>Gig Details:</h3>
+                <ul>
+                  <li><strong>Event:</strong> ${gig.eventName}</li>
+                  <li><strong>Date:</strong> ${new Date(gig.eventDate).toLocaleDateString()}</li>
+                  <li><strong>City:</strong> ${gig.city}</li>
+                  <li><strong>Pay Rate:</strong> ${gig.payRate || 'Not specified'}</li>
+                </ul>
+                
+                <h3>Brand Ambassador Details:</h3>
+                <ul>
+                  <li><strong>Name:</strong> ${user.name}</li>
+                  <li><strong>Email:</strong> ${user.email}</li>
+                </ul>
+                
+                <p>Please contact the Brand Ambassador directly to discuss next steps.</p>
+                
+                <p>Best regards,<br/>The Bookd Team</p>
+              `
+            });
+            
+            console.log(`📧 Email sent to agency ${gig.agencyEmail} about BA application from ${user.name}`);
+          }
+        }
+      } catch (emailError) {
+        console.error('❌ Failed to send email notification:', emailError);
+        // Don't fail the application if email fails
+      }
       
       res.status(201).json({ message: 'Application submitted successfully', application });
     } catch (error) {
