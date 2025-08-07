@@ -1,0 +1,80 @@
+🔴 Feature Name: Emergency BA Button
+💡 Summary:
+This feature connects agencies in urgent need of brand ambassadors (BAs) with available talent, fast.
+
+Agencies post last-minute gig needs, and BAs are notified in real-time. When a BA is interested, an automated email is sent from the BA to the agency with their info, allowing the agency to follow up directly.
+
+🧩 How It Works:
+1. Agency Flow (Client-side):
+Agency taps “Post Emergency Gig” button.
+
+Form pops up requesting:
+
+Event name
+
+Event date & time
+
+City + venue
+
+Brief role description
+
+Pay rate
+
+Contact email (where responses should go)
+
+Urgency (dropdown: “ASAP,” “Within 24hrs,” etc.)
+
+Agency pays $5 to post (via Stripe or similar).
+
+Post is submitted and stored in backend.
+
+BAs are notified instantly.
+
+2. BA Flow (Talent-side):
+BAs get a push notification (or SMS/email) saying:
+
+“🚨 Emergency gig posted in [City]! [Event Name] is looking for BAs on [Date]. Tap to view & express interest.”
+
+BA taps to open gig details.
+
+If they’re interested, they click “I’m Interested”.
+
+This action:
+
+Triggers a prewritten email to be sent from the BA’s profile to the agency’s contact email.
+
+Email includes:
+
+vbnet
+Copy
+Edit
+Subject: Emergency Gig – [BA Name] Interested in [Event Name]
+
+Hi [Agency Name],
+
+I saw your emergency post for [Event Name] on [Date]. I’m available and interested!
+
+Attached are my resume and headshots. Let me know if you need anything else.
+
+– [BA Name]
+Attachments: BA’s headshots + resume (already uploaded to profile)
+
+Email is sent from the BA's connected email account (or system-generated alias).
+
+🛡️ Why It’s Agency-Friendly:
+Agencies don’t need to download anything.
+
+They receive professional, individualized emails from interested BAs.
+
+No account creation required.
+
+No stepping on toes — we’re connecting, not replacing.
+
+✅ Benefits:
+Reduces the chaos of last-minute gig dropouts.
+
+Helps agencies access vetted, available talent fast.
+
+Gives BAs a real shot at filling last-minute work.
+
+Easy opt-in for both sides.
