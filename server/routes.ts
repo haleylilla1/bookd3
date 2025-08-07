@@ -1123,13 +1123,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const user = await storage.getUser(userId);
         if (user && gig) {
           // Import SendGrid dynamically
-          const { MailService } = await import('@sendgrid/mail');
+          const sgMail = await import('@sendgrid/mail');
           if (process.env.SENDGRID_API_KEY) {
-            const mailService = new MailService();
-            mailService.setApiKey(process.env.SENDGRID_API_KEY);
+            sgMail.default.setApiKey(process.env.SENDGRID_API_KEY);
             
             // Send email to agency about new BA application
-            await mailService.send({
+            await sgMail.default.send({
               to: gig.agencyEmail,
               from: 'noreply@bookd.tools', // You can customize this sender email
               subject: `New Brand Ambassador Application for ${gig.eventName}`,
