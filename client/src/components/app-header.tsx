@@ -94,7 +94,7 @@ export default function AppHeader({ currentScreen, onScreenChange }: AppHeaderPr
               className="gap-2"
             >
               <AlertTriangle className="w-4 h-4" />
-              Rescue Roster
+              Roster
             </Button>
           </nav>
         </div>
