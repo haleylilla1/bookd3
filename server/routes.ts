@@ -995,6 +995,65 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Emergency BA feature API endpoints
   
   // Get active emergency gigs (for BA feed)
+  // Agency authentication endpoints
+  app.post('/api/agencies/register', async (req: Request, res: Response) => {
+    try {
+      const { email, password, companyName, contactName, phoneNumber, website, description } = req.body;
+      
+      // Check if agency already exists
+      const existingAgency = await storage.getAgencyByEmail(email);
+      if (existingAgency) {
+        return res.status(400).json({ error: 'Agency with this email already exists' });
+      }
+      
+      // Create new agency
+      const agency = await storage.createAgency({
+        email,
+        passwordHash: password, // Will be hashed in storage
+        companyName,
+        contactName,
+        phoneNumber,
+        website,
+        description,
+      });
+      
+      // Remove password hash from response
+      const { passwordHash, ...agencyWithoutPassword } = agency;
+      
+      res.json({ 
+        success: true, 
+        agency: agencyWithoutPassword,
+        message: 'Agency registered successfully'
+      });
+    } catch (error) {
+      console.error("❌ Failed to register agency:", error);
+      res.status(500).json({ error: "Failed to register agency" });
+    }
+  });
+
+  app.post('/api/agencies/login', async (req: Request, res: Response) => {
+    try {
+      const { email, password } = req.body;
+      
+      const agency = await storage.validateAgencyPassword(email, password);
+      if (!agency) {
+        return res.status(401).json({ error: 'Invalid email or password' });
+      }
+      
+      // Remove password hash from response
+      const { passwordHash, ...agencyWithoutPassword } = agency;
+      
+      res.json({ 
+        success: true, 
+        agency: agencyWithoutPassword,
+        message: 'Login successful'
+      });
+    } catch (error) {
+      console.error("❌ Failed to login agency:", error);
+      res.status(500).json({ error: "Failed to login" });
+    }
+  });
+
   app.get('/api/emergency-gigs', requireAuth, async (req: any, res) => {
     try {
       const { city } = req.query;

@@ -11,6 +11,7 @@ import {
   dataExportRequests,
   emergencyGigs,
   baApplications,
+  agencies,
   type User,
   type UpsertUser,
   type InsertUser, 
@@ -44,7 +45,9 @@ import {
   type EmergencyGig,
   type InsertEmergencyGig,
   type BAApplication,
-  type InsertBAApplication
+  type InsertBAApplication,
+  type Agency,
+  type InsertAgency
 } from "@shared/schema";
 import bcrypt from "bcryptjs";
 import { db } from "./db";
@@ -167,6 +170,12 @@ export interface IStorage {
   getUserExpenseCount(userId: number): Promise<number>;
   getUserTotalEarnings(userId: number): Promise<number>;
 
+  // Agency authentication methods
+  getAgency(id: number): Promise<Agency | undefined>;
+  getAgencyByEmail(email: string): Promise<Agency | undefined>;
+  createAgency(agency: InsertAgency): Promise<Agency>;
+  validateAgencyPassword(email: string, password: string): Promise<Agency | null>;
+  
   // Emergency BA feature methods
   getEmergencyGig(id: number): Promise<EmergencyGig | undefined>;
   getActiveEmergencyGigs(city?: string): Promise<EmergencyGig[]>;
@@ -1330,6 +1339,77 @@ export class DatabaseStorage implements IStorage {
           sql`${users.preferredCities} @> ARRAY[${city}]::text[]`
         )
       );
+  }
+
+  // Agency authentication methods
+  async getAgency(id: number): Promise<Agency | undefined> {
+    try {
+      const result = await db
+        .select()
+        .from(agencies)
+        .where(eq(agencies.id, id))
+        .limit(1);
+      
+      return result[0];
+    } catch (error) {
+      console.error("❌ Failed to get agency:", error);
+      throw error;
+    }
+  }
+
+  async getAgencyByEmail(email: string): Promise<Agency | undefined> {
+    try {
+      const result = await db
+        .select()
+        .from(agencies)
+        .where(eq(agencies.email, email))
+        .limit(1);
+      
+      return result[0];
+    } catch (error) {
+      console.error("❌ Failed to get agency by email:", error);
+      throw error;
+    }
+  }
+
+  async createAgency(agency: InsertAgency): Promise<Agency> {
+    try {
+      // Hash the password
+      const saltRounds = 12;
+      const passwordHash = await bcrypt.hash(agency.passwordHash, saltRounds);
+
+      const result = await db
+        .insert(agencies)
+        .values({
+          ...agency,
+          passwordHash,
+        })
+        .returning();
+
+      return result[0];
+    } catch (error) {
+      console.error("❌ Failed to create agency:", error);
+      throw error;
+    }
+  }
+
+  async validateAgencyPassword(email: string, password: string): Promise<Agency | null> {
+    try {
+      const agency = await this.getAgencyByEmail(email);
+      if (!agency) {
+        return null;
+      }
+
+      const isValid = await bcrypt.compare(password, agency.passwordHash);
+      if (!isValid) {
+        return null;
+      }
+
+      return agency;
+    } catch (error) {
+      console.error("❌ Failed to validate agency password:", error);
+      throw error;
+    }
   }
 }
 
