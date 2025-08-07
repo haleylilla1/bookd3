@@ -87,7 +87,8 @@ export default function AppHeader({ currentScreen, onScreenChange }: AppHeaderPr
               <BarChart3 className="w-4 h-4" />
               Dashboard
             </Button>
-            <Button
+            {/* Temporarily hidden - Rescue Roster feature not yet ready for users */}
+            {/* <Button
               variant={currentScreen === 'rescue-roster' ? 'default' : 'ghost'}
               size="sm"
               onClick={() => onScreenChange('rescue-roster')}
@@ -95,7 +96,7 @@ export default function AppHeader({ currentScreen, onScreenChange }: AppHeaderPr
             >
               <AlertTriangle className="w-4 h-4" />
               Roster
-            </Button>
+            </Button> */}
           </nav>
         </div>
 

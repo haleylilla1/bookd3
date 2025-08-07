@@ -12,7 +12,8 @@ export default function BottomNavigation({ currentScreen, onScreenChange }: Bott
   const navItems = [
     { id: "calendar" as const, label: "Calendar", icon: Calendar },
     { id: "dashboard" as const, label: "Dashboard", icon: PieChart },
-    { id: "rescue-roster" as const, label: "Roster", icon: AlertTriangle },
+    // Temporarily hidden - Rescue Roster feature not yet ready for users
+    // { id: "rescue-roster" as const, label: "Roster", icon: AlertTriangle },
     { id: "profile" as const, label: "Profile", icon: User },
   ];
 
