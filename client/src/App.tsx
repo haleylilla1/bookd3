@@ -21,17 +21,22 @@ function AppRouter() {
   }, []);
 
   return (
-    <AuthProvider>
-      <Switch>
-        <Route path="/" component={HomePage} />
-        <Route path="/profile" component={ProfilePage} />
-        <Route path="/ba-profile" component={BAProfilePage} />
-        <Route path="/emergency-feed" component={EmergencyFeedPage} />
-        <Route path="/emergency-post" component={EmergencyPostPage} />
-        <Route path="/agency" component={AgencyPortal} />
-        <Route component={NotFound} />
-      </Switch>
-    </AuthProvider>
+    <Switch>
+      {/* Agency portal - no auth required */}
+      <Route path="/agency" component={AgencyPortal} />
+      
+      {/* All other routes require regular user authentication */}
+      <Route path="/" nest>
+        <AuthProvider>
+          <Route path="/" component={HomePage} />
+          <Route path="/profile" component={ProfilePage} />
+          <Route path="/ba-profile" component={BAProfilePage} />
+          <Route path="/emergency-feed" component={EmergencyFeedPage} />
+          <Route path="/emergency-post" component={EmergencyPostPage} />
+          <Route component={NotFound} />
+        </AuthProvider>
+      </Route>
+    </Switch>
   );
 }
 
