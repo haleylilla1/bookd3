@@ -4,6 +4,7 @@ import { useMutation } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
@@ -74,6 +75,7 @@ type ResetPasswordData = z.infer<typeof resetPasswordSchema>;
 export default function AuthForm() {
   const [mode, setMode] = useState<'login' | 'register' | 'reset-request' | 'reset-password'>('login');
   const [showPassword, setShowPassword] = useState(false);
+  const [, setLocation] = useLocation();
   const { toast } = useToast();
   const [errorHandler] = useState(() => new FormErrorHandler());
 
@@ -604,7 +606,10 @@ export default function AuthForm() {
         <div className="text-center">
           <Button
             variant="outline"
-            onClick={() => window.location.href = '/agency'}
+            onClick={() => {
+              console.log('Agency portal button clicked - navigating to /agency');
+              setLocation('/agency');
+            }}
             className="w-full border-orange-300 text-orange-700 hover:bg-orange-50 dark:border-orange-600 dark:text-orange-400 dark:hover:bg-orange-950"
             disabled={isLoading}
           >
