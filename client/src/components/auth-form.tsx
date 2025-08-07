@@ -616,9 +616,7 @@ export default function AuthForm() {
             <Building className="w-4 h-4 mr-2" />
             Agency Portal
           </Button>
-          <p className="text-xs text-gray-500 mt-2">
-            For marketing agencies posting brand ambassador opportunities
-          </p>
+          <p className="text-xs text-gray-500 mt-2">For agencies dealing with last-minute call outs, use our roster of emergency BA's. COMING SOON.</p>
         </div>
       </div>
     </div>
