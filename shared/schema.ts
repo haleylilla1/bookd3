@@ -84,6 +84,14 @@ export const users = pgTable("users", {
   subscriptionTier: varchar("subscription_tier").default("trial"), // trial, free, premium
   lastLoginAt: timestamp("last_login_at"),
   
+  // Emergency BA profile fields
+  bio: text("bio"),
+  headshotUrls: text("headshot_urls").array().default([]),
+  resumeUrl: varchar("resume_url", { length: 500 }),
+  w2Documents: text("w2_documents").array().default([]),
+  emergencyNotifications: boolean("emergency_notifications").default(true),
+  preferredCities: text("preferred_cities").array().default([]),
+  
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 }, (table) => [
@@ -395,6 +403,48 @@ export const insertInvoiceSchema = createInsertSchema(invoices).omit({
 
 export type InsertInvoice = z.infer<typeof insertInvoiceSchema>;
 export type Invoice = typeof invoices.$inferSelect;
+
+// Emergency BA feature tables
+export const emergencyGigs = pgTable("emergency_gigs", {
+  id: serial("id").primaryKey(),
+  agencyEmail: varchar("agency_email", { length: 255 }).notNull(),
+  agencyName: varchar("agency_name", { length: 255 }),
+  contactEmail: varchar("contact_email", { length: 255 }).notNull(),
+  eventName: varchar("event_name", { length: 255 }).notNull(),
+  eventDate: timestamp("event_date").notNull(),
+  city: varchar("city", { length: 100 }).notNull(),
+  venue: varchar("venue", { length: 255 }),
+  roleDescription: text("role_description"),
+  payRate: varchar("pay_rate", { length: 100 }),
+  urgency: varchar("urgency", { length: 50 }).default("ASAP"),
+  status: varchar("status", { length: 20 }).default("active"),
+  revenuecatTransactionId: varchar("revenuecat_transaction_id", { length: 255 }),
+  createdAt: timestamp("created_at").defaultNow(),
+  filledAt: timestamp("filled_at"),
+});
+
+export const baApplications = pgTable("ba_applications", {
+  id: serial("id").primaryKey(),
+  emergencyGigId: integer("emergency_gig_id").notNull().references(() => emergencyGigs.id),
+  baUserId: integer("ba_user_id").notNull().references(() => users.id),
+  appliedAt: timestamp("applied_at").defaultNow(),
+  emailSent: boolean("email_sent").default(false),
+});
+
+export const insertEmergencyGigSchema = createInsertSchema(emergencyGigs).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertBAApplicationSchema = createInsertSchema(baApplications).omit({
+  id: true,
+  appliedAt: true,
+});
+
+export type InsertEmergencyGig = z.infer<typeof insertEmergencyGigSchema>;
+export type EmergencyGig = typeof emergencyGigs.$inferSelect;
+export type InsertBAApplication = z.infer<typeof insertBAApplicationSchema>;
+export type BAApplication = typeof baApplications.$inferSelect;
 
 // Business expense categories for tax deductions
 export const BUSINESS_EXPENSE_CATEGORIES = [

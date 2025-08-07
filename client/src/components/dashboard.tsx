@@ -14,6 +14,7 @@ import { apiRequest } from "@/lib/queryClient";
 import { editExpenseSchema, type ExpenseFormData } from "@/lib/form-schemas";
 import { useFormErrorHandler } from "@/hooks/use-form-error-handler";
 import { ChevronLeft, ChevronRight, Edit2, Save, X, DollarSign, Calendar, Users, TrendingUp, Receipt, Calculator, PiggyBank, FileText, Download, Trash2 } from "lucide-react";
+import EmergencyNavCard from "@/components/emergency-nav";
 import { AmountField, MerchantField, BusinessPurposeField, CategoryField, DateField } from "@/components/ui/form-field-wrapper";
 import { useToast } from "@/hooks/use-toast";
 import type { Gig, User, Expense } from "@shared/schema";
@@ -844,6 +845,11 @@ export default function Dashboard() {
         </div>
       </div>
 
+      {/* Emergency BA Navigation */}
+      <div className="mb-6">
+        <EmergencyNavCard />
+      </div>
+
       {/* Interactive Cards Note */}
       <div className="mb-4">
         <p className="text-sm text-gray-600 text-center">
@@ -1431,7 +1437,7 @@ function ExpenseEditForm({
     resolver: zodResolver(editExpenseSchema),
     defaultValues: {
       date: expense.date,
-      amount: typeof expense.amount === 'string' ? expense.amount : expense.amount?.toString() || "",
+      amount: typeof expense.amount === 'string' ? expense.amount : (expense.amount || 0).toString(),
       merchant: expense.merchant || "",
       businessPurpose: expense.businessPurpose || "",
       category: expense.category,

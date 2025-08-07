@@ -992,6 +992,111 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Emergency BA feature API endpoints
+  
+  // Get active emergency gigs (for BA feed)
+  app.get('/api/emergency-gigs', requireAuth, async (req: any, res) => {
+    try {
+      const { city } = req.query;
+      const gigs = await storage.getActiveEmergencyGigs(city);
+      res.json(gigs);
+    } catch (error) {
+      console.error('❌ Failed to fetch emergency gigs:', error);
+      res.status(500).json({ error: 'Failed to fetch emergency gigs' });
+    }
+  });
+
+  // Create emergency gig (agency post - no auth required for agencies)
+  app.post('/api/emergency-gigs', 
+    validateRequestBody(z.object({
+      agencyEmail: z.string().email(),
+      agencyName: z.string().min(1),
+      contactEmail: z.string().email(),
+      eventName: z.string().min(1),
+      eventDate: z.string(),
+      city: z.string().min(1),
+      venue: z.string().optional(),
+      roleDescription: z.string().optional(),
+      payRate: z.string().optional(),
+      urgency: z.enum(['ASAP', 'Within 24hrs', 'This Week']).default('ASAP'),
+      revenuecatTransactionId: z.string().optional()
+    })),
+    async (req: Request, res: Response) => {
+    try {
+      const gigData = {
+        ...req.body,
+        eventDate: new Date(req.body.eventDate)
+      };
+      
+      const gig = await storage.createEmergencyGig(gigData);
+      
+      // TODO: Send notifications to BAs in the city
+      // await notifyBAsInCity(gig.city, gig);
+      
+      res.status(201).json(gig);
+    } catch (error) {
+      console.error('❌ Failed to create emergency gig:', error);
+      res.status(500).json({ error: 'Failed to create emergency gig' });
+    }
+  });
+
+  // BA applies to emergency gig
+  app.post('/api/emergency-gigs/:id/apply', requireAuth, async (req: any, res) => {
+    try {
+      const userId = getUserId(req);
+      const gigId = parseInt(req.params.id);
+      
+      // Check if gig exists and is active
+      const gig = await storage.getEmergencyGig(gigId);
+      if (!gig || gig.status !== 'active') {
+        return res.status(404).json({ error: 'Emergency gig not found or no longer active' });
+      }
+      
+      // Create application
+      const application = await storage.createBAApplication({
+        emergencyGigId: gigId,
+        baUserId: userId,
+        emailSent: false
+      });
+      
+      // TODO: Send email to agency
+      // await sendBAApplicationEmail(userId, gigId);
+      
+      res.status(201).json({ message: 'Application submitted successfully', application });
+    } catch (error) {
+      console.error('❌ Failed to apply to emergency gig:', error);
+      res.status(500).json({ error: 'Failed to apply to emergency gig' });
+    }
+  });
+
+  // Mark emergency gig as filled (for agencies)
+  app.post('/api/emergency-gigs/:id/mark-filled',
+    validateRequestBody(z.object({
+      agencyEmail: z.string().email()
+    })),
+    async (req: Request, res: Response) => {
+    try {
+      const gigId = parseInt(req.params.id);
+      const { agencyEmail } = req.body;
+      
+      // Verify agency owns this gig
+      const gig = await storage.getEmergencyGig(gigId);
+      if (!gig || gig.agencyEmail !== agencyEmail) {
+        return res.status(403).json({ error: 'Unauthorized to mark this gig as filled' });
+      }
+      
+      const updatedGig = await storage.markEmergencyGigFilled(gigId);
+      
+      // TODO: Notify all BAs that applied
+      // await notifyBAsGigFilled(gigId);
+      
+      res.json({ message: 'Gig marked as filled', gig: updatedGig });
+    } catch (error) {
+      console.error('❌ Failed to mark gig as filled:', error);
+      res.status(500).json({ error: 'Failed to mark gig as filled' });
+    }
+  });
+
   // Apply security error handler last
   app.use(secureErrorHandler);
   

@@ -20,7 +20,9 @@ import {
   Crown,
   Calendar,
   Target,
-  BarChart3
+  BarChart3,
+  AlertTriangle,
+  Briefcase
 } from "lucide-react";
 import ContactSupport from "./contact-support";
 
@@ -119,6 +121,18 @@ export default function AppHeader({ currentScreen, onScreenChange }: AppHeaderPr
               <DropdownMenuItem onClick={() => setLocation('/profile')}>
                 <User className="mr-2 h-4 w-4" />
                 <span>Profile Settings</span>
+              </DropdownMenuItem>
+              
+              <DropdownMenuSeparator />
+              
+              <DropdownMenuItem onClick={() => setLocation('/ba-profile')}>
+                <Briefcase className="mr-2 h-4 w-4" />
+                <span>BA Profile</span>
+              </DropdownMenuItem>
+              
+              <DropdownMenuItem onClick={() => setLocation('/emergency-feed')}>
+                <AlertTriangle className="mr-2 h-4 w-4" />
+                <span>Emergency Gigs</span>
               </DropdownMenuItem>
               
               <DropdownMenuItem onClick={() => onScreenChange('settings')}>
