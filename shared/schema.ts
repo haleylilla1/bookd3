@@ -404,9 +404,27 @@ export const insertInvoiceSchema = createInsertSchema(invoices).omit({
 export type InsertInvoice = z.infer<typeof insertInvoiceSchema>;
 export type Invoice = typeof invoices.$inferSelect;
 
+// Agencies table for posting emergency gigs
+export const agencies = pgTable("agencies", {
+  id: serial("id").primaryKey(),
+  email: varchar("email", { length: 255 }).unique().notNull(),
+  passwordHash: varchar("password_hash", { length: 255 }).notNull(),
+  companyName: varchar("company_name", { length: 255 }).notNull(),
+  contactName: varchar("contact_name", { length: 255 }).notNull(),
+  phoneNumber: varchar("phone_number", { length: 50 }),
+  website: varchar("website", { length: 255 }),
+  description: text("description"),
+  isVerified: boolean("is_verified").default(false),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => [
+  index("idx_agencies_email").on(table.email),
+]);
+
 // Emergency BA feature tables
 export const emergencyGigs = pgTable("emergency_gigs", {
   id: serial("id").primaryKey(),
+  agencyId: integer("agency_id").references(() => agencies.id),
   agencyEmail: varchar("agency_email", { length: 255 }).notNull(),
   agencyName: varchar("agency_name", { length: 255 }),
   contactEmail: varchar("contact_email", { length: 255 }).notNull(),
@@ -431,6 +449,12 @@ export const baApplications = pgTable("ba_applications", {
   emailSent: boolean("email_sent").default(false),
 });
 
+export const insertAgencySchema = createInsertSchema(agencies).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
 export const insertEmergencyGigSchema = createInsertSchema(emergencyGigs).omit({
   id: true,
   createdAt: true,
@@ -441,6 +465,8 @@ export const insertBAApplicationSchema = createInsertSchema(baApplications).omit
   appliedAt: true,
 });
 
+export type InsertAgency = z.infer<typeof insertAgencySchema>;
+export type Agency = typeof agencies.$inferSelect;
 export type InsertEmergencyGig = z.infer<typeof insertEmergencyGigSchema>;
 export type EmergencyGig = typeof emergencyGigs.$inferSelect;
 export type InsertBAApplication = z.infer<typeof insertBAApplicationSchema>;
