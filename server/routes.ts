@@ -473,6 +473,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       otherReimbursed: z.union([z.string(), z.number()])
         .transform(val => sanitizeNumber(val, 0))
         .refine(val => val >= 0, 'Other reimbursed cannot be negative'),
+      mileage: z.union([z.string(), z.number()])
+        .transform(val => sanitizeNumber(val, 0))
+        .refine(val => val >= 0, 'Mileage cannot be negative'),
       paymentMethod: z.string().transform(sanitizeText).optional(),
       taxPercentage: z.union([z.string(), z.number()])
         .transform(val => sanitizeNumber(val, 25))
@@ -488,6 +491,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         parkingReimbursed,
         otherExpenses, // Now an array of {name, amount}
         otherReimbursed,
+        mileage,
         paymentMethod,
         taxPercentage
       } = req.body;
@@ -517,6 +521,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         reimbursedOther: otherReimbursed.toString(),
         unreimbursedParking: unreimbursedParking.toString(),
         unreimbursedOther: unreimbursedOther.toString(),
+        mileage: mileage || 0, // Save calculated mileage
         gotPaidDate: new Date(),
         paymentMethod: paymentMethod || null,
         taxPercentage: taxPercentage || 25,
