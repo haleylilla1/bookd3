@@ -360,15 +360,27 @@ export default function CalendarView() {
       return response.json();
     },
     onSuccess: () => {
-      // Immediately close dialog to prevent UI freeze
+      // Close dialog and clean up state
       setShowGotPaidDialog(false);
       setGotPaidGig(null);
       
-      // Background cache updates to prevent blocking
+      // Ensure iOS scroll is properly restored before cache updates
+      setTimeout(() => {
+        // Force scroll restoration for mobile
+        if (typeof window !== 'undefined') {
+          window.scrollTo({ top: 0, behavior: 'auto' });
+          // Second attempt with smooth scroll for better UX
+          setTimeout(() => {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          }, 50);
+        }
+      }, 50);
+      
+      // Delayed cache updates to prevent interference with scroll restoration
       setTimeout(() => {
         queryClient.invalidateQueries({ queryKey: ["/api/gigs"] });
         queryClient.invalidateQueries({ queryKey: ["/api/dashboard"] });
-      }, 100);
+      }, 200);
       
       toast({
         title: "Payment processed",

@@ -53,7 +53,7 @@ export class IOSMobileFixes {
       if (target.matches('input, textarea, select')) {
         target.style.fontSize = '16px';
         target.style.webkitTextSizeAdjust = '100%';
-        target.style.textSizeAdjust = '100%';
+        (target.style as any).textSizeAdjust = '100%';
       }
     });
   }
@@ -63,7 +63,7 @@ export class IOSMobileFixes {
     const applyZoomPrevention = (element: HTMLElement) => {
       element.style.fontSize = '16px';
       element.style.webkitTextSizeAdjust = '100%';
-      element.style.textSizeAdjust = '100%';
+      (element.style as any).textSizeAdjust = '100%';
       element.style.webkitTransform = 'translateZ(0)';
       element.style.transform = 'translateZ(0)';
     };
@@ -160,26 +160,39 @@ export class IOSMobileFixes {
   static handleDialogOpen(): void {
     if (!this.isIOS()) return;
     
-    // Prevent background scrolling
+    // Store current scroll position
     const scrollY = window.scrollY;
+    document.body.dataset.scrollY = scrollY.toString();
+    
+    // Prevent background scrolling
     document.body.style.position = 'fixed';
     document.body.style.top = `-${scrollY}px`;
     document.body.style.width = '100%';
+    document.body.style.overflow = 'hidden';
   }
 
   // Method to be called when a modal/dialog closes
   static handleDialogClose(): void {
     if (!this.isIOS()) return;
     
-    // Restore scrolling
-    const scrollY = document.body.style.top;
+    // Get stored scroll position
+    const scrollY = document.body.dataset.scrollY || '0';
+    
+    // Restore scrolling immediately
     document.body.style.position = '';
     document.body.style.top = '';
     document.body.style.width = '';
+    document.body.style.overflow = '';
     
-    if (scrollY) {
-      window.scrollTo(0, parseInt(scrollY || '0') * -1);
-    }
+    // Clean up data attribute
+    delete document.body.dataset.scrollY;
+    
+    // Force scroll restoration with a small delay to ensure DOM is ready
+    setTimeout(() => {
+      window.scrollTo(0, parseInt(scrollY));
+      // Force a layout recalculation to ensure scroll is properly restored
+      document.body.scrollTop;
+    }, 10);
   }
 }
 
