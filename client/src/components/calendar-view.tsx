@@ -35,7 +35,7 @@ const getGigStatusColor = (status: string) => {
       return "bg-orange-500";
     case "upcoming":
     case "confirmed":
-      return "bg-blue-500";
+      return "bg-purple-400";
     default:
       return "bg-orange-500"; // Default to pending payment
   }
@@ -320,7 +320,7 @@ export default function CalendarView() {
       case "pending payment":
         return "bg-orange-100 text-orange-800";
       case "upcoming":
-        return "bg-blue-100 text-blue-800";
+        return "bg-purple-100 text-purple-800";
       default:
         return "bg-gray-100 text-gray-800";
     }
