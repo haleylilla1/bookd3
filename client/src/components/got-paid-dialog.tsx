@@ -229,7 +229,7 @@ export default function GotPaidDialog({
       <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
         <DialogHeader className="flex-shrink-0">
           <DialogTitle className="flex items-center gap-2">
-            <DollarSign className="w-3 h-5 text-green-600" />
+            <DollarSign className="w-5 h-5 text-green-600" />
             Got Paid: {gig.eventName}
           </DialogTitle>
           <DialogDescription>
