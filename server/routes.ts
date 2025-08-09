@@ -1,11 +1,13 @@
 import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
+import express from "express";
 import { storage } from "./storage";
 import { requireAuth } from "./auth";
 import { db } from "./db";
 import { users, gigs } from "@shared/schema";
 import { count } from "drizzle-orm";
 import RevenueCatService from './revenuecat';
+import RevenueCatWebhookHandler from './revenuecat-webhooks';
 import { 
   generalRateLimit, 
   authRateLimit, 
@@ -133,6 +135,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error: any) {
       console.error('❌ Subscription update failed:', error);
       res.status(500).json({ error: 'Failed to update subscription' });
+    }
+  });
+
+  // RevenueCat webhook endpoint (no auth required - webhook from external service)
+  app.post('/api/webhooks/revenuecat', express.json({ limit: '1mb' }), async (req: Request, res: Response) => {
+    await RevenueCatWebhookHandler.handleWebhookRequest(req, res);
+  });
+
+  // Test webhook endpoint (auth required - for testing)
+  app.post('/api/subscription/test-webhook', requireAuth, async (req: any, res: Response) => {
+    try {
+      const userId = getUserId(req);
+      const { eventType = 'INITIAL_PURCHASE' } = req.body;
+      
+      const success = await RevenueCatWebhookHandler.testWebhook(userId, eventType);
+      
+      if (success) {
+        res.json({ success: true, message: 'Test webhook processed successfully' });
+      } else {
+        res.status(500).json({ error: 'Test webhook failed' });
+      }
+    } catch (error: any) {
+      console.error('❌ Test webhook failed:', error);
+      res.status(500).json({ error: 'Failed to process test webhook' });
     }
   });
 
