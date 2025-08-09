@@ -96,6 +96,10 @@ export const users = pgTable("users", {
   emergencyNotifications: boolean("emergency_notifications").default(true),
   preferredCities: text("preferred_cities").array().default([]),
   
+  // RevenueCat subscription management
+  revenuecatCustomerId: text("revenuecat_customer_id"),
+  subscriptionExpiresAt: timestamp("subscription_expires_at"),
+  
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 }, (table) => [

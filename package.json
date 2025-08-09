@@ -27,6 +27,7 @@
     "@radix-ui/react-switch": "^1.2.5",
     "@radix-ui/react-tabs": "^1.1.4",
     "@radix-ui/react-toast": "^1.2.7",
+    "@revenuecat/purchases-js": "^1.12.1",
     "@sendgrid/mail": "^8.1.5",
     "@sentry/cli": "^2.50.2",
     "@sentry/node": "^10.1.0",
