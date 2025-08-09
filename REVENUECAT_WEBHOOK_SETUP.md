@@ -19,7 +19,7 @@
 ### 1. Configure Webhook URL
 In your RevenueCat dashboard:
 1. Go to **Project Settings** → **Webhooks**
-2. Add webhook URL: `https://your-domain.replit.app/api/webhooks/revenuecat`
+2. Add webhook URL: `https://bookd.tools/api/webhooks/revenuecat`
 3. Select events to track:
    - ✅ `INITIAL_PURCHASE`
    - ✅ `RENEWAL`
@@ -82,10 +82,10 @@ Create these subscription products in RevenueCat:
 
 ## 🚀 Next Steps
 
-### 1. Configure Your Domain
-Replace webhook URL with your actual domain:
+### 1. Webhook URL Already Configured
+Webhook URL is correctly set to:
 ```
-https://your-actual-domain.com/api/webhooks/revenuecat
+https://bookd.tools/api/webhooks/revenuecat
 ```
 
 ### 2. Set Webhook Secret (Optional)
