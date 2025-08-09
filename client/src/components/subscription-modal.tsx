@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Check, X, Crown } from "lucide-react";
+import { TestWebhookButton } from "./test-webhook-button";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 
@@ -200,6 +201,13 @@ export function SubscriptionModal({ isOpen, onClose, currentTier = 'trial' }: Su
           <p>All plans include mobile access and data export.</p>
           <p>Cancel anytime. No long-term contracts.</p>
         </div>
+
+        {/* Development Testing Section */}
+        {process.env.NODE_ENV === 'development' && (
+          <div className="mt-6 p-4 bg-gray-50 rounded-lg border">
+            <TestWebhookButton />
+          </div>
+        )}
       </DialogContent>
     </Dialog>
   );
