@@ -8,6 +8,8 @@ import ProfilePage from '@/pages/profile';
 import BAProfilePage from '@/pages/ba-profile';
 import EmergencyFeedPage from '@/pages/emergency-feed';
 import EmergencyPostPage from '@/pages/emergency-post';
+import PrivacyPolicy from '@/pages/privacy-policy';
+import TermsOfService from '@/pages/terms-of-service';
 
 import AgencyPortal from '@/pages/agency';
 import NotFound from '@/pages/not-found';
@@ -23,8 +25,10 @@ function AppRouter() {
 
   return (
     <Switch>
-      {/* Agency portal - no auth required */}
+      {/* Public routes - no auth required */}
       <Route path="/agency" component={AgencyPortal} />
+      <Route path="/privacy-policy" component={PrivacyPolicy} />
+      <Route path="/terms-of-service" component={TermsOfService} />
       
       {/* All other routes require regular user authentication */}
       <Route path="/*">
