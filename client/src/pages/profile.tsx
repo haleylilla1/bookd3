@@ -12,7 +12,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Slider } from "@/components/ui/slider";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { ArrowLeft, Bell, Settings } from "lucide-react";
-import { Link } from "wouter";
+import NotificationSettingsDialog from "@/components/notification-settings-dialog";
 import { apiRequest } from "@/lib/queryClient";
 import type { User } from "@shared/schema";
 
@@ -29,6 +29,7 @@ export default function Profile() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [, setLocation] = useLocation();
+  const [showNotificationSettings, setShowNotificationSettings] = useState(false);
 
   const { data: user, isLoading } = useQuery<User>({
     queryKey: ["/api/user"],
@@ -225,17 +226,25 @@ export default function Profile() {
                   <p className="text-sm text-gray-600">Manage your email and push notifications</p>
                 </div>
               </div>
-              <Link href="/notifications">
-                <Button variant="outline" size="sm">
-                  <Settings className="w-4 h-4 mr-2" />
-                  Settings
-                </Button>
-              </Link>
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => setShowNotificationSettings(true)}
+              >
+                <Settings className="w-4 h-4 mr-2" />
+                Settings
+              </Button>
             </div>
           </CardContent>
         </Card>
 
       </div>
+
+      {/* Notification Settings Dialog */}
+      <NotificationSettingsDialog 
+        isOpen={showNotificationSettings}
+        onClose={() => setShowNotificationSettings(false)}
+      />
     </div>
   );
 }
