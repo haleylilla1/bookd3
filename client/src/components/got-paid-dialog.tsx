@@ -228,8 +228,8 @@ export default function GotPaidDialog({
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
         <DialogHeader className="flex-shrink-0">
-          <DialogTitle className="flex items-center gap-2">
-            <DollarSign className="w-5 h-5 text-green-600" />
+          <DialogTitle className="flex items-center gap-200">
+            <DollarSign className="w-5 h-5 text-green-400" />
             Got Paid: {gig.eventName}
           </DialogTitle>
           <DialogDescription>
@@ -243,7 +243,7 @@ export default function GotPaidDialog({
             <div
               key={i}
               className={`flex-1 h-2 rounded ${
-                i + 1 <= step ? "bg-green-500" : "bg-gray-200"
+                i + 1 <= step ? "bg-yellow-500" : "bg-gray-200"
               }`}
             />
           ))}
