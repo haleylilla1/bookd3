@@ -108,7 +108,7 @@ const calculations = {
       variant="default"
       size="sm"
       onClick={() => handleGotPaid(gig)}
-      className="bg-blue-600 hover:bg-blue-700 text-white"
+      className="bg-green-600 hover:bg-green-700 text-white"
     >
       <DollarSign className="w-4 h-4 mr-1" />
       Got Paid
