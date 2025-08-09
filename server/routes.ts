@@ -5,6 +5,7 @@ import { requireAuth } from "./auth";
 import { db } from "./db";
 import { users, gigs } from "@shared/schema";
 import { count } from "drizzle-orm";
+import RevenueCatService from './revenuecat';
 import { 
   generalRateLimit, 
   authRateLimit, 
@@ -45,6 +46,95 @@ export async function registerRoutes(app: Express): Promise<Server> {
   setupAuthRoutes(app);
 
   app.set('trust proxy', 1);
+
+  // RevenueCat subscription endpoints
+  app.get('/api/subscription/status', requireAuth, async (req: any, res: Response) => {
+    try {
+      const userId = getUserId(req);
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ error: 'User not found' });
+      }
+
+      // Get subscription status from RevenueCat
+      const status = await RevenueCatService.getSubscriptionStatus(user.id.toString());
+      
+      res.json({
+        hasActiveSubscription: status.hasActiveSubscription,
+        subscriptionTier: user.subscriptionTier,
+        subscriptionStatus: user.subscriptionStatus,
+        expiresAt: user.subscriptionExpiresAt,
+        revenueCatData: status
+      });
+    } catch (error: any) {
+      console.error('❌ Subscription status check failed:', error);
+      res.status(500).json({ error: 'Failed to check subscription status' });
+    }
+  });
+
+  app.post('/api/subscription/setup', requireAuth, async (req: any, res: Response) => {
+    try {
+      const userId = getUserId(req);
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ error: 'User not found' });
+      }
+
+      // Create or get RevenueCat customer
+      const revenueCatCustomer = await RevenueCatService.createCustomer(
+        user.id.toString(),
+        user.email,
+        {
+          name: `${user.firstName || ''} ${user.lastName || ''}`.trim(),
+          signupDate: user.createdAt
+        }
+      );
+
+      // Update user with RevenueCat customer ID
+      await storage.updateUser(userId, {
+        revenuecatCustomerId: user.id.toString()
+      });
+
+      res.json({
+        success: true,
+        customerId: user.id.toString(),
+        message: 'RevenueCat customer setup complete'
+      });
+    } catch (error: any) {
+      console.error('❌ RevenueCat setup failed:', error);
+      res.status(500).json({ error: 'Failed to setup subscription' });
+    }
+  });
+
+  app.post('/api/subscription/update', requireAuth, async (req: any, res: Response) => {
+    try {
+      const userId = getUserId(req);
+      const { tier, status, expiresAt } = req.body;
+      
+      if (!tier || !status) {
+        return res.status(400).json({ error: 'Tier and status are required' });
+      }
+
+      // Update user subscription in database
+      await storage.updateUser(userId, {
+        subscriptionTier: tier,
+        subscriptionStatus: status,
+        subscriptionExpiresAt: expiresAt ? new Date(expiresAt) : null
+      });
+
+      // Track subscription change in RevenueCat
+      await RevenueCatService.updateCustomerAttributes(userId.toString(), {
+        subscription_tier: tier,
+        subscription_status: status,
+        subscription_updated: new Date().toISOString()
+      });
+
+      res.json({ success: true, message: 'Subscription updated successfully' });
+    } catch (error: any) {
+      console.error('❌ Subscription update failed:', error);
+      res.status(500).json({ error: 'Failed to update subscription' });
+    }
+  });
 
   // Support contact endpoint
   app.post('/api/support/contact', requireAuth, async (req: any, res: Response) => {
