@@ -291,4 +291,146 @@ export class KlaviyoService {
       properties
     });
   }
+
+  // EMAIL AUTOMATION TRIGGERS FOR TEMPLATES
+  // ========================================
+
+  // Enhanced signup tracking with welcome email trigger
+  static async trackUserSignupWithWelcomeEmail(email: string, userData: any): Promise<boolean> {
+    if (!process.env.KLAVIYO_PRIVATE_API_KEY) {
+      console.log("Klaviyo not configured, skipping signup tracking");
+      return false;
+    }
+
+    try {
+      // Create enhanced profile for segmentation
+      await this.createOrUpdateProfile({
+        email,
+        firstName: userData.name || '',
+        properties: {
+          signupDate: new Date().toISOString(),
+          source: 'bookd_app',
+          userType: 'gig_worker',
+          subscriptionTier: userData.subscriptionTier || 'trial',
+          onboardingCompleted: false,
+          totalGigs: 0,
+          totalEarnings: 0,
+          homeCity: userData.homeAddress ? this.extractCity(userData.homeAddress) : '',
+          preferredGigTypes: userData.customGigTypes || [],
+          signupMethod: userData.signupMethod || 'email'
+        }
+      });
+
+      // Track "User Signup" event to trigger welcome email flow
+      const eventSuccess = await this.trackEvent(
+        email,
+        'User Signup',
+        {
+          source: 'bookd_app',
+          signupMethod: userData.signupMethod || 'email',
+          timestamp: new Date().toISOString(),
+          userAgent: userData.userAgent || '',
+          referrer: userData.referrer || 'direct'
+        }
+      );
+
+      if (eventSuccess) {
+        console.log(`✅ Klaviyo: Welcome email sequence triggered for ${email}`);
+      }
+      
+      return eventSuccess;
+    } catch (error) {
+      console.error('❌ Klaviyo signup tracking failed:', error);
+      return false;
+    }
+  }
+
+  // Trigger gig reminder emails
+  static async triggerGigReminderEmail(email: string, gigData: any): Promise<boolean> {
+    return await this.trackEvent(
+      email,
+      'Gig Reminder Due',
+      {
+        gigTitle: gigData.title,
+        gigDate: gigData.date,
+        gigClient: gigData.client,
+        gigLocation: gigData.location,
+        gigTime: gigData.time || 'TBD',
+        reminderType: 'next_day',
+        timestamp: new Date().toISOString()
+      }
+    );
+  }
+
+  // Trigger payment reminder emails
+  static async triggerPaymentReminderEmail(email: string, gigData: any): Promise<boolean> {
+    return await this.trackEvent(
+      email,
+      'Payment Reminder Due',
+      {
+        gigTitle: gigData.title,
+        gigDate: gigData.date,
+        gigClient: gigData.client,
+        expectedAmount: gigData.expectedAmount || 'TBD',
+        daysSinceGig: this.calculateDaysSince(gigData.date),
+        timestamp: new Date().toISOString()
+      }
+    );
+  }
+
+  // Trigger emergency opportunity emails
+  static async triggerEmergencyOpportunityEmail(email: string, opportunityData: any): Promise<boolean> {
+    return await this.trackEvent(
+      email,
+      'Emergency Opportunity Available',
+      {
+        opportunityTitle: opportunityData.title,
+        city: opportunityData.city,
+        urgency: opportunityData.urgency || 'high',
+        payRate: opportunityData.payRate || 'TBD',
+        startDate: opportunityData.startDate,
+        agency: opportunityData.agency,
+        applicationDeadline: opportunityData.deadline || 'ASAP',
+        timestamp: new Date().toISOString()
+      }
+    );
+  }
+
+  // Trigger weekly earnings summary emails
+  static async triggerWeeklyEarningsSummary(email: string, summaryData: any): Promise<boolean> {
+    return await this.trackEvent(
+      email,
+      'Weekly Earnings Summary',
+      {
+        weeklyEarnings: summaryData.totalEarnings,
+        gigCount: summaryData.gigCount,
+        topClient: summaryData.topClient || 'Various',
+        averagePerGig: summaryData.averagePerGig,
+        weekStartDate: summaryData.weekStartDate,
+        weekEndDate: summaryData.weekEndDate,
+        timestamp: new Date().toISOString()
+      }
+    );
+  }
+
+  // Helper methods
+  private static extractCity(address: string): string {
+    try {
+      const parts = address.split(',');
+      return parts.length >= 2 ? parts[1].trim() : '';
+    } catch {
+      return '';
+    }
+  }
+
+  private static calculateDaysSince(dateString: string): number {
+    try {
+      const gigDate = new Date(dateString);
+      const today = new Date();
+      const diffTime = Math.abs(today.getTime() - gigDate.getTime());
+      return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    } catch {
+      return 0;
+    }
+  }
 }

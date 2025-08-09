@@ -138,6 +138,20 @@ export class Auth {
         throw new Error('Failed to create user in database');
       }
 
+      // Trigger welcome email sequence via Klaviyo
+      try {
+        const { KlaviyoService } = await import('./klaviyo');
+        await KlaviyoService.trackUserSignupWithWelcomeEmail(user.email, {
+          name: user.name,
+          signupMethod: 'email',
+          subscriptionTier: user.subscriptionTier || 'trial',
+          userAgent: '',
+          referrer: 'direct'
+        });
+      } catch (error) {
+        console.log('Note: Failed to trigger welcome email in Klaviyo');
+      }
+
       return user;
     } catch (error) {
       console.error('Error creating user:', error);
