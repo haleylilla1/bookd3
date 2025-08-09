@@ -51,8 +51,9 @@ export default function Home() {
         return <CalendarView />;
       case "dashboard":
         return <Dashboard />;
-      case "rescue-roster":
-        return <EmergencyFeed />;
+      // Hidden feature - Emergency BA opportunities (Rescue Roster)
+      // case "rescue-roster":
+      //   return <EmergencyFeed />;
       case "profile":
         return <Profile />;
       case "gig-form":
