@@ -970,10 +970,10 @@ export default function CalendarView() {
                         <Button
                           variant="default"
                           onClick={() => handleGotPaid(gig)}
-                          className="bg-[#698573] hover:bg-[#5a6f60] text-white px-2 py-1 h-auto text-[28px] pl-[15px] pr-[15px] pt-[10px] pb-[10px]"
+                          className="bg-[#698573] hover:bg-[#5a6f60] text-white px-2 py-1 h-[10px] text-[50px] pl-[10px] pr-[10px] pt-[5px] pb-[5px]"
                         >
                           <DollarSign className="w-8 h-8 mr-1" />
-                          Unspaid
+                          Got paid
                         </Button>
                       </div>
                     )}
