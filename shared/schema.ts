@@ -65,12 +65,16 @@ export const users = pgTable("users", {
   emailVerified: boolean("email_verified").default(false),
   onboardingCompleted: boolean("onboarding_completed").default(false),
   
-  // User preferences
+  // User preferences and notification settings
   notificationPreferences: jsonb("notification_preferences").default({
     email: true,
     push: true,
-    reminders: true
+    reminders: true,
+    gigReminders: true,
+    paymentReminders: true,
+    newOpportunities: false
   }),
+  pushTokens: jsonb("push_tokens").default([]), // Store device push notification tokens
   workPreferences: jsonb("work_preferences").default({
     primaryGigTypes: [],
     preferredClients: [],

@@ -204,6 +204,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Update notification preferences
+  app.post('/api/user/notification-preferences', requireAuth,
+    validateRequestBody(z.object({
+      notificationPreferences: z.object({
+        email: z.boolean(),
+        push: z.boolean(),
+        reminders: z.boolean(),
+        gigReminders: z.boolean(),
+        paymentReminders: z.boolean(),
+        newOpportunities: z.boolean()
+      })
+    })),
+    async (req: any, res: Response) => {
+    try {
+      const userId = getUserId(req);
+      const { notificationPreferences } = req.body;
+      
+      const updatedUser = await storage.updateUser(userId, { 
+        notificationPreferences 
+      });
+      
+      res.json(updatedUser);
+    } catch (error) {
+      res.status(500).json({ error: 'Failed to update notification preferences' });
+    }
+  });
+
   // Add client to preferred clients list
   app.post('/api/user/add-preferred-client', requireAuth,
     validateRequestBody(z.object({
