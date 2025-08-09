@@ -254,7 +254,8 @@ export default function NotificationSettingsDialog({ isOpen, onClose }: Notifica
 
               <Separator />
 
-              <div className="flex items-center justify-between">
+              {/* Hidden - Emergency opportunities feature not yet ready for users */}
+              {/* <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <Briefcase className="w-4 h-4 text-orange-600" />
                   <div>
@@ -274,7 +275,7 @@ export default function NotificationSettingsDialog({ isOpen, onClose }: Notifica
                 />
               </div>
 
-              <Separator />
+              <Separator /> */}
 
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
