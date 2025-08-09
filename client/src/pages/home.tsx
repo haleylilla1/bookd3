@@ -8,6 +8,7 @@ import Profile from "@/components/profile";
 import BottomNavigation from "@/components/bottom-navigation";
 import AppHeader from "@/components/app-header";
 import DesktopSidebar from "@/components/desktop-sidebar";
+import LegalFooter from "@/components/legal-footer";
 import { OnboardingFlow } from "@/components/onboarding-flow";
 import EmergencyFeed from "@/components/emergency-feed";
 import { useAuth } from "@/lib/replit-auth";
@@ -110,6 +111,11 @@ export default function Home() {
             </Button>
           </div>
         )}
+
+        {/* Legal Footer - Hidden on desktop (links in sidebar) */}
+        <div className="lg:hidden">
+          <LegalFooter className="border-t border-gray-200 bg-white" />
+        </div>
 
         {/* Bottom Navigation - Hidden on desktop */}
         <div className="lg:hidden">
