@@ -633,6 +633,37 @@ export default function Profile() {
 
       
 
+      {/* Legal Documents Section */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg">Legal & Support</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-3">
+            <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+              <span className="font-medium text-gray-900">Privacy Policy</span>
+              <a 
+                href="/privacy-policy" 
+                target="_blank"
+                className="text-primary hover:text-primary/80 font-medium"
+              >
+                View →
+              </a>
+            </div>
+            <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+              <span className="font-medium text-gray-900">Terms of Service</span>
+              <a 
+                href="/terms-of-service" 
+                target="_blank"
+                className="text-primary hover:text-primary/80 font-medium"
+              >
+                View →
+              </a>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Demo Onboarding */}
       {showOnboardingDemo && (
         <OnboardingFlow

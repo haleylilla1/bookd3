@@ -99,6 +99,25 @@ export default function DesktopSidebar({ currentScreen, onScreenChange }: Deskto
           Sign Out
         </Button>
         
+        {/* Legal Links */}
+        <div className="flex justify-center space-x-3 pt-2">
+          <a 
+            href="/privacy-policy" 
+            target="_blank"
+            className="text-xs text-gray-400 hover:text-gray-600"
+          >
+            Privacy
+          </a>
+          <span className="text-xs text-gray-300">•</span>
+          <a 
+            href="/terms-of-service" 
+            target="_blank"
+            className="text-xs text-gray-400 hover:text-gray-600"
+          >
+            Terms
+          </a>
+        </div>
+        
         <p className="text-xs text-gray-400 text-center">
           Desktop Version
         </p>
