@@ -13,7 +13,7 @@ import { Slider } from "@/components/ui/slider";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { ArrowLeft, Bell, Settings, Crown } from "lucide-react";
 import NotificationSettingsDialog from "@/components/notification-settings-dialog";
-import { SubscriptionModal } from "@/components/subscription-modal";
+// import { SubscriptionModal } from "@/components/subscription-modal"; // Hidden until subscription setup
 import { apiRequest } from "@/lib/queryClient";
 import type { User } from "@shared/schema";
 
@@ -31,7 +31,7 @@ export default function Profile() {
   const queryClient = useQueryClient();
   const [, setLocation] = useLocation();
   const [showNotificationSettings, setShowNotificationSettings] = useState(false);
-  const [showSubscriptionModal, setShowSubscriptionModal] = useState(false);
+  // const [showSubscriptionModal, setShowSubscriptionModal] = useState(false); // Hidden until subscription setup
 
   const { data: user, isLoading } = useQuery<User>({
     queryKey: ["/api/user"],
@@ -217,8 +217,8 @@ export default function Profile() {
           </CardContent>
         </Card>
 
-        {/* Subscription Management */}
-        <Card>
+        {/* Subscription Management - Hidden until setup */}
+        {/* <Card>
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
@@ -241,7 +241,7 @@ export default function Profile() {
               </Button>
             </div>
           </CardContent>
-        </Card>
+        </Card> */}
 
         {/* Notification Settings Link */}
         <Card>
@@ -274,12 +274,12 @@ export default function Profile() {
         onClose={() => setShowNotificationSettings(false)}
       />
 
-      {/* Subscription Modal */}
-      <SubscriptionModal
+      {/* Subscription Modal - Hidden until subscription setup */}
+      {/* <SubscriptionModal
         isOpen={showSubscriptionModal}
         onClose={() => setShowSubscriptionModal(false)}
         currentTier={user?.subscriptionTier || 'trial'}
-      />
+      /> */}
     </div>
   );
 }

@@ -155,7 +155,7 @@ export default function Profile() {
       return;
     }
     
-    const currentClients = user?.workPreferences?.preferredClients || [];
+    const currentClients = (user?.workPreferences as any)?.preferredClients || [];
     const trimmedClient = newClientName.trim();
     
     if (currentClients.includes(trimmedClient)) {
@@ -169,7 +169,7 @@ export default function Profile() {
 
     // Add new client to user's preferred list
     const updatedPreferences = {
-      ...user?.workPreferences,
+      ...(user?.workPreferences || {}),
       preferredClients: [...currentClients, trimmedClient]
     };
     
@@ -179,10 +179,10 @@ export default function Profile() {
   };
 
   const handleRemoveClient = (clientToRemove: string) => {
-    const currentClients = user?.workPreferences?.preferredClients || [];
+    const currentClients = (user?.workPreferences as any)?.preferredClients || [];
     const updatedPreferences = {
-      ...user?.workPreferences,
-      preferredClients: currentClients.filter(client => client !== clientToRemove)
+      ...(user?.workPreferences || {}),
+      preferredClients: currentClients.filter((client: string) => client !== clientToRemove)
     };
     
     updateUserMutation.mutate({
@@ -594,9 +594,9 @@ export default function Profile() {
           </Dialog>
         </CardHeader>
         <CardContent>
-          {user.workPreferences?.preferredClients && user.workPreferences.preferredClients.length > 0 ? (
+          {(user.workPreferences as any)?.preferredClients && (user.workPreferences as any).preferredClients.length > 0 ? (
             <div className="space-y-2">
-              {user.workPreferences.preferredClients.map((client, index) => (
+              {(user.workPreferences as any).preferredClients.map((client: string, index: number) => (
                 <div
                   key={index}
                   className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
