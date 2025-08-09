@@ -5,44 +5,22 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from "@/components/ui/dialog";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  Edit2,
-  Trash2,
-  Filter,
-  Calendar,
-  DollarSign,
-  Clock,
-  ChevronLeft,
-  ChevronRight,
-  Car,
-  Calculator,
-} from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Edit2, Trash2, Filter, Calendar, DollarSign, Clock, ChevronLeft, ChevronRight, Car, Calculator } from "lucide-react";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import type { Gig } from "@shared/schema";
 import { formatMonth, addMonths } from "@/lib/dateUtils";
 
+
 import { AddressAutocomplete } from "./address-autocomplete";
 import GotPaidDialog, { type GotPaidData } from "./got-paid-dialog";
 
 // Utility function to parse dates consistently across timezones (same as dashboard)
 const parseGigDate = (dateString: string): Date => {
-  return new Date(dateString + "T00:00:00.000Z");
+  return new Date(dateString + 'T00:00:00.000Z');
 };
 
 // Color mapping for gig status
@@ -64,15 +42,7 @@ const getGigStatusColor = (status: string) => {
 };
 
 export default function CalendarView() {
-  const [editingGig, setEditingGig] = useState<
-    | (Gig & {
-        isMultiDay?: boolean;
-        startDate?: string;
-        endDate?: string;
-        gigIds?: number[];
-      })
-    | null
-  >(null);
+  const [editingGig, setEditingGig] = useState<(Gig & { isMultiDay?: boolean; startDate?: string; endDate?: string; gigIds?: number[] }) | null>(null);
   const [filterStatus, setFilterStatus] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -85,10 +55,7 @@ export default function CalendarView() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const { data: gigsResponse, isLoading } = useQuery<{
-    gigs: Gig[];
-    total: number;
-  }>({
+  const { data: gigsResponse, isLoading } = useQuery<{ gigs: Gig[], total: number }>({
     queryKey: ["/api/gigs"],
     staleTime: 5 * 60 * 1000, // Cache for 5 minutes
     retry: 2,
@@ -114,16 +81,13 @@ export default function CalendarView() {
         queryClient.invalidateQueries({ queryKey: ["/api/gigs"] });
       }
     },
-    onError: (error) => {},
+    onError: (error) => {
+    },
   });
 
   // Automatically update gig statuses when calendar loads (once per session)
   useEffect(() => {
-    if (
-      Array.isArray(gigs) &&
-      gigs.length > 0 &&
-      !hasUpdatedStatusesRef.current
-    ) {
+    if (Array.isArray(gigs) && gigs.length > 0 && !hasUpdatedStatusesRef.current) {
       hasUpdatedStatusesRef.current = true;
       updateGigStatusesMutation.mutate();
     }
@@ -138,22 +102,18 @@ export default function CalendarView() {
 
   const updateGigMutation = useMutation({
     mutationFn: async (gigData: { id: number; data: Partial<Gig> }) => {
-      const response = await apiRequest(
-        "PUT",
-        `/api/gigs/${gigData.id}`,
-        gigData.data,
-      );
+      const response = await apiRequest("PUT", `/api/gigs/${gigData.id}`, gigData.data);
       return response.json();
     },
     onSuccess: () => {
       // Immediately close to prevent UI freeze
       setEditingGig(null);
-
+      
       // Background cache updates to prevent blocking
       setTimeout(() => {
         refreshCache();
       }, 100);
-
+      
       toast({
         title: "Success",
         description: "Gig updated successfully!",
@@ -195,19 +155,15 @@ export default function CalendarView() {
     const firstDay = new Date(year, month, 1);
     const startDate = new Date(firstDay);
     startDate.setDate(startDate.getDate() - firstDay.getDay()); // Start on Sunday
-
+    
     const days = [];
     const endDate = new Date(startDate);
     endDate.setDate(endDate.getDate() + 41); // 6 weeks worth of days
-
-    for (
-      let d = new Date(startDate);
-      d <= endDate;
-      d.setDate(d.getDate() + 1)
-    ) {
+    
+    for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
       days.push(new Date(d));
     }
-
+    
     return days;
   }, [currentDate]);
 
@@ -215,42 +171,40 @@ export default function CalendarView() {
   const gigsByDate = useMemo(() => {
     if (!gigs || !Array.isArray(gigs)) return new Map();
     const gigMap = new Map<string, Gig[]>();
-
-    gigs.forEach((gig) => {
+    
+    gigs.forEach(gig => {
       const dateString = gig.date;
       if (!gigMap.has(dateString)) {
         gigMap.set(dateString, []);
       }
       gigMap.get(dateString)!.push(gig);
     });
-
+    
     return gigMap;
   }, [gigs]);
 
   // Get gigs for a specific date - includes multi-day gigs that span this date
   const getGigsForDate = (date: Date) => {
     const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, "0");
-    const day = String(date.getDate()).padStart(2, "0");
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
     const dateString = `${year}-${month}-${day}`;
-
+    
     // Get gigs that start on this date
     const directGigs = gigsByDate.get(dateString) || [];
-
+    
     // Also find multi-day gigs that span over this date
-    const spanningGigs = gigs.filter((gig) => {
+    const spanningGigs = gigs.filter(gig => {
       if (!gig.isMultiDay || !gig.startDate || !gig.endDate) return false;
-
-      const gigStart = new Date(gig.startDate + "T00:00:00");
-      const gigEnd = new Date(gig.endDate + "T00:00:00");
-      const checkDate = new Date(dateString + "T00:00:00");
-
+      
+      const gigStart = new Date(gig.startDate + 'T00:00:00');
+      const gigEnd = new Date(gig.endDate + 'T00:00:00');
+      const checkDate = new Date(dateString + 'T00:00:00');
+      
       // Check if this date falls within the multi-day range
-      return (
-        checkDate >= gigStart && checkDate <= gigEnd && gig.date !== dateString
-      );
+      return checkDate >= gigStart && checkDate <= gigEnd && gig.date !== dateString;
     });
-
+    
     return [...directGigs, ...spanningGigs];
   };
 
@@ -265,82 +219,67 @@ export default function CalendarView() {
 
   // Navigation functions
   const navigateMonth = (direction: "prev" | "next") => {
-    setCurrentDate((prev) => {
+    setCurrentDate(prev => {
       return direction === "prev" ? addMonths(prev, -1) : addMonths(prev, 1);
     });
   };
 
+
+
   // Memoize filtered gigs for better performance
   const filteredGigs = useMemo(() => {
     if (!gigs || !Array.isArray(gigs)) return [];
-
-    const filtered = gigs.filter((gig) => {
+    
+    const filtered = gigs.filter(gig => {
       // Handle both "pending payment" and "pending_payment" status formats
       if (filterStatus !== "all") {
-        const normalizedGigStatus = gig.status.replace("_", " ");
-        const normalizedFilterStatus = filterStatus.replace("_", " ");
+        const normalizedGigStatus = gig.status.replace('_', ' ');
+        const normalizedFilterStatus = filterStatus.replace('_', ' ');
         if (normalizedGigStatus !== normalizedFilterStatus) return false;
       }
-      if (
-        searchQuery &&
-        !gig.eventName.toLowerCase().includes(searchQuery.toLowerCase()) &&
-        !gig.clientName.toLowerCase().includes(searchQuery.toLowerCase())
-      )
-        return false;
+      if (searchQuery && 
+          !gig.eventName.toLowerCase().includes(searchQuery.toLowerCase()) &&
+          !gig.clientName.toLowerCase().includes(searchQuery.toLowerCase())) return false;
       return true;
     });
 
     // Apply grouping to filtered gigs
-    const sortedGigs = [...filtered].sort(
-      (a, b) => parseGigDate(a.date).getTime() - parseGigDate(b.date).getTime(),
-    );
-    const grouped: (Gig & {
-      isMultiDay?: boolean;
-      startDate?: string;
-      endDate?: string;
-      gigIds?: number[];
-    })[] = [];
+    const sortedGigs = [...filtered].sort((a, b) => parseGigDate(a.date).getTime() - parseGigDate(b.date).getTime());
+    const grouped: (Gig & { isMultiDay?: boolean; startDate?: string; endDate?: string; gigIds?: number[] })[] = [];
     const processed = new Set<number>();
-
+    
     for (let i = 0; i < sortedGigs.length; i++) {
       if (processed.has(sortedGigs[i].id)) continue;
-
+      
       const currentGig = sortedGigs[i];
       const similarGigs = [currentGig];
       processed.add(currentGig.id);
-
+      
       // Look for consecutive similar gigs (within 7 days and in chronological order)
       for (let j = i + 1; j < sortedGigs.length; j++) {
         const nextGig = sortedGigs[j];
         if (processed.has(nextGig.id)) continue;
-
+        
         // Use consistent UTC date parsing to avoid timezone issues
-        const lastGigDate = parseGigDate(
-          similarGigs[similarGigs.length - 1].date,
-        );
+        const lastGigDate = parseGigDate(similarGigs[similarGigs.length - 1].date);
         const nextDate = parseGigDate(nextGig.date);
-
+        
         // Calculate days difference - must be positive (forward in time) and <= 7 days
-        const dayDiff =
-          (nextDate.getTime() - lastGigDate.getTime()) / (1000 * 60 * 60 * 24);
-
+        const dayDiff = (nextDate.getTime() - lastGigDate.getTime()) / (1000 * 60 * 60 * 24);
+        
         // Smart grouping logic:
         // 1. If both have same multi_day_group_id - definitely group
         // 2. If same name/client/type and consecutive days (≤2 days apart) - likely multi-day gig
         // 3. But if they're >7 days apart - definitely separate gigs
-        const bothHaveGroupId =
-          currentGig.multiDayGroupId &&
-          nextGig.multiDayGroupId &&
-          currentGig.multiDayGroupId === nextGig.multiDayGroupId;
+        const bothHaveGroupId = currentGig.multiDayGroupId && nextGig.multiDayGroupId && 
+                               currentGig.multiDayGroupId === nextGig.multiDayGroupId;
         const consecutiveDays = dayDiff > 0 && dayDiff <= 2; // Truly consecutive (next day or day after)
         const tooFarApart = dayDiff > 7; // Definitely separate gigs
-
-        if (
-          nextGig.eventName === currentGig.eventName &&
-          nextGig.clientName === currentGig.clientName &&
-          nextGig.gigType === currentGig.gigType &&
-          (bothHaveGroupId || (consecutiveDays && !tooFarApart))
-        ) {
+        
+        if (nextGig.eventName === currentGig.eventName &&
+            nextGig.clientName === currentGig.clientName &&
+            nextGig.gigType === currentGig.gigType &&
+            (bothHaveGroupId || (consecutiveDays && !tooFarApart))) {
           similarGigs.push(nextGig);
           processed.add(nextGig.id);
         } else if (tooFarApart) {
@@ -348,17 +287,15 @@ export default function CalendarView() {
           break;
         }
       }
-
+      
       if (similarGigs.length > 1) {
-        similarGigs.sort(
-          (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime(),
-        );
+        similarGigs.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
         const multiDayGig = {
           ...currentGig,
           isMultiDay: true,
           startDate: similarGigs[0].date,
           endDate: similarGigs[similarGigs.length - 1].date,
-          gigIds: similarGigs.map((g) => g.id),
+          gigIds: similarGigs.map(g => g.id)
         };
         grouped.push(multiDayGig);
       } else {
@@ -367,14 +304,12 @@ export default function CalendarView() {
           isMultiDay: currentGig.isMultiDay || false,
           startDate: currentGig.startDate || currentGig.date,
           endDate: currentGig.endDate || currentGig.date,
-          gigIds: undefined,
+          gigIds: undefined
         });
       }
     }
-
-    return grouped.sort(
-      (a, b) => parseGigDate(b.date).getTime() - parseGigDate(a.date).getTime(),
-    );
+    
+    return grouped.sort((a, b) => parseGigDate(b.date).getTime() - parseGigDate(a.date).getTime());
   }, [gigs, filterStatus, searchQuery]);
 
   const getStatusColor = (status: string) => {
@@ -405,14 +340,7 @@ export default function CalendarView() {
     }
   };
 
-  const handleEditGig = (
-    gig: Gig & {
-      isMultiDay?: boolean;
-      startDate?: string;
-      endDate?: string;
-      gigIds?: number[];
-    },
-  ) => {
+  const handleEditGig = (gig: Gig & { isMultiDay?: boolean; startDate?: string; endDate?: string; gigIds?: number[] }) => {
     setEditingGig(gig);
   };
 
@@ -424,18 +352,8 @@ export default function CalendarView() {
 
   // Mutation for "Got Paid" workflow
   const gotPaidMutation = useMutation({
-    mutationFn: async ({
-      gigId,
-      data,
-    }: {
-      gigId: number;
-      data: GotPaidData;
-    }) => {
-      const response = await apiRequest(
-        "POST",
-        `/api/gigs/${gigId}/got-paid`,
-        data,
-      );
+    mutationFn: async ({ gigId, data }: { gigId: number; data: GotPaidData }) => {
+      const response = await apiRequest("POST", `/api/gigs/${gigId}/got-paid`, data);
       if (!response.ok) {
         throw new Error("Failed to process payment");
       }
@@ -445,25 +363,25 @@ export default function CalendarView() {
       // Close dialog and clean up state
       setShowGotPaidDialog(false);
       setGotPaidGig(null);
-
+      
       // Ensure iOS scroll is properly restored before cache updates
       setTimeout(() => {
         // Force scroll restoration for mobile
-        if (typeof window !== "undefined") {
-          window.scrollTo({ top: 0, behavior: "auto" });
+        if (typeof window !== 'undefined') {
+          window.scrollTo({ top: 0, behavior: 'auto' });
           // Second attempt with smooth scroll for better UX
           setTimeout(() => {
-            window.scrollTo({ top: 0, behavior: "smooth" });
+            window.scrollTo({ top: 0, behavior: 'smooth' });
           }, 50);
         }
       }, 50);
-
+      
       // Delayed cache updates to prevent interference with scroll restoration
       setTimeout(() => {
         queryClient.invalidateQueries({ queryKey: ["/api/gigs"] });
         queryClient.invalidateQueries({ queryKey: ["/api/dashboard"] });
       }, 200);
-
+      
       toast({
         title: "Payment processed",
         description: "Tax-smart calculations have been saved.",
@@ -481,24 +399,21 @@ export default function CalendarView() {
   // Helper function to generate date range (reused from gig-form)
   const generateDateRange = (startDate: string, endDate?: string): string[] => {
     if (!endDate || endDate === startDate) return [startDate];
-
+    
     try {
-      const start = new Date(startDate + "T00:00:00");
-      const end = new Date(endDate + "T00:00:00");
-
-      if (isNaN(start.getTime()) || isNaN(end.getTime()) || end < start)
-        return [startDate];
-
-      const daysDiff = Math.floor(
-        (end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24),
-      );
+      const start = new Date(startDate + 'T00:00:00');
+      const end = new Date(endDate + 'T00:00:00');
+      
+      if (isNaN(start.getTime()) || isNaN(end.getTime()) || end < start) return [startDate];
+      
+      const daysDiff = Math.floor((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
       if (daysDiff > 30) return [startDate];
-
+      
       const dates: string[] = [];
       for (let i = 0; i <= daysDiff; i++) {
         const date = new Date(start);
         date.setDate(date.getDate() + i);
-        dates.push(date.toISOString().split("T")[0]);
+        dates.push(date.toISOString().split('T')[0]);
       }
       return dates;
     } catch {
@@ -507,19 +422,14 @@ export default function CalendarView() {
   };
 
   // Helper function to recreate multi-day gigs with new dates
-  const recreateMultiDayGigs = async (
-    gigIds: number[],
-    startDate: string,
-    endDate: string,
-    updatePayload: any,
-  ) => {
+  const recreateMultiDayGigs = async (gigIds: number[], startDate: string, endDate: string, updatePayload: any) => {
     try {
       // Delete existing gigs
       for (const gigId of gigIds) {
         const response = await apiRequest("DELETE", `/api/gigs/${gigId}`);
         if (!response.ok) throw new Error(`Failed to delete gig ${gigId}`);
       }
-
+      
       // Create new gigs
       const newDates = generateDateRange(startDate, endDate);
       for (const date of newDates) {
@@ -528,21 +438,21 @@ export default function CalendarView() {
           date,
           ...updatePayload,
           paymentMethod: editingGig!.paymentMethod || "Cash",
-          notes: editingGig!.notes || null,
+          notes: editingGig!.notes || null
         };
-
+        
         const response = await apiRequest("POST", "/api/gigs", gigData);
         if (!response.ok) throw new Error(`Failed to create gig for ${date}`);
       }
-
+      
       // Immediately close to prevent UI freeze
       setEditingGig(null);
-
+      
       // Background cache updates to prevent blocking
       setTimeout(() => {
         refreshCache();
       }, 100);
-
+      
       toast({
         title: "Multi-day gig recreated",
         description: `Created ${newDates.length} days from ${startDate} to ${endDate}`,
@@ -562,11 +472,7 @@ export default function CalendarView() {
     try {
       const updatePromises = gigIds.map(async (gigId) => {
         try {
-          const response = await apiRequest(
-            "PUT",
-            `/api/gigs/${gigId}`,
-            updatePayload,
-          );
+          const response = await apiRequest("PUT", `/api/gigs/${gigId}`, updatePayload);
           if (!response.ok) {
             const errorText = await response.text();
             throw new Error(`Failed to update gig ${gigId}: ${errorText}`);
@@ -577,17 +483,17 @@ export default function CalendarView() {
           throw error;
         }
       });
-
+      
       await Promise.all(updatePromises);
-
+      
       // Immediately close to prevent UI freeze
       setEditingGig(null);
-
+      
       // Background cache updates to prevent blocking
       setTimeout(() => {
         refreshCache();
       }, 100);
-
+      
       toast({
         title: "Multi-day gig updated",
         description: `Updated ${gigIds.length} days of ${editingGig!.eventName}`,
@@ -614,66 +520,56 @@ export default function CalendarView() {
       duties: updatedData.duties || null,
       taxPercentage: Math.max(0, Math.min(50, updatedData.taxPercentage || 0)),
     };
-
+    
     // Handle date field mapping
     if (updatedData.startDate && updatedData.startDate !== editingGig.date) {
       updatePayload.date = updatedData.startDate;
     }
-
+    
     // Safe numeric conversions - preserve exact string values
-    const safeParseFloat = (
-      value: string | number | undefined,
-    ): string | null => {
+    const safeParseFloat = (value: string | number | undefined): string | null => {
       if (value === "" || value === null || value === undefined) return null;
       const stringValue = String(value);
       const parsed = parseFloat(stringValue);
       return isNaN(parsed) ? null : stringValue;
     };
-
+    
     updatePayload.expectedPay = safeParseFloat(updatedData.expectedPay);
     updatePayload.actualPay = safeParseFloat(updatedData.actualPay);
     updatePayload.tips = safeParseFloat(updatedData.tips);
     updatePayload.parkingExpense = safeParseFloat(updatedData.parkingExpense);
 
+    
     // Handle mileage calculation
     if (updatedData.calculatedMileage) {
-      updatePayload.mileage = Math.max(
-        0,
-        parseInt(updatedData.calculatedMileage) || 0,
-      );
+      updatePayload.mileage = Math.max(0, parseInt(updatedData.calculatedMileage) || 0);
     } else {
-      updatePayload.mileage = Math.max(
-        0,
-        parseInt(String(updatedData.mileage)) || 0,
-      );
+      updatePayload.mileage = Math.max(0, parseInt(String(updatedData.mileage)) || 0);
     }
-
+    
     // Handle receipts and reimbursement tracking
     if (updatedData.parkingDescription !== undefined) {
       updatePayload.parkingDescription = updatedData.parkingDescription;
     }
 
+    
     // Add reimbursement tracking fields
     if (updatedData.parkingReimbursed !== undefined) {
       updatePayload.parkingReimbursed = Boolean(updatedData.parkingReimbursed);
     }
 
-    console.log("Saving gig edit:", updatePayload); // Debug log
 
+    console.log("Saving gig edit:", updatePayload); // Debug log
+    
     // Handle multi-day gigs with efficient date change detection
     if (editingGig.isMultiDay && editingGig.gigIds?.length) {
-      const datesChanged =
-        updatedData.startDate !== editingGig.startDate ||
-        updatedData.endDate !== editingGig.endDate;
-
+      const datesChanged = (updatedData.startDate !== editingGig.startDate) || 
+                          (updatedData.endDate !== editingGig.endDate);
+      
       if (datesChanged) {
         // Recreate gig series with new dates
-        recreateMultiDayGigs(
-          editingGig.gigIds,
-          updatedData.startDate || editingGig.startDate!,
-          updatedData.endDate || editingGig.endDate!,
-          updatePayload,
-        );
+        recreateMultiDayGigs(editingGig.gigIds, updatedData.startDate || editingGig.startDate!, 
+                           updatedData.endDate || editingGig.endDate!, updatePayload);
       } else {
         // Update existing gigs in series
         updateMultiDayGigs(editingGig.gigIds, updatePayload);
@@ -693,10 +589,7 @@ export default function CalendarView() {
           <div className="bg-gray-200 animate-pulse h-80 rounded-xl" />
           {/* Gig list skeleton */}
           {[...Array(3)].map((_, i) => (
-            <div
-              key={i}
-              className="bg-gray-200 animate-pulse h-24 rounded-xl"
-            />
+            <div key={i} className="bg-gray-200 animate-pulse h-24 rounded-xl" />
           ))}
         </div>
       </div>
@@ -715,7 +608,7 @@ export default function CalendarView() {
         >
           <ChevronLeft className="h-4 w-4" />
         </Button>
-
+        
         <div className="text-center">
           <div className="text-lg font-semibold text-gray-900">
             {formatMonth(currentDate)}
@@ -729,7 +622,7 @@ export default function CalendarView() {
             Back to current month
           </Button>
         </div>
-
+        
         <Button
           variant="ghost"
           size="sm"
@@ -745,16 +638,13 @@ export default function CalendarView() {
         <CardContent className="p-4 lg:p-6">
           {/* Calendar Header */}
           <div className="grid grid-cols-7 gap-1 mb-4">
-            {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => (
-              <div
-                key={day}
-                className="text-center text-sm font-medium text-gray-500 py-2 border-b border-gray-100"
-              >
+            {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
+              <div key={day} className="text-center text-sm font-medium text-gray-500 py-2 border-b border-gray-100">
                 {day}
               </div>
             ))}
           </div>
-
+          
           {/* Calendar Days */}
           <div className="grid grid-cols-7 gap-1">
             {calendarDays.map((date: Date, index: number) => {
@@ -762,66 +652,59 @@ export default function CalendarView() {
               const isToday = date.toDateString() === new Date().toDateString();
               const dayGigs = getGigsForDate(date);
               const hasGigs = dayGigs.length > 0;
-
+              
               return (
                 <button
                   key={index}
                   onClick={() => handleDayClick(date)}
                   className={`
                     h-16 w-full p-2 text-sm relative transition-all duration-200 rounded-md border border-gray-100
-                    ${
-                      isCurrentMonth
-                        ? hasGigs
-                          ? "hover:bg-blue-50 cursor-pointer hover:border-blue-200 hover:shadow-sm bg-white"
-                          : isToday
-                            ? "text-blue-600 font-semibold hover:bg-blue-50 bg-white"
-                            : "text-gray-700 hover:bg-gray-50 bg-white"
-                        : "text-gray-300 bg-gray-50"
+                    ${isCurrentMonth 
+                      ? hasGigs 
+                        ? 'hover:bg-blue-50 cursor-pointer hover:border-blue-200 hover:shadow-sm bg-white' 
+                        : isToday
+                          ? 'text-blue-600 font-semibold hover:bg-blue-50 bg-white'
+                          : 'text-gray-700 hover:bg-gray-50 bg-white'
+                      : 'text-gray-300 bg-gray-50'
                     }
-                    ${!hasGigs && isCurrentMonth ? "cursor-default" : ""}
+                    ${!hasGigs && isCurrentMonth ? 'cursor-default' : ''}
                   `}
                   disabled={!hasGigs}
-                  aria-label={`${date.getDate()} ${date.toLocaleDateString("en-US", { month: "long" })} ${date.getFullYear()}${hasGigs ? `, ${dayGigs.length} gig${dayGigs.length > 1 ? "s" : ""}` : ""}`}
+                  aria-label={`${date.getDate()} ${date.toLocaleDateString('en-US', { month: 'long' })} ${date.getFullYear()}${hasGigs ? `, ${dayGigs.length} gig${dayGigs.length > 1 ? 's' : ''}` : ''}`}
                   tabIndex={hasGigs ? 0 : -1}
                 >
                   <div className="flex flex-col items-center justify-center h-full relative">
-                    <span
-                      className={`${isToday ? "font-semibold" : ""} relative z-10`}
-                    >
+                    <span className={`${isToday ? 'font-semibold' : ''} relative z-10`}>
                       {date.getDate()}
                     </span>
-
+                    
                     {/* Colored circles for gigs */}
                     {hasGigs && (
                       <div className="absolute inset-0 flex items-center justify-center">
                         {dayGigs.length === 1 ? (
-                          <div
+                          <div 
                             className={`w-8 h-8 rounded-full ${getGigStatusColor(dayGigs[0].status)} opacity-30 flex-shrink-0`}
                           />
                         ) : dayGigs.length === 2 ? (
                           <div className="flex gap-1">
-                            <div
+                            <div 
                               className={`w-6 h-6 rounded-full ${getGigStatusColor(dayGigs[0].status)} opacity-30 flex-shrink-0`}
                             />
-                            <div
+                            <div 
                               className={`w-6 h-6 rounded-full ${getGigStatusColor(dayGigs[1].status)} opacity-30 flex-shrink-0`}
                             />
                           </div>
                         ) : (
                           <div className="flex flex-wrap gap-0.5 justify-center items-center">
-                            {dayGigs
-                              .slice(0, 3)
-                              .map((gig: Gig, gigIndex: number) => (
-                                <div
-                                  key={gigIndex}
-                                  className={`w-4 h-4 rounded-full ${getGigStatusColor(gig.status)} opacity-30 flex-shrink-0`}
-                                />
-                              ))}
+                            {dayGigs.slice(0, 3).map((gig: Gig, gigIndex: number) => (
+                              <div 
+                                key={gigIndex}
+                                className={`w-4 h-4 rounded-full ${getGigStatusColor(gig.status)} opacity-30 flex-shrink-0`}
+                              />
+                            ))}
                             {dayGigs.length > 3 && (
                               <div className="w-4 h-4 rounded-full bg-gray-500 opacity-30 flex items-center justify-center flex-shrink-0">
-                                <span className="text-xs text-white font-bold">
-                                  +
-                                </span>
+                                <span className="text-xs text-white font-bold">+</span>
                               </div>
                             )}
                           </div>
@@ -841,7 +724,7 @@ export default function CalendarView() {
               );
             })}
           </div>
-
+          
           <div className="mt-4 text-center text-xs text-gray-500">
             Click on highlighted dates to view and edit gig details
           </div>
@@ -851,9 +734,7 @@ export default function CalendarView() {
       {/* Gig Status Legend */}
       <Card className="mb-6">
         <CardContent className="p-4">
-          <h3 className="font-semibold text-sm mb-3 text-gray-700">
-            Gig Status Colors
-          </h3>
+          <h3 className="font-semibold text-sm mb-3 text-gray-700">Gig Status Colors</h3>
           <div className="flex flex-wrap gap-4 text-xs mb-3">
             <div className="flex items-center gap-2">
               <div className="w-4 h-4 rounded-full bg-green-500 flex-shrink-0"></div>
@@ -913,9 +794,10 @@ export default function CalendarView() {
             <Calendar className="w-12 h-12 mx-auto mb-3 text-gray-300" />
             <p className="text-gray-500 mb-2">No gigs found</p>
             <p className="text-sm text-gray-400">
-              {searchQuery || filterStatus !== "all"
+              {searchQuery || filterStatus !== "all" 
                 ? "Try adjusting your search or filter criteria"
-                : "Add your first gig to get started"}
+                : "Add your first gig to get started"
+              }
             </p>
           </div>
         ) : (
@@ -936,9 +818,10 @@ export default function CalendarView() {
                     <div className="grid grid-cols-2 gap-4 text-sm text-gray-600 mb-3">
                       <div className="flex items-center gap-1">
                         <Calendar className="w-4 h-4" />
-                        {gig.isMultiDay
+                        {gig.isMultiDay 
                           ? `${formatDate(gig.startDate!)} - ${formatDate(gig.endDate!)}`
-                          : formatDate(gig.date)}
+                          : formatDate(gig.date)
+                        }
                       </div>
                       <div className="flex items-center gap-1">
                         <Clock className="w-4 h-4" />
@@ -950,9 +833,10 @@ export default function CalendarView() {
                       <div className="flex items-center gap-1">
                         <DollarSign className="w-4 h-4 text-green-600" />
                         {/* Always show expected pay in calendar view */}
-                        {gig.expectedPay
+                        {gig.expectedPay 
                           ? formatCurrency(parseFloat(gig.expectedPay))
-                          : "No pay set"}
+                          : "No pay set"
+                        }
                       </div>
                     </div>
 
@@ -965,15 +849,15 @@ export default function CalendarView() {
 
                   {/* Action Buttons - Mobile Optimized Layout */}
                   <div className="flex flex-col gap-2 pt-2">
-                    {gig.status !== "completed" && (
+                    {gig.status !== 'completed' && (
                       <div className="flex justify-center">
                         <Button
                           variant="default"
                           onClick={() => handleGotPaid(gig)}
-                          className="bg-[#698573] hover:bg-[#5a6f60] text-white px-2 py-1 h-[10px] text-[50px] pl-[10px] pr-[10px] pt-[5px] pb-[5px]"
+                          className="bg-green-600 hover:bg-green-700 text-white px-2 py-1 h-auto text-[14px] pl-[15px] pr-[15px] pt-[10px] pb-[10px]"
                         >
-                          <DollarSign className="w-8 h-8 mr-1" />
-                          Got paid
+                          <DollarSign className="w-4 h-4 mr-1" />
+                          Got Paid
                         </Button>
                       </div>
                     )}
@@ -992,9 +876,7 @@ export default function CalendarView() {
                         onClick={() => {
                           if (gig.isMultiDay && gig.gigIds) {
                             // Delete all gigs in the multi-day series
-                            gig.gigIds.forEach((id) =>
-                              deleteGigMutation.mutate(id),
-                            );
+                            gig.gigIds.forEach(id => deleteGigMutation.mutate(id));
                           } else {
                             deleteGigMutation.mutate(gig.id);
                           }
@@ -1018,12 +900,11 @@ export default function CalendarView() {
         <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>
-              Gigs for{" "}
-              {selectedDate?.toLocaleDateString("en-US", {
-                weekday: "long",
-                year: "numeric",
-                month: "long",
-                day: "numeric",
+              Gigs for {selectedDate?.toLocaleDateString('en-US', { 
+                weekday: 'long', 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric' 
               })}
             </DialogTitle>
             <DialogDescription>
@@ -1045,22 +926,20 @@ export default function CalendarView() {
                         </div>
                       </div>
                       <div className="flex flex-col gap-2">
-                        <Badge
+                        <Badge 
                           variant={
-                            gig.status === "completed"
-                              ? "default"
-                              : gig.status === "upcoming"
-                                ? "secondary"
-                                : "outline"
+                            gig.status === 'completed' ? 'default' : 
+                            gig.status === 'upcoming' ? 'secondary' : 
+                            'outline'
                           }
                           className="w-fit"
                         >
                           {gig.status}
                         </Badge>
-
+                        
                         {/* Action Buttons - Mobile Optimized Layout */}
                         <div className="flex flex-col gap-2">
-                          {gig.status !== "completed" && (
+                          {gig.status !== 'completed' && (
                             <div className="flex justify-center">
                               <Button
                                 variant="default"
@@ -1068,10 +947,10 @@ export default function CalendarView() {
                                   handleGotPaid(gig);
                                   setShowDayGigs(false);
                                 }}
-                                className="bg-[#698573] hover:bg-[#5a6f60] text-white px-2 py-1 h-auto text-[28px] pl-[15px] pr-[15px] pt-[10px] pb-[10px]"
+                                className="bg-green-600 hover:bg-green-700 text-white px-2 py-1 h-auto text-[14px] pl-[15px] pr-[15px] pt-[10px] pb-[10px]"
                               >
-                                <DollarSign className="h-8 w-8 mr-1" />
-                                Unspaid
+                                <DollarSign className="h-4 w-4 mr-1" />
+                                Got Paid
                               </Button>
                             </div>
                           )}
@@ -1081,21 +960,14 @@ export default function CalendarView() {
                               variant="outline"
                               onClick={() => {
                                 // Find the grouped gig in filteredGigs to get multi-day properties
-                                const groupedGig = filteredGigs.find(
-                                  (g) =>
-                                    g.id === gig.id ||
-                                    (g.gigIds && g.gigIds.includes(gig.id)),
+                                const groupedGig = filteredGigs.find(g => 
+                                  g.id === gig.id || (g.gigIds && g.gigIds.includes(gig.id))
                                 );
-
+                                
                                 if (groupedGig) {
                                   setEditingGig(groupedGig);
                                 } else {
-                                  setEditingGig({
-                                    ...gig,
-                                    isMultiDay: false,
-                                    startDate: gig.date,
-                                    endDate: gig.date,
-                                  });
+                                  setEditingGig({ ...gig, isMultiDay: false, startDate: gig.date, endDate: gig.date });
                                 }
                                 setShowDayGigs(false);
                               }}
@@ -1108,20 +980,13 @@ export default function CalendarView() {
                               variant="outline"
                               onClick={() => {
                                 // Find the grouped gig to handle multi-day gigs properly
-                                const groupedGig = filteredGigs.find(
-                                  (g) =>
-                                    g.id === gig.id ||
-                                    (g.gigIds && g.gigIds.includes(gig.id)),
+                                const groupedGig = filteredGigs.find(g => 
+                                  g.id === gig.id || (g.gigIds && g.gigIds.includes(gig.id))
                                 );
-
-                                if (
-                                  groupedGig?.isMultiDay &&
-                                  groupedGig.gigIds
-                                ) {
+                                
+                                if (groupedGig?.isMultiDay && groupedGig.gigIds) {
                                   // Delete all gigs in the multi-day series
-                                  groupedGig.gigIds.forEach((id) =>
-                                    deleteGigMutation.mutate(id),
-                                  );
+                                  groupedGig.gigIds.forEach(id => deleteGigMutation.mutate(id));
                                 } else {
                                   deleteGigMutation.mutate(gig.id);
                                 }
@@ -1136,7 +1001,7 @@ export default function CalendarView() {
                         </div>
                       </div>
                     </div>
-
+                    
                     <div className="grid grid-cols-2 gap-4 text-sm">
                       <div>
                         <span className="text-gray-600">Expected Pay:</span>
@@ -1144,8 +1009,8 @@ export default function CalendarView() {
                           {formatCurrency(parseFloat(gig.expectedPay || "0"))}
                         </div>
                       </div>
-
-                      {gig.status === "completed" && gig.actualPay && (
+                      
+                      {gig.status === 'completed' && gig.actualPay && (
                         <div>
                           <span className="text-gray-600">Actual Pay:</span>
                           <div className="font-medium text-green-600">
@@ -1153,7 +1018,7 @@ export default function CalendarView() {
                           </div>
                         </div>
                       )}
-
+                      
                       {gig.tips && parseFloat(gig.tips) > 0 && (
                         <div>
                           <span className="text-gray-600">Tips:</span>
@@ -1162,8 +1027,10 @@ export default function CalendarView() {
                           </div>
                         </div>
                       )}
-                    </div>
+                      
 
+                    </div>
+                    
                     {gig.duties && (
                       <div className="mt-3 pt-3 border-t border-gray-200">
                         <span className="text-gray-600 text-sm">Duties:</span>
@@ -1172,7 +1039,7 @@ export default function CalendarView() {
                         </div>
                       </div>
                     )}
-
+                    
                     {gig.notes && (
                       <div className="mt-2">
                         <span className="text-gray-600 text-sm">Notes:</span>
@@ -1224,9 +1091,9 @@ export default function CalendarView() {
             setGotPaidGig(null);
           }}
           onSave={async (data) => {
-            return gotPaidMutation.mutateAsync({
-              gigId: gotPaidGig.id,
-              data,
+            return gotPaidMutation.mutateAsync({ 
+              gigId: gotPaidGig.id, 
+              data 
             });
           }}
         />
@@ -1236,12 +1103,7 @@ export default function CalendarView() {
 }
 
 interface GigEditFormProps {
-  gig: Gig & {
-    isMultiDay?: boolean;
-    startDate?: string;
-    endDate?: string;
-    gigIds?: number[];
-  };
+  gig: Gig & { isMultiDay?: boolean; startDate?: string; endDate?: string; gigIds?: number[] };
   onSave: (data: Partial<Gig>) => void;
   onCancel: () => void;
   isLoading: boolean;
@@ -1262,10 +1124,7 @@ function GigEditForm({ gig, onSave, onCancel, isLoading }: GigEditFormProps) {
     tips: gig.tips || "",
     status: gig.status,
     duties: gig.duties || "",
-    taxPercentage:
-      gig.taxPercentage !== null && gig.taxPercentage !== undefined
-        ? gig.taxPercentage
-        : (user as any)?.defaultTaxPercentage || 23,
+    taxPercentage: (gig.taxPercentage !== null && gig.taxPercentage !== undefined) ? gig.taxPercentage : ((user as any)?.defaultTaxPercentage || 23),
     mileage: gig.mileage || 0,
     startingAddress: (user as any)?.homeAddress || "",
     endingAddress: "",
@@ -1275,6 +1134,7 @@ function GigEditForm({ gig, onSave, onCancel, isLoading }: GigEditFormProps) {
     parkingExpense: gig.parkingExpense || "",
     parkingDescription: gig.parkingDescription || "",
     parkingReimbursed: (gig as any).parkingReimbursed || false,
+
   });
 
   const [isCalculatingMileage, setIsCalculatingMileage] = useState(false);
@@ -1284,8 +1144,7 @@ function GigEditForm({ gig, onSave, onCancel, isLoading }: GigEditFormProps) {
     if (!formData.startingAddress?.trim() || !formData.endingAddress?.trim()) {
       toast({
         title: "Missing Addresses",
-        description:
-          "Both starting and ending addresses are required for mileage calculation.",
+        description: "Both starting and ending addresses are required for mileage calculation.",
         variant: "destructive",
       });
       return;
@@ -1302,46 +1161,44 @@ function GigEditForm({ gig, onSave, onCancel, isLoading }: GigEditFormProps) {
     }
 
     setIsCalculatingMileage(true);
-
+    
     try {
       // Enhanced mobile network handling with timeout
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 20000); // 20 second timeout
-
-      const { calculateDistance } = await import("../lib/distance");
-
+      
+      const { calculateDistance } = await import('../lib/distance');
+      
       const result = await calculateDistance(
         formData.startingAddress.trim(),
         formData.endingAddress.trim(),
-        formData.stops.filter((stop) => stop?.trim()),
-        formData.includeRoundtrip,
+        formData.stops.filter(stop => stop?.trim()),
+        formData.includeRoundtrip
       );
 
       clearTimeout(timeoutId);
 
-      if (result.status === "error") {
-        throw new Error(result.error || "Failed to calculate distance");
+      if (result.status === 'error') {
+        throw new Error(result.error || 'Failed to calculate distance');
       }
-
+      
       // Handle partial success with warnings
-      if (result.status === "partial_success") {
-        const warningMessage =
-          result.errors?.join(", ") ||
-          "Some route segments could not be calculated";
-        console.warn("Distance calculation partial success:", warningMessage);
+      if (result.status === 'partial_success') {
+        const warningMessage = result.errors?.join(', ') || 'Some route segments could not be calculated';
+        console.warn('Distance calculation partial success:', warningMessage);
       }
-
+      
       const roundedDistance = Math.ceil(result.distanceMiles);
-      setFormData((prev) => ({
-        ...prev,
+      setFormData(prev => ({ 
+        ...prev, 
         calculatedMileage: roundedDistance.toString(),
-        mileage: roundedDistance,
+        mileage: roundedDistance 
       }));
-
-      if (result.status === "success") {
+      
+      if (result.status === 'success') {
         toast({
           title: "Mileage Calculated",
-          description: `${roundedDistance} miles total${formData.includeRoundtrip ? " including round trip" : ""}${result.fromCache ? " (from cache)" : ""}.`,
+          description: `${roundedDistance} miles total${formData.includeRoundtrip ? ' including round trip' : ''}${result.fromCache ? ' (from cache)' : ''}.`,
         });
       } else {
         toast({
@@ -1350,35 +1207,25 @@ function GigEditForm({ gig, onSave, onCancel, isLoading }: GigEditFormProps) {
           variant: "default",
         });
       }
+      
     } catch (error) {
       console.error("Mileage calculation error:", error);
-
+      
       // Enhanced mobile error messages
-      let errorMessage =
-        "Failed to calculate mileage. Please check your addresses and try again.";
-
+      let errorMessage = "Failed to calculate mileage. Please check your addresses and try again.";
+      
       if (error instanceof Error) {
-        if (error.name === "AbortError") {
-          errorMessage =
-            "Calculation timeout. Please check your internet connection and try again.";
-        } else if (
-          error.message.includes("timeout") ||
-          error.message.includes("Timeout")
-        ) {
-          errorMessage =
-            "Calculation timeout. Please check your internet connection and try again.";
-        } else if (
-          error.message.includes("network") ||
-          error.message.includes("fetch")
-        ) {
-          errorMessage =
-            "Network error. Please check your internet connection.";
-        } else if (error.message.includes("Invalid response")) {
-          errorMessage =
-            "Invalid address. Please check your addresses and try again.";
+        if (error.name === 'AbortError') {
+          errorMessage = "Calculation timeout. Please check your internet connection and try again.";
+        } else if (error.message.includes('timeout') || error.message.includes('Timeout')) {
+          errorMessage = "Calculation timeout. Please check your internet connection and try again.";
+        } else if (error.message.includes('network') || error.message.includes('fetch')) {
+          errorMessage = "Network error. Please check your internet connection.";
+        } else if (error.message.includes('Invalid response')) {
+          errorMessage = "Invalid address. Please check your addresses and try again.";
         }
       }
-
+      
       toast({
         title: "Calculation Failed",
         description: errorMessage,
@@ -1401,9 +1248,7 @@ function GigEditForm({ gig, onSave, onCancel, isLoading }: GigEditFormProps) {
           <label className="block text-sm font-medium mb-1">Event Name</label>
           <Input
             value={formData.eventName}
-            onChange={(e) =>
-              setFormData({ ...formData, eventName: e.target.value })
-            }
+            onChange={(e) => setFormData({ ...formData, eventName: e.target.value })}
             placeholder="Corporate Event"
           />
         </div>
@@ -1411,9 +1256,7 @@ function GigEditForm({ gig, onSave, onCancel, isLoading }: GigEditFormProps) {
           <label className="block text-sm font-medium mb-1">Client Name</label>
           <Input
             value={formData.clientName}
-            onChange={(e) =>
-              setFormData({ ...formData, clientName: e.target.value })
-            }
+            onChange={(e) => setFormData({ ...formData, clientName: e.target.value })}
             placeholder="ABC Company"
           />
         </div>
@@ -1421,45 +1264,42 @@ function GigEditForm({ gig, onSave, onCancel, isLoading }: GigEditFormProps) {
 
       <div>
         <label className="block text-sm font-medium mb-1">Gig Type</label>
-        <Select
-          value={formData.gigType}
-          onValueChange={(value) =>
-            setFormData({ ...formData, gigType: value })
-          }
+        <Select 
+          value={formData.gigType} 
+          onValueChange={(value) => setFormData({ ...formData, gigType: value })}
         >
-          <SelectTrigger
+          <SelectTrigger 
             className="min-h-[48px] text-base bg-white border-2 border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
             style={{
-              fontSize: "16px",
-              minHeight: "48px",
-              touchAction: "manipulation",
-              WebkitAppearance: "none",
+              fontSize: '16px',
+              minHeight: '48px',
+              touchAction: 'manipulation',
+              WebkitAppearance: 'none'
             }}
           >
             <SelectValue placeholder="Select gig type..." />
           </SelectTrigger>
-          <SelectContent
+          <SelectContent 
             className="max-h-[300px] overflow-y-auto z-50"
             position="popper"
             sideOffset={4}
           >
-            {(user as any)?.customGigTypes &&
-            (user as any).customGigTypes.length > 0 ? (
+            {(user as any)?.customGigTypes && (user as any).customGigTypes.length > 0 ? (
               <>
                 {(user as any).customGigTypes.map((gigType: string) => (
-                  <SelectItem
-                    key={gigType}
+                  <SelectItem 
+                    key={gigType} 
                     value={gigType}
                     className="min-h-[44px] text-base cursor-pointer hover:bg-gray-100 focus:bg-gray-100"
-                    style={{ fontSize: "16px", minHeight: "44px" }}
+                    style={{ fontSize: '16px', minHeight: '44px' }}
                   >
                     {gigType}
                   </SelectItem>
                 ))}
-                <SelectItem
+                <SelectItem 
                   value="other"
                   className="min-h-[44px] text-base cursor-pointer hover:bg-gray-100 focus:bg-gray-100"
-                  style={{ fontSize: "16px", minHeight: "44px" }}
+                  style={{ fontSize: '16px', minHeight: '44px' }}
                 >
                   Other
                 </SelectItem>
@@ -1467,9 +1307,7 @@ function GigEditForm({ gig, onSave, onCancel, isLoading }: GigEditFormProps) {
             ) : (
               <div className="p-4 text-center text-gray-500">
                 <p className="text-sm">No gig types added yet.</p>
-                <p className="text-xs mt-1">
-                  Go to Profile → Add Type to create your custom gig types.
-                </p>
+                <p className="text-xs mt-1">Go to Profile → Add Type to create your custom gig types.</p>
               </div>
             )}
           </SelectContent>
@@ -1482,9 +1320,7 @@ function GigEditForm({ gig, onSave, onCancel, isLoading }: GigEditFormProps) {
           <Input
             type="date"
             value={formData.startDate}
-            onChange={(e) =>
-              setFormData({ ...formData, startDate: e.target.value })
-            }
+            onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
           />
         </div>
         <div>
@@ -1492,9 +1328,7 @@ function GigEditForm({ gig, onSave, onCancel, isLoading }: GigEditFormProps) {
           <Input
             type="date"
             value={formData.endDate}
-            onChange={(e) =>
-              setFormData({ ...formData, endDate: e.target.value })
-            }
+            onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
           />
         </div>
       </div>
@@ -1505,9 +1339,7 @@ function GigEditForm({ gig, onSave, onCancel, isLoading }: GigEditFormProps) {
           <Input
             type="number"
             value={formData.expectedPay}
-            onChange={(e) =>
-              setFormData({ ...formData, expectedPay: e.target.value })
-            }
+            onChange={(e) => setFormData({ ...formData, expectedPay: e.target.value })}
             placeholder="300"
           />
         </div>
@@ -1516,9 +1348,7 @@ function GigEditForm({ gig, onSave, onCancel, isLoading }: GigEditFormProps) {
           <Input
             type="number"
             value={formData.actualPay}
-            onChange={(e) =>
-              setFormData({ ...formData, actualPay: e.target.value })
-            }
+            onChange={(e) => setFormData({ ...formData, actualPay: e.target.value })}
             placeholder="285"
           />
         </div>
@@ -1535,19 +1365,17 @@ function GigEditForm({ gig, onSave, onCancel, isLoading }: GigEditFormProps) {
 
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <label className="block text-sm font-medium mb-1">
-            Tax Percentage
-          </label>
+          <label className="block text-sm font-medium mb-1">Tax Percentage</label>
           <Input
             type="number"
             step="0.1"
             min="0"
             max="50"
-            value={formData.taxPercentage === 0 ? "" : formData.taxPercentage}
+            value={formData.taxPercentage === 0 ? '' : formData.taxPercentage}
             onChange={(e) => {
               const value = e.target.value;
               // Allow empty string and valid numbers
-              if (value === "") {
+              if (value === '') {
                 setFormData({ ...formData, taxPercentage: 0 });
               } else {
                 const parsed = parseFloat(value);
@@ -1564,11 +1392,11 @@ function GigEditForm({ gig, onSave, onCancel, isLoading }: GigEditFormProps) {
           <Input
             type="number"
             min="0"
-            value={formData.mileage === 0 ? "" : formData.mileage}
+            value={formData.mileage === 0 ? '' : formData.mileage}
             onChange={(e) => {
               const value = e.target.value;
               // Allow empty string and valid numbers
-              if (value === "") {
+              if (value === '') {
                 setFormData({ ...formData, mileage: 0 });
               } else {
                 const parsed = parseInt(value);
@@ -1585,23 +1413,19 @@ function GigEditForm({ gig, onSave, onCancel, isLoading }: GigEditFormProps) {
       {/* Mileage Calculation Section */}
       <div className="border-t pt-3 space-y-3">
         <h4 className="font-medium text-sm">Mileage Calculation</h4>
-
+        
         <div className="grid grid-cols-1 gap-3">
           <AddressAutocomplete
             label="Starting Address"
             placeholder="Your home or starting location..."
             value={formData.startingAddress}
-            onChange={(value) =>
-              setFormData({ ...formData, startingAddress: value })
-            }
+            onChange={(value) => setFormData({ ...formData, startingAddress: value })}
           />
           <AddressAutocomplete
-            label="Ending Address"
+            label="Ending Address" 
             placeholder="Event venue or destination..."
             value={formData.endingAddress}
-            onChange={(value) =>
-              setFormData({ ...formData, endingAddress: value })
-            }
+            onChange={(value) => setFormData({ ...formData, endingAddress: value })}
           />
         </div>
 
@@ -1609,9 +1433,7 @@ function GigEditForm({ gig, onSave, onCancel, isLoading }: GigEditFormProps) {
           <input
             type="checkbox"
             checked={formData.includeRoundtrip}
-            onChange={(e) =>
-              setFormData({ ...formData, includeRoundtrip: e.target.checked })
-            }
+            onChange={(e) => setFormData({ ...formData, includeRoundtrip: e.target.checked })}
             className="rounded"
           />
           <span className="text-xs">Include round trip</span>
@@ -1638,10 +1460,7 @@ function GigEditForm({ gig, onSave, onCancel, isLoading }: GigEditFormProps) {
 
       <div>
         <label className="block text-sm font-medium mb-1">Status</label>
-        <Select
-          value={formData.status}
-          onValueChange={(value) => setFormData({ ...formData, status: value })}
-        >
+        <Select value={formData.status} onValueChange={(value) => setFormData({ ...formData, status: value })}>
           <SelectTrigger>
             <SelectValue />
           </SelectTrigger>
@@ -1663,34 +1482,30 @@ function GigEditForm({ gig, onSave, onCancel, isLoading }: GigEditFormProps) {
         />
       </div>
 
+
+
       {/* Expense Section */}
       <div className="border-t pt-3 space-y-4">
         <h4 className="font-medium text-sm">Expenses & Receipts</h4>
-
+        
         {/* Parking Section */}
         <div className="space-y-3 p-3 bg-blue-50 rounded-lg border">
           <h5 className="font-medium text-blue-900 text-xs">Parking</h5>
           <div className="grid grid-cols-2 gap-2">
             <div>
-              <label className="block text-xs font-medium mb-1">
-                Amount ($)
-              </label>
+              <label className="block text-xs font-medium mb-1">Amount ($)</label>
               <Input
                 type="number"
                 placeholder="0.00"
                 value={formData.parkingExpense}
-                onChange={(e) =>
-                  setFormData({ ...formData, parkingExpense: e.target.value })
-                }
+                onChange={(e) => setFormData({ ...formData, parkingExpense: e.target.value })}
               />
             </div>
             <div className="flex items-center pt-4">
               <Checkbox
                 id="parkingReimbursed"
                 checked={formData.parkingReimbursed}
-                onCheckedChange={(checked) =>
-                  setFormData({ ...formData, parkingReimbursed: checked })
-                }
+                onCheckedChange={(checked) => setFormData({ ...formData, parkingReimbursed: checked })}
               />
               <label htmlFor="parkingReimbursed" className="text-xs ml-2">
                 Reimbursed
@@ -1698,18 +1513,16 @@ function GigEditForm({ gig, onSave, onCancel, isLoading }: GigEditFormProps) {
             </div>
           </div>
           <div>
-            <label className="block text-xs font-medium mb-1">
-              Parking Details (optional)
-            </label>
+            <label className="block text-xs font-medium mb-1">Parking Details (optional)</label>
             <Input
               placeholder="e.g., meter parking, garage level 2"
               value={formData.parkingDescription}
-              onChange={(e) =>
-                setFormData({ ...formData, parkingDescription: e.target.value })
-              }
+              onChange={(e) => setFormData({ ...formData, parkingDescription: e.target.value })}
             />
           </div>
         </div>
+
+
       </div>
 
       <div className="flex justify-end gap-2 pt-2">
