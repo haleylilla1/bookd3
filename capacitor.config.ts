@@ -3,7 +3,7 @@ import { CapacitorConfig } from '@capacitor/cli';
 const config: CapacitorConfig = {
   appId: 'com.bookd.app',
   appName: 'Bookd',
-  webDir: 'dist',
+  webDir: 'dist/public',
   server: {
     androidScheme: 'https'
   },
