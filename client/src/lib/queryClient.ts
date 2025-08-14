@@ -78,7 +78,7 @@ export const queryClient = new QueryClient({
       queryFn: getQueryFn({ on401: "throw" }),
       refetchInterval: false,
       refetchOnWindowFocus: false,
-      staleTime: 2 * 60 * 1000, // 2 minutes for better data freshness
+      staleTime: 5 * 60 * 1000, // 5 minutes - reduced refresh frequency for Safari performance
       retry: (failureCount, error: any) => {
         // Don't retry on client errors
         if (error?.message?.includes('400') || error?.message?.includes('401') || 

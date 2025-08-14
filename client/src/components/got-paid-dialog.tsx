@@ -163,14 +163,8 @@ export default function GotPaidDialog({ gig, isOpen, onClose, onSave }: GotPaidD
       // Close dialog with proper cleanup
       onClose();
       
-      // Force page refresh on mobile to prevent scroll lock issues
-      setTimeout(() => {
-        if (/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
-          // Force a gentle scroll to ensure page is responsive
-          window.scrollTo({ top: 0, behavior: 'auto' });
-          document.body.scrollTop = 0; // Safari fallback
-        }
-      }, 100);
+      // Safari optimization - remove aggressive scroll handling
+      // Let React Query handle data refresh naturally
       
     } catch (error) {
       console.error('Got Paid save error:', error);
