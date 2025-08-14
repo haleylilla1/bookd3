@@ -90,11 +90,9 @@ export default function AddExpenseForm({ onClose, linkedGigId }: AddExpenseFormP
       // Immediately close to prevent UI freeze
       onClose();
       
-      // Background cache updates to prevent blocking
-      setTimeout(() => {
-        queryClient.invalidateQueries({ queryKey: ["/api/expenses"] });
-        queryClient.invalidateQueries({ queryKey: ["/api/dashboard"] });
-      }, 100);
+      // Safari-optimized cache refresh - no setTimeout delay
+      queryClient.invalidateQueries({ queryKey: ["/api/expenses"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/dashboard"] });
       
       handleSuccess("Expense added successfully!");
     },

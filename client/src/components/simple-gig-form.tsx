@@ -186,11 +186,9 @@ export default function SimpleGigForm({ onClose }: SimpleGigFormProps) {
       // Immediately close to prevent UI freeze
       onClose();
       
-      // Background cache updates to prevent blocking
-      setTimeout(() => {
-        queryClient.invalidateQueries({ queryKey: ["/api/gigs"] });
-        queryClient.invalidateQueries({ queryKey: ["/api/dashboard"] });
-      }, 100);
+      // Safari-optimized cache refresh - no setTimeout delay
+      queryClient.invalidateQueries({ queryKey: ["/api/gigs"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/dashboard"] });
       
       toast({
         title: "Success",
